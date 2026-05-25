@@ -1,12 +1,17 @@
 {
-  "name": "Ficha Ninja RPG",
+  "name": "RPG Ninja",
   "short_name": "RPG Ninja",
   "description": "Ficha digital RPG Naruto/Shinobi",
 
-  "start_url": "/ficha-ninja-rpg/",
-  "scope": "/ficha-ninja-rpg/",
+  "start_url": "./",
+  "scope": "./",
 
   "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+
   "orientation": "portrait",
 
   "background_color": "#aac7dd",
