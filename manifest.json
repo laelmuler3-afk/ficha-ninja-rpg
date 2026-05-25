@@ -1,13 +1,27 @@
 {
-  "background_color": "#aac7dd",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "laelmuler3-afk.github",
-  "orientation": "any",
-  "scope": "/",
+  "name": "Ficha Ninja RPG",
   "short_name": "RPG Ninja",
-  "start_url": "/",
+  "description": "Ficha digital RPG Naruto/Shinobi",
+
+  "start_url": "/ficha-ninja-rpg/",
+  "scope": "/ficha-ninja-rpg/",
+
+  "display": "standalone",
+  "orientation": "portrait",
+
+  "background_color": "#aac7dd",
   "theme_color": "#365b85",
-  "id": "RPG Naruto ",
-  "description": "Ficha digital RPG Naruto/Shinobi com status, perícias, nível, XP, jutsus, combate e gerenciamento de personagem"
+
+  "icons":[
+    {
+      "src":"icon-192.png",
+      "sizes":"192x192",
+      "type":"image/png"
+    },
+    {
+      "src":"icon-512.png",
+      "sizes":"512x512",
+      "type":"image/png"
+    }
+  ]
 }
