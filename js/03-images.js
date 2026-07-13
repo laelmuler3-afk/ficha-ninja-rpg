@@ -1,4 +1,4 @@
-/* Shinobi 1.3.0 — arquivo modular gerado preservando a ordem do app original. */
+/* Shinobi 1.3.3 — armazenamento de imagens revisado e otimizado. */
 
 /* ===== ARMAZENAMENTO OTIMIZADO DE IMAGENS (INDEXEDDB) ===== */
 /* As imagens saem do localStorage e passam para o banco de imagens do navegador.
@@ -49,7 +49,23 @@
       };
 
       pedido.onsuccess = ()=>resolve(pedido.result);
-      pedido.onerror = ()=>reject(pedido.error || new Error("Não foi possível abrir o banco de imagens."));
+
+      pedido.onerror = ()=>{
+        promessaBanco = null;
+        reject(
+          pedido.error ||
+          new Error("Não foi possível abrir o banco de imagens.")
+        );
+      };
+
+      pedido.onblocked = ()=>{
+        promessaBanco = null;
+        reject(
+          new Error(
+            "O banco de imagens está aberto em outra versão do aplicativo."
+          )
+        );
+      };
     });
 
     return promessaBanco;
@@ -289,30 +305,81 @@
     try{
       await abrirBanco();
 
+      let precisaRenderizarJutsus = false;
+      const tarefas = [];
+
       for(const jutsu of (estado.jutsus || [])){
-        if(jutsu?.imagemId && !urlsEmMemoria.has(jutsu.imagemId)){
+        if(!jutsu?.imagemId) continue;
+
+        tarefas.push((async()=>{
+          if(urlsEmMemoria.has(jutsu.imagemId)){
+            precisaRenderizarJutsus = true;
+            return;
+          }
+
           const blob = await obterBlob(jutsu.imagemId);
-          if(blob) urlParaBlob(jutsu.imagemId, blob);
-        }
+
+          if(blob){
+            urlParaBlob(jutsu.imagemId, blob);
+            precisaRenderizarJutsus = true;
+          }
+        })());
       }
 
       if(estado.avatarNinjaId){
-        const blobAvatar = await obterBlob(estado.avatarNinjaId);
-        if(blobAvatar && typeof aplicarAvatar === "function"){
-          aplicarAvatar(urlParaBlob(estado.avatarNinjaId, blobAvatar));
-        }
+        tarefas.push((async()=>{
+          let url = urlsEmMemoria.get(estado.avatarNinjaId) || "";
+
+          if(!url){
+            const blob = await obterBlob(estado.avatarNinjaId);
+            if(blob){
+              url = urlParaBlob(estado.avatarNinjaId, blob);
+            }
+          }
+
+          if(url && typeof aplicarAvatar === "function"){
+            aplicarAvatar(url);
+          }
+        })());
       }
 
       if(estado.perfilFundoImagemId){
-        const blobFundo = await obterBlob(estado.perfilFundoImagemId);
-        if(blobFundo && typeof aplicarFundoPerfil === "function"){
-          aplicarFundoPerfil(urlParaBlob(estado.perfilFundoImagemId, blobFundo));
-        }
+        tarefas.push((async()=>{
+          let url =
+            urlsEmMemoria.get(estado.perfilFundoImagemId) || "";
+
+          if(!url){
+            const blob = await obterBlob(
+              estado.perfilFundoImagemId
+            );
+
+            if(blob){
+              url = urlParaBlob(
+                estado.perfilFundoImagemId,
+                blob
+              );
+            }
+          }
+
+          if(url && typeof aplicarFundoPerfil === "function"){
+            aplicarFundoPerfil(url);
+          }
+        })());
       }
 
-      if(typeof renderizarJutsus === "function") renderizarJutsus();
+      await Promise.all(tarefas);
+
+      if(
+        precisaRenderizarJutsus &&
+        typeof renderizarJutsus === "function"
+      ){
+        renderizarJutsus();
+      }
     }catch(err){
-      console.warn("Não foi possível carregar as imagens otimizadas.", err);
+      console.warn(
+        "Não foi possível carregar as imagens otimizadas.",
+        err
+      );
     }
   }
 
@@ -364,7 +431,7 @@
       throw new Error("Não foi possível salvar a imagem na ficha.");
     }
 
-    setTimeout(limparImagensOrfas, 500);
+    agendarLimpezaImagensOrfas();
   }
 
   window.carregarImagemJutsu = async function(evento, indiceRecebido){
@@ -410,15 +477,7 @@
     }
 
     if(typeof renderizarJutsus === "function") renderizarJutsus();
-    setTimeout(limparImagensOrfas, 500);
-  };
-
-  window.carregarFundoCartaJutsu = function(indice, evento){
-    return window.carregarImagemJutsu(evento, indice);
-  };
-
-  window.uploadFundoJutsu = function(indice, evento){
-    return window.carregarImagemJutsu(evento, indice);
+    agendarLimpezaImagensOrfas();
   };
 
   function prepararInputDeImagemJutsu(){
@@ -482,7 +541,7 @@
     try{
       const url = await salvarImagemPerfil("avatarNinja", "avatarNinjaId", arquivo, {maxLargura:480, maxAltura:480, qualidade:.76});
       if(typeof aplicarAvatar === "function") aplicarAvatar(url);
-      setTimeout(limparImagensOrfas, 500);
+      agendarLimpezaImagensOrfas();
     }catch(err){
       console.error(err);
       await avisar("Não foi possível salvar o avatar", "O avatar anterior foi mantido.");
@@ -500,7 +559,7 @@
       if(typeof aplicarFundoPerfil === "function") aplicarFundoPerfil(url);
       const menu = document.getElementById("avatarMenu");
       if(menu) menu.classList.remove("aberto");
-      setTimeout(limparImagensOrfas, 500);
+      agendarLimpezaImagensOrfas();
     }catch(err){
       console.error(err);
       await avisar("Não foi possível salvar o fundo", "O fundo anterior foi mantido.");
@@ -523,7 +582,7 @@
 
     if(typeof aplicarFundoPerfil === "function") aplicarFundoPerfil("");
     fecharMenuAvatar();
-    setTimeout(limparImagensOrfas, 500);
+    agendarLimpezaImagensOrfas();
   };
 
   async function estadoComImagensParaBackup(){
@@ -649,16 +708,36 @@
 
   async function limparImagensOrfas(){
     try{
-      const [idsDoBanco, idsEmUso] = await Promise.all([listarIdsDoBanco(), coletarIdsEmUso()]);
-      const orfas = idsDoBanco.filter(id=>!idsEmUso.has(id));
-      await Promise.all(orfas.map(id=>{
-        limparUrlEmMemoria(id);
-        return apagarBlob(id).catch(()=>{});
-      }));
+      const idsDoBanco = await listarIdsDoBanco();
+      const idsEmUso = await coletarIdsEmUso();
+      const orfas = idsDoBanco.filter(
+        id=>!idsEmUso.has(id)
+      );
+
+      await Promise.all(
+        orfas.map(id=>{
+          limparUrlEmMemoria(id);
+          return apagarBlob(id).catch(()=>{});
+        })
+      );
+
       return orfas.length;
     }catch(err){
       return 0;
     }
+  }
+
+  let timerLimpezaImagensOrfas = null;
+
+  function agendarLimpezaImagensOrfas(atraso = 1600){
+    if(timerLimpezaImagensOrfas){
+      clearTimeout(timerLimpezaImagensOrfas);
+    }
+
+    timerLimpezaImagensOrfas = setTimeout(async()=>{
+      timerLimpezaImagensOrfas = null;
+      await limparImagensOrfas();
+    }, atraso);
   }
 
   window.otimizarArmazenamentoImagens = async function(){
@@ -714,7 +793,7 @@
         await hidratarImagensDoIndexedDB();
 
         imagensInicializadasNestaSessao = true;
-        setTimeout(limparImagensOrfas, 1400);
+        agendarLimpezaImagensOrfas(2200);
       }catch(err){
         console.error("Falha na inicialização das imagens.", err);
       }finally{
@@ -756,8 +835,15 @@
   });
 
   window.addEventListener("beforeunload", ()=>{
+    if(timerLimpezaImagensOrfas){
+      clearTimeout(timerLimpezaImagensOrfas);
+      timerLimpezaImagensOrfas = null;
+    }
+
     urlsEmMemoria.forEach(url=>{
       try{ URL.revokeObjectURL(url); }catch(err){}
     });
+
+    urlsEmMemoria.clear();
   });
 })();
