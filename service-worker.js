@@ -1,20 +1,25 @@
-/* Shinobi — Service Worker
+/* Shinobi — Service Worker otimizado
  *
- * Responsável pelo cache dos arquivos do aplicativo, funcionamento offline
- * básico e atualização controlada.
+ * Versão 1.1.0
  *
- * IMPORTANTE:
- * - A cada nova versão do app, altere APP_VERSION.
- * - O service worker não apaga fichas, personagens ou imagens do usuário.
- *   Esses dados continuam no armazenamento local do navegador.
+ * Objetivos:
+ * - abrir o app rapidamente usando o cache local;
+ * - manter HTML, CSS e JavaScript da mesma versão juntos;
+ * - verificar atualizações assim que o app é aberto;
+ * - continuar funcionando offline;
+ * - não tocar nas fichas nem nas imagens salvas pelo usuário.
+ *
+ * REGRA DE PUBLICAÇÃO:
+ * Sempre envie index.html, app.css e app.js primeiro.
+ * Envie o service-worker.js por último e aumente APP_VERSION.
  */
 
-const APP_VERSION = "1.0.1";
-const CACHE_PREFIX = "shinobi-app";
-const CACHE_NAME = `${CACHE_PREFIX}-${APP_VERSION}`;
+const APP_VERSION = "1.1.0";
+const CACHE_PREFIX = "shinobi";
+const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
 
 const APP_SHELL = [
-  "./",
   "./index.html",
   "./manifest.json",
   "./css/app.css",
@@ -23,11 +28,15 @@ const APP_SHELL = [
   "./icon_512x512.png"
 ];
 
-function isSameOrigin(url) {
-  return url.origin === self.location.origin;
-}
+const INDEX_URL = new URL("./index.html", self.registration.scope).href;
+const SHELL_URLS = APP_SHELL.map(
+  (path) => new URL(path, self.registration.scope).href
+);
+const SHELL_PATHS = new Set(
+  SHELL_URLS.map((url) => new URL(url).pathname)
+);
 
-function isCacheableResponse(response) {
+function respostaPodeSerSalva(response) {
   return Boolean(
     response &&
     response.ok &&
@@ -35,125 +44,199 @@ function isCacheableResponse(response) {
   );
 }
 
-async function cacheAppShell() {
-  const cache = await caches.open(CACHE_NAME);
+async function instalarAppShell() {
+  const cache = await caches.open(SHELL_CACHE);
 
   await Promise.all(
-    APP_SHELL.map(async (path) => {
-      const url = new URL(path, self.registration.scope);
-      const request = new Request(url, { cache: "reload" });
+    SHELL_URLS.map(async (url) => {
+      const request = new Request(url, {
+        cache: "reload",
+        credentials: "same-origin"
+      });
+
       const response = await fetch(request);
 
-      if (!isCacheableResponse(response)) {
-        throw new Error(`Não foi possível armazenar no cache: ${url.pathname}`);
+      if (!respostaPodeSerSalva(response)) {
+        throw new Error(`Falha ao armazenar no cache: ${url}`);
       }
 
-      await cache.put(request, response);
+      await cache.put(url, response);
     })
   );
 }
 
-async function removeOldCaches() {
-  const cacheNames = await caches.keys();
+async function limparCachesAntigos() {
+  const nomes = await caches.keys();
+  const cachesAtuais = new Set([SHELL_CACHE, RUNTIME_CACHE]);
 
   await Promise.all(
-    cacheNames
+    nomes
       .filter(
-        (name) =>
-          name.startsWith(`${CACHE_PREFIX}-`) &&
-          name !== CACHE_NAME
+        (nome) =>
+          nome.startsWith(`${CACHE_PREFIX}-`) &&
+          !cachesAtuais.has(nome)
       )
-      .map((name) => caches.delete(name))
+      .map((nome) => caches.delete(nome))
   );
 }
 
-async function networkFirst(request, fallbackPath = null) {
-  const cache = await caches.open(CACHE_NAME);
+async function buscarShellNoCache(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  const resposta = await cache.match(request, {
+    ignoreSearch: true
+  });
+
+  if (resposta) {
+    return resposta;
+  }
+
+  const rede = await fetch(request);
+
+  if (respostaPodeSerSalva(rede)) {
+    await cache.put(request, rede.clone());
+  }
+
+  return rede;
+}
+
+async function abrirPaginaPrincipal(request) {
+  const cache = await caches.open(SHELL_CACHE);
+  const paginaSalva = await cache.match(INDEX_URL);
+
+  if (paginaSalva) {
+    return paginaSalva;
+  }
 
   try {
-    const response = await fetch(request, { cache: "no-store" });
+    const resposta = await fetch(request);
 
-    if (isCacheableResponse(response)) {
-      await cache.put(request, response.clone());
+    if (respostaPodeSerSalva(resposta)) {
+      await cache.put(INDEX_URL, resposta.clone());
     }
 
-    return response;
-  } catch (error) {
-    const cachedResponse = await cache.match(request, {
-      ignoreSearch: true
-    });
+    return resposta;
+  } catch (erro) {
+    const fallback = await cache.match(INDEX_URL);
 
-    if (cachedResponse) {
-      return cachedResponse;
+    if (fallback) {
+      return fallback;
     }
 
-    if (fallbackPath) {
-      const fallbackUrl = new URL(fallbackPath, self.registration.scope);
-      const fallbackResponse = await cache.match(fallbackUrl, {
-        ignoreSearch: true
-      });
+    throw erro;
+  }
+}
 
-      if (fallbackResponse) {
-        return fallbackResponse;
+async function staleWhileRevalidate(request, event) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const salva = await cache.match(request, {
+    ignoreSearch: true
+  });
+
+  const atualizar = fetch(request)
+    .then(async (response) => {
+      if (respostaPodeSerSalva(response)) {
+        await cache.put(request, response.clone());
+        await limitarCache(RUNTIME_CACHE, 80);
       }
-    }
 
-    throw error;
+      return response;
+    })
+    .catch(() => null);
+
+  event.waitUntil(atualizar);
+
+  if (salva) {
+    return salva;
+  }
+
+  const rede = await atualizar;
+
+  if (rede) {
+    return rede;
+  }
+
+  throw new Error(`Recurso indisponível: ${request.url}`);
+}
+
+async function limitarCache(nomeCache, limite) {
+  const cache = await caches.open(nomeCache);
+  const chaves = await cache.keys();
+
+  while (chaves.length > limite) {
+    const chaveMaisAntiga = chaves.shift();
+    await cache.delete(chaveMaisAntiga);
   }
 }
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(cacheAppShell());
+  event.waitUntil(instalarAppShell());
 
-  // Não chamamos skipWaiting automaticamente.
-  // A atualização só será aplicada quando o usuário confirmar no aplicativo.
+  /*
+   * Não usamos skipWaiting automaticamente.
+   * O app decide quando aplicar a atualização, protegendo a ficha em uso.
+   */
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all([
-      removeOldCaches(),
+      limparCachesAntigos(),
       self.clients.claim()
     ])
   );
 });
 
 self.addEventListener("fetch", (event) => {
-  const { request } = event;
+  const request = event.request;
 
   if (request.method !== "GET") {
     return;
   }
 
-  const url = new URL(request.url);
-
-  if (!isSameOrigin(url)) {
-    return;
-  }
-
-  // Evita interferir em downloads parciais de arquivos.
   if (request.headers.has("range")) {
     return;
   }
 
-  if (request.mode === "navigate") {
-    event.respondWith(networkFirst(request, "./index.html"));
+  const url = new URL(request.url);
+
+  if (url.origin !== self.location.origin) {
     return;
   }
 
-  const isAppAsset =
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".js") ||
-    url.pathname.endsWith(".json") ||
+  if (request.mode === "navigate") {
+    /*
+     * Mostra imediatamente a versão já instalada e, em paralelo,
+     * verifica se existe um service worker novo no servidor.
+     */
+    event.waitUntil(
+      self.registration.update().catch(() => {})
+    );
+
+    event.respondWith(abrirPaginaPrincipal(request));
+    return;
+  }
+
+  if (SHELL_PATHS.has(url.pathname)) {
+    /*
+     * Cache-first deixa CSS/JS rápidos e impede misturar arquivos
+     * de versões diferentes durante uma atualização.
+     */
+    event.respondWith(buscarShellNoCache(request));
+    return;
+  }
+
+  const recursoEstatico =
     url.pathname.endsWith(".png") ||
     url.pathname.endsWith(".jpg") ||
     url.pathname.endsWith(".jpeg") ||
     url.pathname.endsWith(".webp") ||
     url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".ico");
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".woff") ||
+    url.pathname.endsWith(".woff2");
 
-  if (isAppAsset) {
-    event.respondWith(networkFirst(request));
+  if (recursoEstatico) {
+    event.respondWith(staleWhileRevalidate(request, event));
   }
 });
 
