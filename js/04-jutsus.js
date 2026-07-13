@@ -1,385 +1,150 @@
 /* Shinobi 1.3.0 — arquivo modular gerado preservando a ordem do app original. */
 
-/* ===== JUTSUS: ORGANIZAÇÃO, REORDENAÇÃO POR TOQUE E RESISTÊNCIAS ===== */
+/* Shinobi 1.3.4 — jutsus revisados e sem sistemas antigos duplicados. */
+
+/* ===== JUTSUS: ORGANIZAÇÃO POR ELEMENTO ===== */
 (function(){
-  if(window.__jutsuOrganizacaoResistenciasV2) return;
-  window.__jutsuOrganizacaoResistenciasV2 = true;
+  if(window.__jutsuOrganizacaoV3) return;
+  window.__jutsuOrganizacaoV3 = true;
 
-  const ELEMENTOS = [
-    {id:'katon',  nome:'Katon',  icone:'🔥'},
-    {id:'raiton', nome:'Raiton', icone:'⚡'},
-    {id:'fuuton', nome:'Fuuton', icone:'🌪️'},
-    {id:'suiton', nome:'Suiton', icone:'💧'},
-    {id:'doton',  nome:'Doton',  icone:'🪨'},
-    {id:'yin',    nome:'Yinton',icone:'🌑'},
-    {id:'yang',   nome:'Youton',icone:'☀️'},
-    {id:'neutro', nome:'Neutro',icone:'✨'}
+  const ORDEM_ELEMENTOS = [
+    "katon",
+    "raiton",
+    "fuuton",
+    "suiton",
+    "doton",
+    "yin",
+    "yang",
+    "neutro"
   ];
-  const ORDEM_ELEMENTOS = ELEMENTOS.map(item=>item.id);
-  const LIMIAR_MOVIMENTO = 12;
-  const TEMPO_TOQUE_LONGO = 2000;
 
-  let timerToqueLongo = null;
-  let sessaoMover = null;
-
-  function salvarSomenteEstado(){
-    if(typeof persistirSemRender === 'function'){
+  function salvarOrganizacaoJutsus(){
+    if(typeof persistirSemRender === "function"){
       persistirSemRender();
       return;
     }
-    if(typeof persistirEstadoLocal === 'function'){
+
+    if(typeof persistirEstadoLocal === "function"){
       persistirEstadoLocal();
       return;
     }
-    if(typeof CHAVE !== 'undefined'){
-      localStorage.setItem(CHAVE, JSON.stringify(estado));
+
+    if(typeof CHAVE !== "undefined"){
+      localStorage.setItem(
+        CHAVE,
+        JSON.stringify(estado)
+      );
     }
   }
 
   function elementoNormalizado(jutsu){
-    const elemento = String(jutsu?.elemento || 'neutro').trim().toLowerCase();
-    return ORDEM_ELEMENTOS.includes(elemento) ? elemento : 'neutro';
-  }
+    const elemento = String(
+      jutsu?.elemento || "neutro"
+    ).trim().toLowerCase();
 
-  function abrirIndicadorMover(texto){
-    fecharIndicadorMover();
-    const indicador = document.createElement('div');
-    indicador.id = 'jutsuMoverIndicador';
-    indicador.className = 'jutsuMoverIndicador';
-    indicador.textContent = texto;
-    document.body.appendChild(indicador);
-  }
-
-  function fecharIndicadorMover(){
-    const indicador = document.getElementById('jutsuMoverIndicador');
-    if(indicador) indicador.remove();
-  }
-
-  function limparMarcacoesMover(){
-    document.body.classList.remove('reordenandoJutsu');
-    document.querySelectorAll('#listaJutsus .jutsuMovendoAgora, #listaJutsus .jutsuDestinoMover').forEach(card=>{
-      card.classList.remove('jutsuMovendoAgora','jutsuDestinoMover');
-    });
-    fecharIndicadorMover();
-  }
-
-  function reordenarJutsu(origem, destino){
-    const lista = Array.isArray(estado.jutsus) ? estado.jutsus : [];
-    if(origem === destino || origem < 0 || destino < 0 || origem >= lista.length || destino >= lista.length) return;
-
-    const abertosAntes = lista.map((_, indice)=>Boolean(estado.jutsusAbertos && estado.jutsusAbertos[indice]));
-    const [jutsuMovido] = lista.splice(origem, 1);
-    const [abertoMovido] = abertosAntes.splice(origem, 1);
-
-    lista.splice(destino, 0, jutsuMovido);
-    abertosAntes.splice(destino, 0, abertoMovido);
-
-    estado.jutsus = lista;
-    estado.jutsusAbertos = {};
-    abertosAntes.forEach((aberto, indice)=>{
-      if(aberto) estado.jutsusAbertos[indice] = true;
-    });
-
-    salvarSomenteEstado();
-    if(typeof renderizarJutsus === 'function') renderizarJutsus();
+    return ORDEM_ELEMENTOS.includes(elemento)
+      ? elemento
+      : "neutro";
   }
 
   window.organizarJutsusPorElemento = function(){
-    const lista = Array.isArray(estado.jutsus) ? estado.jutsus : [];
+    const lista = Array.isArray(estado.jutsus)
+      ? estado.jutsus
+      : [];
+
     if(lista.length < 2) return;
 
     estado.jutsus = lista
-      .map((jutsu, indice)=>({jutsu, indice}))
+      .map((jutsu, indice)=>({
+        jutsu,
+        indice
+      }))
       .sort((a, b)=>{
-        const ordemA = ORDEM_ELEMENTOS.indexOf(elementoNormalizado(a.jutsu));
-        const ordemB = ORDEM_ELEMENTOS.indexOf(elementoNormalizado(b.jutsu));
-        return ordemA === ordemB ? a.indice - b.indice : ordemA - ordemB;
+        const ordemA = ORDEM_ELEMENTOS.indexOf(
+          elementoNormalizado(a.jutsu)
+        );
+
+        const ordemB = ORDEM_ELEMENTOS.indexOf(
+          elementoNormalizado(b.jutsu)
+        );
+
+        return ordemA === ordemB
+          ? a.indice - b.indice
+          : ordemA - ordemB;
       })
       .map(item=>item.jutsu);
 
     estado.jutsusAbertos = {};
-    salvarSomenteEstado();
-    if(typeof renderizarJutsus === 'function') renderizarJutsus();
+    salvarOrganizacaoJutsus();
+
+    if(typeof renderizarJutsus === "function"){
+      renderizarJutsus();
+    }
   };
 
-  function iniciarMovimento(card, indice, pointerId){
-    sessaoMover = {indice, pointerId, alvo: indice};
-    document.body.classList.add('reordenandoJutsu');
-    card.classList.add('jutsuMovendoAgora');
-    abrirIndicadorMover('Mova a carta até a posição desejada e solte.');
-    try{ navigator.vibrate && navigator.vibrate(22); }catch(err){}
-  }
-
-  function atualizarAlvoMover(x, y){
-    if(!sessaoMover) return;
-
-    const alvo = document.elementFromPoint(x, y)?.closest?.('#listaJutsus .jutsuListaCard');
-    document.querySelectorAll('#listaJutsus .jutsuDestinoMover').forEach(card=>card.classList.remove('jutsuDestinoMover'));
-
-    if(!alvo) return;
-    const indice = Number(alvo.dataset.jutsuIndex);
-    if(!Number.isInteger(indice)) return;
-
-    sessaoMover.alvo = indice;
-    if(indice !== sessaoMover.indice) alvo.classList.add('jutsuDestinoMover');
-  }
-
-  function finalizarMovimento(){
-    if(!sessaoMover) return;
-
-    const {indice, alvo} = sessaoMover;
-    sessaoMover = null;
-    limparMarcacoesMover();
-
-    if(Number.isInteger(indice) && Number.isInteger(alvo) && indice !== alvo){
-      reordenarJutsu(indice, alvo);
-    }
-  }
-
-  function configurarToqueLongo(card, indice){
-    if(card.dataset.toqueLongoConfigurado === '1') return;
-    card.dataset.toqueLongoConfigurado = '1';
-
-    const areaToque = card.querySelector('.jutsuLinhaResumo');
-    if(!areaToque) return;
-
-    let inicioX = 0;
-    let inicioY = 0;
-    let pointerAtivo = null;
-    let toqueLongoDisparado = false;
-
-    const cancelarTimer = ()=>{
-      if(timerToqueLongo){
-        clearTimeout(timerToqueLongo);
-        timerToqueLongo = null;
-      }
-    };
-
-    areaToque.addEventListener('pointerdown', function(evento){
-      if(evento.pointerType === 'mouse' && evento.button !== 0) return;
-      if(sessaoMover) return;
-
-      inicioX = evento.clientX;
-      inicioY = evento.clientY;
-      pointerAtivo = evento.pointerId;
-      toqueLongoDisparado = false;
-      card.dataset.bloquearClique = '0';
-
-      try{ areaToque.setPointerCapture(pointerAtivo); }catch(err){}
-
-      cancelarTimer();
-      timerToqueLongo = setTimeout(()=>{
-        timerToqueLongo = null;
-        if(pointerAtivo !== null){
-          toqueLongoDisparado = true;
-          card.dataset.bloquearClique = '1';
-          iniciarMovimento(card, indice, pointerAtivo);
-        }
-      }, TEMPO_TOQUE_LONGO);
-    });
-
-    areaToque.addEventListener('pointermove', function(evento){
-      if(pointerAtivo !== evento.pointerId) return;
-
-      if(!toqueLongoDisparado){
-        const distancia = Math.hypot(evento.clientX - inicioX, evento.clientY - inicioY);
-        if(distancia > LIMIAR_MOVIMENTO) cancelarTimer();
-        return;
-      }
-
-      evento.preventDefault();
-      atualizarAlvoMover(evento.clientX, evento.clientY);
-    }, {passive:false});
-
-    const encerrarToque = function(evento){
-      if(pointerAtivo !== null && (!evento || evento.pointerId === pointerAtivo)){
-        cancelarTimer();
-        if(toqueLongoDisparado){
-          if(evento) evento.preventDefault();
-          finalizarMovimento();
-        }
-        try{ areaToque.releasePointerCapture(pointerAtivo); }catch(err){}
-        pointerAtivo = null;
-      }
-    };
-
-    areaToque.addEventListener('pointerup', encerrarToque, {passive:false});
-    areaToque.addEventListener('pointercancel', encerrarToque, {passive:false});
-
-    /* Impede que o toque longo também abra/feche a carta ao soltar. */
-    areaToque.addEventListener('click', function(evento){
-      if(card.dataset.bloquearClique !== '1') return;
-      card.dataset.bloquearClique = '0';
-      evento.preventDefault();
-      evento.stopImmediatePropagation();
-    }, true);
-  }
-
   function inserirBarraOrganizacao(){
-    const lista = document.getElementById('listaJutsus');
-    if(!lista || document.getElementById('jutsuOrganizacaoBarra')) return;
+    const lista = document.getElementById(
+      "listaJutsus"
+    );
 
-    const barra = document.createElement('div');
-    barra.id = 'jutsuOrganizacaoBarra';
-    barra.className = 'jutsuOrganizacaoBarra';
+    if(
+      !lista ||
+      document.getElementById(
+        "jutsuOrganizacaoBarra"
+      )
+    ){
+      return;
+    }
+
+    const barra = document.createElement("div");
+    barra.id = "jutsuOrganizacaoBarra";
+    barra.className = "jutsuOrganizacaoBarra";
+
     barra.innerHTML = `
-      <button type="button" class="btn jutsuOrganizarBtn" onclick="organizarJutsusPorElemento()">Organizar por elemento</button>
-      <span class="jutsuOrganizacaoDica">Segure uma carta por 2 segundos e arraste para mudar a posição.</span>
+      <button
+        type="button"
+        class="btn jutsuOrganizarBtn"
+        onclick="organizarJutsusPorElemento()"
+      >
+        Organizar por elemento
+      </button>
+
+      <span class="jutsuOrganizacaoDica">
+        Segure uma carta e arraste para mudar a posição.
+      </span>
     `;
 
     lista.parentNode.insertBefore(barra, lista);
   }
 
-  function prepararJutsus(){
-    inserirBarraOrganizacao();
-    const lista = document.getElementById('listaJutsus');
-    if(!lista) return;
+  const renderizarJutsusBaseOrganizacao =
+    window.renderizarJutsus;
 
-    Array.from(lista.querySelectorAll('.jutsuListaCard')).forEach((card, indice)=>{
-      card.dataset.jutsuIndex = String(indice);
-      /* Reordenação antiga desativada; a versão V3 usa listener delegado. */
-    });
-  }
-
-  function normalizarResistencias(){
-    const atual = estado.resistenciasBatalha;
-    if(atual && !Array.isArray(atual) && atual.elementos && Array.isArray(atual.extras)) return atual;
-
-    const novo = {elementos:{}, extras:[]};
-    if(Array.isArray(atual)){
-      atual.forEach(valor=>{
-        const id = String(valor || '').trim().toLowerCase();
-        if(ORDEM_ELEMENTOS.includes(id)) novo.elementos[id] = true;
-        else if(valor) novo.extras.push({id:'extra_'+Date.now()+'_'+novo.extras.length, nome:String(valor)});
-      });
-    }
-
-    estado.resistenciasBatalha = novo;
-    return novo;
-  }
-
-  function textoResistenciasAtivas(){
-    const resistencias = normalizarResistencias();
-    const elementosAtivos = ELEMENTOS
-      .filter(item=>resistencias.elementos[item.id])
-      .map(item=>item.nome);
-    const extras = resistencias.extras.map(item=>item.nome);
-    const todas = elementosAtivos.concat(extras);
-
-    return todas.length ? 'Resistências ativas: ' + todas.join(', ') : 'Nenhuma resistência adicionada.';
-  }
-
-  window.alternarResistenciaBatalha = function(id){
-    const resistencias = normalizarResistencias();
-    if(!ORDEM_ELEMENTOS.includes(id)) return;
-
-    resistencias.elementos[id] = !resistencias.elementos[id];
-    salvarSomenteEstado();
-    renderizarResistenciasBatalha();
-  };
-
-  window.adicionarResistenciaBatalha = function(){
-    const nome = prompt('Qual resistência você quer adicionar?');
-    if(nome === null) return;
-
-    const valor = nome.trim();
-    if(!valor) return;
-
-    const resistencias = normalizarResistencias();
-    const jaExiste = resistencias.extras.some(item=>item.nome.toLowerCase() === valor.toLowerCase());
-    if(jaExiste){
-      alert('Essa resistência já foi adicionada.');
-      return;
-    }
-
-    resistencias.extras.push({
-      id:'extra_'+Date.now()+'_'+Math.random().toString(16).slice(2),
-      nome:valor
-    });
-
-    salvarSomenteEstado();
-    renderizarResistenciasBatalha();
-  };
-
-  window.removerResistenciaBatalha = function(id){
-    const resistencias = normalizarResistencias();
-    resistencias.extras = resistencias.extras.filter(item=>item.id !== id);
-    salvarSomenteEstado();
-    renderizarResistenciasBatalha();
-  };
-
-  function renderizarResistenciasBatalha(){
-    const containerPai = document.querySelector('#batalha .modificadoresBatalha');
-    if(!containerPai) return;
-
-    let painel = document.getElementById('resistenciasBatalhaPainel');
-    if(!painel){
-      painel = document.createElement('div');
-      painel.id = 'resistenciasBatalhaPainel';
-      painel.className = 'resistenciasBatalhaPainel';
-
-      const bonusAtributos = containerPai.querySelector('.bonusAtributosBatalha');
-      if(bonusAtributos) containerPai.insertBefore(painel, bonusAtributos);
-      else containerPai.appendChild(painel);
-    }
-
-    const resistencias = normalizarResistencias();
-
-    painel.innerHTML = `
-      <h3>Resistências</h3>
-      <p class="resistenciasBatalhaAjuda">Toque em um elemento para ativar ou retirar a resistência.</p>
-      <div class="resistenciasBatalhaGrid">
-        ${ELEMENTOS.map(item=>{
-          const ativa = resistencias.elementos[item.id] ? ' ativa' : '';
-          return `<button type="button" class="resistenciaBatalhaChip${ativa}" onclick="alternarResistenciaBatalha('${item.id}')">${item.icone} ${item.nome}</button>`;
-        }).join('')}
-      </div>
-      ${resistencias.extras.length ? `
-        <div class="resistenciasExtras">
-          ${resistencias.extras.map(item=>`
-            <span class="resistenciaExtra">${item.nome}<button type="button" aria-label="Remover ${item.nome}" onclick="removerResistenciaBatalha('${item.id}')">×</button></span>
-          `).join('')}
-        </div>
-      ` : ''}
-      <button type="button" class="btn btnAdicionarResistencia" onclick="adicionarResistenciaBatalha()">+ Adicionar outra resistência</button>
-      <p class="resistenciaResumoAtiva">${textoResistenciasAtivas()}</p>
-    `;
-  }
-
-  /* A versão existente continua sendo a responsável por criar as cartas.
-     Este envoltório só adiciona os controles depois que ela termina. */
-  const renderizarJutsusOriginal = window.renderizarJutsus;
-  if(typeof renderizarJutsusOriginal === 'function'){
+  if(typeof renderizarJutsusBaseOrganizacao === "function"){
     window.renderizarJutsus = function(){
-      const resultado = renderizarJutsusOriginal.apply(this, arguments);
-      prepararJutsus();
+      const resultado =
+        renderizarJutsusBaseOrganizacao.apply(
+          this,
+          arguments
+        );
+
+      inserirBarraOrganizacao();
       return resultado;
     };
   }
 
-  const abrirPaginaOriginal = window.abrirPagina;
-  if(typeof abrirPaginaOriginal === 'function'){
-    window.abrirPagina = function(id, botao){
-      const resultado = abrirPaginaOriginal.apply(this, arguments);
-      if(id === 'jutsus') setTimeout(prepararJutsus, 0);
-      return resultado;
-    };
-  }
-
-  function iniciarRecursos(){
-    prepararJutsus();
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', iniciarRecursos, {once:true});
+  if(document.readyState === "loading"){
+    document.addEventListener(
+      "DOMContentLoaded",
+      inserirBarraOrganizacao,
+      {once:true}
+    );
   }else{
-    iniciarRecursos();
+    inserirBarraOrganizacao();
   }
 })();
 
-/* Resistências V2 removidas: Resistências Persistentes V3 é a versão ativa. */
-
-/* ===== BÔNUS MÚLTIPLOS NO MESMO BOTÃO + MOVER JUTSUS V2 ===== */
+/* ===== BÔNUS MÚLTIPLOS NO MESMO BOTÃO ===== */
 (function(){
  if(window.__bonusMultiMoverV3)return; window.__bonusMultiMoverV3=true;
 
@@ -512,10 +277,6 @@
    return somas;
  }
 
- function baseDoAlvo(id){
-   garantirBasesBonus();
-   return num(estado.bonusBaseValores[id]??valorEstadoOuCampo(id));
- }
 
  function cardResumo(){
    const card=document.getElementById("bonusGeralCard");
@@ -688,15 +449,47 @@
 
  // Ao editar manualmente um campo bonificado, considera o número digitado como total
  // visível e recalcula o valor-base uma única vez.
+ let timerAplicarBonusCampo = null;
+
  document.addEventListener("input",ev=>{
-   if(aplicandoBonus||!ev.target||!ev.target.matches('#identidade input[data-save]:not(#bonusCA)'))return;
+   if(
+     aplicandoBonus ||
+     !ev.target ||
+     !ev.target.matches(
+       '#identidade input[data-save]:not(#bonusCA)'
+     )
+   ){
+     return;
+   }
+
    const id=ev.target.dataset.save;
    if(!ALVOS[id]||id==="ca")return;
-   const soma=num(somasBonus(normalizarListaBonus())[id]||0);
-   estado.bonusBaseValores=estado.bonusBaseValores&&typeof estado.bonusBaseValores==="object"?estado.bonusBaseValores:{};
-   estado.bonusBaseValores[id]=String(num(ev.target.value)-soma);
+
+   const soma=num(
+     somasBonus(normalizarListaBonus())[id]||0
+   );
+
+   estado.bonusBaseValores=
+     estado.bonusBaseValores &&
+     typeof estado.bonusBaseValores==="object"
+       ? estado.bonusBaseValores
+       : {};
+
+   estado.bonusBaseValores[id]=String(
+     num(ev.target.value)-soma
+   );
+
    estado[id]=estado.bonusBaseValores[id];
-   setTimeout(()=>{salvarSeguro();aplicar()},90);
+
+   if(timerAplicarBonusCampo){
+     clearTimeout(timerAplicarBonusCampo);
+   }
+
+   timerAplicarBonusCampo=setTimeout(()=>{
+     timerAplicarBonusCampo=null;
+     salvarSeguro();
+     aplicar();
+   },100);
  });
 
  function iniciar(){
@@ -704,20 +497,45 @@
    aplicar();
  }
 
+ let timerInicializacaoBonus = null;
+
+ function agendarInicializacaoBonus(atraso=160){
+   if(timerInicializacaoBonus){
+     clearTimeout(timerInicializacaoBonus);
+   }
+
+   timerInicializacaoBonus=setTimeout(()=>{
+     timerInicializacaoBonus=null;
+     iniciar();
+   },atraso);
+ }
+
  if(typeof carregar==="function"&&!window.__carregarBonusV3){
    window.__carregarBonusV3=true;
    const carregarOriginal=carregar;
+
    window.carregar=function(){
      const r=carregarOriginal.apply(this,arguments);
-     setTimeout(iniciar,120);
+     agendarInicializacaoBonus();
      return r;
    };
  }
 
- document.addEventListener("DOMContentLoaded",()=>setTimeout(iniciar,350));
- window.addEventListener("pageshow",()=>setTimeout(iniciar,350));
+ if(document.readyState==="loading"){
+   document.addEventListener(
+     "DOMContentLoaded",
+     ()=>agendarInicializacaoBonus(),
+     {once:true}
+   );
+ }else{
+   agendarInicializacaoBonus();
+ }
 
- /* Mover Jutsus V2 removido: Ajuste Mover Jutsu V3 é a versão ativa. */
+ window.addEventListener(
+   "pageshow",
+   ()=>agendarInicializacaoBonus()
+ );
+
 })();
 
 /* ===== AJUSTE MOVER JUTSU V3: toque menor e não abre ao soltar ===== */
@@ -873,16 +691,13 @@
     }, true);
   }
 
-  if(typeof renderizarJutsus === "function" && !window.__renderizarJutsusMoverV3){
-    window.__renderizarJutsusMoverV3 = true;
-    const base = renderizarJutsus;
-    window.renderizarJutsus = function(){
-      const r = base.apply(this, arguments);
-      setTimeout(prepararMoverV3, 120);
-      return r;
-    };
+  if(document.readyState === "loading"){
+    document.addEventListener(
+      "DOMContentLoaded",
+      prepararMoverV3,
+      {once:true}
+    );
+  }else{
+    prepararMoverV3();
   }
-
-  document.addEventListener("DOMContentLoaded", ()=>setTimeout(prepararMoverV3, 500));
-  window.addEventListener("pageshow", ()=>setTimeout(prepararMoverV3, 500));
 })();
