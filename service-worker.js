@@ -14,7 +14,7 @@
  * Envie o service-worker.js por último e aumente APP_VERSION.
  */
 
-const APP_VERSION = "1.3.2";
+const APP_VERSION = "1.3.3";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
