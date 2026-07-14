@@ -479,3 +479,609 @@ body.ajustandoFundoPerfil{overflow:hidden !important;}
     linear-gradient(180deg,rgba(2,6,10,.01) 0%,rgba(3,7,10,.04) 50%,rgba(3,7,10,.46) 100%),
     radial-gradient(circle at 50% 34%,transparent 0 46%,rgba(3,7,10,.08) 76%,rgba(3,7,10,.24) 100%) !important;
 }
+
+
+/* ===== Catálogo de Jutsus — v1.4.0 ===== */
+.jutsuAdicionarBtn{
+  width:100%;
+}
+
+.catalogoFecharBtn{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  border:1px solid rgba(255,255,255,.14);
+  background:rgba(5,8,12,.70);
+  color:#fff2d5;
+  font-size:27px;
+  line-height:1;
+  display:grid;
+  place-items:center;
+}
+
+.catalogoEscolhaBox{
+  width:min(94vw,520px);
+}
+
+.catalogoEscolhaCabecalho{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:16px;
+}
+
+.catalogoEscolhaCabecalho span{
+  color:#d5b481;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+}
+
+.catalogoEscolhaCabecalho h3{
+  margin:4px 0 0;
+  color:#ffd99f;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:22px;
+  line-height:1.15;
+}
+
+.catalogoEscolhaOpcoes{
+  display:grid;
+  gap:11px;
+}
+
+.catalogoEscolhaOpcao{
+  min-height:88px;
+  padding:14px;
+  display:grid;
+  grid-template-columns:52px 1fr;
+  align-items:center;
+  gap:13px;
+  text-align:left;
+  border:1px solid rgba(255,177,90,.26);
+  background:
+    linear-gradient(180deg,rgba(54,34,20,.93),rgba(13,12,13,.97));
+  color:#fff1d4;
+}
+
+.catalogoEscolhaOpcao.catalogoEscolhaPrincipal{
+  border-color:rgba(255,166,64,.65);
+  background:
+    radial-gradient(circle at top left,rgba(255,151,43,.24),transparent 48%),
+    linear-gradient(180deg,rgba(73,38,13,.96),rgba(19,11,8,.98));
+}
+
+.catalogoEscolhaIcone{
+  width:50px;
+  height:50px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.11);
+  background:rgba(0,0,0,.25);
+  font-size:27px;
+}
+
+.catalogoEscolhaOpcao strong,
+.catalogoEscolhaOpcao small{
+  display:block;
+}
+
+.catalogoEscolhaOpcao strong{
+  margin-bottom:5px;
+  font-size:16px;
+}
+
+.catalogoEscolhaOpcao small{
+  color:#d8c9b0;
+  font-size:12px;
+  line-height:1.4;
+}
+
+.catalogoJutsusOverlay{
+  position:fixed;
+  inset:0;
+  z-index:999990;
+  padding:max(10px,env(safe-area-inset-top))
+    max(8px,env(safe-area-inset-right))
+    max(10px,env(safe-area-inset-bottom))
+    max(8px,env(safe-area-inset-left));
+  background:rgba(0,0,0,.76);
+  backdrop-filter:blur(7px);
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+}
+
+.catalogoJutsusPainel{
+  width:min(100%,1040px);
+  height:100%;
+  max-height:100%;
+  min-height:0;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  overflow:hidden;
+  border:1px solid rgba(255,177,90,.38);
+  background:
+    radial-gradient(circle at 12% 0,rgba(255,132,34,.16),transparent 30%),
+    linear-gradient(180deg,rgba(23,18,14,.99),rgba(5,8,12,.99));
+  color:#fff2d8;
+  box-shadow:0 28px 80px rgba(0,0,0,.82);
+}
+
+.catalogoJutsusCabecalho{
+  min-height:75px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:13px 14px;
+  border-bottom:1px solid rgba(255,177,90,.20);
+}
+
+.catalogoJutsusSubtitulo{
+  display:block;
+  color:#d8b680;
+  font-size:11px;
+  font-weight:1000;
+  text-transform:uppercase;
+  letter-spacing:.85px;
+}
+
+.catalogoJutsusCabecalho h2{
+  margin:3px 0 0;
+  color:#ffdaa3;
+  font-size:25px;
+  line-height:1.05;
+}
+
+.catalogoJutsusFerramentas{
+  padding:12px 14px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.18);
+}
+
+.catalogoBuscaBox,
+.catalogoFiltrosGrid label{
+  display:grid;
+  gap:5px;
+}
+
+.catalogoBuscaBox span,
+.catalogoFiltrosGrid label span{
+  color:#d9bea0;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+}
+
+.catalogoBuscaBox input,
+.catalogoFiltrosGrid select{
+  width:100%;
+  min-height:42px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,177,90,.25);
+  background:rgba(4,7,10,.78);
+  color:#fff4dc;
+  padding:9px 11px;
+  font:inherit;
+  outline:none;
+}
+
+.catalogoBuscaBox input:focus,
+.catalogoFiltrosGrid select:focus{
+  border-color:rgba(255,195,113,.78);
+  box-shadow:0 0 0 2px rgba(255,149,43,.12);
+}
+
+.catalogoFiltrosGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+  margin-top:10px;
+}
+
+.catalogoFerramentasRodape{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:9px;
+  color:#bdad98;
+  font-size:12px;
+}
+
+.catalogoFerramentasRodape button{
+  border:0;
+  background:transparent;
+  color:#ffc67a;
+  font-weight:900;
+  padding:5px;
+}
+
+.catalogoJutsusLista{
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  padding:12px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  align-content:start;
+  gap:11px;
+  scrollbar-width:thin;
+}
+
+.catalogoCarregando,
+.catalogoVazio,
+.catalogoErro{
+  grid-column:1/-1;
+  min-height:240px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  padding:24px;
+  text-align:center;
+  color:#dfceb2;
+}
+
+.catalogoCarregandoIcone{
+  font-size:38px;
+}
+
+.catalogoVazio strong,
+.catalogoErro strong{
+  color:#ffd08a;
+  font-size:17px;
+}
+
+.catalogoVazio span,
+.catalogoErro span{
+  max-width:500px;
+  color:#cbbca5;
+  line-height:1.45;
+}
+
+.catalogoErro button{
+  min-height:40px;
+  margin-top:7px;
+  padding:8px 16px;
+  border:1px solid rgba(255,177,90,.42);
+  background:rgba(101,48,15,.78);
+  color:#fff0d0;
+  font-weight:900;
+}
+
+.catalogoCarta{
+  --catalogo-cor:255,177,90;
+  min-width:0;
+  overflow:hidden;
+  border:1px solid rgba(var(--catalogo-cor),.46);
+  background:
+    radial-gradient(circle at 10% 0,rgba(var(--catalogo-cor),.17),transparent 42%),
+    linear-gradient(180deg,rgba(24,25,29,.97),rgba(7,10,14,.98));
+  box-shadow:0 12px 24px rgba(0,0,0,.28);
+}
+
+.catalogoElementoKaton{--catalogo-cor:255,91,47;}
+.catalogoElementoRaiton{--catalogo-cor:207,142,255;}
+.catalogoElementoFuuton{--catalogo-cor:90,225,143;}
+.catalogoElementoSuiton{--catalogo-cor:77,174,255;}
+.catalogoElementoDoton{--catalogo-cor:204,153,88;}
+.catalogoElementoYin{--catalogo-cor:172,138,255;}
+.catalogoElementoYang{--catalogo-cor:255,211,84;}
+.catalogoElementoNeutro{--catalogo-cor:255,177,90;}
+
+.catalogoCartaSelecionada{
+  border-color:rgba(var(--catalogo-cor),.95);
+  box-shadow:
+    0 0 0 2px rgba(var(--catalogo-cor),.13),
+    0 16px 30px rgba(0,0,0,.37);
+}
+
+.catalogoCartaAdquirida{
+  opacity:.72;
+}
+
+.catalogoCartaCorpo{
+  width:100%;
+  min-height:166px;
+  padding:12px;
+  display:grid;
+  grid-template-columns:43px minmax(0,1fr);
+  align-items:start;
+  gap:11px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+}
+
+.catalogoCartaElemento{
+  width:41px;
+  height:41px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(var(--catalogo-cor),.50);
+  background:rgba(var(--catalogo-cor),.10);
+  font-size:22px;
+}
+
+.catalogoCartaConteudo{
+  min-width:0;
+}
+
+.catalogoCartaConteudo strong{
+  display:block;
+  color:#fff0d2;
+  font-size:15px;
+  line-height:1.23;
+}
+
+.catalogoCartaConteudo small{
+  display:block;
+  margin-top:5px;
+  color:rgba(var(--catalogo-cor),.95);
+  font-size:11px;
+  font-weight:900;
+}
+
+.catalogoCartaMetadados{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:9px;
+}
+
+.catalogoCartaMetadados b{
+  padding:4px 6px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.20);
+  color:#e4d9c6;
+  font-size:10px;
+}
+
+.catalogoCartaResumo{
+  display:-webkit-box;
+  margin-top:9px;
+  overflow:hidden;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  color:#cdbfa9;
+  font-size:11px;
+  line-height:1.42;
+}
+
+.catalogoCartaRodape{
+  min-height:43px;
+  padding:7px 9px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  border-top:1px solid rgba(255,255,255,.07);
+  background:rgba(0,0,0,.18);
+}
+
+.catalogoCartaPagina{
+  color:#a99984;
+  font-size:10px;
+  font-weight:800;
+}
+
+.catalogoSelecionarBtn{
+  min-height:31px;
+  padding:5px 9px;
+  border:1px solid rgba(var(--catalogo-cor),.48);
+  background:rgba(var(--catalogo-cor),.12);
+  color:#fff0d1;
+  font-size:11px;
+  font-weight:900;
+}
+
+.catalogoSelecionarBtn.ativo{
+  background:rgba(var(--catalogo-cor),.32);
+}
+
+.catalogoJaNaFicha{
+  color:#a7ddb4;
+  font-size:10px;
+  font-weight:1000;
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+
+.catalogoCarregarMais{
+  min-height:40px;
+  margin:0 12px 10px;
+  border:1px solid rgba(255,177,90,.27);
+  background:rgba(51,31,17,.74);
+  color:#ffdca8;
+  font-weight:900;
+}
+
+.catalogoJutsusRodape{
+  min-height:63px;
+  padding:10px 13px max(10px,env(safe-area-inset-bottom));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border-top:1px solid rgba(255,177,90,.19);
+  background:rgba(5,7,10,.96);
+}
+
+.catalogoJutsusRodape span{
+  color:#d8c6aa;
+  font-size:12px;
+  font-weight:900;
+}
+
+.catalogoJutsusRodape button{
+  min-height:42px;
+  padding:9px 14px;
+  border:1px solid rgba(255,208,138,.55);
+  background:linear-gradient(180deg,rgba(255,122,24,.88),rgba(116,38,14,.96));
+  color:#fff7e8;
+  font-weight:1000;
+}
+
+.catalogoJutsusRodape button:disabled{
+  opacity:.45;
+  filter:saturate(.35);
+}
+
+.catalogoPreviaOverlay{
+  z-index:999999;
+}
+
+.catalogoPrevia{
+  --catalogo-cor:255,177,90;
+  width:min(94vw,640px);
+  max-height:min(92vh,780px);
+  overflow:auto;
+  border:1px solid rgba(var(--catalogo-cor),.63);
+  background:
+    radial-gradient(circle at top left,rgba(var(--catalogo-cor),.19),transparent 35%),
+    linear-gradient(180deg,rgba(27,20,16,.99),rgba(6,9,13,.99));
+  color:#fff1d6;
+  box-shadow:0 28px 75px rgba(0,0,0,.85);
+}
+
+.catalogoPreviaCabecalho{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:16px;
+  border-bottom:1px solid rgba(var(--catalogo-cor),.28);
+}
+
+.catalogoPreviaElemento{
+  color:rgba(var(--catalogo-cor),.98);
+  font-size:11px;
+  font-weight:1000;
+  text-transform:uppercase;
+  letter-spacing:.55px;
+}
+
+.catalogoPreviaCabecalho h3{
+  margin:5px 0 4px;
+  color:#fff1d5;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:23px;
+  line-height:1.15;
+}
+
+.catalogoPreviaCabecalho p{
+  margin:0;
+  color:#cdbca3;
+  font-size:12px;
+}
+
+.catalogoPreviaResumo{
+  padding:12px 16px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.catalogoPreviaResumo div{
+  min-width:0;
+  padding:9px;
+  border:1px solid rgba(var(--catalogo-cor),.20);
+  background:rgba(0,0,0,.18);
+}
+
+.catalogoPreviaResumo b,
+.catalogoPreviaResumo span{
+  display:block;
+}
+
+.catalogoPreviaResumo b{
+  color:rgba(var(--catalogo-cor),.92);
+  font-size:10px;
+  text-transform:uppercase;
+}
+
+.catalogoPreviaResumo span{
+  margin-top:4px;
+  color:#eee1cd;
+  font-size:12px;
+  overflow-wrap:anywhere;
+}
+
+.catalogoPreviaDescricao{
+  margin:0 16px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.20);
+  color:#eadcc6;
+  font-size:13px;
+  line-height:1.55;
+  white-space:pre-line;
+}
+
+.catalogoPreviaAcoes{
+  padding:14px 16px 16px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.catalogoPreviaAcoes button:disabled{
+  opacity:.52;
+}
+
+@media (max-width:720px){
+  .catalogoJutsusLista{
+    grid-template-columns:1fr;
+  }
+
+  .catalogoFiltrosGrid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .catalogoFiltrosGrid label:last-child{
+    grid-column:1/-1;
+  }
+}
+
+@media (max-width:430px){
+  .catalogoJutsusCabecalho{
+    min-height:66px;
+  }
+
+  .catalogoJutsusCabecalho h2{
+    font-size:21px;
+  }
+
+  .catalogoJutsusFerramentas{
+    padding:10px;
+  }
+
+  .catalogoJutsusLista{
+    padding:9px;
+  }
+
+  .catalogoCartaCorpo{
+    min-height:154px;
+    padding:10px;
+  }
+
+  .catalogoPreviaResumo{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .catalogoJutsusRodape{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .catalogoJutsusRodape button{
+    width:100%;
+  }
+}
