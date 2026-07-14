@@ -1,4 +1,4 @@
-/* Shinobi 1.3.0 — arquivo modular gerado preservando a ordem do app original. */
+/* Shinobi 1.3.8 — atualização do aplicativo revisada e otimizada. */
 
 /* ===== SHINOBI: SERVICE WORKER E ATUALIZAÇÃO CONTROLADA ===== */
 (function(){
@@ -11,13 +11,21 @@
 
   const SW_URL = "./service-worker.js";
   const INTERVALO_VERIFICACAO = 60 * 60 * 1000;
+  const INTERVALO_MINIMO = 60 * 1000;
 
   let registroAtual = null;
   let recarregando = false;
   let verificacaoEmAndamento = false;
+  let ultimaVerificacao = 0;
+  let timerVerificacao = null;
+  let timerPeriodico = null;
+  let timerRecargaSegura = null;
 
   function obterAvisoAtualizacao(){
-    let aviso = document.getElementById("shinobiAvisoAtualizacao");
+    let aviso = document.getElementById(
+      "shinobiAvisoAtualizacao"
+    );
+
     if(aviso) return aviso;
 
     aviso = document.createElement("section");
@@ -49,12 +57,13 @@
   function salvarFichaAntesDeAtualizar(){
     try{
       if(typeof window.salvarImediatoV3 === "function"){
-        window.salvarImediatoV3();
-        return;
+        const salvou = window.salvarImediatoV3();
+        if(salvou !== false) return true;
       }
 
       if(typeof window.salvar === "function"){
         window.salvar();
+        return true;
       }
     }catch(erro){
       console.warn(
@@ -62,44 +71,64 @@
         erro
       );
     }
+
+    return false;
+  }
+
+  function aplicarAtualizacao(){
+    const worker = registroAtual?.waiting;
+    if(!worker) return;
+
+    salvarFichaAntesDeAtualizar();
+
+    const aviso = obterAvisoAtualizacao();
+    const botao = aviso.querySelector(
+      "#shinobiBotaoAtualizar"
+    );
+
+    if(botao){
+      botao.disabled = true;
+      botao.textContent = "Atualizando...";
+      botao.setAttribute("aria-busy", "true");
+    }
+
+    worker.postMessage({type: "SKIP_WAITING"});
+
+    if(timerRecargaSegura){
+      clearTimeout(timerRecargaSegura);
+    }
+
+    timerRecargaSegura = window.setTimeout(function(){
+      if(!recarregando){
+        salvarFichaAntesDeAtualizar();
+        window.location.reload();
+      }
+    }, 8000);
   }
 
   function mostrarAvisoAtualizacao(registro){
-    if(!registro || !registro.waiting) return;
+    if(!registro?.waiting) return;
 
     registroAtual = registro;
 
     const aviso = obterAvisoAtualizacao();
-    const botao = aviso.querySelector("#shinobiBotaoAtualizar");
+    const botao = aviso.querySelector(
+      "#shinobiBotaoAtualizar"
+    );
 
-    aviso.hidden = false;
+    if(aviso.hidden){
+      aviso.hidden = false;
+      window.requestAnimationFrame(function(){
+        aviso.classList.add("visivel");
+      });
+    }
 
-    window.requestAnimationFrame(function(){
-      aviso.classList.add("visivel");
-    });
-
-    if(!botao || botao.dataset.configurado === "1") return;
+    if(!botao || botao.dataset.configurado === "1"){
+      return;
+    }
 
     botao.dataset.configurado = "1";
-
-    botao.addEventListener("click", function(){
-      if(!registroAtual || !registroAtual.waiting) return;
-
-      salvarFichaAntesDeAtualizar();
-
-      botao.disabled = true;
-      botao.textContent = "Atualizando...";
-
-      registroAtual.waiting.postMessage({
-        type: "SKIP_WAITING"
-      });
-
-      window.setTimeout(function(){
-        if(!recarregando){
-          window.location.reload();
-        }
-      }, 8000);
-    });
+    botao.addEventListener("click", aplicarAtualizacao);
   }
 
   function acompanharRegistro(registro){
@@ -124,7 +153,7 @@
     });
   }
 
-  async function verificarAtualizacao(){
+  async function verificarAtualizacao(forcar = false){
     if(
       !registroAtual ||
       verificacaoEmAndamento ||
@@ -133,7 +162,17 @@
       return;
     }
 
+    const agora = Date.now();
+
+    if(
+      !forcar &&
+      agora - ultimaVerificacao < INTERVALO_MINIMO
+    ){
+      return;
+    }
+
     verificacaoEmAndamento = true;
+    ultimaVerificacao = agora;
 
     try{
       await registroAtual.update();
@@ -154,23 +193,48 @@
     }
   }
 
+  function agendarVerificacao(atraso = 800, forcar = false){
+    if(timerVerificacao){
+      clearTimeout(timerVerificacao);
+    }
+
+    timerVerificacao = window.setTimeout(function(){
+      timerVerificacao = null;
+      verificarAtualizacao(forcar);
+    }, atraso);
+  }
+
+  function agendarVerificacaoPeriodica(){
+    if(timerPeriodico){
+      clearTimeout(timerPeriodico);
+    }
+
+    timerPeriodico = window.setTimeout(function ciclo(){
+      timerPeriodico = null;
+
+      if(document.visibilityState === "visible"){
+        verificarAtualizacao();
+      }
+
+      agendarVerificacaoPeriodica();
+    }, INTERVALO_VERIFICACAO);
+  }
+
   async function registrarServiceWorker(){
     try{
-      const registro = await navigator.serviceWorker.register(SW_URL, {
-        scope: "./",
-        updateViaCache: "none"
-      });
+      const registro = await navigator.serviceWorker.register(
+        SW_URL,
+        {
+          scope: "./",
+          updateViaCache: "none"
+        }
+      );
 
       registroAtual = registro;
       acompanharRegistro(registro);
 
-      await navigator.serviceWorker.ready;
-      await verificarAtualizacao();
-
-      window.setInterval(
-        verificarAtualizacao,
-        INTERVALO_VERIFICACAO
-      );
+      agendarVerificacao(1200, true);
+      agendarVerificacaoPeriodica();
     }catch(erro){
       console.error(
         "Falha ao registrar o service worker do Shinobi.",
@@ -185,6 +249,13 @@
       if(recarregando) return;
 
       recarregando = true;
+      salvarFichaAntesDeAtualizar();
+
+      if(timerRecargaSegura){
+        clearTimeout(timerRecargaSegura);
+        timerRecargaSegura = null;
+      }
+
       window.location.reload();
     }
   );
@@ -193,12 +264,17 @@
     "visibilitychange",
     function(){
       if(document.visibilityState === "visible"){
-        verificarAtualizacao();
+        agendarVerificacao();
       }
     }
   );
 
-  window.addEventListener("online", verificarAtualizacao);
+  window.addEventListener(
+    "online",
+    function(){
+      agendarVerificacao();
+    }
+  );
 
   if(document.readyState === "complete"){
     registrarServiceWorker();
