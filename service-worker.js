@@ -14,7 +14,7 @@
  * Envie o service-worker.js por último e aumente APP_VERSION.
  */
 
-const APP_VERSION = "1.3.8";
+const APP_VERSION = "1.4.0";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -22,11 +22,13 @@ const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
 const APP_SHELL = [
   "./index.html",
   "./manifest.json",
+  "./data/catalogo-jutsus.json",
   "./css/app.css",
   "./js/01-core.js",
   "./js/02-runtime.js",
   "./js/03-images.js",
   "./js/04-jutsus.js",
+  "./js/09-catalogo.js",
   "./js/05-battle.js",
   "./js/06-inventory.js",
   "./js/07-profile.js",
