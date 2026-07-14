@@ -45,7 +45,7 @@ function confirmarUsoAcao(tipo, nome, detalhe){
 }
 
 /* ===== Versão interna do app ===== */
-const APP_VERSION = window.APP_VERSION || "1.3.1-core-clean";
+const APP_VERSION = window.APP_VERSION || "1.3.9-notes-fix";
 window.APP_VERSION = APP_VERSION;
 
 /* Ficha Ninja RPG — otimização v2 */
@@ -239,4 +239,461 @@ function numeroBatalha(valor,padrao=0){const n=Number(valor);return Number.isFin
   if(typeof logar==="function")logar("Bônus temporários de CA/CD removidos.");
   else if(typeof log==="function")log("Bônus temporários de CA/CD removidos.");
 }
-function garantirTopicosNotas(){estado.notasTopicos&&Array.isArray(estado.notasTopicos)||(estado.notasTopicos=[],estado.notas&&String(estado.notas).trim()&&estado.notasTopicos.push({titulo:"Anotações da campanha",texto:String(estado.notas||""),aberto:!0}))}function salvarTopicosNotas(){garantirTopicosNotas(),persistirEstadoLocal()}function escaparHtmlNotas(txt){return String(txt||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}function adicionarTopicoNota(){garantirTopicosNotas();const titulo=prompt("Título do tópico:","Novo tópico");null!==titulo&&(estado.notasTopicos.push({titulo:titulo.trim()||"Novo tópico",texto:"",aberto:!0}),salvarTopicosNotas(),renderizarTopicosNotas())}function alternarTopicoNota(i){garantirTopicosNotas(),estado.notasTopicos[i]&&(estado.notasTopicos[i].aberto=!estado.notasTopicos[i].aberto,salvarTopicosNotas(),renderizarTopicosNotas())}function editarTituloTopicoNota(i,ev){ev&&ev.stopPropagation(),garantirTopicosNotas();const topico=estado.notasTopicos[i];if(!topico)return;const novo=prompt("Editar título do tópico:",topico.titulo||"Novo tópico");null!==novo&&(topico.titulo=novo.trim()||"Novo tópico",salvarTopicosNotas(),renderizarTopicosNotas())}function removerTopicoNota(i,ev){ev&&ev.stopPropagation(),garantirTopicosNotas(),estado.notasTopicos[i]&&confirm("Remover este tópico de notas?")&&(estado.notasTopicos.splice(i,1),salvarTopicosNotas(),renderizarTopicosNotas())}function atualizarTextoTopicoNota(i,valor){garantirTopicosNotas(),estado.notasTopicos[i]&&(estado.notasTopicos[i].texto=valor,salvarTopicosNotas())}function renderizarTopicosNotas(){garantirTopicosNotas();const lista=document.getElementById("listaTopicosNotas");if(!lista)return;const html=[];estado.notasTopicos.length?(estado.notasTopicos.forEach((topico,i)=>{const aberto=topico.aberto?"aberto":"",seta=topico.aberto?"▼":"▶",titulo=escaparHtmlNotas(topico.titulo||"Novo tópico"),texto=escaparHtmlNotas(topico.texto||"");html.push(`\n      <div class="topicoNotaCard ${aberto}">\n        <div class="topicoNotaHeader" onclick="alternarTopicoNota(${i})">\n          <span class="topicoNotaSeta">${seta}</span>\n          <span class="topicoNotaTitulo">${titulo}</span>\n          <button type="button" class="topicoNotaEditar" onclick="editarTituloTopicoNota(${i}, event)">✎</button>\n          <button type="button" class="topicoNotaRemover" onclick="removerTopicoNota(${i}, event)">×</button>\n        </div>\n        <div class="topicoNotaConteudo">\n          <textarea placeholder="Escreva as anotações deste tópico..." oninput="atualizarTextoTopicoNota(${i}, this.value)">${texto}</textarea>\n        </div>\n      </div>\n    `)}),lista.innerHTML=html.join("")):lista.innerHTML='<div class="notaVazia">Nenhum tópico criado ainda.</div>'}document.addEventListener("input",function(e){e.target&&e.target.matches("[data-bonus-batalha]")&&atualizarModsBatalhaComBonus()}),document.addEventListener("DOMContentLoaded",function(){setTimeout(atualizarModsBatalhaComBonus,180)}),window.addEventListener("pageshow",function(){setTimeout(atualizarModsBatalhaComBonus,180)}),document.addEventListener("input",function(e){e.target&&(e.target.matches("[data-bonus-defesa-batalha]")||e.target.matches('[data-save="ca"]')||e.target.matches('[data-save="cd"]')||e.target.matches('[data-save="bonusCA"]')||e.target.matches('[data-save="destreza"]')||e.target.matches('[data-save="proficiencia"]'))&&setTimeout(atualizarDefesasTotaisBatalha,30)}),document.addEventListener("change",function(e){e.target&&(e.target.matches("[data-bonus-defesa-batalha]")||e.target.matches('[data-save="ca"]')||e.target.matches('[data-save="cd"]')||e.target.matches('[data-save="bonusCA"]')||e.target.matches('[data-save="destreza"]')||e.target.matches('[data-save="proficiencia"]'))&&setTimeout(atualizarDefesasTotaisBatalha,30)}),document.addEventListener("DOMContentLoaded",function(){setTimeout(atualizarDefesasTotaisBatalha,180)}),window.addEventListener("pageshow",function(){setTimeout(atualizarDefesasTotaisBatalha,180)}),document.addEventListener("DOMContentLoaded",function(){setTimeout(renderizarTopicosNotas,180)}),window.addEventListener("pageshow",function(){setTimeout(renderizarTopicosNotas,180)});let jutsuUploadIndiceAtual=null;function abrirUploadImagemJutsu(i){jutsuUploadIndiceAtual=i;const input=document.getElementById("jutsuUploadGlobalSeguro");input?(input.value="",input.click()):alert("Campo de imagem não encontrado. Recarregue o app e tente novamente.")}function removerImagemJutsu(i){const indice=Number(i);if(estado.jutsus&&estado.jutsus[indice]){estado.jutsus[indice].imagem="",estado.jutsusAbertos=estado.jutsusAbertos||{},estado.jutsusAbertos[indice]=!0;try{persistirEstadoLocal()}catch(err){}"function"==typeof renderizarJutsus&&renderizarJutsus()}}document.addEventListener("DOMContentLoaded",function(){const input=document.getElementById("jutsuUploadGlobalSeguro");input&&!input.dataset.configurado&&(input.dataset.configurado="1",input.addEventListener("change",function(ev){carregarImagemJutsu(ev,jutsuUploadIndiceAtual)}))}),window.addEventListener("pageshow",function(){const input=document.getElementById("jutsuUploadGlobalSeguro");input&&!input.dataset.configurado&&(input.dataset.configurado="1",input.addEventListener("change",function(ev){carregarImagemJutsu(ev,jutsuUploadIndiceAtual)}))});
+/* ===== NOTAS: editor interno compatível com o app instalado ===== */
+function garantirTopicosNotas(){
+  if(
+    estado.notasTopicos &&
+    Array.isArray(estado.notasTopicos)
+  ){
+    return;
+  }
+
+  estado.notasTopicos = [];
+
+  if(estado.notas && String(estado.notas).trim()){
+    estado.notasTopicos.push({
+      titulo: "Anotações da campanha",
+      texto: String(estado.notas || ""),
+      aberto: true
+    });
+  }
+}
+
+function salvarTopicosNotas(){
+  garantirTopicosNotas();
+
+  if(typeof persistirEstadoLocal === "function"){
+    persistirEstadoLocal();
+    return;
+  }
+
+  if(typeof persistirSemRender === "function"){
+    persistirSemRender();
+  }
+}
+
+function escaparHtmlNotas(txt){
+  return String(txt || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function garantirEstilosEditorNotas(){
+  if(document.getElementById("editorTopicoNotaStyles")){
+    return;
+  }
+
+  const estilo = document.createElement("style");
+  estilo.id = "editorTopicoNotaStyles";
+  estilo.textContent = `
+    .editorTopicoNotaBox{
+      width:min(94vw,520px);
+      max-height:min(90vh,720px);
+      overflow:auto;
+    }
+
+    .editorTopicoNotaCampo{
+      display:grid;
+      gap:7px;
+      margin:0 0 14px;
+    }
+
+    .editorTopicoNotaCampo label{
+      color:#ffd08a;
+      font-weight:900;
+      font-size:13px;
+      letter-spacing:.25px;
+    }
+
+    .editorTopicoNotaCampo input,
+    .editorTopicoNotaCampo textarea{
+      width:100%;
+      box-sizing:border-box;
+      border:1px solid rgba(255,177,90,.32);
+      background:rgba(5,7,10,.78);
+      color:#fff4dc;
+      font:inherit;
+      padding:11px 12px;
+      outline:none;
+    }
+
+    .editorTopicoNotaCampo input:focus,
+    .editorTopicoNotaCampo textarea:focus{
+      border-color:rgba(255,208,138,.82);
+      box-shadow:0 0 0 2px rgba(255,177,90,.12);
+    }
+
+    .editorTopicoNotaCampo textarea{
+      min-height:150px;
+      max-height:42vh;
+      resize:vertical;
+      line-height:1.45;
+    }
+
+    .editorTopicoNotaAjuda{
+      margin:-5px 0 14px;
+      color:#cdbfa8;
+      font-size:12px;
+      line-height:1.35;
+    }
+  `;
+
+  document.head.appendChild(estilo);
+}
+
+function abrirEditorTopicoNota(opcoes = {}){
+  garantirEstilosEditorNotas();
+
+  const modalAnterior = document.querySelector(
+    ".editorTopicoNotaOverlay"
+  );
+
+  if(modalAnterior){
+    modalAnterior.remove();
+  }
+
+  return new Promise(resolve=>{
+    const overlay = document.createElement("div");
+    overlay.className =
+      "modalShinobiOverlay editorTopicoNotaOverlay";
+
+    const tituloModal =
+      opcoes.modo === "editar"
+        ? "Editar tópico"
+        : "Novo tópico";
+
+    const textoBotao =
+      opcoes.modo === "editar"
+        ? "Salvar"
+        : "Criar tópico";
+
+    const tituloInicial = escaparHtmlNotas(
+      opcoes.titulo || "Novo tópico"
+    );
+
+    const textoInicial = escaparHtmlNotas(
+      opcoes.texto || ""
+    );
+
+    overlay.innerHTML = `
+      <form class="modalShinobiBox editorTopicoNotaBox">
+        <h3 class="modalShinobiTitulo">
+          ${tituloModal}
+        </h3>
+
+        <div class="editorTopicoNotaCampo">
+          <label for="editorTopicoNotaTitulo">
+            Tema do tópico
+          </label>
+
+          <input
+            id="editorTopicoNotaTitulo"
+            type="text"
+            maxlength="120"
+            value="${tituloInicial}"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="editorTopicoNotaCampo">
+          <label for="editorTopicoNotaTexto">
+            Anotações
+          </label>
+
+          <textarea
+            id="editorTopicoNotaTexto"
+            placeholder="Escreva as informações deste tópico..."
+          >${textoInicial}</textarea>
+        </div>
+
+        <p class="editorTopicoNotaAjuda">
+          Você também poderá continuar escrevendo diretamente
+          no tópico depois de criá-lo.
+        </p>
+
+        <div class="modalShinobiAcoes">
+          <button
+            type="button"
+            class="modalShinobiBtn cancelar"
+            data-acao="cancelar"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="modalShinobiBtn confirmar"
+          >
+            ${textoBotao}
+          </button>
+        </div>
+      </form>
+    `;
+
+    const formulario = overlay.querySelector("form");
+    const campoTitulo = overlay.querySelector(
+      "#editorTopicoNotaTitulo"
+    );
+
+    const campoTexto = overlay.querySelector(
+      "#editorTopicoNotaTexto"
+    );
+
+    let finalizado = false;
+
+    function finalizar(resultado){
+      if(finalizado) return;
+      finalizado = true;
+
+      document.removeEventListener(
+        "keydown",
+        tratarTeclado
+      );
+
+      overlay.remove();
+      resolve(resultado);
+    }
+
+    function tratarTeclado(evento){
+      if(evento.key === "Escape"){
+        evento.preventDefault();
+        finalizar(null);
+      }
+    }
+
+    overlay.addEventListener("click", evento=>{
+      if(evento.target === overlay){
+        finalizar(null);
+      }
+    });
+
+    overlay
+      .querySelector('[data-acao="cancelar"]')
+      .addEventListener("click", ()=>{
+        finalizar(null);
+      });
+
+    formulario.addEventListener("submit", evento=>{
+      evento.preventDefault();
+
+      finalizar({
+        titulo:
+          String(campoTitulo.value || "").trim() ||
+          "Novo tópico",
+
+        texto: String(campoTexto.value || "")
+      });
+    });
+
+    document.addEventListener(
+      "keydown",
+      tratarTeclado
+    );
+
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(()=>{
+      campoTitulo.focus();
+      campoTitulo.select();
+    });
+  });
+}
+
+async function adicionarTopicoNota(){
+  garantirTopicosNotas();
+
+  const dados = await abrirEditorTopicoNota({
+    modo: "adicionar",
+    titulo: "Novo tópico",
+    texto: ""
+  });
+
+  if(!dados) return;
+
+  estado.notasTopicos.push({
+    titulo: dados.titulo,
+    texto: dados.texto,
+    aberto: true
+  });
+
+  salvarTopicosNotas();
+  renderizarTopicosNotas();
+}
+
+function alternarTopicoNota(i){
+  garantirTopicosNotas();
+
+  if(!estado.notasTopicos[i]){
+    return;
+  }
+
+  estado.notasTopicos[i].aberto =
+    !estado.notasTopicos[i].aberto;
+
+  salvarTopicosNotas();
+  renderizarTopicosNotas();
+}
+
+async function editarTituloTopicoNota(i, ev){
+  if(ev){
+    ev.stopPropagation();
+  }
+
+  garantirTopicosNotas();
+
+  const topico = estado.notasTopicos[i];
+  if(!topico) return;
+
+  const dados = await abrirEditorTopicoNota({
+    modo: "editar",
+    titulo: topico.titulo || "Novo tópico",
+    texto: topico.texto || ""
+  });
+
+  if(!dados) return;
+
+  topico.titulo = dados.titulo;
+  topico.texto = dados.texto;
+
+  salvarTopicosNotas();
+  renderizarTopicosNotas();
+}
+
+async function removerTopicoNota(i, ev){
+  if(ev){
+    ev.stopPropagation();
+  }
+
+  garantirTopicosNotas();
+
+  const topico = estado.notasTopicos[i];
+  if(!topico) return;
+
+  let confirmado = false;
+
+  if(typeof modalShinobi === "function"){
+    confirmado = await modalShinobi(
+      "Remover tópico",
+      `O tópico “${topico.titulo || "Novo tópico"}” será removido.`,
+      {}
+    );
+  }else{
+    confirmado = window.confirm(
+      "Remover este tópico de notas?"
+    );
+  }
+
+  if(!confirmado) return;
+
+  estado.notasTopicos.splice(i, 1);
+  salvarTopicosNotas();
+  renderizarTopicosNotas();
+}
+
+function atualizarTextoTopicoNota(i, valor){
+  garantirTopicosNotas();
+
+  if(!estado.notasTopicos[i]){
+    return;
+  }
+
+  estado.notasTopicos[i].texto = valor;
+  salvarTopicosNotas();
+}
+
+function renderizarTopicosNotas(){
+  garantirTopicosNotas();
+
+  const lista = document.getElementById(
+    "listaTopicosNotas"
+  );
+
+  if(!lista) return;
+
+  if(!estado.notasTopicos.length){
+    lista.innerHTML =
+      '<div class="notaVazia">Nenhum tópico criado ainda.</div>';
+
+    return;
+  }
+
+  lista.innerHTML = estado.notasTopicos
+    .map((topico, i)=>{
+      const aberto = topico.aberto
+        ? "aberto"
+        : "";
+
+      const seta = topico.aberto
+        ? "▼"
+        : "▶";
+
+      const titulo = escaparHtmlNotas(
+        topico.titulo || "Novo tópico"
+      );
+
+      const texto = escaparHtmlNotas(
+        topico.texto || ""
+      );
+
+      return `
+        <div class="topicoNotaCard ${aberto}">
+          <div
+            class="topicoNotaHeader"
+            onclick="alternarTopicoNota(${i})"
+          >
+            <span class="topicoNotaSeta">
+              ${seta}
+            </span>
+
+            <span class="topicoNotaTitulo">
+              ${titulo}
+            </span>
+
+            <button
+              type="button"
+              class="topicoNotaEditar"
+              onclick="editarTituloTopicoNota(${i}, event)"
+              aria-label="Editar tópico"
+            >
+              ✎
+            </button>
+
+            <button
+              type="button"
+              class="topicoNotaRemover"
+              onclick="removerTopicoNota(${i}, event)"
+              aria-label="Remover tópico"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="topicoNotaConteudo">
+            <textarea
+              placeholder="Escreva as anotações deste tópico..."
+              oninput="atualizarTextoTopicoNota(${i}, this.value)"
+            >${texto}</textarea>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+/*
+ * Os botões do HTML usam onclick.
+ * A atribuição explícita evita diferenças de escopo
+ * entre navegador, PWA e aplicativo instalado.
+ */
+window.adicionarTopicoNota = adicionarTopicoNota;
+window.alternarTopicoNota = alternarTopicoNota;
+window.editarTituloTopicoNota = editarTituloTopicoNota;
+window.removerTopicoNota = removerTopicoNota;
+window.atualizarTextoTopicoNota =
+  atualizarTextoTopicoNota;
+window.renderizarTopicosNotas =
+  renderizarTopicosNotas;
+
+document.addEventListener("input",function(e){e.target&&e.target.matches("[data-bonus-batalha]")&&atualizarModsBatalhaComBonus()}),document.addEventListener("DOMContentLoaded",function(){setTimeout(atualizarModsBatalhaComBonus,180)}),window.addEventListener("pageshow",function(){setTimeout(atualizarModsBatalhaComBonus,180)}),document.addEventListener("input",function(e){e.target&&(e.target.matches("[data-bonus-defesa-batalha]")||e.target.matches('[data-save="ca"]')||e.target.matches('[data-save="cd"]')||e.target.matches('[data-save="bonusCA"]')||e.target.matches('[data-save="destreza"]')||e.target.matches('[data-save="proficiencia"]'))&&setTimeout(atualizarDefesasTotaisBatalha,30)}),document.addEventListener("change",function(e){e.target&&(e.target.matches("[data-bonus-defesa-batalha]")||e.target.matches('[data-save="ca"]')||e.target.matches('[data-save="cd"]')||e.target.matches('[data-save="bonusCA"]')||e.target.matches('[data-save="destreza"]')||e.target.matches('[data-save="proficiencia"]'))&&setTimeout(atualizarDefesasTotaisBatalha,30)}),document.addEventListener("DOMContentLoaded",function(){setTimeout(atualizarDefesasTotaisBatalha,180)}),window.addEventListener("pageshow",function(){setTimeout(atualizarDefesasTotaisBatalha,180)}),document.addEventListener("DOMContentLoaded",function(){setTimeout(renderizarTopicosNotas,180)}),window.addEventListener("pageshow",function(){setTimeout(renderizarTopicosNotas,180)});let jutsuUploadIndiceAtual=null;function abrirUploadImagemJutsu(i){jutsuUploadIndiceAtual=i;const input=document.getElementById("jutsuUploadGlobalSeguro");input?(input.value="",input.click()):alert("Campo de imagem não encontrado. Recarregue o app e tente novamente.")}function removerImagemJutsu(i){const indice=Number(i);if(estado.jutsus&&estado.jutsus[indice]){estado.jutsus[indice].imagem="",estado.jutsusAbertos=estado.jutsusAbertos||{},estado.jutsusAbertos[indice]=!0;try{persistirEstadoLocal()}catch(err){}"function"==typeof renderizarJutsus&&renderizarJutsus()}}document.addEventListener("DOMContentLoaded",function(){const input=document.getElementById("jutsuUploadGlobalSeguro");input&&!input.dataset.configurado&&(input.dataset.configurado="1",input.addEventListener("change",function(ev){carregarImagemJutsu(ev,jutsuUploadIndiceAtual)}))}),window.addEventListener("pageshow",function(){const input=document.getElementById("jutsuUploadGlobalSeguro");input&&!input.dataset.configurado&&(input.dataset.configurado="1",input.addEventListener("change",function(ev){carregarImagemJutsu(ev,jutsuUploadIndiceAtual)}))});
