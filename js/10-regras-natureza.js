@@ -1,9 +1,9 @@
-/* Shinobi 1.5.0 — benefícios automáticos das Naturezas de Chakra. */
+/* Shinobi 1.5.2 — benefícios permanentes e automáticos das Naturezas de Chakra. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV150) return;
-  window.__regrasNaturezaChakraV150 = true;
+  if(window.__regrasNaturezaChakraV152) return;
+  window.__regrasNaturezaChakraV152 = true;
 
   const NATUREZAS = [
     {
@@ -208,16 +208,87 @@
     return /(?:^|:)\s*Kai(?:\s|\(|$)/i.test(nome);
   }
 
+  const CAMPO_NIVEL5_APLICADO = "naturezaDadoNivel5Aplicado";
+
+  function possuiDadoAprimoravel(formula){
+    return /(?:\d*)d(?:4|6|8|10|12)\b/i.test(
+      String(formula ?? "")
+    );
+  }
+
+  function aplicarNivel5PermanenteNatureza(
+    naturezaId,
+    {persistir = true} = {}
+  ){
+    if(!NATUREZA_POR_ID.has(naturezaId)) return 0;
+    if(nivelNatureza(naturezaId) < 5) return 0;
+
+    let alterados = 0;
+
+    (estado?.jutsus || []).forEach(jutsu => {
+      if(!jutsu) return;
+
+      const elemento = String(
+        jutsu.elemento || "neutro"
+      ).toLowerCase();
+
+      if(elemento !== naturezaId) return;
+      if(jutsu[CAMPO_NIVEL5_APLICADO]) return;
+
+      const danoAtual = String(jutsu.dano ?? "").trim();
+      if(!possuiDadoAprimoravel(danoAtual)) return;
+
+      const danoElevado = elevarDadosDano(danoAtual);
+
+      jutsu.naturezaDadoAntesNivel5 = danoAtual;
+      jutsu.dano = danoElevado;
+      jutsu[CAMPO_NIVEL5_APLICADO] = true;
+      jutsu.naturezaDadoNivel5Natureza = naturezaId;
+      jutsu.naturezaDadoNivel5Versao = "1.5.2";
+      alterados += 1;
+    });
+
+    if(alterados && persistir){
+      salvarEstado();
+    }
+
+    return alterados;
+  }
+
+  function aplicarNiveis5Pendentes({persistir = true} = {}){
+    let alterados = 0;
+
+    NATUREZAS.forEach(natureza => {
+      if(nivelNatureza(natureza.id) < 5) return;
+
+      alterados += aplicarNivel5PermanenteNatureza(
+        natureza.id,
+        {persistir: false}
+      );
+    });
+
+    if(alterados && persistir){
+      salvarEstado();
+    }
+
+    return alterados;
+  }
+
   function calcularJutsuComNatureza(jutsu){
     const elemento = String(jutsu?.elemento || "neutro").toLowerCase();
     const natureza = NATUREZA_POR_ID.get(elemento) || null;
     const nivel = natureza ? nivelNatureza(elemento) : 0;
     const conjuracao = dadosConjuracao();
 
+    /*
+     * O nível 5 é aplicado uma única vez no próprio campo dano.
+     * Portanto, danoBase já é o valor permanente e editável.
+     */
     const danoBase = String(jutsu?.dano ?? "").trim();
-    const danoEfetivo = nivel >= 5
-      ? elevarDadosDano(danoBase)
-      : danoBase;
+    const danoEfetivo = danoBase;
+    const dadoNivel5Aplicado = Boolean(
+      jutsu?.[CAMPO_NIVEL5_APLICADO]
+    );
 
     const quantidadeDados = contarDados(danoEfetivo);
     const temDano = possuiDano(jutsu);
@@ -276,7 +347,10 @@
       custoBaseTexto,
       custoEfetivoTexto,
       kaiSemCusto,
-      dadoElevado: nivel >= 5 && danoEfetivo !== danoBase,
+      dadoElevado: dadoNivel5Aplicado,
+      danoAntesNivel5: String(
+        jutsu?.naturezaDadoAntesNivel5 ?? ""
+      ).trim(),
       resistenciaAutomatica: Boolean(natureza && nivel >= 3 && nivel < 7),
       imunidadeAutomatica: Boolean(natureza && nivel >= 7)
     };
@@ -530,7 +604,9 @@
       }
 
       const detalheDano = regra.dadoElevado
-        ? `Base ${regra.danoBase || "—"} · Natureza nível 5`
+        ? regra.danoAntesNivel5
+          ? `Antes ${regra.danoAntesNivel5} · aumento permanente do nível 5`
+          : "Aumento permanente da Natureza nível 5"
         : "";
 
       preencherBotaoResumo(
@@ -692,7 +768,18 @@
 
     const novoNivel = limitarNivel(nivel);
     const atual = nivelNatureza(id);
-    estado[id] = atual === novoNivel ? 0 : novoNivel;
+    const nivelFinal = atual === novoNivel
+      ? 0
+      : novoNivel;
+
+    estado[id] = nivelFinal;
+
+    if(nivelFinal >= 5){
+      aplicarNivel5PermanenteNatureza(
+        id,
+        {persistir: false}
+      );
+    }
 
     salvarEstado();
     agendarAtualizacaoCompleta();
@@ -718,7 +805,7 @@
   };
 
   window.RegrasNaturezaShinobi = {
-    versao: "1.5.0",
+    versao: "1.5.2",
     nivelNatureza,
     dadosConjuracao,
     elevarDadosDano,
@@ -726,8 +813,54 @@
     calcularJutsu: calcularJutsuComNatureza,
     formatarBonusTotal,
     formatarDanoTotal: formatarDanoTotalRegra,
-    idsResistenciasAutomaticas
+    idsResistenciasAutomaticas,
+    aplicarNivel5PermanenteNatureza,
+    aplicarNiveis5Pendentes
   };
+
+  /*
+   * O nível 5 agora altera o dado permanentemente e não participa
+   * desta preparação temporária. O nível 6 continua dinâmico porque
+   * depende do modificador atual de Conjuração.
+   *
+   * O renderizador recebe temporariamente somente o bônus total e o
+   * custo efetivo do Kai. Em seguida, bônus manual e custo-base são
+   * restaurados para impedir acúmulo.
+   */
+  function prepararValoresEfetivosParaRenderizacao(){
+    const restaurar = [];
+
+    (estado?.jutsus || []).forEach(jutsu => {
+      if(!jutsu) return;
+
+      const regra = calcularJutsuComNatureza(jutsu);
+
+      restaurar.push({
+        jutsu,
+        bonusDano: jutsu.bonusDano,
+        custo: jutsu.custo
+      });
+
+      if(regra.bonusNatureza){
+        if(regra.bonusManualNumero !== null){
+          jutsu.bonusDano = String(regra.bonusTotalNumero);
+        }else if(!regra.bonusManualTexto){
+          jutsu.bonusDano = String(regra.bonusNatureza);
+        }
+      }
+
+      if(regra.kaiSemCusto){
+        jutsu.custo = regra.custoEfetivoTexto;
+      }
+    });
+
+    return function restaurarValoresBase(){
+      restaurar.forEach(item => {
+        item.jutsu.bonusDano = item.bonusDano;
+        item.jutsu.custo = item.custo;
+      });
+    };
+  }
 
   const renderizarJutsusBase = window.renderizarJutsus;
   if(typeof renderizarJutsusBase === "function"){
@@ -737,13 +870,31 @@
       }
 
       renderizandoJutsus = true;
+
+      aplicarNiveis5Pendentes({persistir: true});
+
+      const restaurarValoresBase =
+        prepararValoresEfetivosParaRenderizacao();
+
+      let resultado;
+
       try{
-        const resultado = renderizarJutsusBase.apply(this, arguments);
-        aplicarRegrasNosCards();
-        return resultado;
+        resultado = renderizarJutsusBase.apply(
+          this,
+          arguments
+        );
       }finally{
+        restaurarValoresBase();
         renderizandoJutsus = false;
       }
+
+      /*
+       * Os textos auxiliares são aplicados depois da restauração para
+       * que o cálculo sempre use os valores-base, sem elevar o dado duas
+       * vezes ou somar o bônus automático novamente.
+       */
+      aplicarRegrasNosCards();
+      return resultado;
     };
   }
 
@@ -786,6 +937,8 @@
   window.renderizarNaturezas = renderizarNaturezasComRegras;
 
   window.usarJutsu = async function(indice){
+    aplicarNiveis5Pendentes({persistir: true});
+
     const jutsu = estado?.jutsus?.[indice];
     if(!jutsu) return;
 
@@ -881,6 +1034,7 @@
   });
 
   function iniciar(){
+    aplicarNiveis5Pendentes({persistir: true});
     window.renderizarNaturezas?.();
     window.renderizarJutsus?.();
     window.renderizarResistenciasBatalha?.();
