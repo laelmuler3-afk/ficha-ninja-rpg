@@ -1,4 +1,4 @@
-/* Shinobi 1.4.1 — Catálogo de jutsus
+/* Shinobi 1.4.2 — Catálogo de jutsus
  *
  * Responsabilidades:
  * - carregar o catálogo JSON somente quando necessário;
@@ -16,6 +16,84 @@
   const URL_CATALOGO = "./data/catalogo-jutsus.json";
   const LIMITE_INICIAL = 30;
   const PASSO_LISTAGEM = 30;
+
+  function garantirEstilosCriticosCatalogo(){
+    if(document.getElementById("catalogoCriticoV142")){
+      return;
+    }
+
+    const estilo = document.createElement("style");
+    estilo.id = "catalogoCriticoV142";
+    estilo.textContent = `
+      #catalogoJutsusLista{
+        display:block !important;
+      }
+
+      #catalogoJutsusLista .catalogoCarta{
+        display:block !important;
+        width:100% !important;
+        min-height:205px !important;
+        margin:0 0 12px !important;
+        overflow:hidden !important;
+        box-sizing:border-box !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaCorpo{
+        display:grid !important;
+        grid-template-columns:43px minmax(0,1fr) !important;
+        gap:11px !important;
+        width:100% !important;
+        min-height:160px !important;
+        padding:12px !important;
+        box-sizing:border-box !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaElemento{
+        display:grid !important;
+        width:41px !important;
+        height:41px !important;
+        place-items:center !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaConteudo{
+        display:block !important;
+        min-width:0 !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaConteudo strong,
+      #catalogoJutsusLista .catalogoCartaConteudo small,
+      #catalogoJutsusLista .catalogoCartaMetadados,
+      #catalogoJutsusLista .catalogoCartaResumo{
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaConteudo strong,
+      #catalogoJutsusLista .catalogoCartaConteudo small,
+      #catalogoJutsusLista .catalogoCartaResumo{
+        display:block !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaMetadados,
+      #catalogoJutsusLista .catalogoCartaRodape{
+        display:flex !important;
+      }
+
+      #catalogoJutsusLista .catalogoCartaRodape{
+        min-height:43px !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+    `;
+
+    document.head.appendChild(estilo);
+  }
 
   const ELEMENTOS = {
     katon: {
@@ -318,6 +396,7 @@
       <article
         class="catalogoCarta ${elemento.classe} ${selecionado ? "catalogoCartaSelecionada" : ""} ${jaPossui ? "catalogoCartaAdquirida" : ""}"
         data-catalogo-id="${escaparHtml(id)}"
+        style="display:block;width:100%;min-height:205px;margin:0 0 12px;overflow:hidden;box-sizing:border-box"
       >
         <div
           class="catalogoCartaCorpo"
@@ -326,6 +405,7 @@
           role="button"
           tabindex="0"
           aria-label="Ver detalhes de ${escaparHtml(jutsu.nome)}"
+          style="display:grid;grid-template-columns:43px minmax(0,1fr);gap:11px;width:100%;min-height:160px;padding:12px;box-sizing:border-box;visibility:visible;opacity:1"
         >
           <span class="catalogoCartaElemento">
             ${elemento.icone}
@@ -848,6 +928,7 @@
   }
 
   async function abrirCatalogoJutsus(){
+    garantirEstilosCriticosCatalogo();
     fecharMenuAdicionarJutsu();
 
     if(overlayCatalogo) return;
