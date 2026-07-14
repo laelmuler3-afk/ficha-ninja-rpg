@@ -1,0 +1,169 @@
+/* Shinobi 1.5.0 — Naturezas de Chakra e benefícios automáticos. */
+
+.configConjuracaoNatureza{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(150px,220px);
+  gap:8px 12px;
+  align-items:center;
+  margin:10px 0 14px;
+  padding:12px;
+  border:1px solid rgba(255,177,90,.28);
+  background:rgba(5,7,10,.58);
+  box-shadow:inset 0 0 20px rgba(255,130,30,.05);
+}
+
+.configConjuracaoNatureza > label{
+  color:#ffd08a;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.3px;
+}
+
+.configConjuracaoNatureza > select{
+  width:100%;
+  min-height:40px;
+  border:1px solid rgba(255,177,90,.38);
+  border-radius:7px;
+  background:#10151d;
+  color:#fff3dc;
+  padding:8px 10px;
+  font:inherit;
+  font-weight:800;
+  outline:none;
+}
+
+.configConjuracaoNatureza > select:focus{
+  border-color:#ffd08a;
+  box-shadow:0 0 0 2px rgba(255,177,90,.12);
+}
+
+.conjuracaoNaturezaResumo{
+  grid-column:1/-1;
+  color:#d8cbb6;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.naturezaRegrasDetalhes{
+  grid-column:1/-1;
+  border-top:1px solid rgba(255,255,255,.08);
+  padding-top:8px;
+  color:#cabca6;
+  font-size:12px;
+}
+
+.naturezaRegrasDetalhes summary{
+  width:max-content;
+  max-width:100%;
+  color:#ffbd72;
+  cursor:pointer;
+  font-weight:900;
+}
+
+.naturezaRegrasDetalhes ol{
+  margin:8px 0 0 18px;
+  padding:0;
+  line-height:1.55;
+}
+
+.naturezaCard .naturezaInfo > div{
+  min-width:0;
+}
+
+.naturezaBeneficioAtual{
+  display:block;
+  max-width:210px;
+  margin-top:2px;
+  color:rgba(255,244,225,.68);
+  font-size:10px;
+  line-height:1.2;
+  white-space:normal;
+}
+
+.naturezaLinhaSete{
+  display:grid !important;
+  grid-template-columns:repeat(7,minmax(26px,1fr));
+  gap:4px;
+  width:100%;
+}
+
+.naturezaLinhaSete .naturezaNivel{
+  min-width:0;
+}
+
+.jutsuValorRegraNatureza{
+  display:block;
+  font-weight:900;
+}
+
+.jutsuDetalheRegraNatureza{
+  display:block;
+  margin-top:3px;
+  color:rgba(255,244,225,.66);
+  font-size:9px;
+  font-weight:700;
+  line-height:1.2;
+  white-space:normal;
+}
+
+.jutsuCustoAutomatico{
+  box-shadow:0 0 0 1px rgba(96,255,160,.55),0 0 16px rgba(96,255,160,.18) !important;
+}
+
+.jutsuComBeneficioNatureza .danoTotalBox{
+  box-shadow:inset 0 0 16px rgba(255,177,90,.07);
+}
+
+.resistenciaNaturezaAuto{
+  border-color:rgba(255,208,138,.78) !important;
+  background:linear-gradient(180deg,rgba(92,67,29,.95),rgba(45,30,13,.95)) !important;
+  color:#ffe4b5 !important;
+}
+
+.imunidadeNaturezaAuto{
+  border-color:rgba(205,143,255,.86) !important;
+  background:linear-gradient(180deg,rgba(74,36,101,.96),rgba(30,13,43,.96)) !important;
+  color:#f0d6ff !important;
+}
+
+.resistenciaNaturezaBloqueada{
+  position:relative;
+  padding-right:26px !important;
+}
+
+.resistenciaNaturezaBloqueada::after{
+  content:"★";
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#ffd08a;
+  font-size:10px;
+}
+
+.imunidadeNaturezaBloqueada::after{
+  content:"◆";
+  color:#dfa8ff;
+}
+
+@media (max-width:520px){
+  .configConjuracaoNatureza{
+    grid-template-columns:1fr;
+  }
+
+  .configConjuracaoNatureza > select{
+    grid-column:1;
+  }
+
+  .naturezaCard{
+    align-items:flex-start;
+  }
+
+  .naturezaLinhaSete{
+    grid-template-columns:repeat(7,minmax(24px,1fr));
+  }
+
+  .naturezaBeneficioAtual{
+    max-width:145px;
+  }
+}
