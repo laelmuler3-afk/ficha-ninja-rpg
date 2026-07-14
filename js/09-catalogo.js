@@ -1,4 +1,4 @@
-/* Shinobi 1.4.0 — Catálogo de jutsus
+/* Shinobi 1.4.1 — Catálogo de jutsus
  *
  * Responsabilidades:
  * - carregar o catálogo JSON somente quando necessário;
@@ -319,11 +319,12 @@
         class="catalogoCarta ${elemento.classe} ${selecionado ? "catalogoCartaSelecionada" : ""} ${jaPossui ? "catalogoCartaAdquirida" : ""}"
         data-catalogo-id="${escaparHtml(id)}"
       >
-        <button
-          type="button"
+        <div
           class="catalogoCartaCorpo"
           data-acao-catalogo="visualizar"
           data-catalogo-id="${escaparHtml(id)}"
+          role="button"
+          tabindex="0"
           aria-label="Ver detalhes de ${escaparHtml(jutsu.nome)}"
         >
           <span class="catalogoCartaElemento">
@@ -348,7 +349,7 @@
               ${escaparHtml(resumoDescricao(jutsu))}
             </span>
           </span>
-        </button>
+        </div>
 
         <div class="catalogoCartaRodape">
           <span class="catalogoCartaPagina">
@@ -769,6 +770,24 @@
       filtroCategoria = categoria.value;
       limiteAtual = LIMITE_INICIAL;
       renderizarCatalogo();
+    });
+
+    overlayCatalogo.addEventListener("keydown", evento=>{
+      const acao = evento.target.closest(
+        '[data-acao-catalogo="visualizar"]'
+      );
+
+      if(
+        !acao ||
+        (evento.key !== "Enter" && evento.key !== " ")
+      ){
+        return;
+      }
+
+      evento.preventDefault();
+      abrirPreviaCatalogo(
+        acao.dataset.catalogoId
+      );
     });
 
     overlayCatalogo.addEventListener("click", evento=>{
