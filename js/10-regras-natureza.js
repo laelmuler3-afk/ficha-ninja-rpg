@@ -1,9 +1,9 @@
-/* Shinobi 1.5.2 — benefícios permanentes e automáticos das Naturezas de Chakra. */
+/* Shinobi 1.5.4 — nível 5 usa o dano atual do card e migra marcadores antigos. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV152) return;
-  window.__regrasNaturezaChakraV152 = true;
+  if(window.__regrasNaturezaChakraV154) return;
+  window.__regrasNaturezaChakraV154 = true;
 
   const NATUREZAS = [
     {
@@ -175,9 +175,9 @@
   function elevarDadosDano(formula){
     const texto = String(formula ?? "");
 
-    return texto.replace(/(\d*)d(4|6|8|10|12)\b/gi, (trecho, quantidade, faces) => {
+    return texto.replace(/(\d*)\s*d\s*(4|6|8|10|12)\b/gi, (trecho, quantidade, faces) => {
       const proximo = PROXIMO_DADO.get(Number(faces));
-      return proximo ? `${quantidade}d${proximo}` : trecho;
+      return proximo ? `${quantidade || ""}d${proximo}` : trecho;
     });
   }
 
@@ -185,7 +185,7 @@
     const texto = String(formula ?? "");
     let total = 0;
 
-    for(const correspondencia of texto.matchAll(/(\d*)d\d+\b/gi)){
+    for(const correspondencia of texto.matchAll(/(\d*)\s*d\s*\d+\b/gi)){
       const quantidade = correspondencia[1]
         ? Number(correspondencia[1])
         : 1;
@@ -209,11 +209,93 @@
   }
 
   const CAMPO_NIVEL5_APLICADO = "naturezaDadoNivel5Aplicado";
+  const CAMPO_NIVEL5_ENTRADA = "naturezaDadoNivel5Entrada";
+  const CAMPO_NIVEL5_RESULTADO = "naturezaDadoNivel5Resultado";
 
   function possuiDadoAprimoravel(formula){
-    return /(?:\d*)d(?:4|6|8|10|12)\b/i.test(
+    return /(?:\d*)\s*d\s*(?:4|6|8|10|12)\b/i.test(
       String(formula ?? "")
     );
+  }
+
+  function danoAtualJutsu(jutsu){
+    return String(jutsu?.dano ?? "").trim();
+  }
+
+  function assinaturaDados(formula){
+    const assinaturas = [];
+    const texto = String(formula ?? "");
+
+    for(const correspondencia of texto.matchAll(/(\d*)\s*d\s*(4|6|8|10|12)\b/gi)){
+      const quantidade = correspondencia[1]
+        ? Number(correspondencia[1])
+        : 1;
+      const faces = Number(correspondencia[2]);
+
+      if(Number.isFinite(quantidade) && quantidade > 0 && Number.isFinite(faces)){
+        assinaturas.push(`${quantidade}d${faces}`);
+      }
+    }
+
+    return assinaturas.join("|");
+  }
+
+  function mesmoDanoRegistrado(atual, registrado){
+    const atualTexto = String(atual ?? "").trim();
+    const registradoTexto = String(registrado ?? "").trim();
+
+    if(!atualTexto || !registradoTexto) return false;
+    if(atualTexto === registradoTexto) return true;
+
+    const assinaturaAtual = assinaturaDados(atualTexto);
+    const assinaturaRegistrada = assinaturaDados(registradoTexto);
+
+    return Boolean(
+      assinaturaAtual &&
+      assinaturaRegistrada &&
+      assinaturaAtual === assinaturaRegistrada
+    );
+  }
+
+  function resultadoNivel5Registrado(jutsu){
+    const resultadoNovo = String(
+      jutsu?.[CAMPO_NIVEL5_RESULTADO] ?? ""
+    ).trim();
+
+    if(resultadoNovo) return resultadoNovo;
+
+    /*
+     * Migração da v1.5.2: aquela versão guardava apenas o dano
+     * anterior. Derivamos o resultado para saber se o valor atual
+     * já recebeu a melhoria ou se foi editado depois.
+     */
+    const entradaAntiga = String(
+      jutsu?.naturezaDadoAntesNivel5 ?? ""
+    ).trim();
+
+    if(jutsu?.[CAMPO_NIVEL5_APLICADO] && entradaAntiga){
+      return elevarDadosDano(entradaAntiga);
+    }
+
+    return "";
+  }
+
+  function nivel5JaAplicadoAoDanoAtual(jutsu){
+    if(!jutsu?.[CAMPO_NIVEL5_APLICADO]) return false;
+
+    const atual = danoAtualJutsu(jutsu);
+    const resultadoRegistrado = resultadoNivel5Registrado(jutsu);
+
+    return mesmoDanoRegistrado(atual, resultadoRegistrado);
+  }
+
+  function registrarNivel5(jutsu, naturezaId, entrada, resultado){
+    jutsu.naturezaDadoAntesNivel5 = entrada;
+    jutsu[CAMPO_NIVEL5_ENTRADA] = entrada;
+    jutsu[CAMPO_NIVEL5_RESULTADO] = resultado;
+    jutsu[CAMPO_NIVEL5_APLICADO] = true;
+    jutsu.naturezaDadoNivel5Natureza = naturezaId;
+    jutsu.naturezaDadoNivel5Versao = "1.5.4";
   }
 
   function aplicarNivel5PermanenteNatureza(
@@ -233,18 +315,25 @@
       ).toLowerCase();
 
       if(elemento !== naturezaId) return;
-      if(jutsu[CAMPO_NIVEL5_APLICADO]) return;
 
-      const danoAtual = String(jutsu.dano ?? "").trim();
+      const danoAtual = danoAtualJutsu(jutsu);
       if(!possuiDadoAprimoravel(danoAtual)) return;
+
+      /*
+       * O card é a fonte de verdade. Se outro bônus mudou 4d6 para
+       * 8d8 antes do nível 5, é 8d8 que será elevado para 8d10.
+       *
+       * O marcador não é mais um simples booleano: comparamos o
+       * dano atual ao último resultado produzido. Assim, uma edição
+       * real no card é reconhecida, mas renderizações repetidas não
+       * elevam o dado novamente.
+       */
+      if(nivel5JaAplicadoAoDanoAtual(jutsu)) return;
 
       const danoElevado = elevarDadosDano(danoAtual);
 
-      jutsu.naturezaDadoAntesNivel5 = danoAtual;
       jutsu.dano = danoElevado;
-      jutsu[CAMPO_NIVEL5_APLICADO] = true;
-      jutsu.naturezaDadoNivel5Natureza = naturezaId;
-      jutsu.naturezaDadoNivel5Versao = "1.5.2";
+      registrarNivel5(jutsu, naturezaId, danoAtual, danoElevado);
       alterados += 1;
     });
 
@@ -286,9 +375,7 @@
      */
     const danoBase = String(jutsu?.dano ?? "").trim();
     const danoEfetivo = danoBase;
-    const dadoNivel5Aplicado = Boolean(
-      jutsu?.[CAMPO_NIVEL5_APLICADO]
-    );
+    const dadoNivel5Aplicado = nivel5JaAplicadoAoDanoAtual(jutsu);
 
     const quantidadeDados = contarDados(danoEfetivo);
     const temDano = possuiDano(jutsu);
@@ -349,7 +436,9 @@
       kaiSemCusto,
       dadoElevado: dadoNivel5Aplicado,
       danoAntesNivel5: String(
-        jutsu?.naturezaDadoAntesNivel5 ?? ""
+        jutsu?.[CAMPO_NIVEL5_ENTRADA] ??
+        jutsu?.naturezaDadoAntesNivel5 ??
+        ""
       ).trim(),
       resistenciaAutomatica: Boolean(natureza && nivel >= 3 && nivel < 7),
       imunidadeAutomatica: Boolean(natureza && nivel >= 7)
@@ -805,11 +894,12 @@
   };
 
   window.RegrasNaturezaShinobi = {
-    versao: "1.5.2",
+    versao: "1.5.4",
     nivelNatureza,
     dadosConjuracao,
     elevarDadosDano,
     contarDados,
+    assinaturaDados,
     calcularJutsu: calcularJutsuComNatureza,
     formatarBonusTotal,
     formatarDanoTotal: formatarDanoTotalRegra,
@@ -819,8 +909,8 @@
   };
 
   /*
-   * O nível 5 agora altera o dado permanentemente e não participa
-   * desta preparação temporária. O nível 6 continua dinâmico porque
+   * O nível 5 altera permanentemente o dano atual do card e não
+   * participa desta preparação temporária. O nível 6 continua dinâmico porque
    * depende do modificador atual de Conjuração.
    *
    * O renderizador recebe temporariamente somente o bônus total e o
