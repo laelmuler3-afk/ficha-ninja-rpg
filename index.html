@@ -11,6 +11,7 @@
 <script defer src="js/02-runtime.js"></script>
 <script defer src="js/03-images.js"></script>
 <script defer src="js/04-jutsus.js"></script>
+<script defer src="js/09-catalogo.js"></script>
 <script defer src="js/05-battle.js"></script>
 <script defer src="js/06-inventory.js"></script>
 <script defer src="js/07-profile.js"></script>
@@ -233,7 +234,13 @@
       <div class="painel grande painelPergaminhoLista">
         <h2>Jutsus</h2>
         <div id="listaJutsus"></div>
-        <button class="btn" onclick="adicionarJutsu()">Adicionar Jutsu</button>
+        <button
+          type="button"
+          class="btn jutsuAdicionarBtn"
+          onclick="abrirMenuAdicionarJutsu()"
+        >
+          Adicionar Jutsu
+        </button>
       </div>
 
       <div class="painel grande painelPergaminhoLista">
