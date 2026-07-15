@@ -1,4 +1,4 @@
-/* Shinobi 1.8.0 — painel de batalha vivo e compacto. */
+/* Shinobi 1.8.1 — painel de batalha vivo, Furtividade e efeitos automáticos. */
 
 #batalha .batalhaViva{
   --battle-orange:#ff7a18;
@@ -607,4 +607,103 @@
 #batalha .acaoBatalhaValorLinha input[type=number]{
   appearance:textfield;
   -moz-appearance:textfield;
+}
+
+/* ===== Shinobi 1.8.1 — Furtividade e efeitos automáticos de jutsus ===== */
+#batalha .defesasGrid.defesasGridComFurtividade,
+#batalha .defesasGrid.defesasGridComExtras.defesasGridComFurtividade{
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+}
+
+#batalha .furtividadeBatalhaBox{
+  border-color:rgba(120,210,145,.25)!important;
+  background:linear-gradient(180deg,rgba(27,62,38,.28),rgba(255,255,255,.025))!important;
+}
+
+#batalha .furtividadeBatalhaBox strong{
+  color:#d4ffdc!important;
+}
+
+#batalha .efeitosJutsuAtivos{
+  display:grid;
+  gap:8px;
+  margin:0 0 10px;
+}
+
+#batalha .efeitosJutsuAtivos[hidden]{
+  display:none!important;
+}
+
+#batalha .efeitoJutsuBatalhaCard{
+  padding:10px;
+  border:1px solid rgba(104,215,133,.25);
+  background:radial-gradient(circle at top right,rgba(65,186,96,.11),transparent 46%),rgba(0,0,0,.25);
+  box-shadow:inset 3px 0 0 rgba(87,224,119,.55);
+}
+
+#batalha .efeitoJutsuBatalhaTopo{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#batalha .efeitoJutsuBatalhaTopo strong{
+  display:block;
+  color:#efffe9;
+  font-size:13px;
+  line-height:1.25;
+}
+
+#batalha .efeitoJutsuBatalhaTopo small{
+  display:block;
+  margin-top:3px;
+  color:#9fb49f;
+  font-size:9.5px;
+  line-height:1.25;
+}
+
+#batalha .efeitoJutsuBatalhaTopo button{
+  width:29px;
+  height:29px;
+  flex:0 0 29px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid rgba(255,130,110,.24);
+  background:rgba(90,18,13,.35);
+  color:#ffc6bc;
+  font-size:19px;
+  line-height:1;
+}
+
+#batalha .efeitoJutsuBatalhaBonus{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:8px;
+}
+
+#batalha .efeitoJutsuBatalhaBonus span{
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  padding:4px 8px;
+  border:1px solid rgba(109,232,137,.24);
+  background:rgba(72,178,96,.12);
+  color:#caffd4;
+  font-size:10px;
+  line-height:1;
+  font-weight:1000;
+}
+
+#batalha .bonusDefesaTexto{
+  white-space:normal;
+}
+
+@media (max-width:560px){
+  #batalha .defesasGrid.defesasGridComFurtividade,
+  #batalha .defesasGrid.defesasGridComExtras.defesasGridComFurtividade{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
 }
