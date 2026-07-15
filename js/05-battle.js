@@ -1,4 +1,4 @@
-/* Shinobi 1.8.0 — batalha reorganizada em painel de combate. */
+/* Shinobi 1.8.1 — painel de combate com efeitos automáticos e Furtividade. */
 
 /* ===== BÔNUS TEMPORÁRIOS DE ATRIBUTOS ===== */
 (function(){
@@ -36,9 +36,23 @@
     }
 
     const ativos=bonusAtivos();
+    const efeitosJutsu=typeof window.obterEfeitosJutsuBatalhaAtivos==="function"
+      ? window.obterEfeitosJutsuBatalhaAtivos()
+      : [];
+
+    const chipsJutsu=efeitosJutsu.flatMap(efeito=>{
+      const chips=[];
+      const ca=Number(efeito?.bonus?.ca||0);
+      const furtividade=Number(efeito?.bonus?.furtividade||0);
+      if(ca)chips.push({alvo:"CA",valor:ca});
+      if(furtividade)chips.push({alvo:"FUR",valor:furtividade});
+      return chips;
+    });
+
+    const todos=[...ativos,...chipsJutsu];
     resumo.innerHTML=`
-      ${ativos.length
-        ? `<div class="bonusResumoAtivos">${ativos.map(b=>`<span class="bonusResumoChip">${b.alvo} ${b.valor>0?"+":""}${b.valor}</span>`).join("")}</div>`
+      ${todos.length
+        ? `<div class="bonusResumoAtivos">${todos.map(b=>`<span class="bonusResumoChip">${b.alvo} ${b.valor>0?"+":""}${b.valor}</span>`).join("")}</div>`
         : `<div class="bonusResumoVazio">Nenhum bônus temporário ativo.</div>`
       }
       <button type="button" class="btnGerenciarBonusBatalha" onclick="alternarBonusAtributosBatalha()">
