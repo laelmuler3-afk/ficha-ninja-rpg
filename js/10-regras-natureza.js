@@ -1,11 +1,11 @@
-/* Shinobi 1.7.1 — reconhecimento ampliado de fórmulas de dano. */
+/* Shinobi 1.7.2 — cards de Natureza compactos; detalhes apenas no painel expansível. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV171) return;
-  window.__regrasNaturezaChakraV171 = true;
+  if(window.__regrasNaturezaChakraV172) return;
+  window.__regrasNaturezaChakraV172 = true;
 
-  const VERSAO = "1.7.1";
+  const VERSAO = "1.7.2";
 
   const NATUREZAS = [
     {id:"katon", nome:"KATON", icone:"🔥", classe:"katon", resistenciaId:"katon", resistenciaNome:"Katon / Fogo"},
@@ -461,21 +461,6 @@
     });
   }
 
-  function beneficiosAtivosHtml(nivelAtual){
-    if(nivelAtual <= 0){
-      return '<small class="naturezaBeneficioAtual">Natureza não aprendida</small>';
-    }
-
-    return `
-      <div class="naturezaBeneficiosAtivos">
-        ${Array.from({length:nivelAtual}, (_, indice) => {
-          const nivel = indice + 1;
-          return `<small><b>N${nivel}</b> ${BENEFICIOS[nivel]}</small>`;
-        }).join("")}
-      </div>
-    `;
-  }
-
   function renderizarNaturezasComRegras(){
     if(renderizandoNaturezas) return;
     renderizandoNaturezas = true;
@@ -489,7 +474,7 @@
         const niveis = Array.from({length:7}, (_, indice) => {
           const nivel = indice + 1;
           return `
-            <button type="button" class="naturezaNivel" onclick="definirNatureza('${natureza.id}',${nivel})" aria-label="${natureza.nome} nível ${nivel}" title="${BENEFICIOS[nivel]}">
+            <button type="button" class="naturezaNivel" onclick="definirNatureza('${natureza.id}',${nivel})" aria-label="${natureza.nome} nível ${nivel}">
               <span class="naturezaBolinha ${nivel <= nivelAtual ? "ativa" : ""}"></span>
               <small>${nivel}</small>
             </button>
@@ -500,10 +485,9 @@
           <div class="naturezaCard ${natureza.classe}">
             <div class="naturezaInfo">
               <span class="naturezaIcone">${natureza.icone}</span>
-              <div>
+              <div class="naturezaIdentificacao">
                 <div class="naturezaNome">${natureza.nome}</div>
                 <span class="naturezaNivelTexto">${nivelAtual}/7</span>
-                ${beneficiosAtivosHtml(nivelAtual)}
               </div>
             </div>
             <div class="naturezaLinha naturezaLinhaSete">${niveis}</div>
