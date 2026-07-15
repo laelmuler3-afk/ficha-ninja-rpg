@@ -1,4 +1,4 @@
-/* Shinobi 1.3.5 — batalha, navegação e notas revisadas. */
+/* Shinobi 1.8.0 — batalha reorganizada em painel de combate. */
 
 /* ===== BÔNUS TEMPORÁRIOS DE ATRIBUTOS ===== */
 (function(){
@@ -141,7 +141,7 @@
   }
 
   function criarPainel(){
-    const container=document.querySelector("#batalha .modificadoresBatalha");
+    const container=document.querySelector("#batalha #resistenciasBatalhaHost")||document.querySelector("#batalha .modificadoresBatalha");
     if(!container) return null;
 
     let painel=document.getElementById("resistenciasBatalhaPainel");
