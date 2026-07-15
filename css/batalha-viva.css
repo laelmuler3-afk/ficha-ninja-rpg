@@ -1,0 +1,610 @@
+/* Shinobi 1.8.0 — painel de batalha vivo e compacto. */
+
+#batalha .batalhaViva{
+  --battle-orange:#ff7a18;
+  --battle-paper:#ffd9a1;
+  --battle-line:rgba(255,177,90,.22);
+  --battle-panel:linear-gradient(180deg,rgba(17,19,21,.94),rgba(5,7,9,.96));
+  overflow:visible;
+}
+
+#batalha .batalhaCabecalhoVivo{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px;
+}
+
+#batalha .batalhaCabecalhoVivo h2{
+  margin:2px 0 0!important;
+}
+
+#batalha .batalhaCabecalhoSelo,
+#batalha .batalhaSecaoSelo,
+#batalha .acaoBatalhaRotulo{
+  display:block;
+  color:#f58a35;
+  font-size:10px;
+  line-height:1;
+  font-weight:1000;
+  letter-spacing:1.4px;
+}
+
+#batalha .batalhaMenuOpcoes{
+  position:relative;
+  z-index:4;
+}
+
+#batalha .batalhaMenuOpcoes > summary{
+  list-style:none;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--battle-line);
+  background:rgba(0,0,0,.42);
+  color:#ffe1b0;
+  font-size:27px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+#batalha .batalhaMenuOpcoes > summary::-webkit-details-marker{display:none}
+
+#batalha .batalhaMenuOpcoesConteudo{
+  position:absolute;
+  top:48px;
+  right:0;
+  width:min(270px,82vw);
+  padding:12px;
+  border:1px solid rgba(255,105,80,.28);
+  background:linear-gradient(180deg,rgba(28,12,10,.98),rgba(8,6,6,.98));
+  box-shadow:0 18px 40px rgba(0,0,0,.7);
+}
+
+#batalha .batalhaMenuOpcoesConteudo .resetBatalha{
+  width:100%;
+  margin:0 0 8px!important;
+}
+
+#batalha .batalhaMenuOpcoesConteudo small{
+  color:#c8b9a2;
+  font-size:11px;
+  line-height:1.35;
+}
+
+#batalha .recursosBatalhaVivos{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:10px;
+}
+
+#batalha .recursoBatalhaCard{
+  position:relative;
+  min-width:0;
+  padding:13px;
+  border:1px solid var(--battle-line);
+  background:var(--battle-panel);
+  box-shadow:0 10px 24px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.035);
+  overflow:hidden;
+}
+
+#batalha .recursoBatalhaCard::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:3px;
+  background:var(--recurso-cor,#ff7a18);
+  box-shadow:0 0 16px var(--recurso-cor,#ff7a18);
+}
+
+#batalha .recursoBatalhaPv{--recurso-cor:#ff5448}
+#batalha .recursoBatalhaChakra{--recurso-cor:#36aaff}
+
+#batalha .recursoBatalhaTopo{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:9px;
+}
+
+#batalha .recursoBatalhaTopo > span{
+  color:#ffd6a0;
+  font-weight:1000;
+  font-size:13px;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+}
+
+#batalha .recursoBatalhaTopo strong{
+  min-width:0;
+  color:#fff;
+  font-size:25px;
+  line-height:1;
+  font-weight:1000;
+  white-space:nowrap;
+}
+
+#batalha .recursoBatalhaTopo strong small{
+  color:#a99e8d;
+  font-size:11px;
+  font-weight:800;
+}
+
+#batalha .recursoBatalhaBarra{
+  height:8px;
+  margin:0 0 11px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(0,0,0,.62);
+  overflow:hidden;
+}
+
+#batalha .recursoBatalhaBarra > span{
+  display:block;
+  width:100%;
+  height:100%;
+  background:var(--recurso-cor,#ff7a18);
+  background:linear-gradient(90deg,var(--recurso-cor,#ff7a18),color-mix(in srgb,var(--recurso-cor,#ff7a18) 58%,white));
+  box-shadow:0 0 12px color-mix(in srgb,var(--recurso-cor,#ff7a18) 62%,transparent);
+  transition:width .2s ease;
+}
+
+#batalha .recursoBatalhaCard.recursoCritico{
+  border-color:rgba(255,82,70,.62);
+  animation:recursoCriticoBatalha 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes recursoCriticoBatalha{
+  from{box-shadow:0 10px 24px rgba(0,0,0,.42),0 0 0 rgba(255,70,58,0)}
+  to{box-shadow:0 10px 24px rgba(0,0,0,.42),0 0 17px rgba(255,70,58,.28)}
+}
+
+#batalha .recursoBatalhaAcoes{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+}
+
+#batalha .acaoRecurso{
+  min-height:35px;
+  padding:7px 6px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.055);
+  color:#f5ead8;
+  font-size:11px;
+  line-height:1.15;
+  font-weight:1000;
+}
+
+#batalha .acaoRecurso.dano{border-color:rgba(255,83,70,.35);color:#ffc5be}
+#batalha .acaoRecurso.cura{border-color:rgba(91,232,115,.34);color:#c8ffd0}
+#batalha .acaoRecurso.gastar{border-color:rgba(54,170,255,.38);color:#c9eaff}
+#batalha .acaoRecurso.recuperar{border-color:rgba(78,206,255,.32);color:#d3f5ff}
+
+#batalha .acaoRecurso:active,
+#batalha .acaoBatalhaAtalhos button:active,
+#batalha .acaoBatalhaValorLinha button:active{
+  transform:scale(.97);
+}
+
+#batalha .acaoBatalhaPainel{
+  margin:0 0 12px;
+  padding:13px;
+  border:1px solid rgba(255,177,90,.30);
+  background:radial-gradient(circle at top right,rgba(255,122,24,.10),transparent 43%),linear-gradient(180deg,rgba(20,14,10,.98),rgba(6,7,9,.98));
+  box-shadow:0 12px 28px rgba(0,0,0,.50);
+}
+
+#batalha .acaoBatalhaPainel[hidden],
+#batalha .acaoBatalhaForm[hidden]{display:none!important}
+
+#batalha .acaoBatalhaPainelCabecalho{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+#batalha .acaoBatalhaPainelCabecalho strong{
+  display:block;
+  margin-top:4px;
+  color:#fff0d7;
+  font-size:16px;
+}
+
+#batalha .acaoBatalhaFechar{
+  width:36px;
+  height:36px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);
+  color:#d8c9b4;
+  font-size:24px;
+}
+
+#batalha .acaoBatalhaForm > label{
+  display:block;
+  margin-bottom:7px;
+  color:#ffd5a0;
+  font-size:12px;
+  font-weight:1000;
+  text-transform:uppercase;
+  letter-spacing:.55px;
+}
+
+#batalha .acaoBatalhaValorLinha{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) 42px;
+  gap:7px;
+}
+
+#batalha .acaoBatalhaValorLinha button,
+#batalha .acaoBatalhaAtalhos button{
+  border:1px solid rgba(255,177,90,.20);
+  background:rgba(255,255,255,.055);
+  color:#ffe2b6;
+  font-weight:1000;
+}
+
+#batalha .acaoBatalhaValorLinha button{
+  min-height:48px;
+  font-size:22px;
+}
+
+#batalha .acaoBatalhaValorLinha input{
+  width:100%;
+  min-height:48px;
+  padding:7px;
+  border:1px solid rgba(255,177,90,.24);
+  background:rgba(0,0,0,.42);
+  color:#fff;
+  text-align:center;
+  font-size:25px;
+  font-weight:1000;
+}
+
+#batalha .acaoBatalhaAtalhos{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  margin-top:7px;
+}
+
+#batalha .acaoBatalhaAtalhos button{
+  min-height:32px;
+  font-size:11px;
+}
+
+#batalha .acaoBatalhaConfirmar{
+  width:100%;
+  margin-top:10px!important;
+}
+
+#batalha .batalhaSecao{
+  margin-top:10px;
+  padding:13px;
+  border:1px solid var(--battle-line);
+  background:var(--battle-panel);
+  box-shadow:0 8px 18px rgba(0,0,0,.38);
+}
+
+#batalha .batalhaSecaoCabecalho{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:9px;
+}
+
+#batalha .batalhaSecaoCabecalho h3,
+#batalha .batalhaSecao h3{
+  margin:4px 0 0!important;
+  color:#ffe1b0;
+  text-align:left!important;
+  font-size:15px!important;
+  letter-spacing:.5px;
+}
+
+#batalha .batalhaSecaoAjuda{
+  max-width:48%;
+  color:#9e9383;
+  font-size:10px;
+  line-height:1.25;
+  text-align:right;
+}
+
+#batalha .efeitosBatalhaSecao .bonusAtributosBatalha{
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+
+#batalha .efeitosBatalhaSecao .bonusAtributosBatalha > h3{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;
+  white-space:nowrap!important;
+}
+
+#batalha .bonusResumoVazio,
+#batalha .resistenciaVazia{
+  margin:0 0 8px!important;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#batalha .bonusResumoAtivos,
+#batalha .resistenciasAtivasGrid{
+  margin:0 0 8px!important;
+}
+
+#batalha .btnGerenciarBonusBatalha,
+#batalha .btnGerenciarResistencias{
+  min-height:38px!important;
+  margin:0!important;
+}
+
+#batalha .bonusAtributosGrid{
+  margin-top:10px!important;
+}
+
+#batalha .btnLimparBonusAtributos{
+  width:100%!important;
+  margin:8px 0 0!important;
+}
+
+#batalha .bonusAtributosBatalha.fechado .btnLimparBonusAtributos{
+  display:none!important;
+}
+
+#batalha .resistenciasAtivasGrid:empty::before{
+  content:"Nenhuma resistência ativa.";
+  grid-column:1/-1;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:9px;
+  border:1px dashed rgba(255,177,90,.20);
+  background:rgba(0,0,0,.18);
+  color:#bcae94;
+  font-size:12px;
+}
+
+#batalha .modificadoresBatalha{
+  contain:none!important;
+}
+
+#batalha .defesasGrid.defesasGridComExtras,
+#batalha .defesasGrid{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+
+#batalha .defesasGrid > div,
+#batalha .defesasGrid .extraBatalhaBox{
+  min-height:65px!important;
+  padding:8px 4px!important;
+  border:1px solid rgba(255,177,90,.16)!important;
+  background:linear-gradient(180deg,rgba(0,0,0,.34),rgba(255,255,255,.025))!important;
+}
+
+#batalha .defesasGrid span,
+#batalha .defesasGrid .extraBatalhaBox span{
+  font-size:9px!important;
+}
+
+#batalha .defesasGrid strong,
+#batalha .defesasGrid .extraBatalhaBox strong{
+  font-size:21px!important;
+}
+
+#batalha .bonusDefesaTexto{
+  display:block;
+  margin-top:4px;
+  font-size:8px;
+  color:#8dff9a;
+  line-height:1;
+}
+
+#batalha .ajustesDefesasBatalha{
+  margin-top:8px;
+  border-top:1px solid rgba(255,177,90,.12);
+}
+
+#batalha .ajustesDefesasBatalha > summary{
+  list-style:none;
+  padding:10px 0 2px;
+  color:#c8b89f;
+  font-size:11px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+#batalha .ajustesDefesasBatalha > summary::-webkit-details-marker{display:none}
+#batalha .ajustesDefesasBatalha > summary::before{content:"＋ ";color:#ff9a45}
+#batalha .ajustesDefesasBatalha[open] > summary::before{content:"− ";}
+
+#batalha .bonusDefesasBatalha{
+  margin-top:8px!important;
+}
+
+#batalha .resistenciasBatalhaHost{
+  min-height:0;
+}
+
+#batalha .resistenciasBatalhaHost:empty{
+  display:none;
+}
+
+#batalha .resistenciasBatalhaPainel{
+  margin:0!important;
+}
+
+#batalha .resistenciasBatalhaPainel h3{
+  margin:0 0 9px!important;
+}
+
+#batalha .detalhesBatalha{
+  padding:0;
+}
+
+#batalha .detalhesBatalha > summary{
+  list-style:none;
+  min-height:56px;
+  padding:12px 13px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  position:relative;
+  cursor:pointer;
+}
+
+#batalha .detalhesBatalha > summary::-webkit-details-marker{display:none}
+
+#batalha .detalhesBatalha > summary::after{
+  content:"＋";
+  position:absolute;
+  right:13px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#ff9a45;
+  font-size:20px;
+  font-weight:900;
+}
+
+#batalha .detalhesBatalha[open] > summary::after{content:"−"}
+
+#batalha .detalhesBatalha > summary span{
+  color:#ffe1b0;
+  font-size:14px;
+  font-weight:1000;
+  text-transform:uppercase;
+  letter-spacing:.55px;
+}
+
+#batalha .detalhesBatalha > summary small{
+  margin-top:3px;
+  color:#908777;
+  font-size:10px;
+}
+
+#batalha .detalhesBatalha .modsGrid,
+#batalha .detalhesBatalha .log{
+  margin:0 12px 12px;
+}
+
+#batalha .atributosBatalhaDetalhes .modsGrid{
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:5px!important;
+}
+
+#batalha .atributosBatalhaDetalhes .modsGrid > div{
+  min-height:60px!important;
+  padding:7px 3px!important;
+}
+
+#batalha .atributosBatalhaDetalhes .modsGrid span{
+  font-size:9px!important;
+}
+
+#batalha .atributosBatalhaDetalhes .modsGrid strong{
+  font-size:20px!important;
+}
+
+#batalha .historicoBatalhaDetalhes .log{
+  min-height:72px;
+  max-height:230px;
+  overflow:auto;
+}
+
+@media (max-width:560px){
+  #batalha .batalhaViva{padding:15px 12px!important}
+
+  #batalha .recursosBatalhaVivos{
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+  }
+
+  #batalha .recursoBatalhaCard{
+    padding:11px 9px;
+  }
+
+  #batalha .recursoBatalhaTopo strong{
+    font-size:22px;
+  }
+
+  #batalha .recursoBatalhaAcoes{
+    grid-template-columns:1fr;
+    gap:5px;
+  }
+
+  #batalha .acaoRecurso{
+    min-height:33px;
+    font-size:10.5px;
+  }
+
+  #batalha .batalhaSecao{
+    padding:11px 10px;
+  }
+
+  #batalha .defesasGrid.defesasGridComExtras,
+  #batalha .defesasGrid{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  }
+
+  #batalha .defesasGrid > div,
+  #batalha .defesasGrid .extraBatalhaBox{
+    min-height:58px!important;
+    padding:7px 2px!important;
+  }
+
+  #batalha .defesasGrid strong,
+  #batalha .defesasGrid .extraBatalhaBox strong{
+    font-size:18px!important;
+  }
+
+  #batalha .atributosBatalhaDetalhes .modsGrid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
+
+@media (max-width:360px){
+  #batalha .recursoBatalhaTopo{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  #batalha .batalhaSecaoAjuda{display:none}
+
+  #batalha .defesasGrid.defesasGridComExtras,
+  #batalha .defesasGrid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  #batalha .recursoBatalhaCard.recursoCritico{animation:none!important}
+  #batalha .recursoBatalhaBarra > span{transition:none!important}
+}
+
+#batalha .acaoBatalhaValorLinha input::-webkit-outer-spin-button,
+#batalha .acaoBatalhaValorLinha input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+
+#batalha .acaoBatalhaValorLinha input[type=number]{
+  appearance:textfield;
+  -moz-appearance:textfield;
+}
