@@ -1,11 +1,11 @@
-/* Shinobi 1.7.2 — cards de Natureza compactos; detalhes apenas no painel expansível. */
+/* Shinobi 1.8.1 — Naturezas + integração com efeitos automáticos de batalha. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV172) return;
-  window.__regrasNaturezaChakraV172 = true;
+  if(window.__regrasNaturezaChakraV181) return;
+  window.__regrasNaturezaChakraV181 = true;
 
-  const VERSAO = "1.7.2";
+  const VERSAO = "1.8.1";
 
   const NATUREZAS = [
     {id:"katon", nome:"KATON", icone:"🔥", classe:"katon", resistenciaId:"katon", resistenciaNome:"Katon / Fogo"},
@@ -801,7 +801,17 @@
     const danoLog = danoTotal && danoTotal !== "—" ? ` | Dano: ${danoTotal}` : "";
     const custoLog = custoNumero !== null && custoNumero > 0 ? ` | Chakra: -${custoNumero}` : "";
     if(typeof log === "function") log(`${dadosElemento.icone} Usou ${nome}${danoLog}${custoLog}`);
+
+    /*
+     * O catálogo só preenche o card. Ao usar o jutsu, o motor de batalha lê
+     * a descrição atualmente salva na ficha e aplica os efeitos reconhecidos.
+     */
+    if(typeof window.aplicarEfeitosJutsuBatalha === "function"){
+      await window.aplicarEfeitosJutsuBatalha(jutsu, indice);
+    }
+
     if(typeof atualizarHUD === "function") atualizarHUD();
+    if(typeof atualizarDefesasTotaisBatalha === "function") atualizarDefesasTotaisBatalha();
   }
 
   /* Publica também nas ligações globais usadas pelo código antigo e pelos onclicks. */
