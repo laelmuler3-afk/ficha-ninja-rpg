@@ -1,118 +1,106 @@
-/* Shinobi 1.6.0 — motor dinâmico das Naturezas de Chakra. */
+/* Shinobi 1.7.1 — reconhecimento ampliado de fórmulas de dano. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV160) return;
-  window.__regrasNaturezaChakraV160 = true;
+  if(window.__regrasNaturezaChakraV171) return;
+  window.__regrasNaturezaChakraV171 = true;
+
+  const VERSAO = "1.7.1";
 
   const NATUREZAS = [
-    {
-      id: "katon",
-      nome: "KATON",
-      icone: "🔥",
-      classe: "katon",
-      resistenciaId: "katon",
-      resistenciaNome: "Katon / Fogo"
-    },
-    {
-      id: "raiton",
-      nome: "RAITON",
-      icone: "⚡",
-      classe: "raiton",
-      resistenciaId: "raiton",
-      resistenciaNome: "Raiton / Elétrico"
-    },
-    {
-      id: "fuuton",
-      nome: "FUUTON",
-      icone: "🌪️",
-      classe: "fuuton",
-      resistenciaId: "fuuton",
-      resistenciaNome: "Fuuton / Vento"
-    },
-    {
-      id: "suiton",
-      nome: "SUITON",
-      icone: "💧",
-      classe: "suiton",
-      resistenciaId: "suiton",
-      resistenciaNome: "Suiton / Água"
-    },
-    {
-      id: "doton",
-      nome: "DOTON",
-      icone: "🪨",
-      classe: "doton",
-      resistenciaId: "doton",
-      resistenciaNome: "Doton / Terra"
-    },
-    {
-      id: "yin",
-      nome: "YINTON",
-      icone: "🌑",
-      classe: "yin",
-      resistenciaId: "genjutsu",
-      resistenciaNome: "Yin / Genjutsu"
-    },
-    {
-      id: "yang",
-      nome: "YOUTON",
-      icone: "☀️",
-      classe: "yang",
-      resistenciaId: "youton",
-      resistenciaNome: "Yang / Youton"
-    }
+    {id:"katon", nome:"KATON", icone:"🔥", classe:"katon", resistenciaId:"katon", resistenciaNome:"Katon / Fogo"},
+    {id:"raiton", nome:"RAITON", icone:"⚡", classe:"raiton", resistenciaId:"raiton", resistenciaNome:"Raiton / Elétrico"},
+    {id:"fuuton", nome:"FUUTON", icone:"🌪️", classe:"fuuton", resistenciaId:"fuuton", resistenciaNome:"Fuuton / Vento"},
+    {id:"suiton", nome:"SUITON", icone:"💧", classe:"suiton", resistenciaId:"suiton", resistenciaNome:"Suiton / Água"},
+    {id:"doton", nome:"DOTON", icone:"🪨", classe:"doton", resistenciaId:"doton", resistenciaNome:"Doton / Terra"},
+    {id:"yin", nome:"YINTON", icone:"🌑", classe:"yin", resistenciaId:"genjutsu", resistenciaNome:"Yin / Genjutsu"},
+    {id:"yang", nome:"YOUTON", icone:"☀️", classe:"yang", resistenciaId:"youton", resistenciaNome:"Yang / Youton"}
   ];
 
-  const NATUREZA_POR_ID = new Map(
-    NATUREZAS.map(natureza => [natureza.id, natureza])
-  );
+  const NATUREZA_POR_ID = new Map(NATUREZAS.map(item => [item.id, item]));
 
   const ATRIBUTOS = [
-    {id: "", nome: "Escolha o atributo"},
-    {id: "inteligencia", nome: "Inteligência"},
-    {id: "sabedoria", nome: "Sabedoria"},
-    {id: "carisma", nome: "Carisma"},
-    {id: "constituicao", nome: "Constituição"},
-    {id: "forca", nome: "Força"},
-    {id: "destreza", nome: "Destreza"}
+    {id:"", nome:"Escolha o atributo"},
+    {id:"inteligencia", nome:"Inteligência"},
+    {id:"sabedoria", nome:"Sabedoria"},
+    {id:"carisma", nome:"Carisma"},
+    {id:"constituicao", nome:"Constituição"},
+    {id:"forca", nome:"Força"},
+    {id:"destreza", nome:"Destreza"}
   ];
 
-  const ATRIBUTO_POR_ID = new Map(
-    ATRIBUTOS.map(atributo => [atributo.id, atributo])
-  );
+  const ATRIBUTO_POR_ID = new Map(ATRIBUTOS.map(item => [item.id, item]));
 
-  const BENEFICIOS_NIVEL = {
-    0: "Natureza não aprendida",
-    1: "Natureza aprendida",
-    2: "Modificador de Conjuração no dano",
-    3: "Resistência automática",
-    4: "Técnica Kai sem custo",
-    5: "Dado de dano superior",
-    6: "Modificador de Conjuração em cada dado",
-    7: "Imunidade à natureza"
+  const BENEFICIOS = {
+    1:"Aprende a natureza",
+    2:"Modificador de Conjuração no dano",
+    3:"Resistência automática",
+    4:"Técnica Kai sem custo",
+    5:"Dado de dano superior",
+    6:"Modificador de Conjuração em cada dado",
+    7:"Imunidade à natureza"
   };
 
-  const PROXIMO_DADO = new Map([
-    [4, 6],
-    [6, 8],
-    [8, 10],
-    [10, 12],
-    [12, 12]
-  ]);
+  const PROXIMO_DADO = new Map([[4,6],[6,8],[8,10],[10,12],[12,12]]);
+  const META_NIVEL5 = "beneficioNaturezaNivel5";
+
+  /*
+   * Reconhece as formas mais comuns usadas pelos jogadores:
+   * 8d8, 8D8, 8 d 8, 8de8, 8 de 8, 8 d8 e d8.
+   *
+   * O trecho "de" só é aceito quando existe uma quantidade antes dele.
+   * Isso evita interpretar frases comuns como "alcance de 8 metros" como dado.
+   */
+  const PADRAO_DADO_FONTE = String.raw`\b(?:(\d+)\s*(?:de|d)\s*|(d)\s*)(4|6|8|10|12)\b`;
+
+  function criarRegexDado(){
+    return new RegExp(PADRAO_DADO_FONTE, "gi");
+  }
+
+  function dadosDoMatch(match){
+    const quantidadeTexto = match?.[1] || "";
+    const quantidade = quantidadeTexto ? Number(quantidadeTexto) : 1;
+    const faces = Number(match?.[3]);
+    return {
+      quantidadeTexto,
+      quantidade:Number.isFinite(quantidade) && quantidade > 0 ? quantidade : 1,
+      faces
+    };
+  }
 
   let frameAtualizacao = null;
-  let renderizandoNaturezas = false;
   let renderizandoJutsus = false;
+  let renderizandoNaturezas = false;
   let renderizandoResistencias = false;
 
-  function numeroSeguro(valor, fallback = 0){
-    const numero = Number(String(valor ?? "").replace(",", "."));
+  function numeroSeguro(valor, fallback=0){
+    const numero = Number(String(valor ?? "").trim().replace(",", "."));
     return Number.isFinite(numero) ? numero : fallback;
   }
 
   function limitarNivel(valor){
     return Math.max(0, Math.min(7, Math.trunc(numeroSeguro(valor, 0))));
+  }
+
+  function normalizarElemento(valor){
+    const texto = String(valor || "neutro")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    const aliases = {
+      fogo:"katon", katon:"katon",
+      raio:"raiton", relampago:"raiton", eletrico:"raiton", raiton:"raiton",
+      vento:"fuuton", futon:"fuuton", fuuton:"fuuton",
+      agua:"suiton", suiton:"suiton",
+      terra:"doton", doton:"doton",
+      yin:"yin", yinton:"yin", inton:"yin",
+      yang:"yang", youton:"yang",
+      neutro:"neutro"
+    };
+
+    return aliases[texto] || texto;
   }
 
   function nivelNatureza(id){
@@ -126,22 +114,19 @@
 
   function valorAtributo(id){
     if(!id) return null;
-
     const campo = document.querySelector(`[data-save="${id}"]`);
     const bruto = campo?.value ?? estado?.[id];
     const numero = Number(bruto);
-
     return Number.isFinite(numero) ? numero : null;
   }
 
   function calcularModificadorLocal(valor){
     const numero = Number(valor);
     if(!Number.isFinite(numero)) return null;
-
-    if(typeof window.calcularModificador === "function"){
-      return Number(window.calcularModificador(numero));
+    if(typeof calcularModificador === "function"){
+      const resultado = Number(calcularModificador(numero));
+      return Number.isFinite(resultado) ? resultado : null;
     }
-
     return Math.floor((numero - 10) / 2);
   }
 
@@ -155,7 +140,7 @@
       atributoId,
       atributoNome: atributo?.nome || "Conjuração",
       valor,
-      modificador: Number.isFinite(modificador) ? modificador : null
+      modificador:Number.isFinite(modificador) ? modificador : null
     };
   }
 
@@ -167,43 +152,44 @@
   function valorNumericoEstrito(valor){
     const texto = String(valor ?? "").trim().replace(",", ".");
     if(!/^[-+]?\d+(?:\.\d+)?$/.test(texto)) return null;
-
     const numero = Number(texto);
     return Number.isFinite(numero) ? numero : null;
   }
 
   function elevarDadosDano(formula){
+    const regex = criarRegexDado();
+    return String(formula ?? "").replace(regex, (trecho, quantidadeTexto, _dUnitario, faces) => {
+      const proximo = PROXIMO_DADO.get(Number(faces));
+      if(!proximo) return trecho;
+      return `${quantidadeTexto || ""}d${proximo}`;
+    });
+  }
+
+  function assinaturaDados(formula){
+    const dados = [];
     const texto = String(formula ?? "");
-
-    return texto.replace(
-      /(\d*)\s*[dD]\s*(4|6|8|10|12)\b/g,
-      (trecho, quantidade, faces) => {
-        const proximo = PROXIMO_DADO.get(Number(faces));
-        if(!proximo) return trecho;
-
-        const qtd = quantidade || "1";
-        return `${qtd}d${proximo}`;
-      }
-    );
+    const regex = criarRegexDado();
+    let match;
+    while((match = regex.exec(texto)) !== null){
+      const dado = dadosDoMatch(match);
+      dados.push(`${dado.quantidade}d${dado.faces}`);
+    }
+    return dados.join("|");
   }
 
   function contarDados(formula){
-    const texto = String(formula ?? "");
     let total = 0;
-
-    for(const correspondencia of texto.matchAll(
-      /(\d*)\s*[dD]\s*\d+\b/g
-    )){
-      const quantidade = correspondencia[1]
-        ? Number(correspondencia[1])
-        : 1;
-
-      if(Number.isFinite(quantidade) && quantidade > 0){
-        total += quantidade;
-      }
+    const texto = String(formula ?? "");
+    const regex = criarRegexDado();
+    let match;
+    while((match = regex.exec(texto)) !== null){
+      total += dadosDoMatch(match).quantidade;
     }
-
     return total;
+  }
+
+  function possuiDadoAprimoravel(formula){
+    return criarRegexDado().test(String(formula ?? ""));
   }
 
   function possuiDano(jutsu){
@@ -216,132 +202,151 @@
     return /(?:^|:)\s*Kai(?:\s|\(|$)/i.test(nome);
   }
 
-  function possuiDadoAprimoravel(formula){
-    return /(?:\d*)\s*[dD]\s*(?:4|6|8|10|12)\b/i.test(
-      String(formula ?? "")
-    );
+  function persistirEstadoSeguro(){
+    try{
+      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal();
+      if(typeof window.persistirEstadoLocal === "function") return window.persistirEstadoLocal();
+      if(typeof CHAVE !== "undefined"){
+        localStorage.setItem(CHAVE, JSON.stringify(estado));
+        return true;
+      }
+    }catch(erro){
+      console.warn("Não foi possível salvar as regras de Natureza.", erro);
+    }
+    return false;
   }
 
-  function normalizarFormulaComparacao(formula){
-    return String(formula ?? "")
-      .toLowerCase()
-      .replace(/\s+/g, "")
-      .trim();
+  function limparMarcadoresAntigos(jutsu){
+    delete jutsu.naturezaDadoNivel5Aplicado;
+    delete jutsu.naturezaDadoNivel5Natureza;
+    delete jutsu.naturezaDadoNivel5Versao;
+    delete jutsu.naturezaDadoEntradaNivel5;
+    delete jutsu.naturezaDadoSaidaNivel5;
   }
 
-  /*
-   * As versões 1.5.2–1.5.4 podiam gravar o aumento do nível 5 dentro
-   * do dano. A migração abaixo restaura o valor anterior somente quando
-   * o dano atual ainda corresponde exatamente ao resultado automático.
-   * Depois remove os marcadores antigos. A partir da 1.6.0 nenhum dano é
-   * regravado pelo motor de Naturezas.
-   */
-  function migrarNivel5Antigo({persistir = true} = {}){
+  function migrarMarcadorAntigo(jutsu, naturezaId){
+    if(!jutsu?.naturezaDadoNivel5Aplicado) return false;
+
+    const antes = String(jutsu.naturezaDadoAntesNivel5 ?? "").trim();
+    const atual = String(jutsu.dano ?? "").trim();
+    const esperado = antes && possuiDadoAprimoravel(antes)
+      ? elevarDadosDano(antes)
+      : "";
+
+    if(antes && esperado && atual === esperado){
+      jutsu[META_NIVEL5] = {
+        natureza:naturezaId,
+        entrada:antes,
+        saida:atual,
+        assinaturaEntrada:assinaturaDados(antes),
+        assinaturaSaida:assinaturaDados(atual),
+        versao:VERSAO
+      };
+      limparMarcadoresAntigos(jutsu);
+      delete jutsu.naturezaDadoAntesNivel5;
+      return true;
+    }
+
+    /* O marcador antigo dizia que aplicou, mas o dano permaneceu igual à entrada. */
+    if(antes && atual === antes){
+      limparMarcadoresAntigos(jutsu);
+      delete jutsu.naturezaDadoAntesNivel5;
+      return false;
+    }
+
+    /* Marcador incompleto ou incompatível: não pode bloquear o valor atual do card. */
+    limparMarcadoresAntigos(jutsu);
+    delete jutsu.naturezaDadoAntesNivel5;
+    return false;
+  }
+
+  function nivel5JaAplicado(jutsu, naturezaId){
+    const meta = jutsu?.[META_NIVEL5];
+    if(!meta || typeof meta !== "object") return false;
+    if(normalizarElemento(meta.natureza) !== naturezaId) return false;
+
+    const atual = String(jutsu.dano ?? "").trim();
+    return atual === String(meta.saida ?? "").trim();
+  }
+
+  function aplicarNivel5AoJutsu(jutsu, naturezaId){
+    if(!jutsu || !NATUREZA_POR_ID.has(naturezaId)) return false;
+    if(normalizarElemento(jutsu.elemento) !== naturezaId) return false;
+    if(nivelNatureza(naturezaId) < 5) return false;
+
+    if(migrarMarcadorAntigo(jutsu, naturezaId)) return true;
+    if(nivel5JaAplicado(jutsu, naturezaId)) return false;
+
+    const danoAtual = String(jutsu.dano ?? "").trim();
+    if(!possuiDadoAprimoravel(danoAtual)) return false;
+
+    const danoElevado = elevarDadosDano(danoAtual);
+
+    jutsu.dano = danoElevado;
+    jutsu[META_NIVEL5] = {
+      natureza:naturezaId,
+      entrada:danoAtual,
+      saida:danoElevado,
+      assinaturaEntrada:assinaturaDados(danoAtual),
+      assinaturaSaida:assinaturaDados(danoElevado),
+      versao:VERSAO
+    };
+
+    limparMarcadoresAntigos(jutsu);
+    delete jutsu.naturezaDadoAntesNivel5;
+    return true;
+  }
+
+  function aplicarNivel5NaNatureza(naturezaId, {persistir=true}={}){
+    if(!NATUREZA_POR_ID.has(naturezaId) || nivelNatureza(naturezaId) < 5) return 0;
     let alterados = 0;
 
-    (estado?.jutsus || []).forEach(jutsu => {
-      if(!jutsu) return;
-
-      const marcado = Boolean(jutsu.naturezaDadoNivel5Aplicado);
-      const entrada = String(
-        jutsu.naturezaDadoNivel5Entrada ??
-        jutsu.naturezaDadoAntesNivel5 ??
-        ""
-      ).trim();
-      const resultadoRegistrado = String(
-        jutsu.naturezaDadoNivel5Resultado ?? ""
-      ).trim();
-      const resultadoEsperado = resultadoRegistrado ||
-        (entrada ? elevarDadosDano(entrada) : "");
-      const danoAtual = String(jutsu.dano ?? "").trim();
-
-      if(
-        marcado &&
-        entrada &&
-        resultadoEsperado &&
-        normalizarFormulaComparacao(danoAtual) ===
-          normalizarFormulaComparacao(resultadoEsperado)
-      ){
-        jutsu.dano = entrada;
-        alterados += 1;
-      }
-
-      [
-        "naturezaDadoNivel5Aplicado",
-        "naturezaDadoAntesNivel5",
-        "naturezaDadoNivel5Entrada",
-        "naturezaDadoNivel5Resultado",
-        "naturezaDadoNivel5Natureza",
-        "naturezaDadoNivel5Versao"
-      ].forEach(campo => {
-        if(Object.prototype.hasOwnProperty.call(jutsu, campo)){
-          delete jutsu[campo];
-          alterados += 1;
-        }
-      });
+    (Array.isArray(estado?.jutsus) ? estado.jutsus : []).forEach(jutsu => {
+      if(aplicarNivel5AoJutsu(jutsu, naturezaId)) alterados += 1;
     });
 
-    if(!estado?.regrasNaturezaMigracaoV160){
-      estado.regrasNaturezaMigracaoV160 = true;
-      alterados += 1;
-    }
+    if(alterados && persistir) persistirEstadoSeguro();
+    return alterados;
+  }
 
-    if(alterados && persistir){
-      salvarEstado();
-    }
-
+  function aplicarNiveis5Pendentes({persistir=true}={}){
+    let alterados = 0;
+    NATUREZAS.forEach(natureza => {
+      if(nivelNatureza(natureza.id) >= 5){
+        alterados += aplicarNivel5NaNatureza(natureza.id, {persistir:false});
+      }
+    });
+    if(alterados && persistir) persistirEstadoSeguro();
     return alterados;
   }
 
   function calcularJutsuComNatureza(jutsu){
-    const elemento = String(jutsu?.elemento || "neutro")
-      .trim()
-      .toLowerCase();
+    const elemento = normalizarElemento(jutsu?.elemento);
     const natureza = NATUREZA_POR_ID.get(elemento) || null;
     const nivel = natureza ? nivelNatureza(elemento) : 0;
     const conjuracao = dadosConjuracao();
-
-    /*
-     * O campo dano é sempre a fonte escrita pelo jogador.
-     * O nível 5 cria um valor efetivo a partir dessa fonte, sem alterar
-     * o dado salvo. Assim, cada ficha usa o próprio dano atual e nunca
-     * acumula aumentos ao abrir ou renderizar novamente.
-     */
-    const danoBase = String(jutsu?.dano ?? "").trim();
-    const dadoElevado = Boolean(
-      natureza &&
-      nivel >= 5 &&
-      possuiDadoAprimoravel(danoBase)
-    );
-    const danoEfetivo = dadoElevado
-      ? elevarDadosDano(danoBase)
-      : danoBase;
-
+    const danoEfetivo = String(jutsu?.dano ?? "").trim();
     const quantidadeDados = contarDados(danoEfetivo);
     const temDano = possuiDano(jutsu);
 
-    let bonusNatureza = 0;
-    let motivoBonus = "";
+    let bonusNivel2 = 0;
+    let bonusNivel6 = 0;
+    const motivos = [];
 
-    if(
-      natureza &&
-      temDano &&
-      conjuracao.modificador !== null &&
-      nivel >= 2
-    ){
-      if(nivel >= 6){
-        if(quantidadeDados > 0){
-          bonusNatureza = conjuracao.modificador * quantidadeDados;
-          motivoBonus = `${quantidadeDados} dado${quantidadeDados === 1 ? "" : "s"} × ${comSinal(conjuracao.modificador)}`;
-        }else{
-          motivoBonus = "Nenhum dado reconhecido no campo Dano";
-        }
-      }else{
-        bonusNatureza = conjuracao.modificador;
-        motivoBonus = `${conjuracao.atributoNome} ${comSinal(conjuracao.modificador)}`;
+    if(natureza && temDano && conjuracao.modificador !== null){
+      if(nivel >= 2){
+        bonusNivel2 = conjuracao.modificador;
+        motivos.push(`N2 ${comSinal(bonusNivel2)}`);
+      }
+
+      /* Os benefícios são cumulativos: o nível 6 soma ao nível 2. */
+      if(nivel >= 6 && quantidadeDados > 0){
+        bonusNivel6 = conjuracao.modificador * quantidadeDados;
+        motivos.push(`N6 ${quantidadeDados} dado${quantidadeDados === 1 ? "" : "s"} × ${comSinal(conjuracao.modificador)}`);
       }
     }
 
+    const bonusNatureza = bonusNivel2 + bonusNivel6;
     const bonusManualTexto = String(jutsu?.bonusDano ?? "").trim();
     const bonusManualNumero = valorNumericoEstrito(bonusManualTexto);
     const bonusTotalNumero = bonusManualNumero === null
@@ -349,58 +354,48 @@
       : bonusManualNumero + bonusNatureza;
 
     const custoBaseTexto = String(jutsu?.custo ?? "").trim();
-    const kaiSemCusto = Boolean(
-      natureza &&
-      nivel >= 4 &&
-      ehTecnicaKai(jutsu)
-    );
-
-    const custoEfetivoTexto = kaiSemCusto
-      ? "0"
-      : custoBaseTexto;
+    const kaiSemCusto = Boolean(natureza && nivel >= 4 && ehTecnicaKai(jutsu));
+    const metaNivel5 = jutsu?.[META_NIVEL5] && typeof jutsu[META_NIVEL5] === "object"
+      ? jutsu[META_NIVEL5]
+      : null;
 
     return {
       natureza,
       elemento,
       nivel,
       conjuracao,
-      danoBase,
       danoEfetivo,
       quantidadeDados,
+      bonusNivel2,
+      bonusNivel6,
       bonusNatureza,
-      motivoBonus,
+      motivoBonus:motivos.join(" + "),
       bonusManualTexto,
       bonusManualNumero,
       bonusTotalNumero,
       custoBaseTexto,
-      custoEfetivoTexto,
+      custoEfetivoTexto:kaiSemCusto ? "0" : custoBaseTexto,
       kaiSemCusto,
-      dadoElevado,
-      danoAntesNivel5: dadoElevado ? danoBase : "",
-      resistenciaAutomatica: Boolean(natureza && nivel >= 3 && nivel < 7),
-      imunidadeAutomatica: Boolean(natureza && nivel >= 7)
+      dadoElevado:Boolean(metaNivel5),
+      metaNivel5,
+      resistenciaAutomatica:Boolean(natureza && nivel >= 3),
+      imunidadeAutomatica:Boolean(natureza && nivel >= 7)
     };
   }
 
   function formatarBonusTotal(regra){
-    if(regra.bonusTotalNumero !== null){
-      return comSinal(regra.bonusTotalNumero);
-    }
-
+    if(regra.bonusTotalNumero !== null) return comSinal(regra.bonusTotalNumero);
     if(regra.bonusManualTexto && regra.bonusNatureza){
       return `${regra.bonusManualTexto} · automático ${comSinal(regra.bonusNatureza)}`;
     }
-
     if(regra.bonusManualTexto) return regra.bonusManualTexto;
     if(regra.bonusNatureza) return comSinal(regra.bonusNatureza);
-
     return "—";
   }
 
-  function formatarDanoTotalRegra(regra){
+  function formatarDanoTotal(regra){
     const dano = regra.danoEfetivo || "";
     const bonus = formatarBonusTotal(regra);
-
     if(!dano) return bonus;
     if(bonus === "—" || bonus === "0") return dano;
 
@@ -419,53 +414,18 @@
     return `${dano} + ${regra.bonusManualTexto}`;
   }
 
-  function salvarEstado(){
-    try{
-      if(typeof window.sincronizarEstadoDosCampos === "function"){
-        window.sincronizarEstadoDosCampos();
-      }
-
-      if(typeof window.persistirEstadoLocal === "function"){
-        return window.persistirEstadoLocal();
-      }
-
-      if(typeof CHAVE !== "undefined"){
-        localStorage.setItem(CHAVE, JSON.stringify(estado));
-        return true;
-      }
-    }catch(erro){
-      console.warn("Não foi possível salvar as regras de natureza.", erro);
-    }
-
-    return false;
-  }
-
-  function agendarAtualizacaoCompleta(){
-    if(frameAtualizacao !== null) return;
-
-    frameAtualizacao = requestAnimationFrame(() => {
-      frameAtualizacao = null;
-      window.renderizarNaturezas?.();
-      window.renderizarJutsus?.();
-      window.renderizarResistenciasBatalha?.();
-    });
-  }
-
   function garantirPainelConjuracao(){
     const container = document.querySelector(".naturezasNoPerfil");
-    const listaNaturezas = document.getElementById("naturezasUI");
-
-    if(!container || !listaNaturezas) return null;
+    const lista = document.getElementById("naturezasUI");
+    if(!container || !lista) return null;
 
     let painel = document.getElementById("configConjuracaoNatureza");
-
     if(!painel){
       painel = document.createElement("div");
       painel.id = "configConjuracaoNatureza";
       painel.className = "configConjuracaoNatureza";
-      container.insertBefore(painel, listaNaturezas);
+      container.insertBefore(painel, lista);
     }
-
     return painel;
   }
 
@@ -475,10 +435,7 @@
 
     const conjuracao = dadosConjuracao();
     const opcoes = ATRIBUTOS.map(atributo => `
-      <option
-        value="${atributo.id}"
-        ${atributo.id === conjuracao.atributoId ? "selected" : ""}
-      >
+      <option value="${atributo.id}" ${atributo.id === conjuracao.atributoId ? "selected" : ""}>
         ${atributo.nome}
       </option>
     `).join("");
@@ -488,63 +445,52 @@
       : "Escolha o atributo usado para conjurar os jutsus.";
 
     painel.innerHTML = `
-      <label for="atributoConjuracaoNatureza">
-        Atributo de Conjuração
-      </label>
-
-      <select id="atributoConjuracaoNatureza">
-        ${opcoes}
-      </select>
-
-      <span class="conjuracaoNaturezaResumo">
-        ${resumo}
-      </span>
-
+      <label for="atributoConjuracaoNatureza">Atributo de Conjuração</label>
+      <select id="atributoConjuracaoNatureza">${opcoes}</select>
+      <span class="conjuracaoNaturezaResumo">${resumo}</span>
       <details class="naturezaRegrasDetalhes">
-        <summary>Benefícios dos níveis</summary>
+        <summary>Benefícios cumulativos dos níveis</summary>
         <ol>
-          <li>Aprende a natureza.</li>
-          <li>Adiciona o modificador de Conjuração ao dano.</li>
-          <li>Ganha resistência automática.</li>
-          <li>A Técnica Kai da natureza passa a custar 0.</li>
-          <li>Os dados de dano sobem uma categoria.</li>
-          <li>O modificador é aplicado a cada dado.</li>
-          <li>Ganha imunidade à natureza.</li>
+          ${Object.entries(BENEFICIOS).map(([nivel, texto]) => `<li><b>Nível ${nivel}:</b> ${texto}.</li>`).join("")}
         </ol>
       </details>
     `;
 
-    const seletor = painel.querySelector("#atributoConjuracaoNatureza");
-    seletor?.addEventListener("change", evento => {
-      window.definirAtributoConjuracaoNatureza(evento.target.value);
+    painel.querySelector("#atributoConjuracaoNatureza")?.addEventListener("change", evento => {
+      definirAtributoConjuracaoNaturezaComRegras(evento.target.value);
     });
+  }
+
+  function beneficiosAtivosHtml(nivelAtual){
+    if(nivelAtual <= 0){
+      return '<small class="naturezaBeneficioAtual">Natureza não aprendida</small>';
+    }
+
+    return `
+      <div class="naturezaBeneficiosAtivos">
+        ${Array.from({length:nivelAtual}, (_, indice) => {
+          const nivel = indice + 1;
+          return `<small><b>N${nivel}</b> ${BENEFICIOS[nivel]}</small>`;
+        }).join("")}
+      </div>
+    `;
   }
 
   function renderizarNaturezasComRegras(){
     if(renderizandoNaturezas) return;
     renderizandoNaturezas = true;
-
     try{
       renderizarPainelConjuracao();
-
       const box = document.getElementById("naturezasUI");
       if(!box) return;
 
       box.innerHTML = NATUREZAS.map(natureza => {
         const nivelAtual = nivelNatureza(natureza.id);
-        const niveis = Array.from({length: 7}, (_, indice) => {
+        const niveis = Array.from({length:7}, (_, indice) => {
           const nivel = indice + 1;
-          const ativo = nivel <= nivelAtual ? "ativa" : "";
-
           return `
-            <button
-              type="button"
-              class="naturezaNivel"
-              onclick="definirNatureza('${natureza.id}', ${nivel})"
-              aria-label="${natureza.nome} nível ${nivel}"
-              title="${BENEFICIOS_NIVEL[nivel]}"
-            >
-              <span class="naturezaBolinha ${ativo}"></span>
+            <button type="button" class="naturezaNivel" onclick="definirNatureza('${natureza.id}',${nivel})" aria-label="${natureza.nome} nível ${nivel}" title="${BENEFICIOS[nivel]}">
+              <span class="naturezaBolinha ${nivel <= nivelAtual ? "ativa" : ""}"></span>
               <small>${nivel}</small>
             </button>
           `;
@@ -557,15 +503,10 @@
               <div>
                 <div class="naturezaNome">${natureza.nome}</div>
                 <span class="naturezaNivelTexto">${nivelAtual}/7</span>
-                <small class="naturezaBeneficioAtual">
-                  ${BENEFICIOS_NIVEL[nivelAtual]}
-                </small>
+                ${beneficiosAtivosHtml(nivelAtual)}
               </div>
             </div>
-
-            <div class="naturezaLinha naturezaLinhaSete">
-              ${niveis}
-            </div>
+            <div class="naturezaLinha naturezaLinhaSete">${niveis}</div>
           </div>
         `;
       }).join("");
@@ -574,16 +515,13 @@
     }
   }
 
-  function preencherBotaoResumo(botao, rotulo, principal, detalhe = ""){
+  function preencherBotaoResumo(botao, rotulo, principal, detalhe=""){
     if(!botao) return;
-
     const titulo = document.createElement("b");
     titulo.textContent = rotulo;
-
     const valor = document.createElement("span");
     valor.className = "jutsuValorRegraNatureza";
     valor.textContent = principal || "—";
-
     botao.replaceChildren(titulo, valor);
 
     if(detalhe){
@@ -600,9 +538,7 @@
   }
 
   function aplicarRegrasNosCards(){
-    const cards = Array.from(
-      document.querySelectorAll("#listaJutsus .jutsuCard")
-    );
+    const cards = Array.from(document.querySelectorAll("#listaJutsus .jutsuCard"));
 
     cards.forEach((card, indice) => {
       const jutsu = estado?.jutsus?.[indice];
@@ -611,29 +547,27 @@
       const regra = calcularJutsuComNatureza(jutsu);
       const custo = regra.custoEfetivoTexto || "0";
       const rank = String(jutsu.rank || "Rank").trim() || "Rank";
-      const dadosElemento = typeof window.dadosElementoJutsu === "function"
-        ? window.dadosElementoJutsu(jutsu.elemento || "neutro")
-        : {nome: String(jutsu.elemento || "NEUTRO").toUpperCase()};
+      const dadosElemento = typeof dadosElementoJutsu === "function"
+        ? dadosElementoJutsu(jutsu.elemento || "neutro")
+        : {nome:String(jutsu.elemento || "NEUTRO").toUpperCase()};
 
       const resumoLinha = card.querySelector(".jutsuLinhaTexto small");
-      if(resumoLinha){
-        resumoLinha.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
-      }
+      if(resumoLinha) resumoLinha.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
 
       const custoPill = card.querySelector(".jutsuCustoPill");
       if(custoPill){
         custoPill.textContent = `${custo} CH`;
         custoPill.classList.toggle("jutsuCustoAutomatico", regra.kaiSemCusto);
         custoPill.title = regra.kaiSemCusto
-          ? `Custo base: ${regra.custoBaseTexto || "0"}. Zerado pela Natureza nível 4.`
+          ? `Custo base: ${regra.custoBaseTexto || "0"}. Zerado pelo nível 4.`
           : "Editar custo de Chakra";
       }
 
-      const detalheDano = regra.dadoElevado
-        ? regra.danoAntesNivel5
-          ? `Base da ficha ${regra.danoAntesNivel5} · Natureza nível 5`
-          : "Aumento automático da Natureza nível 5"
-        : "";
+      const detalheDano = regra.metaNivel5
+        ? `N5 aplicado: ${regra.metaNivel5.entrada} → ${regra.metaNivel5.saida}`
+        : regra.natureza && regra.nivel >= 5
+          ? "N5 aguardando uma fórmula de dado no campo Dano"
+          : "";
 
       preencherBotaoResumo(
         botaoResumoPorRotulo(card, "Dano"),
@@ -642,8 +576,15 @@
         detalheDano
       );
 
-      const detalheBonus = regra.bonusNatureza
-        ? `${regra.bonusManualTexto ? `Manual ${regra.bonusManualTexto} · ` : ""}Automático ${comSinal(regra.bonusNatureza)} (${regra.motivoBonus})`
+      const partesBonus = [];
+      if(regra.bonusManualTexto) partesBonus.push(`Manual ${regra.bonusManualTexto}`);
+      if(regra.bonusNivel2) partesBonus.push(`N2 ${comSinal(regra.bonusNivel2)}`);
+      if(regra.bonusNivel6 || (regra.nivel >= 6 && regra.quantidadeDados > 0)){
+        partesBonus.push(`N6 ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)`);
+      }
+
+      const detalheBonus = partesBonus.length
+        ? partesBonus.join(" · ")
         : regra.conjuracao.atributoId
           ? "Sem bônus automático neste nível"
           : "Escolha o atributo de Conjuração nas Naturezas";
@@ -658,16 +599,13 @@
       preencherBotaoResumo(
         botaoResumoPorRotulo(card, "Dano total"),
         "Dano total",
-        formatarDanoTotalRegra(regra),
-        regra.nivel >= 2 && regra.natureza
-          ? `${regra.natureza.nome} nível ${regra.nivel}`
+        formatarDanoTotal(regra),
+        regra.natureza && regra.nivel >= 2
+          ? `${regra.natureza.nome} N${regra.nivel} · benefícios N1–N${regra.nivel} ativos`
           : ""
       );
 
-      card.classList.toggle(
-        "jutsuComBeneficioNatureza",
-        Boolean(regra.natureza && regra.nivel >= 2)
-      );
+      card.classList.toggle("jutsuComBeneficioNatureza", Boolean(regra.natureza && regra.nivel >= 2));
     });
   }
 
@@ -677,12 +615,8 @@
 
     NATUREZAS.forEach(natureza => {
       const nivel = nivelNatureza(natureza.id);
-
-      if(nivel >= 7){
-        imunidades.set(natureza.resistenciaId, natureza);
-      }else if(nivel >= 3){
-        resistencias.set(natureza.resistenciaId, natureza);
-      }
+      if(nivel >= 3) resistencias.set(natureza.resistenciaId, natureza);
+      if(nivel >= 7) imunidades.set(natureza.resistenciaId, natureza);
     });
 
     return {resistencias, imunidades};
@@ -694,19 +628,13 @@
     chip.className = tipo === "imunidade"
       ? "resistenciaChipResumo resistenciaNaturezaAuto imunidadeNaturezaAuto"
       : "resistenciaChipResumo resistenciaNaturezaAuto";
-
     chip.textContent = tipo === "imunidade"
       ? `${natureza.icone} Imune: ${natureza.nome}`
-      : `${natureza.icone} ${natureza.nome} · Natureza`;
-
+      : `${natureza.icone} ${natureza.nome} · Resistência`;
     chip.title = tipo === "imunidade"
-      ? "Imunidade automática concedida pelo nível 7 da Natureza."
-      : "Resistência automática concedida pelo nível 3 da Natureza.";
-
-    chip.addEventListener("click", () => {
-      window.mostrarBeneficioAutomaticoNatureza(tipo, natureza.id);
-    });
-
+      ? "Imunidade automática do nível 7. A resistência do nível 3 continua ativa."
+      : "Resistência automática do nível 3.";
+    chip.addEventListener("click", () => mostrarBeneficioAutomaticoNatureza(tipo, natureza.id));
     return chip;
   }
 
@@ -714,247 +642,131 @@
     const painel = document.getElementById("resistenciasBatalhaPainel");
     if(!painel) return;
 
+    painel.querySelectorAll(".resistenciaNaturezaAuto").forEach(chip => chip.remove());
+
     const {resistencias, imunidades} = idsResistenciasAutomaticas();
-    const automaticas = new Map([...resistencias, ...imunidades]);
+    const resumoGrid = painel.querySelector(".resistenciasAtivasGrid") || (() => {
+      const vazio = painel.querySelector(".resistenciaVazia");
+      if(!vazio) return null;
+      const grid = document.createElement("div");
+      grid.className = "resistenciasAtivasGrid";
+      vazio.replaceWith(grid);
+      return grid;
+    })();
 
-    painel.querySelectorAll(".resistenciaNaturezaAuto").forEach(elemento => {
-      elemento.remove();
-    });
-
-    let resumoGrid = painel.querySelector(".resistenciasAtivasGrid");
-    const vazio = painel.querySelector(".resistenciaVazia");
-
-    if(automaticas.size && !resumoGrid){
-      resumoGrid = document.createElement("div");
-      resumoGrid.className = "resistenciasAtivasGrid";
-      vazio?.replaceWith(resumoGrid);
-    }
-
-    function aplicarOuCriarChip(natureza, tipo){
-      const id = natureza.resistenciaId;
-      const existente = Array.from(
-        resumoGrid?.querySelectorAll("button") || []
-      ).find(botao => {
-        const onclick = botao.getAttribute("onclick") || "";
-        return onclick.includes(`'${id}'`) || onclick.includes(`"${id}"`);
-      });
-
-      if(existente){
-        existente.classList.add("resistenciaNaturezaAuto");
-        existente.classList.toggle(
-          "imunidadeNaturezaAuto",
-          tipo === "imunidade"
-        );
-        existente.textContent = tipo === "imunidade"
-          ? `${natureza.icone} Imune: ${natureza.nome}`
-          : `${natureza.icone} ${natureza.nome} · Natureza`;
-        existente.title = tipo === "imunidade"
-          ? "Imunidade automática concedida pelo nível 7 da Natureza."
-          : "Resistência automática concedida pelo nível 3 da Natureza.";
-        return;
-      }
-
-      resumoGrid?.appendChild(criarChipAutomatico(natureza, tipo));
-    }
-
-    resistencias.forEach(natureza => {
-      aplicarOuCriarChip(natureza, "resistencia");
-    });
-
-    imunidades.forEach(natureza => {
-      aplicarOuCriarChip(natureza, "imunidade");
-    });
+    resistencias.forEach(natureza => resumoGrid?.appendChild(criarChipAutomatico(natureza, "resistencia")));
+    imunidades.forEach(natureza => resumoGrid?.appendChild(criarChipAutomatico(natureza, "imunidade")));
 
     painel.querySelectorAll(".resistenciaChip").forEach(botao => {
       const onclick = botao.getAttribute("onclick") || "";
-      const correspondencia = onclick.match(/toggleResistenciaBatalha\(['\"]([^'\"]+)['\"]\)/);
-      const id = correspondencia?.[1];
-      if(!id || !automaticas.has(id)) return;
+      const match = onclick.match(/toggleResistenciaBatalha\(['\"]([^'\"]+)['\"]\)/);
+      const id = match?.[1];
+      if(!id || !resistencias.has(id)) return;
 
-      const natureza = automaticas.get(id);
       const imunidade = imunidades.has(id);
-
       botao.classList.add("ativo", "resistenciaNaturezaBloqueada");
       botao.classList.toggle("imunidadeNaturezaBloqueada", imunidade);
       botao.title = imunidade
-        ? `${natureza.nome}: imunidade automática do nível 7.`
-        : `${natureza.nome}: resistência automática do nível 3.`;
+        ? "Resistência N3 e imunidade N7 ativas."
+        : "Resistência automática do nível 3.";
     });
   }
 
-  window.definirAtributoConjuracaoNatureza = function(atributoId){
+  function agendarAtualizacaoCompleta(){
+    if(frameAtualizacao !== null) return;
+    frameAtualizacao = requestAnimationFrame(() => {
+      frameAtualizacao = null;
+      renderizarNaturezasComRegras();
+      renderizarJutsusComRegras();
+      renderizarResistenciasComRegras();
+    });
+  }
+
+  function definirAtributoConjuracaoNaturezaComRegras(atributoId){
     const id = String(atributoId || "").trim();
     estado.atributoConjuracaoNatureza = ATRIBUTO_POR_ID.has(id) ? id : "";
-    salvarEstado();
+    persistirEstadoSeguro();
     agendarAtualizacaoCompleta();
-  };
+  }
 
-  window.definirNatureza = function(id, nivel){
+  function definirNaturezaComRegras(id, nivel){
     if(!NATUREZA_POR_ID.has(id)) return;
-
-    const novoNivel = limitarNivel(nivel);
-    const atual = nivelNatureza(id);
-    const nivelFinal = atual === novoNivel
-      ? 0
-      : novoNivel;
+    const nivelClicado = limitarNivel(nivel);
+    const nivelAtual = nivelNatureza(id);
+    const nivelFinal = nivelAtual === nivelClicado ? 0 : nivelClicado;
 
     estado[id] = nivelFinal;
-    salvarEstado();
+    if(nivelFinal >= 5) aplicarNivel5NaNatureza(id, {persistir:false});
+    persistirEstadoSeguro();
     agendarAtualizacaoCompleta();
-  };
+  }
 
-  window.mostrarBeneficioAutomaticoNatureza = async function(tipo, naturezaId){
+  async function mostrarBeneficioAutomaticoNatureza(tipo, naturezaId){
     const natureza = NATUREZA_POR_ID.get(naturezaId);
     if(!natureza) return;
 
-    const titulo = tipo === "imunidade"
-      ? "Imunidade automática"
-      : "Resistência automática";
-
+    const titulo = tipo === "imunidade" ? "Imunidade automática" : "Resistência automática";
     const mensagem = tipo === "imunidade"
-      ? `${natureza.nome} está no nível 7. Esta imunidade é concedida pela Natureza e acompanha o nível automaticamente.`
-      : `${natureza.nome} está no nível 3 ou superior. Esta resistência é concedida pela Natureza e acompanha o nível automaticamente.`;
+      ? `${natureza.nome}: resistência do nível 3 e imunidade do nível 7 estão ativas.`
+      : `${natureza.nome}: resistência automática concedida pelo nível 3.`;
 
-    if(typeof window.avisoShinobi === "function"){
-      await window.avisoShinobi(titulo, mensagem);
-    }else{
-      alert(`${titulo}\n\n${mensagem}`);
-    }
-  };
-
-  window.RegrasNaturezaShinobi = {
-    versao: "1.6.0",
-    nivelNatureza,
-    dadosConjuracao,
-    elevarDadosDano,
-    contarDados,
-    calcularJutsu: calcularJutsuComNatureza,
-    formatarBonusTotal,
-    formatarDanoTotal: formatarDanoTotalRegra,
-    idsResistenciasAutomaticas,
-    migrarNivel5Antigo
-  };
-
-  /*
-   * O renderizador recebe temporariamente o dano efetivo do nível 5,
-   * o bônus total e o custo efetivo do Kai. Logo após criar o HTML,
-   * os valores escritos pelo jogador são restaurados. O app mostra e
-   * usa o benefício sem alterar a fonte da ficha e sem acumular bônus.
-   */
-  function prepararValoresEfetivosParaRenderizacao(){
-    const restaurar = [];
-
-    (estado?.jutsus || []).forEach(jutsu => {
-      if(!jutsu) return;
-
-      const regra = calcularJutsuComNatureza(jutsu);
-
-      restaurar.push({
-        jutsu,
-        dano: jutsu.dano,
-        bonusDano: jutsu.bonusDano,
-        custo: jutsu.custo
-      });
-
-      if(regra.dadoElevado){
-        jutsu.dano = regra.danoEfetivo;
-      }
-
-      if(regra.bonusNatureza){
-        if(regra.bonusManualNumero !== null){
-          jutsu.bonusDano = String(regra.bonusTotalNumero);
-        }else if(!regra.bonusManualTexto){
-          jutsu.bonusDano = String(regra.bonusNatureza);
-        }
-      }
-
-      if(regra.kaiSemCusto){
-        jutsu.custo = regra.custoEfetivoTexto;
-      }
-    });
-
-    return function restaurarValoresBase(){
-      restaurar.forEach(item => {
-        item.jutsu.dano = item.dano;
-        item.jutsu.bonusDano = item.bonusDano;
-        item.jutsu.custo = item.custo;
-      });
-    };
+    if(typeof avisoShinobi === "function") await avisoShinobi(titulo, mensagem);
+    else alert(`${titulo}\n\n${mensagem}`);
   }
 
-  const renderizarJutsusBase = window.renderizarJutsus;
-  if(typeof renderizarJutsusBase === "function"){
-    window.renderizarJutsus = function(){
-      if(renderizandoJutsus){
-        return renderizarJutsusBase.apply(this, arguments);
-      }
+  const renderizarJutsusBase = typeof window.renderizarJutsus === "function"
+    ? window.renderizarJutsus
+    : null;
 
-      renderizandoJutsus = true;
+  function renderizarJutsusComRegras(){
+    if(!renderizarJutsusBase) return;
+    if(renderizandoJutsus) return renderizarJutsusBase.apply(this, arguments);
 
-      const restaurarValoresBase =
-        prepararValoresEfetivosParaRenderizacao();
-
-      let resultado;
-
-      try{
-        resultado = renderizarJutsusBase.apply(
-          this,
-          arguments
-        );
-      }finally{
-        restaurarValoresBase();
-        renderizandoJutsus = false;
-      }
-
-      /*
-       * Os textos auxiliares são aplicados depois da restauração para
-       * que o cálculo sempre use os valores-base, sem elevar o dado duas
-       * vezes ou somar o bônus automático novamente.
-       */
+    renderizandoJutsus = true;
+    try{
+      aplicarNiveis5Pendentes({persistir:true});
+      const resultado = renderizarJutsusBase.apply(this, arguments);
       aplicarRegrasNosCards();
       return resultado;
-    };
+    }finally{
+      renderizandoJutsus = false;
+    }
   }
 
-  const renderizarResistenciasBase = window.renderizarResistenciasBatalha;
-  if(typeof renderizarResistenciasBase === "function"){
-    window.renderizarResistenciasBatalha = function(){
-      if(renderizandoResistencias){
-        return renderizarResistenciasBase.apply(this, arguments);
-      }
+  const renderizarResistenciasBase = typeof window.renderizarResistenciasBatalha === "function"
+    ? window.renderizarResistenciasBatalha
+    : null;
 
-      renderizandoResistencias = true;
-      try{
-        const resultado = renderizarResistenciasBase.apply(this, arguments);
-        aplicarRegrasNasResistencias();
-        return resultado;
-      }finally{
-        renderizandoResistencias = false;
-      }
-    };
+  function renderizarResistenciasComRegras(){
+    if(!renderizarResistenciasBase) return;
+    if(renderizandoResistencias) return renderizarResistenciasBase.apply(this, arguments);
+
+    renderizandoResistencias = true;
+    try{
+      const resultado = renderizarResistenciasBase.apply(this, arguments);
+      aplicarRegrasNasResistencias();
+      return resultado;
+    }finally{
+      renderizandoResistencias = false;
+    }
   }
 
-  const toggleResistenciaBase = window.toggleResistenciaBatalha;
-  if(typeof toggleResistenciaBase === "function"){
-    window.toggleResistenciaBatalha = function(id){
-      const {resistencias, imunidades} = idsResistenciasAutomaticas();
-      const natureza = resistencias.get(id) || imunidades.get(id);
+  const toggleResistenciaBase = typeof window.toggleResistenciaBatalha === "function"
+    ? window.toggleResistenciaBatalha
+    : null;
 
-      if(natureza){
-        window.mostrarBeneficioAutomaticoNatureza(
-          imunidades.has(id) ? "imunidade" : "resistencia",
-          natureza.id
-        );
-        return;
-      }
-
-      return toggleResistenciaBase.apply(this, arguments);
-    };
+  function toggleResistenciaComRegras(id){
+    const {resistencias, imunidades} = idsResistenciasAutomaticas();
+    const natureza = resistencias.get(id) || imunidades.get(id);
+    if(natureza){
+      mostrarBeneficioAutomaticoNatureza(imunidades.has(id) ? "imunidade" : "resistencia", natureza.id);
+      return;
+    }
+    return toggleResistenciaBase?.apply(this, arguments);
   }
 
-  window.renderizarNaturezas = renderizarNaturezasComRegras;
-
-  window.usarJutsu = async function(indice){
+  async function usarJutsuComRegras(indice){
+    aplicarNiveis5Pendentes({persistir:true});
     const jutsu = estado?.jutsus?.[indice];
     if(!jutsu) return;
 
@@ -963,44 +775,35 @@
     const custoNumero = valorNumericoEstrito(custoTexto);
     const chakra = document.getElementById("chakra");
     const chakraAtual = numeroSeguro(chakra?.value, 0);
-    const dadosElemento = typeof window.dadosElementoJutsu === "function"
-      ? window.dadosElementoJutsu(jutsu.elemento || "neutro")
-      : {icone: "✨", nome: "NEUTRO"};
+    const dadosElemento = typeof dadosElementoJutsu === "function"
+      ? dadosElementoJutsu(jutsu.elemento || "neutro")
+      : {icone:"✨", nome:"NEUTRO"};
 
     const nome = jutsu.nome || "Jutsu sem nome";
-    const danoTotal = formatarDanoTotalRegra(regra);
-
+    const danoTotal = formatarDanoTotal(regra);
     const detalhe = [
       `${dadosElemento.icone} ${dadosElemento.nome}`,
       custoNumero !== null
         ? custoNumero > 0
           ? `Custo de chakra: ${custoNumero}`
           : regra.kaiSemCusto
-            ? "Custo de chakra: 0 (Natureza nível 4)"
+            ? "Custo de chakra: 0 (benefício N4)"
             : "Sem custo de chakra"
         : `Custo variável: ${custoTexto}`,
-      danoTotal && danoTotal !== "—"
-        ? `Dano total: ${danoTotal}`
-        : "",
-      regra.bonusNatureza
-        ? `Bônus automático: ${comSinal(regra.bonusNatureza)} (${regra.motivoBonus})`
-        : ""
+      danoTotal && danoTotal !== "—" ? `Dano total: ${danoTotal}` : "",
+      regra.bonusNivel2 ? `N2: ${comSinal(regra.bonusNivel2)}` : "",
+      regra.bonusNivel6 ? `N6: ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)` : ""
     ].filter(Boolean).join("\n");
 
-    const confirmado = typeof window.confirmarUsoAcao === "function"
-      ? await window.confirmarUsoAcao("jutsu", nome, detalhe)
+    const confirmado = typeof confirmarUsoAcao === "function"
+      ? await confirmarUsoAcao("jutsu", nome, detalhe)
       : confirm(`${nome}\n\n${detalhe}\n\nUsar este jutsu?`);
-
     if(!confirmado) return;
 
     if(custoNumero !== null && custoNumero > chakraAtual){
       const mensagem = `Você tem ${chakraAtual} de chakra.\nEste jutsu precisa de ${custoNumero}.`;
-
-      if(typeof window.avisoShinobi === "function"){
-        await window.avisoShinobi("Chakra insuficiente", mensagem);
-      }else{
-        alert(mensagem);
-      }
+      if(typeof avisoShinobi === "function") await avisoShinobi("Chakra insuficiente", mensagem);
+      else alert(mensagem);
       return;
     }
 
@@ -1008,59 +811,64 @@
       chakra.value = Math.max(0, chakraAtual - Math.max(0, custoNumero));
     }
 
-    if(typeof window.salvar === "function"){
-      window.salvar();
-    }else{
-      salvarEstado();
-    }
+    if(typeof salvar === "function") salvar();
+    else persistirEstadoSeguro();
 
-    const danoLog = danoTotal && danoTotal !== "—"
-      ? ` | Dano: ${danoTotal}`
-      : "";
+    const danoLog = danoTotal && danoTotal !== "—" ? ` | Dano: ${danoTotal}` : "";
+    const custoLog = custoNumero !== null && custoNumero > 0 ? ` | Chakra: -${custoNumero}` : "";
+    if(typeof log === "function") log(`${dadosElemento.icone} Usou ${nome}${danoLog}${custoLog}`);
+    if(typeof atualizarHUD === "function") atualizarHUD();
+  }
 
-    const custoLog = custoNumero !== null && custoNumero > 0
-      ? ` | Chakra: -${custoNumero}`
-      : "";
+  /* Publica também nas ligações globais usadas pelo código antigo e pelos onclicks. */
+  window.definirAtributoConjuracaoNatureza = definirAtributoConjuracaoNaturezaComRegras;
+  window.definirNatureza = definirNaturezaComRegras;
+  window.renderizarNaturezas = renderizarNaturezasComRegras;
+  window.renderizarJutsus = renderizarJutsusComRegras;
+  window.renderizarResistenciasBatalha = renderizarResistenciasComRegras;
+  window.toggleResistenciaBatalha = toggleResistenciaComRegras;
+  window.mostrarBeneficioAutomaticoNatureza = mostrarBeneficioAutomaticoNatureza;
+  window.usarJutsu = usarJutsuComRegras;
 
-    if(typeof window.log === "function"){
-      window.log(`${dadosElemento.icone} Usou ${nome}${danoLog}${custoLog}`);
-    }
+  try{ definirNatureza = definirNaturezaComRegras; }catch(_erro){}
+  try{ renderizarNaturezas = renderizarNaturezasComRegras; }catch(_erro){}
+  try{ renderizarJutsus = renderizarJutsusComRegras; }catch(_erro){}
+  try{ usarJutsu = usarJutsuComRegras; }catch(_erro){}
 
-    window.atualizarHUD?.();
+  window.RegrasNaturezaShinobi = {
+    versao:VERSAO,
+    nivelNatureza,
+    dadosConjuracao,
+    elevarDadosDano,
+    contarDados,
+    calcularJutsu:calcularJutsuComNatureza,
+    formatarBonusTotal,
+    formatarDanoTotal,
+    aplicarNivel5NaNatureza,
+    aplicarNiveis5Pendentes,
+    idsResistenciasAutomaticas
   };
 
   document.addEventListener("input", evento => {
-    if(
-      evento.target?.matches(
-        '[data-save="forca"], [data-save="destreza"], [data-save="constituicao"], [data-save="inteligencia"], [data-save="sabedoria"], [data-save="carisma"]'
-      )
-    ){
+    if(evento.target?.matches('[data-save="forca"], [data-save="destreza"], [data-save="constituicao"], [data-save="inteligencia"], [data-save="sabedoria"], [data-save="carisma"]')){
       agendarAtualizacaoCompleta();
     }
   });
 
   document.addEventListener("change", evento => {
-    if(
-      evento.target?.matches(
-        '[data-save="forca"], [data-save="destreza"], [data-save="constituicao"], [data-save="inteligencia"], [data-save="sabedoria"], [data-save="carisma"]'
-      )
-    ){
+    if(evento.target?.matches('[data-save="forca"], [data-save="destreza"], [data-save="constituicao"], [data-save="inteligencia"], [data-save="sabedoria"], [data-save="carisma"]')){
       agendarAtualizacaoCompleta();
     }
   });
 
   function iniciar(){
-    migrarNivel5Antigo({persistir: true});
-    window.renderizarNaturezas?.();
-    window.renderizarJutsus?.();
-    window.renderizarResistenciasBatalha?.();
+    aplicarNiveis5Pendentes({persistir:true});
+    renderizarNaturezasComRegras();
+    renderizarJutsusComRegras();
+    renderizarResistenciasComRegras();
   }
 
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", iniciar, {once: true});
-  }else{
-    iniciar();
-  }
-
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  else iniciar();
   window.addEventListener("pageshow", iniciar);
 })();
