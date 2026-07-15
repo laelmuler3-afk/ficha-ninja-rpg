@@ -1,4 +1,4 @@
-/* Shinobi 1.5.0 — Naturezas de Chakra e benefícios automáticos. */
+/* Shinobi 1.7.2 — Naturezas compactas e benefícios detalhados no painel expansível. */
 
 .configConjuracaoNatureza{
   display:grid;
@@ -70,15 +70,6 @@
   min-width:0;
 }
 
-.naturezaBeneficioAtual{
-  display:block;
-  max-width:210px;
-  margin-top:2px;
-  color:rgba(255,244,225,.68);
-  font-size:10px;
-  line-height:1.2;
-  white-space:normal;
-}
 
 .naturezaLinhaSete{
   display:grid !important;
@@ -163,7 +154,57 @@
     grid-template-columns:repeat(7,minmax(24px,1fr));
   }
 
-  .naturezaBeneficioAtual{
-    max-width:145px;
+}
+
+/* Visão resumida: o card mostra apenas ícone, elemento, nível e marcadores. */
+#naturezasUI .naturezaCard{
+  min-height:64px !important;
+  padding-top:9px !important;
+  padding-bottom:9px !important;
+}
+
+#naturezasUI .naturezaInfo{
+  min-width:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+}
+
+#naturezasUI .naturezaIdentificacao{
+  min-width:0 !important;
+  display:flex !important;
+  align-items:baseline !important;
+  gap:8px !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+#naturezasUI .naturezaNome{
+  min-width:0 !important;
+  margin:0 !important;
+}
+
+#naturezasUI .naturezaNivelTexto{
+  flex:0 0 auto !important;
+  margin:0 !important;
+  opacity:.9 !important;
+}
+
+#naturezasUI .naturezaBeneficiosAtivos,
+#naturezasUI .naturezaBeneficioAtual{
+  display:none !important;
+}
+
+@media (max-width:520px){
+  #naturezasUI .naturezaCard{
+    min-height:60px !important;
+  }
+
+  #naturezasUI .naturezaIdentificacao{
+    gap:6px !important;
   }
 }
+
