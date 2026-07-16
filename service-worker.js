@@ -1,5 +1,5 @@
-/* Shinobi 1.9.6 — Service Worker com atualização confiável e cache offline. */
-const APP_VERSION = "1.9.6";
+/* Shinobi 1.10.0 — Service Worker com atualização confiável e cache offline. */
+const APP_VERSION = "1.10.0";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -25,6 +25,7 @@ const APP_SHELL = [
   `./js/10-regras-natureza.js?v=${APP_VERSION}`,
   `./js/11-batalha-ui.js?v=${APP_VERSION}`,
   `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
+  `./js/13-motor-universal.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
