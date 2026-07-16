@@ -1191,3 +1191,76 @@ body.ajustandoFundoPerfil{overflow:hidden !important;}
     gap:7px !important;
   }
 }
+
+/* ===== v1.10.5 — ícones compartilhados entre Inventário e Ataques ===== */
+#listaArmados .ataqueLinhaIcone,
+#listaArmados .armadoIcone{
+  overflow:hidden;
+  padding:3px;
+}
+#listaArmados .ataqueArmaImagem{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.48));
+}
+#listaArmados .ataqueArmaImagemResumo{
+  max-width:30px;
+  max-height:30px;
+}
+#listaArmados .ataqueArmaImagemDetalhe{
+  max-width:40px;
+  max-height:40px;
+}
+#listaArmados .ataqueIconeFallback{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  line-height:1;
+}
+#listaArmados .ataqueItemUsado{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-width:0;
+}
+#listaArmados .ataqueItemUsado > span:last-child{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#listaArmados .ataqueItemUsadoImagem{
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+  object-fit:contain;
+  object-position:center;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.45));
+  pointer-events:none;
+}
+#listaArmados .ataqueItemUsadoFallback{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;
+  height:24px;
+  flex:0 0 24px;
+  line-height:1;
+}
+@media (max-width:430px){
+  #listaArmados .ataqueArmaImagemResumo{
+    max-width:27px;
+    max-height:27px;
+  }
+  #listaArmados .ataqueArmaImagemDetalhe{
+    max-width:36px;
+    max-height:36px;
+  }
+}
