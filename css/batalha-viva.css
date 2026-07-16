@@ -707,3 +707,119 @@
     grid-template-columns:repeat(3,minmax(0,1fr))!important;
   }
 }
+
+
+/* ===== Shinobi 1.8.2 — modificadores sempre visíveis ===== */
+#batalha .modificadoresCombatePainel{
+  display:grid;
+  gap:12px;
+}
+
+#batalha .modificadoresCombateCabecalho{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+#batalha .modificadoresCombateCabecalho h3{
+  margin:0;
+}
+
+#batalha .modificadoresCombateCabecalho small{
+  display:block;
+  margin-top:3px;
+  opacity:.68;
+  font-size:.76rem;
+}
+
+#batalha .modsGridVisivel{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:7px;
+  margin:0;
+}
+
+#batalha .modsGridVisivel > div{
+  min-width:0;
+  padding:9px 4px 8px;
+  border:1px solid rgba(255,177,90,.20);
+  border-radius:10px;
+  background:rgba(0,0,0,.22);
+  text-align:center;
+}
+
+#batalha .modsGridVisivel span{
+  display:block;
+  margin-bottom:3px;
+  font-size:.64rem;
+  letter-spacing:.08em;
+  opacity:.68;
+}
+
+#batalha .modsGridVisivel strong{
+  display:block;
+  font-size:1rem;
+  line-height:1;
+}
+
+#batalha .bonusResumoTitulo{
+  margin-bottom:7px;
+  font-size:.72rem;
+  font-weight:800;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  opacity:.68;
+}
+
+#batalha .bonusResumoChipTotal{
+  display:grid;
+  grid-template-columns:auto auto;
+  align-items:center;
+  gap:2px 8px;
+  min-width:92px;
+}
+
+#batalha .bonusResumoChipTotal b{
+  font-size:.68rem;
+  letter-spacing:.06em;
+}
+
+#batalha .bonusResumoChipTotal strong{
+  justify-self:end;
+  font-size:.9rem;
+}
+
+#batalha .bonusResumoChipTotal small{
+  grid-column:1/-1;
+  font-size:.62rem;
+  font-weight:600;
+  opacity:.72;
+  white-space:normal;
+}
+
+#batalha .ajustesBonusAtributos{
+  border-top:1px solid rgba(255,177,90,.16);
+  padding-top:9px;
+}
+
+#batalha .ajustesBonusAtributos summary{
+  cursor:pointer;
+  font-size:.78rem;
+  font-weight:800;
+  color:#ffd29a;
+}
+
+#batalha .ajustesBonusAtributos[open] summary{
+  margin-bottom:10px;
+}
+
+#batalha .ajustesBonusAtributos .btnLimparBonusAtributos{
+  margin-top:10px;
+}
+
+@media (max-width:560px){
+  #batalha .modsGridVisivel{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
