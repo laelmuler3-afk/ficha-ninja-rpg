@@ -1,6 +1,6 @@
 {
-  "version": "1.9.1",
-  "releasedAt": "2026-07-16",
-  "notes": "Manutenção geral: limpeza de arquivo legado, catálogo otimizado, registro central de efeitos e Service Worker mais estável.",
+  "version": "1.9.2",
+  "releasedAt": "2026-07-16T15:15:00Z",
+  "notes": "Corrige a migração de efeitos já ativos para carregar todos os buffs e efeitos estruturados do jutsu.",
   "message": "Correções, otimização de cache e redução do tamanho dos dados sem alterar as fichas."
 }
