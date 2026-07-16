@@ -1,4 +1,4 @@
-/* Shinobi 1.3.6 — inventário visual revisado e otimizado. */
+/* Shinobi 1.10.4 — inventário visual com catálogo ampliado. */
 
 /* ===== Inventário visual compacto ===== */
 (function(){
@@ -17,11 +17,49 @@
     "papel-bomba": "assets/inventory-papel-bomba.webp",
     "comida": "assets/inventory-comida.webp",
     "esfera": "assets/inventory-esfera.webp",
+    "foice-curta": "assets/inventory-foice-curta.webp",
+    "bastao": "assets/inventory-bastao.webp",
+    "zarabatana": "assets/inventory-zarabatana.webp",
+    "balista": "assets/inventory-balista.webp",
+    "funda": "assets/inventory-funda.webp",
+    "arco-composto": "assets/inventory-arco-composto.webp",
+    "arco-longo": "assets/inventory-arco-longo.webp",
+    "arco-curto": "assets/inventory-arco-curto.webp",
+    "shuriken-de-vento": "assets/inventory-shuriken-de-vento.webp",
+    "tanto": "assets/inventory-tanto.webp",
+    "dispositivo-de-disparo": "assets/inventory-dispositivo-de-disparo.webp",
+    "wakizaki": "assets/inventory-wakizaki.webp",
+    "nunchaku": "assets/inventory-nunchaku.webp",
+    "katana": "assets/inventory-katana.webp",
+    "corrente": "assets/inventory-corrente.webp",
+    "chicote": "assets/inventory-chicote.webp",
+    "lanca": "assets/inventory-lanca.webp",
     "pilula-de-chakra": "assets/inventory-pilula-de-chakra.webp"
   });
 
   /* Os nomes são normalizados; versões repetidas com acentos são desnecessárias. */
   const ALIASES_INVENTARIO = Object.freeze({
+    "foice curta": "foice-curta",
+    "bastao": "bastao",
+    "zarabatana": "zarabatana",
+    "balista": "balista",
+    "funda": "funda",
+    "arco composto": "arco-composto",
+    "arco longo": "arco-longo",
+    "arco curto": "arco-curto",
+    "shuriken de vento": "shuriken-de-vento",
+    "tanto": "tanto",
+    "dispositivo de disparo": "dispositivo-de-disparo",
+    "wakizaki": "wakizaki",
+    "nunchaku": "nunchaku",
+    "katana": "katana",
+    "corrente": "corrente",
+    "chicote": "chicote",
+    "lanca": "lanca",
+    "wakizashi": "wakizaki",
+    "shuriken vento": "shuriken-de-vento",
+    "dispositivo disparo": "dispositivo-de-disparo",
+    "foice": "foice-curta",
     "pilula de chakra": "pilula-de-chakra",
     "pilula chakra": "pilula-de-chakra",
     "chakra": "pilula-de-chakra",
