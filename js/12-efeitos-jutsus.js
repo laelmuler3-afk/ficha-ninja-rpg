@@ -1,12 +1,12 @@
-/* Shinobi 1.9.3 — motor estruturado com reparo determinístico de efeitos ativos. */
+/* Shinobi 1.9.6 — motor estruturado com reparo de efeitos automáticos em fichas antigas. */
 (function(){
   "use strict";
 
-  if(window.__motorEfeitosEstruturadosV193) return;
-  window.__motorEfeitosEstruturadosV193 = true;
+  if(window.__motorEfeitosEstruturadosV196) return;
+  window.__motorEfeitosEstruturadosV196 = true;
 
-  const VERSAO = "1.9.3";
-  const VERSAO_EFEITOS = "1.0.3";
+  const VERSAO = "1.9.6";
+  const VERSAO_EFEITOS = "1.1.0";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
   const URL_REGISTRO = `data/efeitos-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || VERSAO)}-${VERSAO_EFEITOS}`;
 
@@ -24,6 +24,16 @@
     ...Object.keys(ATRIBUTOS).map(chave => `mod_${chave}`)
   ]);
 
+  const CONDICOES_DE_ESCOPO = new Set([
+    "contra_ataques",
+    "contra_ataques_distancia"
+  ]);
+
+  const CONDICOES_COM_CONFIRMACAO = new Set([
+    "resultado",
+    "apos_ataque_escolhido"
+  ]);
+
   const ROTULOS_ALVO = {
     ca:"CA",
     furtividade:"Furtividade",
@@ -38,6 +48,12 @@
     jogada_ataque_desarmado:"Ataque desarmado",
     dano:"Dano",
     dano_corpo_a_corpo:"Dano corpo a corpo",
+    dano_desarmado:"Dano desarmado",
+    bonus_ataque_dano:"Ataque e dano",
+    acao:"Ações",
+    acao_bonus:"Ações bônus",
+    ataque_desarmado:"Ataques desarmados",
+    ataques_acao_bonus:"Ataques na ação bônus",
     pv:"PV",
     pv_temporario:"PV temporários",
     chakra:"Chakra",
@@ -73,6 +89,7 @@
   let registro = null;
   let registroPorId = new Map();
   let registroPorNome = new Map();
+  let registroPorNomeFlexivel = new Map();
   let promessaRegistro = null;
   let renderizando = false;
   let quadroAtualizacao = null;
@@ -111,6 +128,15 @@
     return normalizar(valor)
       .replace(/[^a-z0-9]+/g,"-")
       .replace(/^-+|-+$/g,"") || "efeito";
+  }
+
+  function chaveNomeFlexivel(valor){
+    return normalizar(valor)
+      .replace(/\([^)]*\)/g," ")
+      .replace(/\brequer\s+(?:tutor|habilidade)\b/g," ")
+      .replace(/silenciosos/g,"silensiosos")
+      .replace(/[^a-z0-9]+/g,"")
+      .trim();
   }
 
   function clonar(valor){
@@ -153,10 +179,12 @@
 
   function condicaoPermiteAutomatico(efeito){
     if(!efeito?.condicao) return true;
-    if(efeito.condicao.tipo === "natureza_nivel") return condicaoNaturezaAtiva(efeito.condicao);
-    /* CA só é consultada contra ataques, então esta condição é inerente ao uso da CA. */
-    if(efeito.condicao.tipo === "contra_ataques") return true;
-    return false;
+    const tipo=String(efeito.condicao.tipo||"");
+    if(tipo === "natureza_nivel") return condicaoNaturezaAtiva(efeito.condicao);
+    /* Condições de escopo continuam sendo bônus válidos; o texto informa quando usar. */
+    if(CONDICOES_DE_ESCOPO.has(tipo)) return true;
+    if(CONDICOES_COM_CONFIRMACAO.has(tipo)) return efeito.condicaoAtendida === true;
+    return efeito.condicaoAtendida === true;
   }
 
   async function carregarRegistro(){
@@ -181,6 +209,11 @@
             .filter(item => normalizar(item?.nome))
             .map(item => [normalizar(item.nome), item])
         );
+        registroPorNomeFlexivel = new Map(
+          lista
+            .filter(item => chaveNomeFlexivel(item?.nome))
+            .map(item => [chaveNomeFlexivel(item.nome), item])
+        );
         return dados;
       })
       .catch(erro => {
@@ -188,6 +221,7 @@
         registro = {jutsus:[]};
         registroPorId = new Map();
         registroPorNome = new Map();
+        registroPorNomeFlexivel = new Map();
         return registro;
       });
 
@@ -195,14 +229,16 @@
   }
 
   function registroDoJutsu(jutsu){
-    return registroPorId.get(String(jutsu?.catalogoId || ""))
+    return registroPorId.get(String(jutsu?.catalogoId || jutsu?.id || ""))
       || registroPorNome.get(normalizar(jutsu?.nome))
+      || registroPorNomeFlexivel.get(chaveNomeFlexivel(jutsu?.nome))
       || null;
   }
 
   function registroDoItemAtivo(item){
     return registroPorId.get(String(item?.origemId || ""))
       || registroPorNome.get(normalizar(item?.nome))
+      || registroPorNomeFlexivel.get(chaveNomeFlexivel(item?.nome))
       || null;
   }
 
@@ -237,17 +273,73 @@
     return JSON.stringify(canonicos);
   }
 
+  function efeitoAutomaticoObrigatorioDoCatalogo(efeito){
+    const e=normalizarEfeito(efeito);
+    return Boolean(
+      e.automatico
+      && ALVOS_AUTOMATICOS.has(e.alvo)
+      && ["somar","multiplicar"].includes(e.operacao)
+    );
+  }
+
+  function chaveSemanticaEfeito(efeito){
+    const e=normalizarEfeito(efeito);
+    return [
+      e.aplicaEm,e.tipo,e.alvo,e.operacao,e.grupoEscolha||"",e.opcao||"",
+      JSON.stringify(ordenarValorParaAssinatura(e.condicao||{}))
+    ].join("|");
+  }
+
+  function mesclarEfeitosManuaisComCatalogo(jutsu,item){
+    const atuais=Array.isArray(jutsu?.efeitosEstruturados)
+      ? jutsu.efeitosEstruturados.map((efeito,indice)=>normalizarEfeito(efeito,indice))
+      : [];
+    const canonicos=(Array.isArray(item?.efeitos)?item.efeitos:[])
+      .map((efeito,indice)=>normalizarEfeito(efeito,indice));
+
+    /*
+     * O catálogo é a fonte das regras. Fichas antigas podem manter efeitos extras
+     * personalizados, mas não podem perder nenhum efeito oficial por causa de uma
+     * edição antiga ou de uma migração incompleta.
+     */
+    const atuaisPorId=new Map(atuais.map(efeito=>[efeito.id,efeito]));
+    const atuaisPorSemantica=new Map(atuais.map(efeito=>[chaveSemanticaEfeito(efeito),efeito]));
+    const consumidos=new Set();
+
+    const mesclados=canonicos.map(canonico=>{
+      const manual=atuaisPorId.get(canonico.id)
+        || atuaisPorSemantica.get(chaveSemanticaEfeito(canonico));
+      if(!manual) return canonico;
+      consumidos.add(manual.id);
+      const combinado={...manual,...canonico};
+      if(manual.condicaoAtendida !== undefined) combinado.condicaoAtendida=manual.condicaoAtendida;
+      return normalizarEfeito(combinado);
+    });
+
+    atuais.forEach(efeito=>{
+      if(consumidos.has(efeito.id)) return;
+      const jaExiste=mesclados.some(itemMesclado=>
+        itemMesclado.id===efeito.id || chaveSemanticaEfeito(itemMesclado)===chaveSemanticaEfeito(efeito)
+      );
+      if(!jaExiste) mesclados.push(efeito);
+    });
+
+    return mesclados;
+  }
+
   async function migrarJutsusDoCatalogo(){
     await carregarRegistro();
     const lista = Array.isArray(estado?.jutsus) ? estado.jutsus : [];
     let alterou = false;
 
     lista.forEach(jutsu => {
-      if(!jutsu || jutsu.efeitosEditadosManualmente) return;
+      if(!jutsu) return;
       const item = registroDoJutsu(jutsu);
       if(!item) return;
 
-      const efeitosEsperados = clonar(item.efeitos || []);
+      const efeitosEsperados = jutsu.efeitosEditadosManualmente
+        ? mesclarEfeitosManuaisComCatalogo(jutsu,item)
+        : clonar(item.efeitos || []);
       const precisaMigrar = !Array.isArray(jutsu.efeitosEstruturados)
         || String(jutsu.efeitosVersao || "") !== VERSAO_EFEITOS
         || assinaturaEfeitos(jutsu.efeitosEstruturados) !== assinaturaEfeitos(efeitosEsperados);
@@ -263,6 +355,7 @@
       jutsu.classificacaoEfeitos = String(item.classificacao || "");
       jutsu.efeitosVersao = VERSAO_EFEITOS;
       jutsu.efeitosAssinatura = assinaturaEfeitos(jutsu.efeitosEstruturados);
+      if(jutsu.efeitosEditadosManualmente) jutsu.efeitosAutomaticosReparados = true;
       alterou = true;
     });
 
@@ -287,6 +380,11 @@
     const atuais=Array.isArray(item?.efeitos)
       ? item.efeitos.map((efeito,indice)=>normalizarEfeito(efeito,indice))
       : bonusLegadoParaEfeitos(item?.bonus);
+    const atuaisPorId=new Map(atuais.map(efeito=>[efeito.id,efeito]));
+    origem.forEach(efeito=>{
+      const anterior=atuaisPorId.get(efeito.id);
+      if(anterior?.condicaoAtendida !== undefined) efeito.condicaoAtendida=anterior.condicaoAtendida;
+    });
 
     /*
      * Efeitos de escolha não podem ser ativados em bloco durante uma migração.
@@ -390,7 +488,8 @@
     if(!estado || typeof estado !== "object") return [];
     if(!Array.isArray(estado[CHAVE_ESTADO])) estado[CHAVE_ESTADO] = [];
 
-    estado[CHAVE_ESTADO] = estado[CHAVE_ESTADO]
+    const lista=estado[CHAVE_ESTADO];
+    const normalizada=lista
       .filter(item => item && typeof item === "object")
       .map((item,indice) => {
         const efeitos = Array.isArray(item.efeitos)
@@ -414,7 +513,9 @@
       })
       .filter(item => item.efeitos.length > 0);
 
-    return estado[CHAVE_ESTADO];
+    /* Mantém a mesma referência para não perder inserções durante o cálculo de acúmulo. */
+    lista.splice(0,lista.length,...normalizada);
+    return lista;
   }
 
   function efeitoAutomaticoNoUsuario(efeito){
@@ -566,13 +667,24 @@
   function efeitoParaTexto(efeito){
     const rotulo = ROTULOS_ALVO[efeito.alvo] || efeito.alvo.replace(/_/g," ");
     const valor = efeito.valor;
+    let texto;
     if(efeito.tipo === "bonus_numerico" && typeof valor === "number"){
-      return `${rotulo} ${comSinal(valor)}${efeito.unidade?` ${efeito.unidade}`:""}`;
+      texto=`${rotulo} ${comSinal(valor)}${efeito.unidade?` ${efeito.unidade}`:""}`;
+    }else if(efeito.operacao === "multiplicar" && valor !== undefined){
+      texto=`${rotulo} ×${valor}`;
+    }else{
+      texto=efeito.texto || rotulo;
     }
-    if(efeito.operacao === "multiplicar" && valor !== undefined){
-      return `${rotulo} ×${valor}`;
+    if(efeito.condicao){
+      const condicao=textoCondicao(efeito.condicao);
+      if(CONDICOES_COM_CONFIRMACAO.has(String(efeito.condicao.tipo||"")) && efeito.condicaoAtendida!==true){
+        return `${texto} (condição não confirmada: ${condicao})`;
+      }
+      if(CONDICOES_DE_ESCOPO.has(String(efeito.condicao.tipo||""))){
+        return `${texto} (${condicao})`;
+      }
     }
-    return efeito.texto || rotulo;
+    return texto;
   }
 
   function polaridadeDoItem(item){
@@ -598,12 +710,33 @@
     return host;
   }
 
+  function construirResumoBonusGerais(lista){
+    const diretos=ALVOS_AUTOMATICOS;
+    const chips=[];
+    const vistos=new Set();
+    lista.forEach(item=>{
+      item.efeitos
+        .filter(e=>e.persistente!==false && efeitoDesbloqueado(e) && APLICACOES_USUARIO.has(e.aplicaEm))
+        .filter(e=>e.polaridade==="buff" && !diretos.has(e.alvo))
+        .forEach(efeito=>{
+          const texto=efeitoParaTexto(efeito);
+          const chave=normalizar(texto);
+          if(!texto || vistos.has(chave)) return;
+          vistos.add(chave);
+          chips.push(`<span class="efeitoResumoGeralChip">${escaparHtml(texto)}</span>`);
+        });
+    });
+    if(!chips.length) return "";
+    return `<div class="efeitosResumoGeral"><strong>Outros bônus ativos</strong><div>${chips.join("")}</div></div>`;
+  }
+
   function renderizarEfeitos(){
     const host=garantirHostEfeitos();
     if(!host) return;
     const lista=garantirLista();
     host.hidden=!lista.length;
-    host.innerHTML=lista.map(item=>{
+    const resumoGeral=construirResumoBonusGerais(lista);
+    host.innerHTML=resumoGeral+lista.map(item=>{
       const polaridade=polaridadeDoItem(item);
       const persistentes=item.efeitos.filter(e=>e.persistente!==false && efeitoDesbloqueado(e));
       const usuario=persistentes.filter(e=>APLICACOES_USUARIO.has(e.aplicaEm));
@@ -650,9 +783,14 @@
   }
 
   function obterEfeitosDoJutsu(jutsu){
-    const proprios=Array.isArray(jutsu?.efeitosEstruturados)?jutsu.efeitosEstruturados:[];
-    if(proprios.length) return proprios.map(normalizarEfeito).filter(efeitoDesbloqueado);
     const item=registroDoJutsu(jutsu);
+    const proprios=Array.isArray(jutsu?.efeitosEstruturados)?jutsu.efeitosEstruturados:[];
+    if(proprios.length){
+      const efeitos=jutsu?.efeitosEditadosManualmente && item
+        ? mesclarEfeitosManuaisComCatalogo(jutsu,item)
+        : proprios;
+      return efeitos.map(normalizarEfeito).filter(efeitoDesbloqueado);
+    }
     if(item?.efeitos?.length) return item.efeitos.map(normalizarEfeito).filter(efeitoDesbloqueado);
     return extrairFallback(jutsu);
   }
@@ -665,27 +803,59 @@
   }
 
   function extrairFallback(jutsu){
-    /* Fallback conservador para jutsus manuais: apenas bônus explícitos no usuário. */
-    const texto=normalizar(jutsu?.descricao || "");
+    /* Fallback para jutsus manuais e fichas antigas sem catalogoId. */
+    const texto=normalizar([jutsu?.descricao,jutsu?.upgrade?.efeito,jutsu?.bonus,jutsu?.efeitos].filter(Boolean).join(". "));
     const efeitos=[];
-    const regras=[
-      {alvo:"ca", rx:/(?:ganha|recebe|aumenta)[^.;]{0,40}?([+]\s*\d+)\s*(?:de\s*)?ca\b|([+]\s*\d+)\s*(?:de\s*)?ca\b/},
-      {alvo:"furtividade", rx:/(?:ganha|recebe|aumenta)[^.;]{0,40}?([+]\s*\d+)\s*(?:de\s*)?furtividade\b|([+]\s*\d+)\s*(?:de\s*)?furtividade\b/},
-      {alvo:"velocidade", rx:/velocidade[^.;]{0,50}?(?:aumenta|ganha|recebe)[^.;]{0,20}?([+]?[ ]*\d+(?:[.,]\d+)?)\s*(?:m|metros?)\b/}
-    ];
-    regras.forEach((regra,indice)=>{
-      const m=texto.match(regra.rx);
-      const bruto=m?.[1] || m?.[2];
-      if(!bruto) return;
-      const valor=numero(String(bruto).replace(/\s+/g,""),0);
-      if(!valor) return;
+    const vistos=new Set();
+
+    function adicionar(alvo,valor,{operacao="somar",unidade="",textoEfeito="",automatico=true}={}){
+      const numeroValor=numero(valor,operacao==="multiplicar"?1:0);
+      if((operacao==="somar"&&!numeroValor)||(operacao==="multiplicar"&&numeroValor===1)) return;
+      const chave=`${alvo}|${operacao}|${numeroValor}`;
+      if(vistos.has(chave)) return;
+      vistos.add(chave);
       efeitos.push(normalizarEfeito({
-        id:`fallback-${regra.alvo}-${indice}`,
-        polaridade:"buff",aplicaEm:"usuario",tipo:"bonus_numerico",alvo:regra.alvo,
-        operacao:"somar",valor,texto:`${ROTULOS_ALVO[regra.alvo]} ${comSinal(valor)}`,
-        automatico:true,persistente:true,duracao:String(jutsu?.duracao||"")
-      },indice));
+        id:`fallback-${slug(alvo)}-${efeitos.length+1}`,
+        polaridade:"buff",aplicaEm:"usuario",tipo:operacao==="multiplicar"?"multiplicador":"bonus_numerico",
+        alvo,operacao,valor:numeroValor,unidade,
+        texto:textoEfeito || `${ROTULOS_ALVO[alvo]||alvo} ${operacao==="multiplicar"?`×${numeroValor}`:comSinal(numeroValor)}`,
+        automatico,persistente:true,duracao:String(jutsu?.duracao||"")
+      },efeitos.length));
+    }
+
+    function primeiroValor(padroes){
+      for(const rx of padroes){
+        const m=texto.match(rx);
+        if(m?.[1]) return numero(String(m[1]).replace(/\s+/g,""),0);
+      }
+      return 0;
+    }
+
+    adicionar("ca",primeiroValor([
+      /\bca\b[^.;\n]{0,55}?\+\s*(\d+(?:[.,]\d+)?)/,
+      /\+\s*(\d+(?:[.,]\d+)?)[^.;\n]{0,35}?\bca\b/
+    ]));
+    adicionar("furtividade",primeiroValor([
+      /furtividade[^.;\n]{0,45}?\+\s*(\d+(?:[.,]\d+)?)/,
+      /\+\s*(\d+(?:[.,]\d+)?)[^.;\n]{0,35}?furtividade/
+    ]));
+    adicionar("velocidade",primeiroValor([
+      /(?:velocidade|deslocamento|movimento)[^.;\n]{0,55}?\+\s*(\d+(?:[.,]\d+)?)\s*(?:m|metros?)?/,
+      /\+\s*(\d+(?:[.,]\d+)?)\s*(?:m|metros?)[^.;\n]{0,35}?(?:velocidade|deslocamento|movimento)/
+    ]),{unidade:"m"});
+    if(/(?:velocidade|deslocamento|movimento)[^.;\n]{0,30}?(?:e|fica|torna-se)?\s*dobrad/.test(texto)){
+      adicionar("velocidade",2,{operacao:"multiplicar",textoEfeito:"Velocidade ×2"});
+    }
+
+    const atributos={forca:"mod_forca",destreza:"mod_destreza",constituicao:"mod_constituicao",inteligencia:"mod_inteligencia",sabedoria:"mod_sabedoria",carisma:"mod_carisma"};
+    Object.entries(atributos).forEach(([nome,alvo])=>{
+      const valor=primeiroValor([
+        new RegExp(`(?:${nome}|modificador\\s+de\\s+${nome})[^.;\\n]{0,40}?\\+\\s*(\\d+(?:[.,]\\d+)?)`),
+        new RegExp(`\\+\\s*(\\d+(?:[.,]\\d+)?)[^.;\\n]{0,35}?(?:${nome}|modificador\\s+de\\s+${nome})`)
+      ]);
+      adicionar(alvo,valor);
     });
+
     return efeitos;
   }
 
@@ -730,6 +900,26 @@
       }
     }
     return escolhidos;
+  }
+
+  function textoCondicao(condicao){
+    const tipo=String(condicao?.tipo||"");
+    if(tipo==="contra_ataques") return "contra ataques";
+    if(tipo==="contra_ataques_distancia") return "contra ataques à distância";
+    if(tipo==="apos_ataque_escolhido") return "após realizar o ataque indicado";
+    if(tipo==="resultado") return String(condicao?.valor||"quando o resultado indicado acontecer");
+    return String(condicao?.valor||tipo.replace(/_/g," "));
+  }
+
+  function resolverCondicoesAutomaticas(efeitos,jutsu){
+    return efeitos.map(efeito=>{
+      const e=normalizarEfeito(efeito);
+      const tipo=String(e.condicao?.tipo||"");
+      if(!e.automatico || !CONDICOES_COM_CONFIRMACAO.has(tipo)) return e;
+      const pergunta=`${jutsu?.nome||"Este jutsu"}: a condição foi atendida?\n\n${e.texto||textoCondicao(e.condicao)}\n\nOK = aplicar o bônus agora\nCancelar = registrar sem somar o bônus`;
+      e.condicaoAtendida=confirm(pergunta);
+      return e;
+    });
   }
 
   function resolverDestino(efeitos){
@@ -825,6 +1015,7 @@
     const config=configDoJutsu(jutsu);
     efeitos=selecionarEscolhas(efeitos,config);
     if(efeitos===null) return {aplicado:false,cancelado:true,efeitos:[]};
+    efeitos=resolverCondicoesAutomaticas(efeitos,jutsu);
 
     const destino=resolverDestino(efeitos);
     efeitos=destino.efeitos;
@@ -971,8 +1162,8 @@
   }
 
   function instalarRenderJutsus(){
-    if(window.__renderJutsusEfeitosV193 || typeof window.renderizarJutsus!=="function") return;
-    window.__renderJutsusEfeitosV193=true;
+    if(window.__renderJutsusEfeitosV196 || typeof window.renderizarJutsus!=="function") return;
+    window.__renderJutsusEfeitosV196=true;
     const base=window.renderizarJutsus;
     window.renderizarJutsus=function(){
       const resultado=base.apply(this,arguments);
@@ -983,8 +1174,8 @@
   }
 
   function instalarAtualizadores(){
-    if(!window.__modsEfeitosEstruturadosV193 && typeof window.atualizarModsBatalhaComBonus==="function"){
-      window.__modsEfeitosEstruturadosV193=true;
+    if(!window.__modsEfeitosEstruturadosV196 && typeof window.atualizarModsBatalhaComBonus==="function"){
+      window.__modsEfeitosEstruturadosV196=true;
       const base=window.atualizarModsBatalhaComBonus;
       window.atualizarModsBatalhaComBonus=function(){
         const resultado=base.apply(this,arguments);
@@ -994,8 +1185,8 @@
       };
       try{atualizarModsBatalhaComBonus=window.atualizarModsBatalhaComBonus;}catch(_erro){}
     }
-    if(!window.__extrasEfeitosEstruturadosV193 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
-      window.__extrasEfeitosEstruturadosV193=true;
+    if(!window.__extrasEfeitosEstruturadosV196 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
+      window.__extrasEfeitosEstruturadosV196=true;
       const base=window.atualizarMostradoresExtrasBatalha;
       window.atualizarMostradoresExtrasBatalha=function(){
         const resultado=base.apply(this,arguments);
@@ -1009,8 +1200,8 @@
   }
 
   function instalarReset(){
-    if(window.__resetEfeitosEstruturadosV193) return;
-    window.__resetEfeitosEstruturadosV193=true;
+    if(window.__resetEfeitosEstruturadosV196) return;
+    window.__resetEfeitosEstruturadosV196=true;
     window.resetarBatalha=async function(){
       const ok=typeof confirmarUsoAcao==="function"
         ? await confirmarUsoAcao("reset","Resetar batalha","PV e Chakra voltam ao máximo. Efeitos, bônus temporários e histórico serão limpos.")
@@ -1085,6 +1276,17 @@
     bonus:window.obterBonusEfeitosJutsuBatalha,
     multiplicador:window.obterMultiplicadorEfeitosJutsuBatalha,
     assinatura:assinaturaEfeitos,
-    repararAtivos:migrarEfeitosAtivosDoCatalogo
+    repararAtivos:migrarEfeitosAtivosDoCatalogo,
+    localizar:registroDoJutsu,
+    condicaoPermiteAutomatico,
+    auditarCatalogo(){
+      const lista=Array.isArray(registro?.jutsus)?registro.jutsus:[];
+      return lista.map(item=>({
+        catalogoId:item.catalogoId,
+        nome:item.nome,
+        totalEfeitos:Array.isArray(item.efeitos)?item.efeitos.length:0,
+        automaticos:(item.efeitos||[]).filter(e=>e.automatico).length
+      }));
+    }
   };
 })();

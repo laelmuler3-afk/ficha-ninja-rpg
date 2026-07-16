@@ -364,7 +364,10 @@
     const proficiencia=document.getElementById("batalhaProficienciaView");
 
     if(iniciativa) iniciativa.textContent=comSinal(numeroCampo("iniciativa"));
-    if(velocidade) velocidade.textContent=String(numeroCampo("velocidade"));
+    if(velocidade){
+      const base=numeroCampo("velocidade"),multiplicador=Number(window.obterMultiplicadorEfeitosJutsuBatalha?.("velocidade")||1),bonus=Number(window.obterBonusEfeitosJutsuBatalha?.("velocidade")||0),total=Math.floor(base*multiplicador*1000)/1000+bonus,detalhes=[];
+      multiplicador!==1&&detalhes.push(`×${multiplicador} jutsu`),bonus&&detalhes.push(`${bonus>0?"+":""}${bonus}m jutsu`),velocidade.innerHTML=`${String(total).replace(".",",")}${detalhes.length?`<span class="bonusDefesaTexto">${detalhes.join(" · ")}</span>`:""}`;
+    }
     if(proficiencia) proficiencia.textContent=comSinal(numeroCampo("proficiencia"));
   };
 

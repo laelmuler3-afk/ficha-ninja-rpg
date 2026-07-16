@@ -1,4 +1,4 @@
-/* Shinobi 1.9.4 — atualizador observável com verificação sem cache. */
+/* Shinobi 1.9.6 — atualizador observável com verificação sem cache. */
 (function(){
   "use strict";
 
@@ -6,7 +6,7 @@
   window.__shinobiAtualizadorV194 = true;
 
   const APP_VERSION = String(
-    document.documentElement.dataset.appVersion || "1.9.4"
+    document.documentElement.dataset.appVersion || "1.9.6"
   );
   const SW_URL = `./service-worker.js?v=${encodeURIComponent(APP_VERSION)}`;
   const VERSION_URL = "./version.json";

@@ -811,7 +811,7 @@
     }
 
     if(typeof atualizarHUD === "function") atualizarHUD();
-    if(typeof atualizarDefesasTotaisBatalha === "function") atualizarDefesasTotaisBatalha();
+    if(typeof window.atualizarDefesasTotaisBatalha === "function") window.atualizarDefesasTotaisBatalha();
   }
 
   /* Publica também nas ligações globais usadas pelo código antigo e pelos onclicks. */

@@ -13,7 +13,7 @@
   if(window.__catalogoJutsusV140) return;
   window.__catalogoJutsusV140 = true;
 
-  const URL_CATALOGO = `./data/catalogo-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || "1.9.4")}`;
+  const URL_CATALOGO = `./data/catalogo-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || "1.9.6")}`;
   const LIMITE_INICIAL = 30;
   const PASSO_LISTAGEM = 30;
 
