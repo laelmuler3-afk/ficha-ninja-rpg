@@ -1,4 +1,4 @@
-/* Shinobi 1.10.4 — inventário visual com catálogo ampliado. */
+/* Shinobi 1.10.5 — catálogo visual compartilhado entre inventário e ataques. */
 
 /* ===== Inventário visual compacto ===== */
 (function(){
@@ -146,6 +146,15 @@
     cacheSlugs.set(nomeNormalizado, slug);
     return slug;
   }
+
+  window.obterImagemInventarioPorNome = function(nome){
+    const slug = slugIconeInventario(nome);
+    return slug ? (ICONES_INVENTARIO[slug] || "") : "";
+  };
+
+  window.temImagemInventarioPorNome = function(nome){
+    return Boolean(window.obterImagemInventarioPorNome(nome));
+  };
 
   function imagemInventarioVisual(nome, classeExtra = "", slug = null){
     const slugFinal = slug == null ? slugIconeInventario(nome) : slug;
@@ -384,4 +393,10 @@
     menuAcoesAberto = null;
     renderizarInventario();
   });
+
+  /* O núcleo é carregado antes deste módulo. Renderiza novamente os ataques
+     para substituir os emojis pelos mesmos ícones visuais do inventário. */
+  if(typeof renderizarArmados === "function"){
+    renderizarArmados();
+  }
 })();
