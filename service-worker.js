@@ -1,5 +1,5 @@
-/* Shinobi 1.9.4 — Service Worker com atualização confiável e cache offline. */
-const APP_VERSION = "1.9.4";
+/* Shinobi 1.9.6 — Service Worker com atualização confiável e cache offline. */
+const APP_VERSION = "1.9.6";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
