@@ -1,6 +1,6 @@
 {
-  "version": "1.9.4",
-  "releasedAt": "2026-07-16T17:13:07Z",
-  "notes": "Revisão geral de estabilidade: corrige a persistência de atributos editados com bônus ativo, impede reutilização de módulos antigos pelo cache e protege a abertura de fichas com dados locais inválidos.",
-  "message": "Atualização de manutenção e confiabilidade sem apagar fichas existentes."
+  "version": "1.9.6",
+  "releasedAt": "2026-07-16T18:21:00Z",
+  "notes": "Corrige o motor geral de bônus dos jutsus: CA, modificadores, velocidade, furtividade e demais efeitos agora são aplicados ou exibidos na Área de Batalha sem depender do nome de um jutsu específico.",
+  "message": "Ao usar um jutsu, os bônus persistentes são registrados imediatamente na Área de Batalha. Fichas antigas são reparadas automaticamente."
 }
