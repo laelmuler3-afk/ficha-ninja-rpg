@@ -13,7 +13,7 @@
   if(window.__catalogoJutsusV140) return;
   window.__catalogoJutsusV140 = true;
 
-  const URL_CATALOGO = "./data/catalogo-jutsus.json";
+  const URL_CATALOGO = "./data/catalogo-jutsus.json?v=1.9.0";
   const LIMITE_INICIAL = 30;
   const PASSO_LISTAGEM = 30;
 
@@ -570,6 +570,14 @@
       alvo: String(jutsu.alvo || ""),
       descricao,
       imagem: "",
+      efeitosEstruturados: Array.isArray(jutsu.efeitosEstruturados)
+        ? JSON.parse(JSON.stringify(jutsu.efeitosEstruturados))
+        : [],
+      efeitosConfig: jutsu.efeitosConfig && typeof jutsu.efeitosConfig === "object"
+        ? JSON.parse(JSON.stringify(jutsu.efeitosConfig))
+        : {},
+      classificacaoEfeitos: String(jutsu.classificacaoEfeitos || ""),
+      efeitosVersao: String(jutsu.efeitosVersao || "1.0.0"),
       catalogoId: chaveJutsu(jutsu),
       catalogoFonte: {
         catalogo:
