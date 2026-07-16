@@ -1222,6 +1222,12 @@
       if(typeof atualizarModsBatalhaComBonus==="function") atualizarModsBatalhaComBonus();
       if(typeof atualizarPainelBatalhaVivo==="function") atualizarPainelBatalhaVivo();
       atualizarTudo();
+
+      /* Fecha o menu de opções como confirmação visual do reset concluído. */
+      document.querySelectorAll("details.batalhaMenuOpcoes[open]").forEach(menu=>{
+        menu.removeAttribute("open");
+      });
+
       if(typeof avisoShinobi==="function") await avisoShinobi("Batalha resetada","A Área de Batalha e os efeitos ativos foram restaurados.");
       return true;
     };

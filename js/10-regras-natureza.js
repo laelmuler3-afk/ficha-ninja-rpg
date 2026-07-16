@@ -812,6 +812,18 @@
 
     if(typeof atualizarHUD === "function") atualizarHUD();
     if(typeof window.atualizarDefesasTotaisBatalha === "function") window.atualizarDefesasTotaisBatalha();
+
+    /*
+     * Confirma visualmente a execução: depois que o jutsu foi usado com
+     * sucesso, fecha somente a carta acionada e devolve a lista ao estado
+     * compacto. Não fecha a carta quando a confirmação é cancelada ou quando
+     * não há chakra suficiente.
+     */
+    estado.jutsusAbertos = estado.jutsusAbertos || {};
+    delete estado.jutsusAbertos[indice];
+    if(typeof persistirSemRender === "function") persistirSemRender();
+    else persistirEstadoSeguro();
+    if(typeof renderizarJutsus === "function") renderizarJutsus();
   }
 
   /* Publica também nas ligações globais usadas pelo código antigo e pelos onclicks. */
