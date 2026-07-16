@@ -1,12 +1,13 @@
-/* Shinobi 1.9.0 — Service Worker com atualização observável e motor de efeitos estruturados. */
-const APP_VERSION = "1.9.0";
+/* Shinobi 1.9.1 — Service Worker com instalação estável e cache otimizado. */
+const APP_VERSION = "1.9.1";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
+const LIMITE_DOWNLOADS_SIMULTANEOS = 5;
 
 const APP_SHELL = [
   `./index.html?v=${APP_VERSION}`,
-  "./manifest.json",
+  `./manifest.json?v=${APP_VERSION}`,
   "./css/app.css",
   `./css/update.css?v=${APP_VERSION}`,
   "./css/catalogo.css?v=1.4.2",
@@ -16,16 +17,16 @@ const APP_SHELL = [
   "./js/02-runtime.js",
   "./js/03-images.js",
   "./js/04-jutsus.js",
-  "./js/09-catalogo.js?v=1.9.0",
+  `./js/09-catalogo.js?v=${APP_VERSION}`,
   "./js/05-battle.js?v=1.8.4",
   "./js/06-inventory.js",
   "./js/07-profile.js",
   `./js/08-update.js?v=${APP_VERSION}`,
   "./js/10-regras-natureza.js?v=1.8.2",
   "./js/11-batalha-ui.js?v=1.8.0",
-  "./js/12-efeitos-jutsus.js?v=1.9.0",
-  "./data/catalogo-jutsus.json?v=1.9.0",
-  "./data/efeitos-jutsus.json?v=1.0.0",
+  `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
+  `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
+  "./data/efeitos-jutsus.json?v=1.0.1",
   "./assets/ui-background-main.jpg",
   "./assets/ui-notes-parchment.jpg",
   "./icon_192x192.png",
@@ -76,13 +77,44 @@ async function fetchComTentativas(url,maxTentativas=3){
   throw ultimoErro||new Error(`Falha ao baixar ${url}`);
 }
 
+function partesVersaoCache(nome){
+  const prefixo=`${CACHE_PREFIX}-shell-`;
+  if(!nome.startsWith(prefixo)) return [];
+  return nome.slice(prefixo.length).split(/[.-]/).map(parte=>Number(parte)||0);
+}
+
+function compararVersoesCache(a,b){
+  const pa=partesVersaoCache(a);
+  const pb=partesVersaoCache(b);
+  const total=Math.max(pa.length,pb.length);
+  for(let i=0;i<total;i+=1){
+    const diferenca=(pa[i]||0)-(pb[i]||0);
+    if(diferenca) return diferenca;
+  }
+  return 0;
+}
+
 async function localizarCacheShellAnterior(){
   const nomes=await caches.keys();
-  const anteriores=nomes.filter(
-    nome=>nome.startsWith(`${CACHE_PREFIX}-shell-`)&&nome!==SHELL_CACHE
-  );
+  const anteriores=nomes
+    .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-shell-`)&&nome!==SHELL_CACHE)
+    .sort(compararVersoesCache);
   if(!anteriores.length) return null;
   return caches.open(anteriores[anteriores.length-1]);
+}
+
+async function executarComLimite(itens,limite,tarefa){
+  let proximo=0;
+  const quantidade=Math.max(1,Math.min(limite,itens.length));
+  const trabalhadores=Array.from({length:quantidade},async()=>{
+    while(true){
+      const indice=proximo;
+      proximo+=1;
+      if(indice>=itens.length) return;
+      await tarefa(itens[indice],indice);
+    }
+  });
+  await Promise.all(trabalhadores);
 }
 
 async function instalarAppShell(){
@@ -98,43 +130,47 @@ async function instalarAppShell(){
     total
   });
 
-  await Promise.all(SHELL_URLS.map(async url=>{
-    try{
-      const pathname=new URL(url).pathname;
-      const chave=pathname.endsWith("/index.html")?INDEX_URL:url;
-      let response=null;
+  await executarComLimite(
+    SHELL_URLS,
+    LIMITE_DOWNLOADS_SIMULTANEOS,
+    async url=>{
+      try{
+        const pathname=new URL(url).pathname;
+        const chave=pathname.endsWith("/index.html")?INDEX_URL:url;
+        let response=null;
 
-      /*
-       * Arquivos com a mesma URL já foram validados pela versão anterior.
-       * Copiá-los do cache torna a atualização muito mais rápida.
-       * Arquivos alterados recebem uma nova query ?v= e são baixados da rede.
-       */
-      if(cacheAnterior&&!pathname.endsWith("/index.html")){
-        response=await cacheAnterior.match(url);
+        /*
+         * Arquivos com a mesma URL já foram validados pela versão anterior.
+         * Copiá-los do cache evita baixar novamente imagens e módulos intactos.
+         * Arquivos alterados recebem uma nova query ?v= e vêm da rede.
+         */
+        if(cacheAnterior&&!pathname.endsWith("/index.html")){
+          response=await cacheAnterior.match(url);
+        }
+
+        if(!response){
+          response=await fetchComTentativas(url);
+        }
+
+        await cache.put(chave,response.clone());
+        carregados+=1;
+        await avisarClientes({
+          type:"SW_INSTALL_PROGRESS",
+          version:APP_VERSION,
+          loaded:carregados,
+          total
+        });
+      }catch(erro){
+        await avisarClientes({
+          type:"SW_INSTALL_ERROR",
+          version:APP_VERSION,
+          url,
+          message:String(erro?.message||erro)
+        });
+        throw erro;
       }
-
-      if(!response){
-        response=await fetchComTentativas(url);
-      }
-
-      await cache.put(chave,response.clone());
-      carregados+=1;
-      await avisarClientes({
-        type:"SW_INSTALL_PROGRESS",
-        version:APP_VERSION,
-        loaded:carregados,
-        total
-      });
-    }catch(erro){
-      await avisarClientes({
-        type:"SW_INSTALL_ERROR",
-        version:APP_VERSION,
-        url,
-        message:String(erro?.message||erro)
-      });
-      throw erro;
     }
-  }));
+  );
 }
 
 async function limparCachesAntigos(){
