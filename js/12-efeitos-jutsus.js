@@ -1,12 +1,12 @@
-/* Shinobi 1.9.2 — motor estruturado com migração segura de efeitos ativos. */
+/* Shinobi 1.9.3 — motor estruturado com reparo determinístico de efeitos ativos. */
 (function(){
   "use strict";
 
-  if(window.__motorEfeitosEstruturadosV192) return;
-  window.__motorEfeitosEstruturadosV192 = true;
+  if(window.__motorEfeitosEstruturadosV193) return;
+  window.__motorEfeitosEstruturadosV193 = true;
 
-  const VERSAO = "1.9.2";
-  const VERSAO_EFEITOS = "1.0.2";
+  const VERSAO = "1.9.3";
+  const VERSAO_EFEITOS = "1.0.3";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
   const URL_REGISTRO = `data/efeitos-jutsus.json?v=${VERSAO_EFEITOS}`;
 
@@ -72,12 +72,15 @@
 
   let registro = null;
   let registroPorId = new Map();
+  let registroPorNome = new Map();
   let promessaRegistro = null;
   let renderizando = false;
   let quadroAtualizacao = null;
 
   function numero(valor, padrao=0){
-    const n = Number(String(valor ?? "").trim().replace(",", "."));
+    const texto = String(valor ?? "").trim().replace(",", ".");
+    if(!texto) return padrao;
+    const n = Number(texto);
     return Number.isFinite(n) ? n : padrao;
   }
 
@@ -168,13 +171,23 @@
       .then(dados => {
         const lista = Array.isArray(dados?.jutsus) ? dados.jutsus : [];
         registro = dados;
-        registroPorId = new Map(lista.map(item => [String(item.catalogoId || ""), item]));
+        registroPorId = new Map(
+          lista
+            .filter(item => String(item?.catalogoId || "").trim())
+            .map(item => [String(item.catalogoId), item])
+        );
+        registroPorNome = new Map(
+          lista
+            .filter(item => normalizar(item?.nome))
+            .map(item => [normalizar(item.nome), item])
+        );
         return dados;
       })
       .catch(erro => {
         console.warn("Registro estruturado de efeitos indisponível.", erro);
         registro = {jutsus:[]};
         registroPorId = new Map();
+        registroPorNome = new Map();
         return registro;
       });
 
@@ -182,7 +195,46 @@
   }
 
   function registroDoJutsu(jutsu){
-    return registroPorId.get(String(jutsu?.catalogoId || "")) || null;
+    return registroPorId.get(String(jutsu?.catalogoId || ""))
+      || registroPorNome.get(normalizar(jutsu?.nome))
+      || null;
+  }
+
+  function registroDoItemAtivo(item){
+    return registroPorId.get(String(item?.origemId || ""))
+      || registroPorNome.get(normalizar(item?.nome))
+      || null;
+  }
+
+  function ordenarValorParaAssinatura(valor){
+    if(Array.isArray(valor)) return valor.map(ordenarValorParaAssinatura);
+    if(valor && typeof valor === "object"){
+      return Object.keys(valor)
+        .sort()
+        .reduce((saida,chave)=>{
+          saida[chave]=ordenarValorParaAssinatura(valor[chave]);
+          return saida;
+        },{});
+    }
+    return valor;
+  }
+
+  function assinaturaEfeitos(efeitos){
+    const campos=[
+      "id","polaridade","aplicaEm","tipo","alvo","operacao","valor","unidade",
+      "automatico","persistente","acumulo","duracao","grupoEscolha","opcao","condicao"
+    ];
+    const canonicos=(Array.isArray(efeitos)?efeitos:[])
+      .map((efeito,indice)=>normalizarEfeito(efeito,indice))
+      .map(efeito=>{
+        const saida={};
+        campos.forEach(chave=>{
+          if(efeito[chave] !== undefined) saida[chave]=ordenarValorParaAssinatura(efeito[chave]);
+        });
+        return saida;
+      })
+      .sort((a,b)=>String(a.id||"").localeCompare(String(b.id||"")));
+    return JSON.stringify(canonicos);
   }
 
   async function migrarJutsusDoCatalogo(){
@@ -195,12 +247,14 @@
       const item = registroDoJutsu(jutsu);
       if(!item) return;
 
+      const efeitosEsperados = clonar(item.efeitos || []);
       const precisaMigrar = !Array.isArray(jutsu.efeitosEstruturados)
-        || String(jutsu.efeitosVersao || "") !== VERSAO_EFEITOS;
+        || String(jutsu.efeitosVersao || "") !== VERSAO_EFEITOS
+        || assinaturaEfeitos(jutsu.efeitosEstruturados) !== assinaturaEfeitos(efeitosEsperados);
 
       if(!precisaMigrar) return;
 
-      jutsu.efeitosEstruturados = clonar(item.efeitos || []);
+      jutsu.efeitosEstruturados = efeitosEsperados;
       jutsu.efeitosConfig = Object.fromEntries(
         Object.entries(item).filter(([chave]) => ![
           "catalogoId","nome","elemento","classificacao","revisado","pagina","efeitos"
@@ -208,6 +262,7 @@
       );
       jutsu.classificacaoEfeitos = String(item.classificacao || "");
       jutsu.efeitosVersao = VERSAO_EFEITOS;
+      jutsu.efeitosAssinatura = assinaturaEfeitos(jutsu.efeitosEstruturados);
       alterou = true;
     });
 
@@ -268,16 +323,27 @@
     let alterou=false;
     estado[CHAVE_ESTADO].forEach(item=>{
       if(!item || String(item.origemTipo||"jutsu")!=="jutsu") return;
-      if(String(item.efeitosVersao||"")===VERSAO_EFEITOS) return;
 
-      const itemRegistro=registroPorId.get(String(item.origemId||""));
+      const itemRegistro=registroDoItemAtivo(item);
       if(!itemRegistro) return;
 
       const efeitos=efeitosDoRegistroParaAtivo(item,itemRegistro);
+      const assinaturaEsperada=assinaturaEfeitos(efeitos);
+      const assinaturaAtual=assinaturaEfeitos(item.efeitos);
+      const origemCanonica=String(itemRegistro.catalogoId||item.origemId||"");
+      const precisaReparar=String(item.efeitosVersao||"")!==VERSAO_EFEITOS
+        || assinaturaAtual!==assinaturaEsperada
+        || String(item.efeitosAssinatura||"")!==assinaturaEsperada
+        || String(item.origemId||"")!==origemCanonica;
+
+      if(!precisaReparar) return;
+
+      item.origemId=origemCanonica;
       item.efeitos=efeitos;
       item.bonus=calcularBonusDoItem(efeitos);
       item.multiplicadores=calcularMultiplicadoresDoItem(efeitos);
       item.efeitosVersao=VERSAO_EFEITOS;
+      item.efeitosAssinatura=assinaturaEsperada;
       alterou=true;
     });
 
@@ -339,6 +405,7 @@
           alvoNome:String(item.alvoNome || ""),
           aplicacao:String(item.aplicacao || "usuario"),
           efeitosVersao:String(item.efeitosVersao || ""),
+          efeitosAssinatura:String(item.efeitosAssinatura || assinaturaEfeitos(efeitos)),
           efeitos,
           bonus:calcularBonusDoItem(efeitos),
           multiplicadores:calcularMultiplicadoresDoItem(efeitos),
@@ -786,6 +853,7 @@
         alvoNome:destino.alvoNome,
         aplicacao:destino.aplicarNoUsuario?"usuario":"alvo",
         efeitosVersao:VERSAO_EFEITOS,
+        efeitosAssinatura:assinaturaEfeitos(persistentes),
         efeitos:persistentes,
         bonus:calcularBonusDoItem(persistentes),
         multiplicadores:calcularMultiplicadoresDoItem(persistentes),
@@ -878,6 +946,7 @@
       jutsu.efeitosEstruturados=clonar(item.efeitos||[]);
       jutsu.efeitosEditadosManualmente=false;
       jutsu.efeitosVersao=VERSAO_EFEITOS;
+      jutsu.efeitosAssinatura=assinaturaEfeitos(jutsu.efeitosEstruturados);
     }else{
       alert("Opção inválida.");return;
     }
@@ -902,8 +971,8 @@
   }
 
   function instalarRenderJutsus(){
-    if(window.__renderJutsusEfeitosV192 || typeof window.renderizarJutsus!=="function") return;
-    window.__renderJutsusEfeitosV192=true;
+    if(window.__renderJutsusEfeitosV193 || typeof window.renderizarJutsus!=="function") return;
+    window.__renderJutsusEfeitosV193=true;
     const base=window.renderizarJutsus;
     window.renderizarJutsus=function(){
       const resultado=base.apply(this,arguments);
@@ -914,8 +983,8 @@
   }
 
   function instalarAtualizadores(){
-    if(!window.__modsEfeitosEstruturadosV192 && typeof window.atualizarModsBatalhaComBonus==="function"){
-      window.__modsEfeitosEstruturadosV192=true;
+    if(!window.__modsEfeitosEstruturadosV193 && typeof window.atualizarModsBatalhaComBonus==="function"){
+      window.__modsEfeitosEstruturadosV193=true;
       const base=window.atualizarModsBatalhaComBonus;
       window.atualizarModsBatalhaComBonus=function(){
         const resultado=base.apply(this,arguments);
@@ -925,8 +994,8 @@
       };
       try{atualizarModsBatalhaComBonus=window.atualizarModsBatalhaComBonus;}catch(_erro){}
     }
-    if(!window.__extrasEfeitosEstruturadosV192 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
-      window.__extrasEfeitosEstruturadosV192=true;
+    if(!window.__extrasEfeitosEstruturadosV193 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
+      window.__extrasEfeitosEstruturadosV193=true;
       const base=window.atualizarMostradoresExtrasBatalha;
       window.atualizarMostradoresExtrasBatalha=function(){
         const resultado=base.apply(this,arguments);
@@ -940,8 +1009,8 @@
   }
 
   function instalarReset(){
-    if(window.__resetEfeitosEstruturadosV192) return;
-    window.__resetEfeitosEstruturadosV192=true;
+    if(window.__resetEfeitosEstruturadosV193) return;
+    window.__resetEfeitosEstruturadosV193=true;
     window.resetarBatalha=async function(){
       const ok=typeof confirmarUsoAcao==="function"
         ? await confirmarUsoAcao("reset","Resetar batalha","PV e Chakra voltam ao máximo. Efeitos, bônus temporários e histórico serão limpos.")
@@ -1014,6 +1083,8 @@
     extrair:obterEfeitosDoJutsu,
     ativos:window.obterEfeitosJutsuBatalhaAtivos,
     bonus:window.obterBonusEfeitosJutsuBatalha,
-    multiplicador:window.obterMultiplicadorEfeitosJutsuBatalha
+    multiplicador:window.obterMultiplicadorEfeitosJutsuBatalha,
+    assinatura:assinaturaEfeitos,
+    repararAtivos:migrarEfeitosAtivosDoCatalogo
   };
 })();
