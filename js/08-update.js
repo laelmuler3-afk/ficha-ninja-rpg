@@ -1,288 +1,423 @@
-/* Shinobi 1.3.8 — atualização do aplicativo revisada e otimizada. */
-
-/* ===== SHINOBI: SERVICE WORKER E ATUALIZAÇÃO CONTROLADA ===== */
+/* Shinobi 1.8.3 — atualizador rápido, visível e verificável. */
 (function(){
   "use strict";
 
-  if(window.__shinobiAtualizacaoSWAtiva) return;
-  window.__shinobiAtualizacaoSWAtiva = true;
+  if(window.__shinobiAtualizadorV183) return;
+  window.__shinobiAtualizadorV183 = true;
 
-  if(!("serviceWorker" in navigator)) return;
-
+  const APP_VERSION = String(
+    document.documentElement.dataset.appVersion || "1.8.3"
+  );
   const SW_URL = "./service-worker.js";
-  const INTERVALO_VERIFICACAO = 60 * 60 * 1000;
-  const INTERVALO_MINIMO = 60 * 1000;
+  const VERSION_URL = "./version.json";
+  const INTERVALO_PERIODICO = 5 * 60 * 1000;
+  const INTERVALO_MINIMO = 15 * 1000;
+  const LIMITE_REPETICOES_PUBLICACAO = 12;
 
   let registroAtual = null;
+  let verificando = false;
+  let aplicando = false;
   let recarregando = false;
-  let verificacaoEmAndamento = false;
   let ultimaVerificacao = 0;
-  let timerVerificacao = null;
   let timerPeriodico = null;
-  let timerRecargaSegura = null;
+  let timerRecarga = null;
+  let tentativasPublicacao = 0;
+  let versaoRemotaConhecida = "";
 
-  function obterAvisoAtualizacao(){
-    let aviso = document.getElementById(
-      "shinobiAvisoAtualizacao"
-    );
+  function compararVersoes(a,b){
+    const partesA=String(a||"").split(/[.-]/).map(v=>Number(v)||0);
+    const partesB=String(b||"").split(/[.-]/).map(v=>Number(v)||0);
+    const tamanho=Math.max(partesA.length,partesB.length);
 
+    for(let i=0;i<tamanho;i+=1){
+      const av=partesA[i]||0;
+      const bv=partesB[i]||0;
+      if(av>bv) return 1;
+      if(av<bv) return -1;
+    }
+    return 0;
+  }
+
+  function obterPainel(){
+    let painel=document.getElementById("shinobiAtualizacaoPainel");
+    if(painel) return painel;
+
+    const menu=document.getElementById("configMenu")||document.body;
+    painel=document.createElement("section");
+    painel.id="shinobiAtualizacaoPainel";
+    painel.className="shinobiAtualizacaoPainel";
+    painel.innerHTML=`
+      <div class="shinobiAtualizacaoPainel__linha">
+        <span class="shinobiAtualizacaoPainel__rotulo">Versão instalada</span>
+        <strong id="shinobiVersaoInstalada" class="shinobiAtualizacaoPainel__versao"></strong>
+      </div>
+      <div id="shinobiStatusAtualizacao" class="shinobiAtualizacaoPainel__status" role="status" aria-live="polite"></div>
+      <button id="shinobiVerificarAtualizacao" class="shinobiAtualizacaoPainel__botao" type="button">Verificar atualização</button>
+    `;
+    menu.appendChild(painel);
+    return painel;
+  }
+
+  function configurarPainel(){
+    const painel=obterPainel();
+    const versao=painel.querySelector("#shinobiVersaoInstalada");
+    const botao=painel.querySelector("#shinobiVerificarAtualizacao");
+    if(versao) versao.textContent=`v${APP_VERSION}`;
+
+    if(botao&&!botao.dataset.configurado){
+      botao.dataset.configurado="1";
+      botao.addEventListener("click",()=>verificarAtualizacao({manual:true,forcar:true}));
+    }
+  }
+
+  function definirStatus(texto,estado="normal"){
+    configurarPainel();
+    const status=document.getElementById("shinobiStatusAtualizacao");
+    if(status){
+      status.textContent=texto;
+      status.dataset.estado=estado;
+    }
+  }
+
+  function marcarIconeAtualizacao(ativo){
+    document.querySelector(".configBtn")?.classList.toggle("temAtualizacao",Boolean(ativo));
+  }
+
+  function obterAviso(){
+    let aviso=document.getElementById("shinobiAvisoAtualizacao");
     if(aviso) return aviso;
 
-    aviso = document.createElement("section");
-    aviso.id = "shinobiAvisoAtualizacao";
-    aviso.className = "shinobiAvisoAtualizacao";
-    aviso.hidden = true;
-    aviso.setAttribute("role", "status");
-    aviso.setAttribute("aria-live", "polite");
-
-    aviso.innerHTML = `
+    aviso=document.createElement("section");
+    aviso.id="shinobiAvisoAtualizacao";
+    aviso.className="shinobiAvisoAtualizacao";
+    aviso.hidden=true;
+    aviso.setAttribute("role","status");
+    aviso.setAttribute("aria-live","polite");
+    aviso.innerHTML=`
       <div class="shinobiAvisoAtualizacao__texto">
-        <strong>Nova versão disponível</strong>
-        <span>Atualize para receber as correções mais recentes.</span>
+        <strong id="shinobiAvisoAtualizacaoTitulo">Verificando atualização</strong>
+        <span id="shinobiAvisoAtualizacaoMensagem">Aguarde um instante.</span>
       </div>
-
-      <button
-        id="shinobiBotaoAtualizar"
-        class="shinobiAvisoAtualizacao__botao"
-        type="button"
-      >
-        Atualizar agora
-      </button>
+      <button id="shinobiBotaoAtualizar" class="shinobiAvisoAtualizacao__botao" type="button" disabled>Preparando...</button>
     `;
-
     document.body.appendChild(aviso);
+
+    aviso.querySelector("#shinobiBotaoAtualizar")?.addEventListener("click",aplicarAtualizacao);
     return aviso;
   }
 
-  function salvarFichaAntesDeAtualizar(){
-    try{
-      if(typeof window.salvarImediatoV3 === "function"){
-        const salvou = window.salvarImediatoV3();
-        if(salvou !== false) return true;
-      }
+  function mostrarAviso({titulo,mensagem,pronto=false,botaoTexto}={}){
+    const aviso=obterAviso();
+    const tituloEl=aviso.querySelector("#shinobiAvisoAtualizacaoTitulo");
+    const mensagemEl=aviso.querySelector("#shinobiAvisoAtualizacaoMensagem");
+    const botao=aviso.querySelector("#shinobiBotaoAtualizar");
 
-      if(typeof window.salvar === "function"){
+    if(tituloEl) tituloEl.textContent=titulo||"Nova versão encontrada";
+    if(mensagemEl) mensagemEl.textContent=mensagem||"Preparando os arquivos da atualização.";
+    if(botao){
+      botao.disabled=!pronto;
+      botao.textContent=botaoTexto||(pronto?"Atualizar agora":"Preparando...");
+      botao.setAttribute("aria-busy",pronto?"false":"true");
+    }
+
+    aviso.hidden=false;
+    requestAnimationFrame(()=>aviso.classList.add("visivel"));
+    marcarIconeAtualizacao(true);
+  }
+
+  function ocultarAviso(){
+    const aviso=document.getElementById("shinobiAvisoAtualizacao");
+    if(!aviso) return;
+    aviso.classList.remove("visivel");
+    window.setTimeout(()=>{
+      if(!aviso.classList.contains("visivel")) aviso.hidden=true;
+    },220);
+    marcarIconeAtualizacao(false);
+  }
+
+  function salvarFicha(){
+    try{
+      if(typeof window.salvarImediatoV3==="function"){
+        const resultado=window.salvarImediatoV3();
+        if(resultado!==false) return true;
+      }
+      if(typeof window.salvar==="function"){
         window.salvar();
         return true;
       }
     }catch(erro){
-      console.warn(
-        "Não foi possível executar o salvamento antes da atualização.",
-        erro
-      );
+      console.warn("Não foi possível salvar antes da atualização.",erro);
     }
-
     return false;
   }
 
-  function aplicarAtualizacao(){
-    const worker = registroAtual?.waiting;
-    if(!worker) return;
-
-    salvarFichaAntesDeAtualizar();
-
-    const aviso = obterAvisoAtualizacao();
-    const botao = aviso.querySelector(
-      "#shinobiBotaoAtualizar"
-    );
-
-    if(botao){
-      botao.disabled = true;
-      botao.textContent = "Atualizando...";
-      botao.setAttribute("aria-busy", "true");
-    }
-
-    worker.postMessage({type: "SKIP_WAITING"});
-
-    if(timerRecargaSegura){
-      clearTimeout(timerRecargaSegura);
-    }
-
-    timerRecargaSegura = window.setTimeout(function(){
-      if(!recarregando){
-        salvarFichaAntesDeAtualizar();
-        window.location.reload();
-      }
-    }, 8000);
+  function workerEsperando(){
+    return registroAtual?.waiting||null;
   }
 
-  function mostrarAvisoAtualizacao(registro){
-    if(!registro?.waiting) return;
+  function anunciarAtualizacaoPronta(){
+    if(!workerEsperando()) return false;
 
-    registroAtual = registro;
+    tentativasPublicacao=0;
+    const versao=versaoRemotaConhecida||"nova";
+    definirStatus(`Atualização ${versao==="nova"?"":`v${versao} `}pronta para instalar.`,"pronto");
+    mostrarAviso({
+      titulo:"Nova versão disponível",
+      mensagem:"Os arquivos já foram preparados. A ficha será salva antes de atualizar.",
+      pronto:true,
+      botaoTexto:"Atualizar agora"
+    });
+    return true;
+  }
 
-    const aviso = obterAvisoAtualizacao();
-    const botao = aviso.querySelector(
-      "#shinobiBotaoAtualizar"
-    );
+  function aplicarAtualizacao(){
+    const worker=workerEsperando();
+    if(!worker||aplicando) return;
 
-    if(aviso.hidden){
-      aviso.hidden = false;
-      window.requestAnimationFrame(function(){
-        aviso.classList.add("visivel");
-      });
-    }
+    aplicando=true;
+    salvarFicha();
+    definirStatus("Aplicando a atualização...","pronto");
+    mostrarAviso({
+      titulo:"Atualizando o Shinobi",
+      mensagem:"Salvando a ficha e abrindo a nova versão.",
+      pronto:false,
+      botaoTexto:"Atualizando..."
+    });
 
-    if(!botao || botao.dataset.configurado === "1"){
-      return;
-    }
+    worker.postMessage({type:"SKIP_WAITING"});
 
-    botao.dataset.configurado = "1";
-    botao.addEventListener("click", aplicarAtualizacao);
+    clearTimeout(timerRecarga);
+    timerRecarga=window.setTimeout(()=>{
+      if(!recarregando){
+        salvarFicha();
+        window.location.reload();
+      }
+    },10000);
+  }
+
+  async function buscarVersaoRemota(){
+    const separador=VERSION_URL.includes("?")?"&":"?";
+    const resposta=await fetch(`${VERSION_URL}${separador}_=${Date.now()}`,{
+      cache:"no-store",
+      credentials:"same-origin",
+      headers:{"Cache-Control":"no-cache"}
+    });
+
+    if(!resposta.ok) throw new Error(`version.json respondeu ${resposta.status}`);
+    const dados=await resposta.json();
+    return String(dados?.version||"").trim();
+  }
+
+  function acompanharWorker(worker){
+    if(!worker||worker.__shinobiAcompanhadoV183) return;
+    worker.__shinobiAcompanhadoV183=true;
+
+    worker.addEventListener("statechange",()=>{
+      if(worker.state==="installed"){
+        if(navigator.serviceWorker.controller){
+          anunciarAtualizacaoPronta();
+        }else{
+          definirStatus(`Versão v${APP_VERSION} instalada.`,"pronto");
+        }
+      }
+
+      if(worker.state==="redundant"){
+        definirStatus("A atualização não terminou. Tentaremos novamente.","erro");
+        mostrarAviso({
+          titulo:"Não foi possível preparar a atualização",
+          mensagem:"A conexão pode ter oscilado. O app tentará novamente automaticamente.",
+          pronto:false,
+          botaoTexto:"Tentando novamente..."
+        });
+        window.setTimeout(()=>verificarAtualizacao({forcar:true}),5000);
+      }
+    });
   }
 
   function acompanharRegistro(registro){
-    if(!registro) return;
+    if(!registro||registro.__shinobiAcompanhadoV183) return;
+    registro.__shinobiAcompanhadoV183=true;
 
-    if(registro.waiting && navigator.serviceWorker.controller){
-      mostrarAvisoAtualizacao(registro);
+    if(registro.waiting&&navigator.serviceWorker.controller){
+      anunciarAtualizacaoPronta();
     }
+    if(registro.installing) acompanharWorker(registro.installing);
 
-    registro.addEventListener("updatefound", function(){
-      const workerNovo = registro.installing;
-      if(!workerNovo) return;
-
-      workerNovo.addEventListener("statechange", function(){
-        if(
-          workerNovo.state === "installed" &&
-          navigator.serviceWorker.controller
-        ){
-          mostrarAvisoAtualizacao(registro);
-        }
+    registro.addEventListener("updatefound",()=>{
+      const worker=registro.installing;
+      acompanharWorker(worker);
+      definirStatus("Nova versão encontrada. Preparando arquivos...","normal");
+      mostrarAviso({
+        titulo:"Nova versão encontrada",
+        mensagem:"Baixando os arquivos necessários. Você pode continuar usando a ficha.",
+        pronto:false,
+        botaoTexto:"Preparando..."
       });
     });
   }
 
-  async function verificarAtualizacao(forcar = false){
-    if(
-      !registroAtual ||
-      verificacaoEmAndamento ||
-      !navigator.onLine
-    ){
+  async function solicitarAtualizacaoDoRegistro(){
+    if(!registroAtual) return;
+    await registroAtual.update();
+    if(!anunciarAtualizacaoPronta()&&registroAtual.installing){
+      acompanharWorker(registroAtual.installing);
+    }
+  }
+
+  function reagendarPublicacao(){
+    if(tentativasPublicacao>=LIMITE_REPETICOES_PUBLICACAO){
+      definirStatus("A nova versão ainda está sendo publicada. Tente novamente em alguns minutos.","erro");
       return;
     }
 
-    const agora = Date.now();
+    tentativasPublicacao+=1;
+    window.setTimeout(()=>verificarAtualizacao({forcar:true}),5000);
+  }
 
-    if(
-      !forcar &&
-      agora - ultimaVerificacao < INTERVALO_MINIMO
-    ){
+  async function verificarAtualizacao({manual=false,forcar=false}={}){
+    if(!("serviceWorker" in navigator)){
+      definirStatus("Este navegador não oferece atualização offline.","erro");
       return;
     }
+    if(!navigator.onLine){
+      definirStatus("Sem internet. A versão instalada continua disponível offline.","erro");
+      return;
+    }
+    if(verificando) return;
 
-    verificacaoEmAndamento = true;
-    ultimaVerificacao = agora;
+    const agora=Date.now();
+    if(!forcar&&agora-ultimaVerificacao<INTERVALO_MINIMO) return;
+
+    verificando=true;
+    ultimaVerificacao=agora;
+    const botao=document.getElementById("shinobiVerificarAtualizacao");
+    if(botao){
+      botao.disabled=true;
+      botao.textContent="Verificando...";
+    }
+    definirStatus("Verificando atualização...","normal");
 
     try{
-      await registroAtual.update();
+      const remota=await buscarVersaoRemota();
+      versaoRemotaConhecida=remota;
+      const existeNova=remota&&compararVersoes(remota,APP_VERSION)>0;
 
-      if(
-        registroAtual.waiting &&
-        navigator.serviceWorker.controller
-      ){
-        mostrarAvisoAtualizacao(registroAtual);
-      }
-    }catch(erro){
-      console.warn(
-        "Não foi possível verificar uma atualização agora.",
-        erro
-      );
-    }finally{
-      verificacaoEmAndamento = false;
-    }
-  }
-
-  function agendarVerificacao(atraso = 800, forcar = false){
-    if(timerVerificacao){
-      clearTimeout(timerVerificacao);
-    }
-
-    timerVerificacao = window.setTimeout(function(){
-      timerVerificacao = null;
-      verificarAtualizacao(forcar);
-    }, atraso);
-  }
-
-  function agendarVerificacaoPeriodica(){
-    if(timerPeriodico){
-      clearTimeout(timerPeriodico);
-    }
-
-    timerPeriodico = window.setTimeout(function ciclo(){
-      timerPeriodico = null;
-
-      if(document.visibilityState === "visible"){
-        verificarAtualizacao();
-      }
-
-      agendarVerificacaoPeriodica();
-    }, INTERVALO_VERIFICACAO);
-  }
-
-  async function registrarServiceWorker(){
-    try{
-      const registro = await navigator.serviceWorker.register(
-        SW_URL,
-        {
-          scope: "./",
-          updateViaCache: "none"
+      if(existeNova){
+        definirStatus(`Versão v${remota} encontrada. Preparando...`,"normal");
+        mostrarAviso({
+          titulo:`Nova versão v${remota}`,
+          mensagem:"Preparando os arquivos. O botão será liberado quando estiver tudo pronto.",
+          pronto:false,
+          botaoTexto:"Preparando..."
+        });
+        await solicitarAtualizacaoDoRegistro();
+        if(!anunciarAtualizacaoPronta()) reagendarPublicacao();
+      }else{
+        await solicitarAtualizacaoDoRegistro();
+        if(!anunciarAtualizacaoPronta()){
+          tentativasPublicacao=0;
+          ocultarAviso();
+          definirStatus(`Você está na versão mais recente: v${APP_VERSION}.`,"pronto");
         }
-      );
-
-      registroAtual = registro;
-      acompanharRegistro(registro);
-
-      agendarVerificacao(1200, true);
-      agendarVerificacaoPeriodica();
+      }
     }catch(erro){
-      console.error(
-        "Falha ao registrar o service worker do Shinobi.",
-        erro
-      );
+      console.warn("Falha ao verificar atualização.",erro);
+      try{
+        await solicitarAtualizacaoDoRegistro();
+        if(!anunciarAtualizacaoPronta()){
+          definirStatus(
+            manual
+              ? "Não foi possível conferir agora. Verifique sua conexão e tente novamente."
+              : `Versão instalada: v${APP_VERSION}.`,
+            manual?"erro":"normal"
+          );
+        }
+      }catch(segundoErro){
+        console.warn("Falha ao atualizar o registro do service worker.",segundoErro);
+        definirStatus("Não foi possível verificar agora. A ficha continua salva e funcional.","erro");
+      }
+    }finally{
+      verificando=false;
+      if(botao){
+        botao.disabled=false;
+        botao.textContent="Verificar atualização";
+      }
     }
   }
 
-  navigator.serviceWorker.addEventListener(
-    "controllerchange",
-    function(){
-      if(recarregando) return;
+  async function iniciar(){
+    configurarPainel();
+    definirStatus("Iniciando verificação...","normal");
 
-      recarregando = true;
-      salvarFichaAntesDeAtualizar();
+    if(!("serviceWorker" in navigator)){
+      definirStatus("Atualização offline indisponível neste navegador.","erro");
+      return;
+    }
 
-      if(timerRecargaSegura){
-        clearTimeout(timerRecargaSegura);
-        timerRecargaSegura = null;
+    try{
+      registroAtual=await navigator.serviceWorker.register(SW_URL,{
+        scope:"./",
+        updateViaCache:"none"
+      });
+      acompanharRegistro(registroAtual);
+
+      if(registroAtual.waiting&&navigator.serviceWorker.controller){
+        anunciarAtualizacaoPronta();
+      }else{
+        verificarAtualizacao({forcar:true});
       }
 
-      window.location.reload();
+      clearInterval(timerPeriodico);
+      timerPeriodico=window.setInterval(()=>{
+        if(document.visibilityState==="visible") verificarAtualizacao();
+      },INTERVALO_PERIODICO);
+    }catch(erro){
+      console.error("Falha ao registrar o service worker.",erro);
+      definirStatus("Não foi possível iniciar o atualizador. A ficha continua funcionando.","erro");
     }
-  );
-
-  document.addEventListener(
-    "visibilitychange",
-    function(){
-      if(document.visibilityState === "visible"){
-        agendarVerificacao();
-      }
-    }
-  );
-
-  window.addEventListener(
-    "online",
-    function(){
-      agendarVerificacao();
-    }
-  );
-
-  if(document.readyState === "complete"){
-    registrarServiceWorker();
-  }else{
-    window.addEventListener(
-      "load",
-      registrarServiceWorker,
-      {once: true}
-    );
   }
+
+  navigator.serviceWorker?.addEventListener("message",evento=>{
+    const dados=evento.data||{};
+    if(dados.type==="SW_INSTALL_PROGRESS"){
+      versaoRemotaConhecida=String(dados.version||versaoRemotaConhecida||"");
+      const atual=Number(dados.loaded||0);
+      const total=Number(dados.total||0);
+      const progresso=total?` (${atual}/${total})`:"";
+      definirStatus(`Preparando atualização${progresso}...`,"normal");
+      mostrarAviso({
+        titulo:`Preparando versão v${versaoRemotaConhecida||"nova"}`,
+        mensagem:`Baixando arquivos necessários${progresso}. Você pode continuar usando a ficha.`,
+        pronto:false,
+        botaoTexto:"Preparando..."
+      });
+    }
+
+    if(dados.type==="SW_INSTALL_ERROR"){
+      definirStatus("Falha ao baixar um arquivo da atualização. Tentaremos novamente.","erro");
+    }
+  });
+
+  navigator.serviceWorker?.addEventListener("controllerchange",()=>{
+    if(recarregando) return;
+    recarregando=true;
+    salvarFicha();
+    clearTimeout(timerRecarga);
+    window.location.reload();
+  });
+
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible") verificarAtualizacao();
+  });
+  window.addEventListener("online",()=>verificarAtualizacao({forcar:true}));
+  window.addEventListener("pageshow",()=>verificarAtualizacao());
+
+  window.ShinobiAtualizacao={
+    verificar:()=>verificarAtualizacao({manual:true,forcar:true}),
+    aplicar:aplicarAtualizacao,
+    versao:APP_VERSION
+  };
+
+  // O script é defer: o DOM já foi analisado. Não esperamos todas as imagens carregarem.
+  iniciar();
 })();
