@@ -1,6 +1,6 @@
 {
-  "version": "1.10.0",
-  "releasedAt": "2026-07-16T19:20:00Z",
-  "notes": "Adiciona motor universal de efeitos para bônus numéricos, multiplicadores, dados extras, vantagens, desvantagens, resistências, imunidades, vulnerabilidades, condições e ações extras.",
-  "message": "Os efeitos estruturados dos jutsus agora são agregados e exibidos mecanicamente na Área de Batalha, sem depender do nome do jutsu."
+  "version": "1.10.1",
+  "releasedAt": "2026-07-16T19:40:00Z",
+  "notes": "Corrige o atualizador preso em Preparando por divergência entre a versão declarada no HTML e a versão do service worker.",
+  "message": "A versão do documento, dos arquivos e do service worker agora é consistente; falhas de instalação exibem uma ação de nova tentativa em vez de permanecerem travadas."
 }
