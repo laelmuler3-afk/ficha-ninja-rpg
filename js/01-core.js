@@ -73,7 +73,7 @@ function lerEstadoFichaSeguro(chave){
 }
 
 /* ===== Versão interna do app ===== */
-const APP_VERSION = window.APP_VERSION || "1.9.6";
+const APP_VERSION = window.APP_VERSION || "1.10.1";
 window.APP_VERSION = APP_VERSION;
 
 /* Ficha Ninja RPG — otimização v2 */

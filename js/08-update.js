@@ -1,12 +1,12 @@
-/* Shinobi 1.9.6 — atualizador observável com verificação sem cache. */
+/* Shinobi 1.10.1 — atualizador observável com recuperação de estado travado. */
 (function(){
   "use strict";
 
-  if(window.__shinobiAtualizadorV194) return;
-  window.__shinobiAtualizadorV194 = true;
+  if(window.__shinobiAtualizadorV1101) return;
+  window.__shinobiAtualizadorV1101 = true;
 
   const APP_VERSION = String(
-    document.documentElement.dataset.appVersion || "1.9.6"
+    document.documentElement.dataset.appVersion || "1.10.1"
   );
   const SW_URL = `./service-worker.js?v=${encodeURIComponent(APP_VERSION)}`;
   const VERSION_URL = "./version.json";
@@ -23,6 +23,7 @@
   let timerRecarga = null;
   let tentativasPublicacao = 0;
   let versaoRemotaConhecida = "";
+  let ultimoErroInstalacao = "";
 
   function compararVersoes(a,b){
     const partesA=String(a||"").split(/[.-]/).map(v=>Number(v)||0);
@@ -102,11 +103,26 @@
     `;
     document.body.appendChild(aviso);
 
-    aviso.querySelector("#shinobiBotaoAtualizar")?.addEventListener("click",aplicarAtualizacao);
+    aviso.querySelector("#shinobiBotaoAtualizar")?.addEventListener("click",()=>{
+      const acao=aviso.dataset.acao||"aplicar";
+      if(acao==="recarregar"){
+        salvarFicha();
+        window.location.reload();
+        return;
+      }
+      if(acao==="verificar"){
+        tentativasPublicacao=0;
+        ultimoErroInstalacao="";
+        ocultarAviso();
+        verificarAtualizacao({manual:true,forcar:true});
+        return;
+      }
+      aplicarAtualizacao();
+    });
     return aviso;
   }
 
-  function mostrarAviso({titulo,mensagem,pronto=false,botaoTexto}={}){
+  function mostrarAviso({titulo,mensagem,pronto=false,botaoTexto,acao="aplicar"}={}){
     const aviso=obterAviso();
     const tituloEl=aviso.querySelector("#shinobiAvisoAtualizacaoTitulo");
     const mensagemEl=aviso.querySelector("#shinobiAvisoAtualizacaoMensagem");
@@ -120,6 +136,7 @@
       botao.setAttribute("aria-busy",pronto?"false":"true");
     }
 
+    aviso.dataset.acao=acao;
     aviso.hidden=false;
     requestAnimationFrame(()=>aviso.classList.add("visivel"));
     marcarIconeAtualizacao(true);
@@ -172,7 +189,18 @@
 
   function aplicarAtualizacao(){
     const worker=workerEsperando();
-    if(!worker||aplicando) return;
+    if(aplicando) return;
+    if(!worker){
+      definirStatus("A atualização ainda não está pronta. Tente verificar novamente.","erro");
+      mostrarAviso({
+        titulo:"Atualização não concluída",
+        mensagem:"O navegador não encontrou os arquivos preparados. Tente novamente.",
+        pronto:true,
+        botaoTexto:"Tentar novamente",
+        acao:"verificar"
+      });
+      return;
+    }
 
     aplicando=true;
     salvarFicha();
@@ -209,8 +237,8 @@
   }
 
   function acompanharWorker(worker){
-    if(!worker||worker.__shinobiAcompanhadoV194) return;
-    worker.__shinobiAcompanhadoV194=true;
+    if(!worker||worker.__shinobiAcompanhadoV1101) return;
+    worker.__shinobiAcompanhadoV1101=true;
 
     worker.addEventListener("statechange",()=>{
       if(worker.state==="installed"){
@@ -235,8 +263,8 @@
   }
 
   function acompanharRegistro(registro){
-    if(!registro||registro.__shinobiAcompanhadoV194) return;
-    registro.__shinobiAcompanhadoV194=true;
+    if(!registro||registro.__shinobiAcompanhadoV1101) return;
+    registro.__shinobiAcompanhadoV1101=true;
 
     if(registro.waiting&&navigator.serviceWorker.controller){
       anunciarAtualizacaoPronta();
@@ -244,6 +272,7 @@
     if(registro.installing) acompanharWorker(registro.installing);
 
     registro.addEventListener("updatefound",()=>{
+      ultimoErroInstalacao="";
       const worker=registro.installing;
       acompanharWorker(worker);
       definirStatus("Nova versão encontrada. Preparando arquivos...","normal");
@@ -253,6 +282,30 @@
         pronto:false,
         botaoTexto:"Preparando..."
       });
+    });
+  }
+
+  function consultarVersaoWorkerAtivo(){
+    return new Promise(resolve=>{
+      const controller=navigator.serviceWorker?.controller;
+      if(!controller){
+        resolve("");
+        return;
+      }
+
+      const canal=new MessageChannel();
+      const timer=window.setTimeout(()=>resolve(""),1800);
+      canal.port1.onmessage=evento=>{
+        clearTimeout(timer);
+        resolve(String(evento.data?.version||""));
+      };
+
+      try{
+        controller.postMessage({type:"GET_VERSION"},[canal.port2]);
+      }catch(_erro){
+        clearTimeout(timer);
+        resolve("");
+      }
     });
   }
 
@@ -266,7 +319,17 @@
 
   function reagendarPublicacao(){
     if(tentativasPublicacao>=LIMITE_REPETICOES_PUBLICACAO){
-      definirStatus("A nova versão ainda está sendo publicada. Tente novamente em alguns minutos.","erro");
+      const detalhe=ultimoErroInstalacao
+        ? `Não foi possível baixar ${ultimoErroInstalacao}.`
+        : "O navegador não concluiu a preparação dos arquivos.";
+      definirStatus("A atualização não terminou. Use o botão para tentar novamente.","erro");
+      mostrarAviso({
+        titulo:"Atualização não concluída",
+        mensagem:`${detalhe} Sua ficha continua salva.`,
+        pronto:true,
+        botaoTexto:"Tentar novamente",
+        acao:"verificar"
+      });
       return;
     }
 
@@ -311,7 +374,22 @@
           botaoTexto:"Preparando..."
         });
         await solicitarAtualizacaoDoRegistro();
-        if(!anunciarAtualizacaoPronta()) reagendarPublicacao();
+        if(!anunciarAtualizacaoPronta()){
+          const versaoWorker=await consultarVersaoWorkerAtivo();
+          if(versaoWorker&&compararVersoes(versaoWorker,remota)>=0){
+            tentativasPublicacao=0;
+            definirStatus(`Versão v${remota} pronta. Recarregue para abrir os arquivos novos.`,"pronto");
+            mostrarAviso({
+              titulo:`Versão v${remota} pronta`,
+              mensagem:"O sistema já foi atualizado em segundo plano. Recarregue para abrir a versão nova.",
+              pronto:true,
+              botaoTexto:"Recarregar agora",
+              acao:"recarregar"
+            });
+          }else{
+            reagendarPublicacao();
+          }
+        }
       }else{
         await solicitarAtualizacaoDoRegistro();
         if(!anunciarAtualizacaoPronta()){
@@ -394,7 +472,20 @@
     }
 
     if(dados.type==="SW_INSTALL_ERROR"){
-      definirStatus("Falha ao baixar um arquivo da atualização. Tentaremos novamente.","erro");
+      try{
+        const url=new URL(String(dados.url||""),window.location.href);
+        ultimoErroInstalacao=url.pathname.split("/").pop()||"um arquivo";
+      }catch(_erro){
+        ultimoErroInstalacao="um arquivo";
+      }
+      definirStatus(`Falha ao baixar ${ultimoErroInstalacao}.`,"erro");
+      mostrarAviso({
+        titulo:"Falha ao preparar a atualização",
+        mensagem:`Não foi possível baixar ${ultimoErroInstalacao}. Verifique a conexão e tente novamente.`,
+        pronto:true,
+        botaoTexto:"Tentar novamente",
+        acao:"verificar"
+      });
     }
   });
 
