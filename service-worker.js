@@ -1,5 +1,5 @@
-/* Shinobi 1.9.3 — Service Worker com instalação estável e cache otimizado. */
-const APP_VERSION = "1.9.3";
+/* Shinobi 1.9.4 — Service Worker com atualização confiável e cache offline. */
+const APP_VERSION = "1.9.4";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -8,29 +8,29 @@ const LIMITE_DOWNLOADS_SIMULTANEOS = 5;
 const APP_SHELL = [
   `./index.html?v=${APP_VERSION}`,
   `./manifest.json?v=${APP_VERSION}`,
-  "./css/app.css",
+  `./css/app.css?v=${APP_VERSION}`,
   `./css/update.css?v=${APP_VERSION}`,
-  "./css/catalogo.css?v=1.4.2",
-  "./css/regras-natureza.css?v=1.7.2",
-  "./css/batalha-viva.css?v=1.9.0",
-  "./js/01-core.js",
-  "./js/02-runtime.js",
-  "./js/03-images.js",
-  "./js/04-jutsus.js",
+  `./css/catalogo.css?v=${APP_VERSION}`,
+  `./css/regras-natureza.css?v=${APP_VERSION}`,
+  `./css/batalha-viva.css?v=${APP_VERSION}`,
+  `./js/01-core.js?v=${APP_VERSION}`,
+  `./js/02-runtime.js?v=${APP_VERSION}`,
+  `./js/03-images.js?v=${APP_VERSION}`,
+  `./js/04-jutsus.js?v=${APP_VERSION}`,
   `./js/09-catalogo.js?v=${APP_VERSION}`,
-  "./js/05-battle.js?v=1.8.4",
-  "./js/06-inventory.js",
-  "./js/07-profile.js",
+  `./js/05-battle.js?v=${APP_VERSION}`,
+  `./js/06-inventory.js?v=${APP_VERSION}`,
+  `./js/07-profile.js?v=${APP_VERSION}`,
   `./js/08-update.js?v=${APP_VERSION}`,
-  "./js/10-regras-natureza.js?v=1.8.2",
-  "./js/11-batalha-ui.js?v=1.8.0",
+  `./js/10-regras-natureza.js?v=${APP_VERSION}`,
+  `./js/11-batalha-ui.js?v=${APP_VERSION}`,
   `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
-  "./data/efeitos-jutsus.json?v=1.0.1",
-  "./assets/ui-background-main.jpg",
-  "./assets/ui-notes-parchment.jpg",
-  "./icon_192x192.png",
-  "./icon_512x512.png"
+  `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
+  `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
+  `./assets/ui-notes-parchment.jpg?v=${APP_VERSION}`,
+  `./icon_192x192.png?v=${APP_VERSION}`,
+  `./icon_512x512.png?v=${APP_VERSION}`
 ];
 
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
@@ -77,32 +77,6 @@ async function fetchComTentativas(url,maxTentativas=3){
   throw ultimoErro||new Error(`Falha ao baixar ${url}`);
 }
 
-function partesVersaoCache(nome){
-  const prefixo=`${CACHE_PREFIX}-shell-`;
-  if(!nome.startsWith(prefixo)) return [];
-  return nome.slice(prefixo.length).split(/[.-]/).map(parte=>Number(parte)||0);
-}
-
-function compararVersoesCache(a,b){
-  const pa=partesVersaoCache(a);
-  const pb=partesVersaoCache(b);
-  const total=Math.max(pa.length,pb.length);
-  for(let i=0;i<total;i+=1){
-    const diferenca=(pa[i]||0)-(pb[i]||0);
-    if(diferenca) return diferenca;
-  }
-  return 0;
-}
-
-async function localizarCacheShellAnterior(){
-  const nomes=await caches.keys();
-  const anteriores=nomes
-    .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-shell-`)&&nome!==SHELL_CACHE)
-    .sort(compararVersoesCache);
-  if(!anteriores.length) return null;
-  return caches.open(anteriores[anteriores.length-1]);
-}
-
 async function executarComLimite(itens,limite,tarefa){
   let proximo=0;
   const quantidade=Math.max(1,Math.min(limite,itens.length));
@@ -119,7 +93,6 @@ async function executarComLimite(itens,limite,tarefa){
 
 async function instalarAppShell(){
   const cache=await caches.open(SHELL_CACHE);
-  const cacheAnterior=await localizarCacheShellAnterior();
   let carregados=0;
   const total=SHELL_URLS.length;
 
@@ -137,20 +110,7 @@ async function instalarAppShell(){
       try{
         const pathname=new URL(url).pathname;
         const chave=pathname.endsWith("/index.html")?INDEX_URL:url;
-        let response=null;
-
-        /*
-         * Arquivos com a mesma URL já foram validados pela versão anterior.
-         * Copiá-los do cache evita baixar novamente imagens e módulos intactos.
-         * Arquivos alterados recebem uma nova query ?v= e vêm da rede.
-         */
-        if(cacheAnterior&&!pathname.endsWith("/index.html")){
-          response=await cacheAnterior.match(url);
-        }
-
-        if(!response){
-          response=await fetchComTentativas(url);
-        }
+        const response=await fetchComTentativas(url);
 
         await cache.put(chave,response.clone());
         carregados+=1;

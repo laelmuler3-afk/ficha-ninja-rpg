@@ -1,6 +1,6 @@
 {
-  "version": "1.9.3",
-  "releasedAt": "2026-07-16T16:10:00Z",
-  "notes": "Repara efeitos ativos incompletos e aplica Mod. DES +2 e Velocidade +6 de Passos do Vento sobre os valores atuais da ficha.",
-  "message": "Correção de migração dos efeitos ativos sem apagar fichas ou exigir reutilização dos jutsus."
+  "version": "1.9.4",
+  "releasedAt": "2026-07-16T17:13:07Z",
+  "notes": "Revisão geral de estabilidade: corrige a persistência de atributos editados com bônus ativo, impede reutilização de módulos antigos pelo cache e protege a abertura de fichas com dados locais inválidos.",
+  "message": "Atualização de manutenção e confiabilidade sem apagar fichas existentes."
 }
