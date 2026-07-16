@@ -1,5 +1,5 @@
-/* Shinobi 1.9.2 — Service Worker com instalação estável e cache otimizado. */
-const APP_VERSION = "1.9.2";
+/* Shinobi 1.9.3 — Service Worker com instalação estável e cache otimizado. */
+const APP_VERSION = "1.9.3";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
