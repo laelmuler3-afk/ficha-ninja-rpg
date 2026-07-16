@@ -1,5 +1,5 @@
-/* Shinobi 1.10.4 — Service Worker com navegação network-first e recuperação de cache. */
-const APP_VERSION = "1.10.4";
+/* Shinobi 1.10.5 — Service Worker com navegação network-first e recuperação de cache. */
+const APP_VERSION = "1.10.5";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
