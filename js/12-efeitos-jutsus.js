@@ -1,11 +1,11 @@
-/* Shinobi 1.8.1 — efeitos automáticos de jutsus na Área de Batalha. */
+/* Shinobi 1.8.2 — efeitos automáticos de jutsus na Área de Batalha. */
 (function(){
   "use strict";
 
-  if(window.__efeitosJutsusBatalhaV181) return;
-  window.__efeitosJutsusBatalhaV181 = true;
+  if(window.__efeitosJutsusBatalhaV182) return;
+  window.__efeitosJutsusBatalhaV182 = true;
 
-  const VERSAO = "1.8.1";
+  const VERSAO = "1.8.2";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
 
   const ALIAS_NATUREZA = {
@@ -408,14 +408,14 @@
   };
 
   function envolverAtualizacaoDefesas(){
-    if(window.__defesasComEfeitosJutsuV181) return;
-    window.__defesasComEfeitosJutsuV181 = true;
+    if(window.__defesasComEfeitosJutsuV182) return;
+    window.__defesasComEfeitosJutsuV182 = true;
     window.atualizarDefesasTotaisBatalha = atualizarDefesasComEfeitos;
   }
 
   function instalarResetComEfeitos(){
-    if(window.__resetBatalhaComEfeitosV181) return;
-    window.__resetBatalhaComEfeitosV181 = true;
+    if(window.__resetBatalhaComEfeitosV182) return;
+    window.__resetBatalhaComEfeitosV182 = true;
 
     window.resetarBatalha = async function(){
       const ok = typeof confirmarUsoAcao === "function"
