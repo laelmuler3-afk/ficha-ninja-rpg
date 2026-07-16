@@ -1,12 +1,12 @@
-/* Shinobi 1.9.0 — motor estruturado de buffs, debuffs e efeitos de jutsus. */
+/* Shinobi 1.9.1 — motor estruturado com registro central otimizado. */
 (function(){
   "use strict";
 
-  if(window.__motorEfeitosEstruturadosV190) return;
-  window.__motorEfeitosEstruturadosV190 = true;
+  if(window.__motorEfeitosEstruturadosV191) return;
+  window.__motorEfeitosEstruturadosV191 = true;
 
-  const VERSAO = "1.9.0";
-  const VERSAO_EFEITOS = "1.0.0";
+  const VERSAO = "1.9.1";
+  const VERSAO_EFEITOS = "1.0.1";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
   const URL_REGISTRO = `data/efeitos-jutsus.json?v=${VERSAO_EFEITOS}`;
 
@@ -830,8 +830,8 @@
   }
 
   function instalarRenderJutsus(){
-    if(window.__renderJutsusEfeitosV190 || typeof window.renderizarJutsus!=="function") return;
-    window.__renderJutsusEfeitosV190=true;
+    if(window.__renderJutsusEfeitosV191 || typeof window.renderizarJutsus!=="function") return;
+    window.__renderJutsusEfeitosV191=true;
     const base=window.renderizarJutsus;
     window.renderizarJutsus=function(){
       const resultado=base.apply(this,arguments);
@@ -842,8 +842,8 @@
   }
 
   function instalarAtualizadores(){
-    if(!window.__modsEfeitosEstruturadosV190 && typeof window.atualizarModsBatalhaComBonus==="function"){
-      window.__modsEfeitosEstruturadosV190=true;
+    if(!window.__modsEfeitosEstruturadosV191 && typeof window.atualizarModsBatalhaComBonus==="function"){
+      window.__modsEfeitosEstruturadosV191=true;
       const base=window.atualizarModsBatalhaComBonus;
       window.atualizarModsBatalhaComBonus=function(){
         const resultado=base.apply(this,arguments);
@@ -853,8 +853,8 @@
       };
       try{atualizarModsBatalhaComBonus=window.atualizarModsBatalhaComBonus;}catch(_erro){}
     }
-    if(!window.__extrasEfeitosEstruturadosV190 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
-      window.__extrasEfeitosEstruturadosV190=true;
+    if(!window.__extrasEfeitosEstruturadosV191 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
+      window.__extrasEfeitosEstruturadosV191=true;
       const base=window.atualizarMostradoresExtrasBatalha;
       window.atualizarMostradoresExtrasBatalha=function(){
         const resultado=base.apply(this,arguments);
@@ -868,8 +868,8 @@
   }
 
   function instalarReset(){
-    if(window.__resetEfeitosEstruturadosV190) return;
-    window.__resetEfeitosEstruturadosV190=true;
+    if(window.__resetEfeitosEstruturadosV191) return;
+    window.__resetEfeitosEstruturadosV191=true;
     window.resetarBatalha=async function(){
       const ok=typeof confirmarUsoAcao==="function"
         ? await confirmarUsoAcao("reset","Resetar batalha","PV e Chakra voltam ao máximo. Efeitos, bônus temporários e histórico serão limpos.")
