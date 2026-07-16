@@ -1,5 +1,5 @@
-/* Shinobi 1.10.0 — Service Worker com atualização confiável e cache offline. */
-const APP_VERSION = "1.10.0";
+/* Shinobi 1.10.1 — Service Worker com navegação network-first e recuperação de cache. */
+const APP_VERSION = "1.10.1";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -156,11 +156,9 @@ async function buscarShellNoCache(request){
 
 async function abrirPaginaPrincipal(request){
   const cache=await caches.open(SHELL_CACHE);
-  const pagina=await cache.match(INDEX_URL,{ignoreSearch:true});
-  if(pagina) return pagina;
 
   try{
-    const resposta=await fetch(request);
+    const resposta=await fetch(new Request(request,{cache:"no-store"}));
     if(respostaPodeSerSalva(resposta)) await cache.put(INDEX_URL,resposta.clone());
     return resposta;
   }catch(erro){
@@ -238,6 +236,8 @@ self.addEventListener("message",event=>{
     return;
   }
   if(data.type==="GET_VERSION"){
-    event.source?.postMessage({type:"SERVICE_WORKER_VERSION",version:APP_VERSION});
+    const resposta={type:"SERVICE_WORKER_VERSION",version:APP_VERSION};
+    if(event.ports?.[0]) event.ports[0].postMessage(resposta);
+    else event.source?.postMessage(resposta);
   }
 });
