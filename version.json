@@ -1,6 +1,6 @@
 {
-  "version": "1.9.0",
+  "version": "1.9.1",
   "releasedAt": "2026-07-16",
-  "notes": "Auditoria dos 153 jutsus, motor estruturado de buffs e debuffs, bônus acumulados e atualizador confiável.",
-  "message": "Motor completo de efeitos: buffs, debuffs e bônus de jutsus revisados."
+  "notes": "Manutenção geral: limpeza de arquivo legado, catálogo otimizado, registro central de efeitos e Service Worker mais estável.",
+  "message": "Correções, otimização de cache e redução do tamanho dos dados sem alterar as fichas."
 }
