@@ -62,6 +62,7 @@
 
   const cacheSlugs = new Map();
   let detalheAberto = null;
+  let menuAcoesAberto = null;
 
   function normalizarNome(valor){
     if(typeof normalizarTextoInventario === "function"){
@@ -131,12 +132,35 @@
       : 0;
   }
 
+  function fecharEstadoItemInventario(indice = null){
+    if(indice == null || detalheAberto === indice){
+      detalheAberto = null;
+    }
+    menuAcoesAberto = null;
+  }
+
+  window.fecharDetalheItemInventario = function(indice = null){
+    fecharEstadoItemInventario(indice);
+    renderizarInventario();
+  };
+
   window.abrirDetalheItemInventario = function(indice){
     garantirInventarioItens();
 
     if(!estado.inventarioItens[indice]) return;
 
-    detalheAberto = detalheAberto === indice ? null : indice;
+    const estavaAberto = detalheAberto === indice;
+    detalheAberto = estavaAberto ? null : indice;
+    menuAcoesAberto = null;
+    renderizarInventario();
+  };
+
+  window.alternarMenuItemInventario = function(indice){
+    garantirInventarioItens();
+    if(!estado.inventarioItens[indice]) return;
+
+    detalheAberto = indice;
+    menuAcoesAberto = menuAcoesAberto === indice ? null : indice;
     renderizarInventario();
   };
 
@@ -160,6 +184,75 @@
     renderizarInventario();
   };
 
+  /*
+   * Mantém o fluxo de uso centralizado no runtime e fecha o detalhe apenas
+   * quando a quantidade realmente foi consumida. Cancelamentos e falhas
+   * deixam o card aberto para o jogador corrigir ou tentar novamente.
+   */
+  const usarItemInventarioOriginal = window.usarItemInventario;
+  if(typeof usarItemInventarioOriginal === "function"){
+    window.usarItemInventario = async function(indice){
+      garantirInventarioItens();
+      const item = estado.inventarioItens[indice];
+      if(!item) return;
+
+      const quantidadeAntes = quantidadeInventarioVisual(item);
+      await usarItemInventarioOriginal(indice);
+
+      const itemDepois = estado.inventarioItens[indice];
+      const quantidadeDepois = itemDepois
+        ? quantidadeInventarioVisual(itemDepois)
+        : quantidadeAntes;
+
+      if(itemDepois === item && quantidadeDepois < quantidadeAntes){
+        fecharEstadoItemInventario(indice);
+        renderizarInventario();
+      }
+    };
+  }
+
+  window.editarNomeItemInventario = function(indice){
+    garantirInventarioItens();
+    const item = estado.inventarioItens[indice];
+    if(!item) return;
+
+    const atual = String(item.nome || "");
+    const novo = prompt("Nome do item:", atual);
+    if(novo === null) return;
+
+    const nomeFinal = novo.trim();
+    if(!nomeFinal) return;
+
+    item.nome = nomeFinal;
+    salvarInventarioItens();
+    fecharEstadoItemInventario(indice);
+    renderizarInventario();
+  };
+
+  window.removerItemInventario = async function(indice){
+    garantirInventarioItens();
+    const item = estado.inventarioItens[indice];
+    if(!item) return;
+
+    const nome = String(item.nome || "Item");
+    const confirmado = typeof modalShinobi === "function"
+      ? await modalShinobi(
+          "Excluir item?",
+          `Excluir “${nome}” do inventário?\n\nEssa ação não pode ser desfeita.`
+        )
+      : confirm(`Excluir "${nome}" do inventário?`);
+
+    if(!confirmado) return;
+
+    const indiceAtual = estado.inventarioItens.indexOf(item);
+    if(indiceAtual < 0) return;
+
+    estado.inventarioItens.splice(indiceAtual, 1);
+    salvarInventarioItens();
+    fecharEstadoItemInventario();
+    renderizarInventario();
+  };
+
   window.renderizarInventario = function(){
     garantirInventarioItens();
 
@@ -177,6 +270,9 @@
     if(detalheAberto != null && !itens[detalheAberto]){
       detalheAberto = null;
     }
+    if(menuAcoesAberto != null && !itens[menuAcoesAberto]){
+      menuAcoesAberto = null;
+    }
 
     const html = [];
 
@@ -185,6 +281,7 @@
       const nomeSeguro = escaparHtml(nomeOriginal);
       const quantidade = quantidadeInventarioVisual(item);
       const aberto = detalheAberto === indice;
+      const menuAberto = menuAcoesAberto === indice;
       const slug = slugIconeInventario(nomeOriginal);
 
       html.push(`
@@ -201,6 +298,25 @@
 
       html.push(`
         <div class="itemInventarioDetalhe">
+          <div class="itemInventarioMenuWrap">
+            <button
+              type="button"
+              class="itemInventarioMenuBtn"
+              aria-label="Mais opções de ${nomeSeguro}"
+              aria-haspopup="menu"
+              aria-expanded="${menuAberto}"
+              onclick="event.stopPropagation();alternarMenuItemInventario(${indice})"
+            >⋮</button>
+            <div class="itemInventarioMenuBalao ${menuAberto ? "aberto" : ""}" role="menu">
+              <button
+                type="button"
+                class="itemInventarioExcluirMenu"
+                role="menuitem"
+                onclick="event.stopPropagation();removerItemInventario(${indice})"
+              >Excluir item</button>
+            </div>
+          </div>
+
           <div class="itemInventarioDetalheImagem">
             ${imagemInventarioVisual(nomeOriginal, "itemInventarioImgGrande", slug)}
           </div>
@@ -212,9 +328,8 @@
               <button type="button" onclick="event.stopPropagation();ajustarQtdItemInventario(${indice},1)">+</button>
             </div>
             <div class="itemInventarioAcoes">
-              <button type="button" onclick="event.stopPropagation();usarItemInventario(${indice})">Usar</button>
-              <button type="button" onclick="event.stopPropagation();editarNomeItemInventario(${indice})">Editar</button>
-              <button type="button" class="btnExcluirItemVisual" onclick="event.stopPropagation();removerItemInventario(${indice})">Excluir</button>
+              <button type="button" class="itemInventarioBtnUsar" onclick="event.stopPropagation();usarItemInventario(${indice})">Usar</button>
+              <button type="button" class="itemInventarioBtnEditar" onclick="event.stopPropagation();editarNomeItemInventario(${indice})">Editar</button>
             </div>
           </div>
         </div>
@@ -223,4 +338,12 @@
 
     lista.innerHTML = html.join("");
   };
+
+  document.addEventListener("click", function(event){
+    if(menuAcoesAberto == null) return;
+    if(event.target.closest?.(".itemInventarioMenuWrap")) return;
+
+    menuAcoesAberto = null;
+    renderizarInventario();
+  });
 })();
