@@ -1,6 +1,6 @@
 {
-  "version": "1.9.2",
-  "releasedAt": "2026-07-16T15:15:00Z",
-  "notes": "Corrige a migração de efeitos já ativos para carregar todos os buffs e efeitos estruturados do jutsu.",
-  "message": "Correções, otimização de cache e redução do tamanho dos dados sem alterar as fichas."
+  "version": "1.9.3",
+  "releasedAt": "2026-07-16T16:10:00Z",
+  "notes": "Repara efeitos ativos incompletos e aplica Mod. DES +2 e Velocidade +6 de Passos do Vento sobre os valores atuais da ficha.",
+  "message": "Correção de migração dos efeitos ativos sem apagar fichas ou exigir reutilização dos jutsus."
 }
