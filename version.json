@@ -1,6 +1,6 @@
 {
-  "version": "1.10.2",
-  "releasedAt": "2026-07-16T20:00:00Z",
-  "notes": "Fecha automaticamente a carta do jutsu após o uso bem-sucedido e fecha o menu de opções após resetar a batalha.",
-  "message": "As ações agora retornam visualmente ao estado compacto, confirmando que o jutsu foi usado ou que a batalha foi resetada."
+  "version": "1.10.3",
+  "releasedAt": "2026-07-16T20:20:00Z",
+  "notes": "Melhora o fluxo do inventário: usar ou confirmar a edição fecha o detalhe; excluir foi movido para um menu seguro de três pontos.",
+  "message": "No inventário, Usar e Editar ficam lado a lado, e a exclusão só aparece no menu de opções com confirmação."
 }
