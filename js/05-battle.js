@@ -1,9 +1,9 @@
-/* Shinobi 1.8.2 — painel de combate com modificadores visíveis e bônus acumulados. */
+/* Shinobi 1.8.4 — painel de combate com modificadores e efeitos acumulados. */
 
 /* ===== MODIFICADORES VISÍVEIS E BÔNUS TEMPORÁRIOS ===== */
 (function(){
-  if(window.__modificadoresCombateVisiveisV182) return;
-  window.__modificadoresCombateVisiveisV182=true;
+  if(window.__modificadoresCombateVisiveisV184) return;
+  window.__modificadoresCombateVisiveisV184=true;
 
   let frame=null;
 
@@ -15,7 +15,14 @@
     sabedoria:"SAB",
     carisma:"CAR",
     ca:"CA",
-    furtividade:"FUR"
+    furtividade:"FUR",
+    velocidade:"VEL",
+    mod_forca:"MOD FOR",
+    mod_destreza:"MOD DES",
+    mod_constituicao:"MOD CON",
+    mod_inteligencia:"MOD INT",
+    mod_sabedoria:"MOD SAB",
+    mod_carisma:"MOD CAR"
   };
 
   function numero(valor){
@@ -149,8 +156,8 @@
     });
   }
 
-  if(typeof window.atualizarModsBatalhaComBonus==="function"&&!window.__modsBatalhaComResumoV182){
-    window.__modsBatalhaComResumoV182=true;
+  if(typeof window.atualizarModsBatalhaComBonus==="function"&&!window.__modsBatalhaComResumoV184){
+    window.__modsBatalhaComResumoV184=true;
     const base=window.atualizarModsBatalhaComBonus;
     window.atualizarModsBatalhaComBonus=function(){
       const resultado=base.apply(this,arguments);
