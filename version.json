@@ -1,6 +1,6 @@
 {
-  "version": "1.10.4",
-  "releasedAt": "2026-07-16T22:40:00Z",
-  "notes": "Adiciona 17 novas imagens reconhecidas automaticamente pelo inventário.",
-  "message": "Novos itens de armas e equipamentos agora exibem imagens próprias ao serem cadastrados pelo nome."
+  "version": "1.10.5",
+  "releasedAt": "2026-07-16T23:35:00Z",
+  "notes": "Reutiliza os ícones do inventário nos ataques armados.",
+  "message": "Ataques armados agora exibem automaticamente a imagem da arma vinculada ou reconhecida pelo nome."
 }
