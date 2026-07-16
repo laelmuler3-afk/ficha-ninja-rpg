@@ -1,12 +1,12 @@
-/* Shinobi 1.9.1 — motor estruturado com registro central otimizado. */
+/* Shinobi 1.9.2 — motor estruturado com migração segura de efeitos ativos. */
 (function(){
   "use strict";
 
-  if(window.__motorEfeitosEstruturadosV191) return;
-  window.__motorEfeitosEstruturadosV191 = true;
+  if(window.__motorEfeitosEstruturadosV192) return;
+  window.__motorEfeitosEstruturadosV192 = true;
 
-  const VERSAO = "1.9.1";
-  const VERSAO_EFEITOS = "1.0.1";
+  const VERSAO = "1.9.2";
+  const VERSAO_EFEITOS = "1.0.2";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
   const URL_REGISTRO = `data/efeitos-jutsus.json?v=${VERSAO_EFEITOS}`;
 
@@ -215,6 +215,76 @@
     return alterou;
   }
 
+
+  function resolverAplicacaoParaItemAtivo(efeito,item){
+    const e=normalizarEfeito(efeito);
+    if(e.aplicaEm==="usuario_ou_aliado"){
+      e.aplicaEm=String(item?.aplicacao||"usuario")==="usuario"?"usuario":"aliado";
+    }
+    return e;
+  }
+
+  function efeitosDoRegistroParaAtivo(item,itemRegistro){
+    const origem=(Array.isArray(itemRegistro?.efeitos)?itemRegistro.efeitos:[])
+      .map((efeito,indice)=>resolverAplicacaoParaItemAtivo(normalizarEfeito(efeito,indice),item))
+      .filter(efeito=>efeito.persistente!==false && efeito.tipo!=="encerrar_efeitos");
+
+    const atuais=Array.isArray(item?.efeitos)
+      ? item.efeitos.map((efeito,indice)=>normalizarEfeito(efeito,indice))
+      : bonusLegadoParaEfeitos(item?.bonus);
+
+    /*
+     * Efeitos de escolha não podem ser ativados em bloco durante uma migração.
+     * Mantemos a opção que já estava ativa e acrescentamos somente os efeitos
+     * sem escolha. Nos registros legados, os bônus parciais são substituídos
+     * pela definição completa e segura do catálogo.
+     */
+    const escolhasAtuais=new Set(
+      atuais
+        .filter(efeito=>efeito.grupoEscolha && efeito.opcao)
+        .map(efeito=>`${efeito.grupoEscolha}:${efeito.opcao}`)
+    );
+
+    const selecionados=origem.filter(efeito=>{
+      if(!efeito.grupoEscolha || !efeito.opcao) return true;
+      return escolhasAtuais.has(`${efeito.grupoEscolha}:${efeito.opcao}`);
+    });
+
+    const ids=new Set(selecionados.map(efeito=>efeito.id));
+    atuais.forEach(efeito=>{
+      if(efeito.grupoEscolha && efeito.opcao && !ids.has(efeito.id)){
+        selecionados.push(efeito);
+        ids.add(efeito.id);
+      }
+    });
+
+    return selecionados;
+  }
+
+  async function migrarEfeitosAtivosDoCatalogo(){
+    await carregarRegistro();
+    if(!estado || typeof estado!=="object" || !Array.isArray(estado[CHAVE_ESTADO])) return false;
+
+    let alterou=false;
+    estado[CHAVE_ESTADO].forEach(item=>{
+      if(!item || String(item.origemTipo||"jutsu")!=="jutsu") return;
+      if(String(item.efeitosVersao||"")===VERSAO_EFEITOS) return;
+
+      const itemRegistro=registroPorId.get(String(item.origemId||""));
+      if(!itemRegistro) return;
+
+      const efeitos=efeitosDoRegistroParaAtivo(item,itemRegistro);
+      item.efeitos=efeitos;
+      item.bonus=calcularBonusDoItem(efeitos);
+      item.multiplicadores=calcularMultiplicadoresDoItem(efeitos);
+      item.efeitosVersao=VERSAO_EFEITOS;
+      alterou=true;
+    });
+
+    if(alterou) salvarEstado();
+    return alterou;
+  }
+
   function normalizarEfeito(efeito, indice=0){
     const e = efeito && typeof efeito === "object" ? clonar(efeito) : {};
     return {
@@ -268,6 +338,7 @@
           duracao:String(item.duracao || ""),
           alvoNome:String(item.alvoNome || ""),
           aplicacao:String(item.aplicacao || "usuario"),
+          efeitosVersao:String(item.efeitosVersao || ""),
           efeitos,
           bonus:calcularBonusDoItem(efeitos),
           multiplicadores:calcularMultiplicadoresDoItem(efeitos),
@@ -714,6 +785,7 @@
         duracao:duracaoEfetiva(jutsu,persistentes),
         alvoNome:destino.alvoNome,
         aplicacao:destino.aplicarNoUsuario?"usuario":"alvo",
+        efeitosVersao:VERSAO_EFEITOS,
         efeitos:persistentes,
         bonus:calcularBonusDoItem(persistentes),
         multiplicadores:calcularMultiplicadoresDoItem(persistentes),
@@ -830,8 +902,8 @@
   }
 
   function instalarRenderJutsus(){
-    if(window.__renderJutsusEfeitosV191 || typeof window.renderizarJutsus!=="function") return;
-    window.__renderJutsusEfeitosV191=true;
+    if(window.__renderJutsusEfeitosV192 || typeof window.renderizarJutsus!=="function") return;
+    window.__renderJutsusEfeitosV192=true;
     const base=window.renderizarJutsus;
     window.renderizarJutsus=function(){
       const resultado=base.apply(this,arguments);
@@ -842,8 +914,8 @@
   }
 
   function instalarAtualizadores(){
-    if(!window.__modsEfeitosEstruturadosV191 && typeof window.atualizarModsBatalhaComBonus==="function"){
-      window.__modsEfeitosEstruturadosV191=true;
+    if(!window.__modsEfeitosEstruturadosV192 && typeof window.atualizarModsBatalhaComBonus==="function"){
+      window.__modsEfeitosEstruturadosV192=true;
       const base=window.atualizarModsBatalhaComBonus;
       window.atualizarModsBatalhaComBonus=function(){
         const resultado=base.apply(this,arguments);
@@ -853,8 +925,8 @@
       };
       try{atualizarModsBatalhaComBonus=window.atualizarModsBatalhaComBonus;}catch(_erro){}
     }
-    if(!window.__extrasEfeitosEstruturadosV191 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
-      window.__extrasEfeitosEstruturadosV191=true;
+    if(!window.__extrasEfeitosEstruturadosV192 && typeof window.atualizarMostradoresExtrasBatalha==="function"){
+      window.__extrasEfeitosEstruturadosV192=true;
       const base=window.atualizarMostradoresExtrasBatalha;
       window.atualizarMostradoresExtrasBatalha=function(){
         const resultado=base.apply(this,arguments);
@@ -868,8 +940,8 @@
   }
 
   function instalarReset(){
-    if(window.__resetEfeitosEstruturadosV191) return;
-    window.__resetEfeitosEstruturadosV191=true;
+    if(window.__resetEfeitosEstruturadosV192) return;
+    window.__resetEfeitosEstruturadosV192=true;
     window.resetarBatalha=async function(){
       const ok=typeof confirmarUsoAcao==="function"
         ? await confirmarUsoAcao("reset","Resetar batalha","PV e Chakra voltam ao máximo. Efeitos, bônus temporários e histórico serão limpos.")
@@ -901,6 +973,7 @@
     instalarRenderJutsus();
     await carregarRegistro();
     await migrarJutsusDoCatalogo();
+    await migrarEfeitosAtivosDoCatalogo();
     garantirLista();
     garantirMostradorFurtividade();
     atualizarTudo();
@@ -923,10 +996,13 @@
     instalarAtualizadores();
     instalarReset();
     instalarRenderJutsus();
-    carregarRegistro().then(migrarJutsusDoCatalogo).then(()=>{
-      atualizarTudo();
-      decorarCardsJutsu();
-    });
+    carregarRegistro()
+      .then(migrarJutsusDoCatalogo)
+      .then(migrarEfeitosAtivosDoCatalogo)
+      .then(()=>{
+        atualizarTudo();
+        decorarCardsJutsu();
+      });
   });
 
   window.EfeitosJutsuShinobi={
@@ -934,6 +1010,7 @@
     versaoEfeitos:VERSAO_EFEITOS,
     carregarRegistro,
     migrar:migrarJutsusDoCatalogo,
+    migrarAtivos:migrarEfeitosAtivosDoCatalogo,
     extrair:obterEfeitosDoJutsu,
     ativos:window.obterEfeitosJutsuBatalhaAtivos,
     bonus:window.obterBonusEfeitosJutsuBatalha,
