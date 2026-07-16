@@ -1,6 +1,6 @@
 {
-  "version": "1.10.1",
-  "releasedAt": "2026-07-16T19:40:00Z",
-  "notes": "Corrige o atualizador preso em Preparando por divergência entre a versão declarada no HTML e a versão do service worker.",
-  "message": "A versão do documento, dos arquivos e do service worker agora é consistente; falhas de instalação exibem uma ação de nova tentativa em vez de permanecerem travadas."
+  "version": "1.10.2",
+  "releasedAt": "2026-07-16T20:00:00Z",
+  "notes": "Fecha automaticamente a carta do jutsu após o uso bem-sucedido e fecha o menu de opções após resetar a batalha.",
+  "message": "As ações agora retornam visualmente ao estado compacto, confirmando que o jutsu foi usado ou que a batalha foi resetada."
 }
