@@ -9,19 +9,19 @@
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/catalogo.css?v=1.4.2">
 <link rel="stylesheet" href="css/regras-natureza.css?v=1.7.2">
-<link rel="stylesheet" href="css/batalha-viva.css?v=1.8.1">
+<link rel="stylesheet" href="css/batalha-viva.css?v=1.8.2">
 <script defer src="js/01-core.js"></script>
 <script defer src="js/02-runtime.js"></script>
 <script defer src="js/03-images.js"></script>
 <script defer src="js/04-jutsus.js"></script>
 <script defer src="js/09-catalogo.js?v=1.4.2"></script>
-<script defer src="js/05-battle.js?v=1.8.1"></script>
+<script defer src="js/05-battle.js?v=1.8.2"></script>
 <script defer src="js/06-inventory.js"></script>
 <script defer src="js/07-profile.js"></script>
 <script defer src="js/08-update.js"></script>
-<script defer src="js/10-regras-natureza.js?v=1.8.1"></script>
+<script defer src="js/10-regras-natureza.js?v=1.8.2"></script>
 <script defer src="js/11-batalha-ui.js?v=1.8.0"></script>
-<script defer src="js/12-efeitos-jutsus.js?v=1.8.1"></script>
+<script defer src="js/12-efeitos-jutsus.js?v=1.8.2"></script>
 </head>
 <body>
   <div class="app">
@@ -384,17 +384,37 @@
             <span class="batalhaSecaoAjuda">Bônus temporários aplicados aos atributos</span>
           </div>
 
-          <div class="bonusAtributosBatalha">
-            <h3>Bônus temporários</h3>
-            <div class="bonusAtributosGrid">
-              <label>FOR <input class="bonusAtributoBatalha" data-bonus-batalha="forca" type="number" value="0"></label>
-              <label>DES <input class="bonusAtributoBatalha" data-bonus-batalha="destreza" type="number" value="0"></label>
-              <label>CON <input class="bonusAtributoBatalha" data-bonus-batalha="constituicao" type="number" value="0"></label>
-              <label>INT <input class="bonusAtributoBatalha" data-bonus-batalha="inteligencia" type="number" value="0"></label>
-              <label>SAB <input class="bonusAtributoBatalha" data-bonus-batalha="sabedoria" type="number" value="0"></label>
-              <label>CAR <input class="bonusAtributoBatalha" data-bonus-batalha="carisma" type="number" value="0"></label>
+          <div class="bonusAtributosBatalha modificadoresCombatePainel">
+            <div class="modificadoresCombateCabecalho">
+              <div>
+                <h3>Modificadores em combate</h3>
+                <small>Valores finais com bônus temporários</small>
+              </div>
             </div>
-            <button type="button" class="btn btnCompacto btnLimparBonusAtributos" onclick="limparBonusAtributosBatalha()">Limpar bônus</button>
+
+            <div class="modsGrid modsGridVisivel">
+              <div><span>FOR</span><strong id="modForca">+0</strong></div>
+              <div><span>DES</span><strong id="modDestreza">+0</strong></div>
+              <div><span>CON</span><strong id="modConstituicao">+0</strong></div>
+              <div><span>INT</span><strong id="modInteligencia">+0</strong></div>
+              <div><span>SAB</span><strong id="modSabedoria">+0</strong></div>
+              <div><span>CAR</span><strong id="modCarisma">+0</strong></div>
+            </div>
+
+            <div class="bonusResumoCompacto"></div>
+
+            <details class="ajustesBonusAtributos">
+              <summary>Ajustar bônus manuais</summary>
+              <div class="bonusAtributosGrid">
+                <label>FOR <input class="bonusAtributoBatalha" data-bonus-batalha="forca" type="number" value="0"></label>
+                <label>DES <input class="bonusAtributoBatalha" data-bonus-batalha="destreza" type="number" value="0"></label>
+                <label>CON <input class="bonusAtributoBatalha" data-bonus-batalha="constituicao" type="number" value="0"></label>
+                <label>INT <input class="bonusAtributoBatalha" data-bonus-batalha="inteligencia" type="number" value="0"></label>
+                <label>SAB <input class="bonusAtributoBatalha" data-bonus-batalha="sabedoria" type="number" value="0"></label>
+                <label>CAR <input class="bonusAtributoBatalha" data-bonus-batalha="carisma" type="number" value="0"></label>
+              </div>
+              <button type="button" class="btn btnCompacto btnLimparBonusAtributos" onclick="limparBonusAtributosBatalha()">Limpar bônus manuais</button>
+            </details>
           </div>
         </section>
 
@@ -421,21 +441,6 @@
         </section>
 
         <section id="resistenciasBatalhaHost" class="batalhaSecao resistenciasBatalhaHost" aria-label="Resistências da batalha"></section>
-
-        <details class="batalhaSecao detalhesBatalha atributosBatalhaDetalhes">
-          <summary>
-            <span>Modificadores de atributos</span>
-            <small>FOR, DES, CON, INT, SAB e CAR</small>
-          </summary>
-          <div class="modsGrid">
-            <div><span>FOR</span><strong id="modForca">+0</strong></div>
-            <div><span>DES</span><strong id="modDestreza">+0</strong></div>
-            <div><span>CON</span><strong id="modConstituicao">+0</strong></div>
-            <div><span>INT</span><strong id="modInteligencia">+0</strong></div>
-            <div><span>SAB</span><strong id="modSabedoria">+0</strong></div>
-            <div><span>CAR</span><strong id="modCarisma">+0</strong></div>
-          </div>
-        </details>
 
         <details class="batalhaSecao detalhesBatalha historicoBatalhaDetalhes">
           <summary>
