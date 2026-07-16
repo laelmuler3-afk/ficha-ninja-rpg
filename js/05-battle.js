@@ -1,69 +1,144 @@
-/* Shinobi 1.8.1 — painel de combate com efeitos automáticos e Furtividade. */
+/* Shinobi 1.8.2 — painel de combate com modificadores visíveis e bônus acumulados. */
 
-/* ===== BÔNUS TEMPORÁRIOS DE ATRIBUTOS ===== */
+/* ===== MODIFICADORES VISÍVEIS E BÔNUS TEMPORÁRIOS ===== */
 (function(){
-  if(window.__bonusBatalhaCompactoV2) return;
-  window.__bonusBatalhaCompactoV2=true;
+  if(window.__modificadoresCombateVisiveisV182) return;
+  window.__modificadoresCombateVisiveisV182=true;
 
-  let aberto=false;
   let frame=null;
 
-  function bonusAtivos(){
+  const ROTULOS={
+    forca:"FOR",
+    destreza:"DES",
+    constituicao:"CON",
+    inteligencia:"INT",
+    sabedoria:"SAB",
+    carisma:"CAR",
+    ca:"CA",
+    furtividade:"FUR"
+  };
+
+  function numero(valor){
+    const n=Number(valor||0);
+    return Number.isFinite(n)?n:0;
+  }
+
+  function comSinal(valor){
+    const n=numero(valor);
+    return n>0?`+${n}`:String(n);
+  }
+
+  function bonusManuais(){
     return Array.from(document.querySelectorAll(".bonusAtributoBatalha"))
       .map(input=>{
-        const valor=Number(input.value||0);
-        const alvo=String(input.dataset.bonusBatalha||"").toUpperCase().slice(0,3);
-        return valor?{alvo,valor}:null;
+        const alvo=String(input.dataset.bonusBatalha||"").toLowerCase();
+        const valor=numero(input.value);
+        return valor?{alvo,valor,origem:"manual"}:null;
       })
       .filter(Boolean);
   }
+
+  function bonusDeJutsus(){
+    const efeitos=typeof window.obterEfeitosJutsuBatalhaAtivos==="function"
+      ? window.obterEfeitosJutsuBatalhaAtivos()
+      : [];
+
+    return efeitos.flatMap(efeito=>
+      Object.entries(efeito?.bonus||{})
+        .map(([alvo,valor])=>({
+          alvo:String(alvo||"").toLowerCase(),
+          valor:numero(valor),
+          origem:"jutsu",
+          nome:String(efeito?.nome||"Jutsu")
+        }))
+        .filter(item=>item.valor)
+    );
+  }
+
+  function agruparBonus(itens){
+    const mapa=new Map();
+
+    itens.forEach(item=>{
+      const alvo=item.alvo;
+      if(!alvo) return;
+
+      if(!mapa.has(alvo)){
+        mapa.set(alvo,{
+          alvo,
+          total:0,
+          manual:0,
+          jutsu:0,
+          fontesJutsu:new Set()
+        });
+      }
+
+      const grupo=mapa.get(alvo);
+      grupo.total+=item.valor;
+
+      if(item.origem==="manual"){
+        grupo.manual+=item.valor;
+      }else{
+        grupo.jutsu+=item.valor;
+        if(item.nome) grupo.fontesJutsu.add(item.nome);
+      }
+    });
+
+    return Array.from(mapa.values());
+  }
+
+  window.obterResumoBonusCombate=function(){
+    return agruparBonus([...bonusManuais(),...bonusDeJutsus()]).map(item=>({
+      ...item,
+      fontesJutsu:Array.from(item.fontesJutsu)
+    }));
+  };
 
   window.atualizarBonusBatalhaCompacto=function(){
     const painel=document.querySelector("#batalha .bonusAtributosBatalha");
     if(!painel) return;
 
-    painel.classList.toggle("aberto",aberto);
-    painel.classList.toggle("fechado",!aberto);
-
     let resumo=painel.querySelector(".bonusResumoCompacto");
     if(!resumo){
       resumo=document.createElement("div");
       resumo.className="bonusResumoCompacto";
-      const titulo=painel.querySelector("h3");
-      titulo?.nextSibling
-        ? painel.insertBefore(resumo,titulo.nextSibling)
-        : painel.prepend(resumo);
+      painel.appendChild(resumo);
     }
 
-    const ativos=bonusAtivos();
-    const efeitosJutsu=typeof window.obterEfeitosJutsuBatalhaAtivos==="function"
-      ? window.obterEfeitosJutsuBatalhaAtivos()
-      : [];
+    const grupos=window.obterResumoBonusCombate();
 
-    const chipsJutsu=efeitosJutsu.flatMap(efeito=>{
-      const chips=[];
-      const ca=Number(efeito?.bonus?.ca||0);
-      const furtividade=Number(efeito?.bonus?.furtividade||0);
-      if(ca)chips.push({alvo:"CA",valor:ca});
-      if(furtividade)chips.push({alvo:"FUR",valor:furtividade});
-      return chips;
-    });
+    resumo.innerHTML=grupos.length
+      ? `
+        <div class="bonusResumoTitulo">Bônus ativos acumulados</div>
+        <div class="bonusResumoAtivos">
+          ${grupos.map(grupo=>{
+            const detalhes=[];
+            if(grupo.manual) detalhes.push(`${comSinal(grupo.manual)} manual`);
+            if(grupo.jutsu){
+              const qtd=grupo.fontesJutsu.length;
+              detalhes.push(`${comSinal(grupo.jutsu)} ${qtd>1?`${qtd} jutsus`:"jutsu"}`);
+            }
 
-    const todos=[...ativos,...chipsJutsu];
-    resumo.innerHTML=`
-      ${todos.length
-        ? `<div class="bonusResumoAtivos">${todos.map(b=>`<span class="bonusResumoChip">${b.alvo} ${b.valor>0?"+":""}${b.valor}</span>`).join("")}</div>`
-        : `<div class="bonusResumoVazio">Nenhum bônus temporário ativo.</div>`
-      }
-      <button type="button" class="btnGerenciarBonusBatalha" onclick="alternarBonusAtributosBatalha()">
-        ${aberto?"▲ Fechar bônus":"▼ Gerenciar bônus"}
-      </button>
-    `;
+            return `
+              <span class="bonusResumoChip bonusResumoChipTotal">
+                <b>${ROTULOS[grupo.alvo]||grupo.alvo.toUpperCase()}</b>
+                <strong>${comSinal(grupo.total)}</strong>
+                ${detalhes.length?`<small>${detalhes.join(" · ")}</small>`:""}
+              </span>
+            `;
+          }).join("")}
+        </div>
+      `
+      : `<div class="bonusResumoVazio">Nenhum bônus temporário ativo.</div>`;
   };
 
+  /*
+   * Mantém compatibilidade com botões antigos. Os campos manuais agora
+   * ficam dentro de um <details>, por isso não há mais um painel próprio
+   * que precise ser aberto por JavaScript.
+   */
   window.alternarBonusAtributosBatalha=function(){
-    aberto=!aberto;
-    window.atualizarBonusBatalhaCompacto();
+    const detalhes=document.querySelector("#batalha .ajustesBonusAtributos");
+    if(detalhes) detalhes.open=!detalhes.open;
   };
 
   function agendar(){
@@ -74,25 +149,32 @@
     });
   }
 
-  if(typeof window.atualizarModsBatalhaComBonus==="function"&&!window.__modsBatalhaComResumoV2){
-    window.__modsBatalhaComResumoV2=true;
+  if(typeof window.atualizarModsBatalhaComBonus==="function"&&!window.__modsBatalhaComResumoV182){
+    window.__modsBatalhaComResumoV182=true;
     const base=window.atualizarModsBatalhaComBonus;
     window.atualizarModsBatalhaComBonus=function(){
       const resultado=base.apply(this,arguments);
       agendar();
       return resultado;
     };
-  }else{
-    document.addEventListener("input",evento=>{
-      if(evento.target?.matches(".bonusAtributoBatalha")) agendar();
-    });
   }
+
+  document.addEventListener("input",evento=>{
+    if(evento.target?.matches(".bonusAtributoBatalha")) agendar();
+  });
+
+  document.addEventListener("change",evento=>{
+    if(evento.target?.matches(".bonusAtributoBatalha")) agendar();
+  });
+
+  window.addEventListener("shinobi:efeitos-batalha-atualizados",agendar);
 
   if(document.readyState==="loading"){
     document.addEventListener("DOMContentLoaded",agendar,{once:true});
   }else{
     agendar();
   }
+
   window.addEventListener("pageshow",agendar);
 })();
 
