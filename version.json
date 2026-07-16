@@ -1,6 +1,6 @@
 {
-  "version": "1.9.6",
-  "releasedAt": "2026-07-16T18:21:00Z",
-  "notes": "Corrige o motor geral de bônus dos jutsus: CA, modificadores, velocidade, furtividade e demais efeitos agora são aplicados ou exibidos na Área de Batalha sem depender do nome de um jutsu específico.",
-  "message": "Ao usar um jutsu, os bônus persistentes são registrados imediatamente na Área de Batalha. Fichas antigas são reparadas automaticamente."
+  "version": "1.10.0",
+  "releasedAt": "2026-07-16T19:20:00Z",
+  "notes": "Adiciona motor universal de efeitos para bônus numéricos, multiplicadores, dados extras, vantagens, desvantagens, resistências, imunidades, vulnerabilidades, condições e ações extras.",
+  "message": "Os efeitos estruturados dos jutsus agora são agregados e exibidos mecanicamente na Área de Batalha, sem depender do nome do jutsu."
 }

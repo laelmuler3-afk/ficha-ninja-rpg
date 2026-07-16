@@ -97,3 +97,11 @@ Quando o bônus possuir um escopo, como “contra ataques à distância”, o va
 ## Limite da automação
 
 Efeitos puramente narrativos, reações contra um alvo específico ou decisões que dependem do resultado da mesa continuam aparecendo como efeitos ativos, mas não podem alterar automaticamente um número quando não existe um campo correspondente ou quando a decisão cabe ao mestre/jogador. Eles não são mais ocultados.
+
+
+## v1.10.0 — Motor universal de efeitos
+
+- Agregação independente do nome do jutsu.
+- Suporte mecânico para bônus, multiplicadores, dados extras, vantagens, desvantagens, resistências, imunidades, vulnerabilidades, condições e ações extras.
+- Efeitos destinados ao alvo permanecem registrados sem alterar a ficha do usuário.
+- Novo painel “Efeitos mecânicos ativos” na Área de Batalha.
