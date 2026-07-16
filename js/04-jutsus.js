@@ -163,6 +163,7 @@
  };
  const ORDEM=["ca","cd","proficiencia","velocidade","iniciativa","forca","destreza","constituicao","inteligencia","sabedoria","carisma"];
  const num=v=>{const n=parseInt(String(v??"0").replace(",","."),10);return Number.isFinite(n)?n:0};
+ const textoSeguro=v=>typeof escaparHtmlShinobi==="function"?escaparHtmlShinobi(v):String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
  let aplicandoBonus=false;
  let migracaoAlterouEstado=false;
 
@@ -288,7 +289,7 @@
    if(!lista.length){res.innerHTML="Definir";return}
    if(lista.length===1){
      const b=lista[0],v=num(b.valor),al=ALVOS[b.alvo].label;
-     res.innerHTML=`${al} ${v>0?"+":""}${v}<small>${b.nome||"Bônus ativo"}</small>`;
+     res.innerHTML=`${al} ${v>0?"+":""}${v}<small>${textoSeguro(b.nome||"Bônus ativo")}</small>`;
      return;
    }
    res.innerHTML=`${lista.length} bônus<small>${total>0?"+":""}${total} total</small>`;
@@ -456,7 +457,7 @@
      aplicandoBonus ||
      !ev.target ||
      !ev.target.matches(
-       '#identidade input[data-save]:not(#bonusCA)'
+       'input[data-save]:not(#bonusCA)'
      )
    ){
      return;

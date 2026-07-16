@@ -1,12 +1,12 @@
-/* Shinobi 1.9.1 — atualizador observável com verificação sem cache. */
+/* Shinobi 1.9.4 — atualizador observável com verificação sem cache. */
 (function(){
   "use strict";
 
-  if(window.__shinobiAtualizadorV191) return;
-  window.__shinobiAtualizadorV191 = true;
+  if(window.__shinobiAtualizadorV194) return;
+  window.__shinobiAtualizadorV194 = true;
 
   const APP_VERSION = String(
-    document.documentElement.dataset.appVersion || "1.9.1"
+    document.documentElement.dataset.appVersion || "1.9.4"
   );
   const SW_URL = `./service-worker.js?v=${encodeURIComponent(APP_VERSION)}`;
   const VERSION_URL = "./version.json";
@@ -209,8 +209,8 @@
   }
 
   function acompanharWorker(worker){
-    if(!worker||worker.__shinobiAcompanhadoV191) return;
-    worker.__shinobiAcompanhadoV191=true;
+    if(!worker||worker.__shinobiAcompanhadoV194) return;
+    worker.__shinobiAcompanhadoV194=true;
 
     worker.addEventListener("statechange",()=>{
       if(worker.state==="installed"){
@@ -235,8 +235,8 @@
   }
 
   function acompanharRegistro(registro){
-    if(!registro||registro.__shinobiAcompanhadoV191) return;
-    registro.__shinobiAcompanhadoV191=true;
+    if(!registro||registro.__shinobiAcompanhadoV194) return;
+    registro.__shinobiAcompanhadoV194=true;
 
     if(registro.waiting&&navigator.serviceWorker.controller){
       anunciarAtualizacaoPronta();

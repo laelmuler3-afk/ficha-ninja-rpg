@@ -8,7 +8,7 @@
   const VERSAO = "1.9.3";
   const VERSAO_EFEITOS = "1.0.3";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
-  const URL_REGISTRO = `data/efeitos-jutsus.json?v=${VERSAO_EFEITOS}`;
+  const URL_REGISTRO = `data/efeitos-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || VERSAO)}-${VERSAO_EFEITOS}`;
 
   const ATRIBUTOS = {
     forca:{rotulo:"FOR", id:"modForca"},
