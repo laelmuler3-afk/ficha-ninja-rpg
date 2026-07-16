@@ -920,3 +920,39 @@
   font-size:9px;
   letter-spacing:.03em;
 }
+
+/* ===== RESUMO GERAL DOS BÔNUS DE JUTSU — v1.9.6 ===== */
+#batalha .efeitosResumoGeral{
+  display:grid;
+  gap:7px;
+  padding:10px;
+  border:1px solid rgba(255,177,90,.26);
+  background:linear-gradient(180deg,rgba(255,142,35,.10),rgba(0,0,0,.24));
+  box-shadow:inset 3px 0 0 rgba(255,177,90,.58);
+}
+
+#batalha .efeitosResumoGeral > strong{
+  color:#ffe1b0;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+}
+
+#batalha .efeitosResumoGeral > div{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+#batalha .efeitoResumoGeralChip{
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  padding:4px 8px;
+  border:1px solid rgba(255,177,90,.25);
+  background:rgba(255,144,43,.10);
+  color:#ffe5bf;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:1000;
+}
