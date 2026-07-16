@@ -1,12 +1,12 @@
-/* Shinobi 1.9.6 — motor estruturado com reparo de efeitos automáticos em fichas antigas. */
+/* Shinobi 1.10.0 — motor estruturado com reparo de efeitos automáticos em fichas antigas. */
 (function(){
   "use strict";
 
-  if(window.__motorEfeitosEstruturadosV196) return;
-  window.__motorEfeitosEstruturadosV196 = true;
+  if(window.__motorEfeitosEstruturadosV110) return;
+  window.__motorEfeitosEstruturadosV110 = true;
 
-  const VERSAO = "1.9.6";
-  const VERSAO_EFEITOS = "1.1.0";
+  const VERSAO = "1.10.0";
+  const VERSAO_EFEITOS = "1.2.0";
   const CHAVE_ESTADO = "efeitosBatalhaAtivos";
   const URL_REGISTRO = `data/efeitos-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || VERSAO)}-${VERSAO_EFEITOS}`;
 
