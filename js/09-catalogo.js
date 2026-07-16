@@ -13,7 +13,7 @@
   if(window.__catalogoJutsusV140) return;
   window.__catalogoJutsusV140 = true;
 
-  const URL_CATALOGO = "./data/catalogo-jutsus.json?v=1.9.0";
+  const URL_CATALOGO = "./data/catalogo-jutsus.json?v=1.9.1";
   const LIMITE_INICIAL = 30;
   const PASSO_LISTAGEM = 30;
 
@@ -570,14 +570,10 @@
       alvo: String(jutsu.alvo || ""),
       descricao,
       imagem: "",
-      efeitosEstruturados: Array.isArray(jutsu.efeitosEstruturados)
-        ? JSON.parse(JSON.stringify(jutsu.efeitosEstruturados))
-        : [],
-      efeitosConfig: jutsu.efeitosConfig && typeof jutsu.efeitosConfig === "object"
-        ? JSON.parse(JSON.stringify(jutsu.efeitosConfig))
-        : {},
-      classificacaoEfeitos: String(jutsu.classificacaoEfeitos || ""),
-      efeitosVersao: String(jutsu.efeitosVersao || "1.0.0"),
+      /*
+       * Os efeitos não ficam mais duplicados no catálogo. O módulo 12
+       * associa o registro central ao card logo após a inclusão na ficha.
+       */
       catalogoId: chaveJutsu(jutsu),
       catalogoFonte: {
         catalogo:
@@ -648,6 +644,15 @@
     const indicesAbertos = novos.map(
       (_, indice)=>primeiroIndice + indice
     );
+
+    /* Associa os efeitos estruturados antes da renderização final do card. */
+    if(window.EfeitosJutsuShinobi?.migrar){
+      try{
+        await window.EfeitosJutsuShinobi.migrar();
+      }catch(erro){
+        console.warn("Não foi possível associar os efeitos do catálogo imediatamente.", erro);
+      }
+    }
 
     persistirJutsusAdicionados(indicesAbertos);
     selecionados.clear();
