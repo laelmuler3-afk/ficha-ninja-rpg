@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "version": "2.0.0",
+  "schemaVersion": 2,
+  "version": "2.0.1",
   "phase": "fixed-only",
   "title": "Progressão Shinobi — benefícios fixos",
   "maxLevel": 20,
@@ -79,8 +79,8 @@
     },
     "resistencia": {
       "name": "Resistência",
-      "short": "Escolhe Ferocidade, Evasão, Resistência ou Discernimento.",
-      "description": "Ao ser submetido a um efeito que permite teste de resistência, pode usar a característica escolhida no lugar da normalmente indicada. Em sucesso não recebe dano; em falha recebe metade.",
+      "short": "Escolhe 3 entre Ferocidade, Evasão, Resistência e Discernimento.",
+      "description": "Escolha 3 entre Ferocidade, Evasão, Resistência e Discernimento. Quando for submetido a um efeito que permite teste de resistência, pode usar uma das características escolhidas no lugar da normalmente indicada. Em sucesso não recebe dano; em falha recebe metade.",
       "mode": "required-choice"
     },
     "movimento_iii": {
@@ -113,7 +113,7 @@
       "feature": "resistencia",
       "level": 7,
       "required": true,
-      "label": "Escolha sua Resistência",
+      "label": "Escolha 3 Resistências",
       "options": [
         {
           "id": "ferocidade",
@@ -135,7 +135,11 @@
           "label": "Discernimento",
           "ability": "Sabedoria e Inteligência"
         }
-      ]
+      ],
+      "selectionCount": 3,
+      "minSelections": 3,
+      "maxSelections": 3,
+      "help": "Selecione 3 opções diferentes entre as 4 disponíveis."
     }
   },
   "levels": [
