@@ -1,6 +1,6 @@
 {
-  "version": "1.10.8",
-  "releasedAt": "2026-07-17T15:35:00Z",
-  "notes": "Compacta e moderniza o Catálogo de Jutsus com filtros retráteis.",
-  "message": "A pesquisa fica sempre visível, os filtros abrem sob demanda e os cards ocupam menos espaço no celular."
+  "version": "2.0.0",
+  "releasedAt": "2026-07-17T22:17:35Z",
+  "notes": "Integra o sistema de Level Up dos benefícios fixos sobre a base completa 1.10.8.",
+  "message": "Mantém catálogo retrátil, inventário com catálogo e ícones de ataques; adiciona progressão fixa, histórico, proficiência automática e ataques por ação. PV e Chakra continuam para a fase 2."
 }
