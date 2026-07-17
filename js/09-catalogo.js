@@ -1,4 +1,4 @@
-/* Shinobi 1.4.2 — Catálogo de jutsus
+/* Shinobi 1.5.0 — Catálogo de jutsus
  *
  * Responsabilidades:
  * - carregar o catálogo JSON somente quando necessário;
@@ -10,20 +10,20 @@
 (function(){
   "use strict";
 
-  if(window.__catalogoJutsusV140) return;
-  window.__catalogoJutsusV140 = true;
+  if(window.__catalogoJutsusV150) return;
+  window.__catalogoJutsusV150 = true;
 
-  const URL_CATALOGO = `./data/catalogo-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || "1.10.1")}`;
+  const URL_CATALOGO = `./data/catalogo-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || "1.10.8")}`;
   const LIMITE_INICIAL = 30;
   const PASSO_LISTAGEM = 30;
 
   function garantirEstilosCriticosCatalogo(){
-    if(document.getElementById("catalogoCriticoV142")){
+    if(document.getElementById("catalogoCriticoV150")){
       return;
     }
 
     const estilo = document.createElement("style");
-    estilo.id = "catalogoCriticoV142";
+    estilo.id = "catalogoCriticoV150";
     estilo.textContent = `
       #catalogoJutsusLista{
         display:block !important;
@@ -32,7 +32,7 @@
       #catalogoJutsusLista .catalogoCarta{
         display:block !important;
         width:100% !important;
-        min-height:205px !important;
+        min-height:172px !important;
         margin:0 0 12px !important;
         overflow:hidden !important;
         box-sizing:border-box !important;
@@ -43,7 +43,7 @@
         grid-template-columns:43px minmax(0,1fr) !important;
         gap:11px !important;
         width:100% !important;
-        min-height:160px !important;
+        min-height:128px !important;
         padding:12px !important;
         box-sizing:border-box !important;
         visibility:visible !important;
@@ -149,6 +149,7 @@
   let filtroCategoria = "";
   let limiteAtual = LIMITE_INICIAL;
   let selecionados = new Set();
+  let filtrosAbertos = false;
   let rolagemAnteriorBloqueada = "";
 
   function escaparHtml(valor){
@@ -371,14 +372,104 @@
     ].join("");
   }
 
+  function filtrosAtivos(){
+    const ativos = [];
+
+    if(filtroElemento){
+      ativos.push({
+        tipo: "elemento",
+        rotulo: ELEMENTOS[filtroElemento]?.nome || filtroElemento
+      });
+    }
+
+    if(filtroRank){
+      ativos.push({
+        tipo: "rank",
+        rotulo: `Rank ${filtroRank}`
+      });
+    }
+
+    if(filtroCategoria){
+      ativos.push({
+        tipo: "categoria",
+        rotulo: filtroCategoria
+      });
+    }
+
+    return ativos;
+  }
+
+  function definirFiltrosAbertos(abertos){
+    filtrosAbertos = Boolean(abertos);
+
+    if(!overlayCatalogo) return;
+
+    const painel = overlayCatalogo.querySelector(
+      "#catalogoFiltrosPainel"
+    );
+
+    const botao = overlayCatalogo.querySelector(
+      "#catalogoAlternarFiltros"
+    );
+
+    if(painel){
+      painel.hidden = !filtrosAbertos;
+    }
+
+    if(botao){
+      botao.setAttribute(
+        "aria-expanded",
+        String(filtrosAbertos)
+      );
+
+      botao.classList.toggle(
+        "aberto",
+        filtrosAbertos
+      );
+    }
+  }
+
+  function atualizarResumoFiltros(){
+    if(!overlayCatalogo) return;
+
+    const ativos = filtrosAtivos();
+    const resumo = overlayCatalogo.querySelector(
+      "#catalogoFiltrosResumo"
+    );
+    const contador = overlayCatalogo.querySelector(
+      "#catalogoFiltrosContador"
+    );
+    const limpar = overlayCatalogo.querySelector(
+      "#catalogoLimparFiltros"
+    );
+
+    if(contador){
+      contador.textContent = String(ativos.length);
+      contador.hidden = ativos.length === 0;
+    }
+
+    if(limpar){
+      limpar.disabled = ativos.length === 0 && !termoBusca;
+    }
+
+    if(!resumo) return;
+
+    resumo.hidden = ativos.length === 0;
+    resumo.innerHTML = ativos.map(item=>`
+      <span class="catalogoFiltroChip">
+        ${escaparHtml(item.rotulo)}
+      </span>
+    `).join("");
+  }
+
   function resumoDescricao(jutsu){
     const descricao = String(jutsu?.descricao || "")
       .replace(/\s+/g, " ")
       .trim();
 
-    if(descricao.length <= 160) return descricao;
+    if(descricao.length <= 125) return descricao;
 
-    return `${descricao.slice(0, 157).trim()}…`;
+    return `${descricao.slice(0, 122).trim()}…`;
   }
 
   function renderizarCartaCatalogo(jutsu, idsFicha){
@@ -396,7 +487,7 @@
       <article
         class="catalogoCarta ${elemento.classe} ${selecionado ? "catalogoCartaSelecionada" : ""} ${jaPossui ? "catalogoCartaAdquirida" : ""}"
         data-catalogo-id="${escaparHtml(id)}"
-        style="display:block;width:100%;min-height:205px;margin:0 0 12px;overflow:hidden;box-sizing:border-box"
+        style="display:block;width:100%;min-height:172px;margin:0 0 9px;overflow:hidden;box-sizing:border-box"
       >
         <div
           class="catalogoCartaCorpo"
@@ -405,7 +496,7 @@
           role="button"
           tabindex="0"
           aria-label="Ver detalhes de ${escaparHtml(jutsu.nome)}"
-          style="display:grid;grid-template-columns:43px minmax(0,1fr);gap:11px;width:100%;min-height:160px;padding:12px;box-sizing:border-box;visibility:visible;opacity:1"
+          style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:10px;width:100%;min-height:128px;padding:11px;box-sizing:border-box;visibility:visible;opacity:1"
         >
           <span class="catalogoCartaElemento">
             ${elemento.icone}
@@ -470,8 +561,8 @@
 
     contador.textContent =
       total === 1
-        ? "1 carta selecionada"
-        : `${total} cartas selecionadas`;
+        ? "1 selecionado"
+        : `${total} selecionados`;
 
     botao.disabled = total === 0;
     botao.textContent =
@@ -499,8 +590,11 @@
     const visiveis = filtrados.slice(0, limiteAtual);
     const idsFicha = idsPresentesNaFicha();
 
-    status.textContent =
-      `${filtrados.length} de ${dadosCatalogo.jutsus.length} cartas`;
+    status.textContent = filtrados.length === dadosCatalogo.jutsus.length
+      ? `${filtrados.length} jutsus`
+      : `${filtrados.length} de ${dadosCatalogo.jutsus.length} jutsus`;
+
+    atualizarResumoFiltros();
 
     if(!filtrados.length){
       lista.innerHTML = `
@@ -894,6 +988,11 @@
         return;
       }
 
+      if(evento.target.closest("#catalogoAlternarFiltros")){
+        definirFiltrosAbertos(!filtrosAbertos);
+        return;
+      }
+
       const acao = evento.target.closest(
         "[data-acao-catalogo]"
       );
@@ -930,7 +1029,9 @@
         rank.value = "";
         categoria.value = "";
 
+        definirFiltrosAbertos(false);
         renderizarCatalogo();
+        busca.focus();
         return;
       }
 
@@ -980,59 +1081,94 @@
         </header>
 
         <div class="catalogoJutsusFerramentas">
-          <label class="catalogoBuscaBox">
-            <span>Pesquisar</span>
+          <div class="catalogoBuscaLinha">
+            <label class="catalogoBuscaBox">
+              <span class="catalogoBuscaIcone" aria-hidden="true">⌕</span>
 
-            <input
-              id="catalogoBusca"
-              type="search"
-              placeholder="Nome, efeito, categoria..."
-              autocomplete="off"
+              <input
+                id="catalogoBusca"
+                type="search"
+                placeholder="Pesquisar jutsu..."
+                autocomplete="off"
+                aria-label="Pesquisar jutsus"
+              >
+            </label>
+
+            <button
+              type="button"
+              id="catalogoAlternarFiltros"
+              class="catalogoFiltrosToggle"
+              aria-expanded="false"
+              aria-controls="catalogoFiltrosPainel"
             >
-          </label>
-
-          <div class="catalogoFiltrosGrid">
-            <label>
-              <span>Elemento</span>
-              <select id="catalogoFiltroElemento">
-                <option value="">Todos os elementos</option>
-                <option value="katon">Katon</option>
-                <option value="raiton">Raiton</option>
-                <option value="fuuton">Fuuton</option>
-                <option value="suiton">Suiton</option>
-                <option value="doton">Doton</option>
-                <option value="yin">Yinton</option>
-                <option value="yang">Youton</option>
-                <option value="neutro">Neutro</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Rank</span>
-              <select id="catalogoFiltroRank">
-                <option value="">Todos os ranks</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Categoria</span>
-              <select id="catalogoFiltroCategoria">
-                <option value="">Todas as categorias</option>
-              </select>
-            </label>
+              <span class="catalogoFiltrosToggleIcone" aria-hidden="true">☷</span>
+              <span>Filtros</span>
+              <b id="catalogoFiltrosContador" hidden>0</b>
+              <i aria-hidden="true">⌄</i>
+            </button>
           </div>
+
+          <div
+            id="catalogoFiltrosResumo"
+            class="catalogoFiltrosResumo"
+            aria-label="Filtros ativos"
+            hidden
+          ></div>
+
+          <section
+            id="catalogoFiltrosPainel"
+            class="catalogoFiltrosPainel"
+            aria-label="Opções de filtro"
+            hidden
+          >
+            <div class="catalogoFiltrosGrid">
+              <label>
+                <span>Elemento</span>
+                <select id="catalogoFiltroElemento">
+                  <option value="">Todos os elementos</option>
+                  <option value="katon">Katon</option>
+                  <option value="raiton">Raiton</option>
+                  <option value="fuuton">Fuuton</option>
+                  <option value="suiton">Suiton</option>
+                  <option value="doton">Doton</option>
+                  <option value="yin">Yinton</option>
+                  <option value="yang">Youton</option>
+                  <option value="neutro">Neutro</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Rank</span>
+                <select id="catalogoFiltroRank">
+                  <option value="">Todos os ranks</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Categoria</span>
+                <select id="catalogoFiltroCategoria">
+                  <option value="">Todas as categorias</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="catalogoFiltrosPainelRodape">
+              <span>Combine os filtros para encontrar uma técnica.</span>
+              <button
+                type="button"
+                id="catalogoLimparFiltros"
+                disabled
+              >
+                Limpar
+              </button>
+            </div>
+          </section>
 
           <div class="catalogoFerramentasRodape">
             <span id="catalogoJutsusStatus">
               Carregando catálogo...
             </span>
-
-            <button
-              type="button"
-              id="catalogoLimparFiltros"
-            >
-              Limpar filtros
-            </button>
+            <small>Toque em um card para ver os detalhes</small>
           </div>
         </div>
 
@@ -1073,6 +1209,7 @@
 
     document.body.appendChild(overlayCatalogo);
     instalarEventosCatalogo();
+    definirFiltrosAbertos(false);
 
     try{
       await carregarCatalogo();
