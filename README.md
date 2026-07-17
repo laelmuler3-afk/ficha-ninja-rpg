@@ -44,7 +44,7 @@ O botão **Adicionar item** abre todos os itens catalogados com imagem, busca e 
 - Compacta e moderniza os cards, mantendo detalhes e seleção acessíveis.
 - Mantém a barra de seleção fixa e horizontal no celular.
 
-## Versão 2.0.0 — Level Up fixo sobre a base 1.10.8
+## Versão 2.0.1 — Level Up fixo sobre a base 1.10.8
 
 - Preserva todas as correções e recursos presentes na versão 1.10.8.
 - Fichas novas começam no nível 1.
@@ -55,3 +55,11 @@ O botão **Adicionar item** abre todos os itens catalogados com imagem, busca e 
 - O nível 7 exige a escolha da característica de Resistência.
 - PV e Chakra não são alterados nesta fase; as pendências ficam registradas para a fase 2.
 - O módulo de Level Up é `js/14-level-up.js`, pois `js/13-motor-universal.js` já pertence à base 1.10.8.
+
+
+## Correção 2.0.1
+
+- Resistência do nível 7 agora exige exatamente 3 escolhas diferentes entre 4 opções.
+- Uma escolha salva na 2.0.0 é preservada e o sistema solicita apenas as duas restantes.
+- Fichas que já estavam em nível avançado recebem o histórico e os benefícios fixos retroativos desde o nível 1.
+- PV e Chakra existentes não são alterados pela migração.
