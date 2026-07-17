@@ -1,5 +1,5 @@
-/* Shinobi 1.10.8 — Service Worker com navegação network-first e recuperação de cache. */
-const APP_VERSION = "1.10.8";
+/* Shinobi 2.0.0 — Base 1.10.8 com Level Up fixo e recuperação de cache. */
+const APP_VERSION = "2.0.0";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -13,6 +13,7 @@ const APP_SHELL = [
   `./css/catalogo.css?v=${APP_VERSION}`,
   `./css/regras-natureza.css?v=${APP_VERSION}`,
   `./css/batalha-viva.css?v=${APP_VERSION}`,
+  `./css/level-up.css?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
@@ -26,8 +27,10 @@ const APP_SHELL = [
   `./js/11-batalha-ui.js?v=${APP_VERSION}`,
   `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
   `./js/13-motor-universal.js?v=${APP_VERSION}`,
+  `./js/14-level-up.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
+  `./data/progressao-ninja.json?v=${APP_VERSION}`,
   `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
   `./assets/ui-notes-parchment.jpg?v=${APP_VERSION}`,
   `./assets/inventory-agulhas.webp?v=${APP_VERSION}`,
