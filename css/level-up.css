@@ -1,0 +1,78 @@
+/* Shinobi 2.0.0 — Level Up: benefícios fixos */
+.levelUpResumoCard{
+  margin:10px 16px 0;
+  padding:14px;
+  border:1px solid rgba(226,179,109,.34);
+  background:linear-gradient(145deg,rgba(15,19,22,.96),rgba(31,20,13,.94));
+  box-shadow:inset 0 1px 0 rgba(255,225,173,.06),0 8px 24px rgba(0,0,0,.24);
+}
+.levelUpResumoTopo{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.levelUpResumoTitulo{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.levelUpResumoTitulo small{color:#bcae9d;font-size:10px;font-weight:900;letter-spacing:1.25px;text-transform:uppercase;}
+.levelUpResumoTitulo strong{color:#fff1d6;font-size:18px;line-height:1.1;}
+.levelUpResumoStatus{padding:5px 8px;border:1px solid rgba(82,200,120,.38);color:#aaf0c0;background:rgba(28,96,54,.16);font-size:10px;font-weight:900;letter-spacing:.65px;text-transform:uppercase;white-space:nowrap;}
+.levelUpResumoGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:12px;}
+.levelUpResumoItem{min-width:0;padding:9px 7px;border:1px solid rgba(226,179,109,.18);background:rgba(0,0,0,.22);text-align:center;}
+.levelUpResumoItem span{display:block;color:#a99b89;font-size:8px;font-weight:900;letter-spacing:.75px;text-transform:uppercase;}
+.levelUpResumoItem strong{display:block;margin-top:4px;color:#fff4df;font-size:17px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.levelUpResumoAcoes{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:11px;}
+.levelUpBtn,.levelUpBtnSecundario{min-height:42px;border:1px solid rgba(242,133,54,.65);font-weight:900;letter-spacing:.65px;text-transform:uppercase;cursor:pointer;}
+.levelUpBtn{background:linear-gradient(180deg,#bf561f,#713015);color:#fff6ea;box-shadow:inset 0 1px 0 rgba(255,224,185,.16);}
+.levelUpBtnSecundario{padding:0 14px;border-color:rgba(226,179,109,.28);background:rgba(255,255,255,.035);color:#e7cfaa;}
+.levelUpBtn:disabled{cursor:not-allowed;opacity:.52;filter:grayscale(.35);}
+#nivelDisplayMini[readonly]{cursor:default;caret-color:transparent;}
+.levelUpBattleCard strong{color:#f3c17e!important;}
+.levelUpOverlay{position:fixed;inset:0;z-index:12000;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px);}
+.levelUpModal{width:min(680px,100%);max-height:min(88vh,820px);overflow:auto;border:1px solid rgba(239,156,76,.56);background:linear-gradient(170deg,#121416 0%,#17100c 100%);box-shadow:0 24px 80px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,224,182,.08);color:#f5e7d2;}
+.levelUpModalCabecalho{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px;border-bottom:1px solid rgba(226,179,109,.22);background:rgba(18,20,22,.98);}
+.levelUpModalSelo{display:block;margin-bottom:5px;color:#e9823d;font-size:10px;font-weight:1000;letter-spacing:1.5px;text-transform:uppercase;}
+.levelUpModal h2{margin:0;color:#fff0d3;font-size:24px;line-height:1.1;}
+.levelUpFechar{width:38px;height:38px;border:1px solid rgba(226,179,109,.26);background:rgba(255,255,255,.035);color:#f1d1ad;font-size:22px;cursor:pointer;}
+.levelUpModalCorpo{padding:18px;}
+.levelUpAvisoFase{padding:12px;border-left:3px solid #ef843c;background:rgba(113,48,21,.18);color:#d8c6b0;font-size:13px;line-height:1.45;}
+.levelUpComparacao{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px;}
+.levelUpComparacaoItem{padding:12px;border:1px solid rgba(226,179,109,.18);background:rgba(0,0,0,.22);}
+.levelUpComparacaoItem span{display:block;color:#a99b89;font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;}
+.levelUpComparacaoItem strong{display:block;margin-top:6px;color:#fff1d7;font-size:18px;}
+.levelUpMudou{color:#80e7aa!important;}
+.levelUpSecao{margin-top:18px;}
+.levelUpSecao h3{margin:0 0 9px;color:#efbd7d;font-size:13px;letter-spacing:.8px;text-transform:uppercase;}
+.levelUpLista{display:grid;gap:8px;}
+.levelUpCaracteristica{padding:12px;border:1px solid rgba(226,179,109,.18);background:rgba(0,0,0,.20);}
+.levelUpCaracteristica strong{display:block;color:#fff0d7;font-size:15px;}
+.levelUpCaracteristica p{margin:5px 0 0;color:#c5b5a2;font-size:12px;line-height:1.45;}
+.levelUpTag{display:inline-block;margin-top:7px;padding:3px 6px;border:1px solid rgba(226,179,109,.23);color:#cfae82;font-size:9px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;}
+.levelUpEscolhas{display:grid;gap:8px;}
+.levelUpOpcao{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:11px;border:1px solid rgba(226,179,109,.2);background:rgba(255,255,255,.025);cursor:pointer;}
+.levelUpOpcao:has(input:checked){border-color:rgba(90,214,132,.62);background:rgba(28,102,56,.18);}
+.levelUpOpcao input{width:18px;height:18px;accent-color:#e87731;}
+.levelUpOpcao strong{display:block;color:#fff0da;}
+.levelUpOpcao small{display:block;margin-top:2px;color:#ab9b89;}
+.levelUpPendencias{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.levelUpPendente{padding:11px;border:1px dashed rgba(237,151,72,.42);background:rgba(113,48,21,.12);}
+.levelUpPendente strong{display:block;color:#f0c08c;font-size:13px;}
+.levelUpPendente small{display:block;margin-top:4px;color:#b9a58f;line-height:1.35;}
+.levelUpModalAcoes{position:sticky;bottom:0;display:grid;grid-template-columns:auto 1fr;gap:9px;padding:14px 18px;border-top:1px solid rgba(226,179,109,.22);background:rgba(18,20,22,.98);}
+.levelUpModalAcoes button{min-height:46px;padding:0 16px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;cursor:pointer;}
+.levelUpCancelar{border:1px solid rgba(226,179,109,.25);background:transparent;color:#d7c0a0;}
+.levelUpConfirmar{border:1px solid rgba(242,133,54,.68);background:linear-gradient(180deg,#bd551f,#6d2d14);color:#fff6e8;}
+.levelUpConfirmar:disabled{opacity:.45;cursor:not-allowed;}
+.levelUpHistorico{display:grid;gap:7px;}
+.levelUpHistoricoItem{padding:10px;border:1px solid rgba(226,179,109,.16);background:rgba(0,0,0,.18);}
+.levelUpHistoricoItem strong{color:#f1d1a8;}
+.levelUpHistoricoItem small{display:block;margin-top:3px;color:#9e8f7e;}
+.levelUpVazio{padding:14px;border:1px dashed rgba(226,179,109,.22);color:#a89a89;text-align:center;}
+body.levelUpAberto{overflow:hidden;}
+@media (min-width:700px){.levelUpOverlay{align-items:center;}.levelUpResumoCard{margin-left:16px;margin-right:16px;}}
+@media (max-width:520px){
+  .levelUpResumoCard{margin-left:10px;margin-right:10px;padding:12px;}
+  .levelUpResumoGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .levelUpResumoAcoes{grid-template-columns:1fr;}
+  .levelUpBtnSecundario{min-height:40px;}
+  .levelUpOverlay{padding:0;align-items:flex-end;}
+  .levelUpModal{max-height:94vh;border-left:0;border-right:0;border-bottom:0;}
+  .levelUpModalCabecalho,.levelUpModalCorpo{padding:14px;}
+  .levelUpModalAcoes{padding:12px 14px;}
+  .levelUpComparacao{grid-template-columns:1fr;}
+  .levelUpPendencias{grid-template-columns:1fr;}
+}
