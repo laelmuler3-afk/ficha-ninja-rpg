@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 1,
+  "version": "2.0.0",
+  "phase": "fixed-only",
+  "title": "Progressão Shinobi — benefícios fixos",
+  "maxLevel": 20,
+  "deferred": [
+    {
+      "id": "vida",
+      "label": "Ganho de Vida",
+      "reason": "Aguardando regra de rolagem e modificadores."
+    },
+    {
+      "id": "chakra",
+      "label": "Ganho de Chakra",
+      "reason": "Aguardando regra de rolagem, clã e modificadores."
+    }
+  ],
+  "features": {
+    "proficiencias_basicas": {
+      "name": "Proficiências iniciais",
+      "short": "Perícias escolhidas, atributos do clã, Kunais e Shurikens.",
+      "description": "Proficiência em perícias escolhidas, nos atributos listados no clã e no uso de Kunais e Shurikens.",
+      "mode": "information"
+    },
+    "defesa_sem_armadura": {
+      "name": "Defesa sem Armadura",
+      "short": "CA = 10 + Mod. de Destreza + Proficiência quando não usa armadura nem escudo.",
+      "description": "Enquanto não estiver usando armadura e não estiver empunhando um escudo, sua CA é igual a 10 + seu modificador de Destreza + seu bônus de proficiência.",
+      "mode": "fixed"
+    },
+    "regras_chakra": {
+      "name": "Regras de Chakra",
+      "short": "Desbloqueia as regras gerais de uso, indisponibilidade e recuperação de Chakra.",
+      "description": "As regras gerais de Chakra passam a valer. Nesta primeira fase, o Level Up não altera o Chakra atual nem o máximo.",
+      "mode": "deferred-calculation"
+    },
+    "regras_jutsu": {
+      "name": "Regras de Jutsu",
+      "short": "Desbloqueia as regras gerais aplicadas aos Jutsus.",
+      "description": "As regras gerais de Jutsu passam a valer, incluindo mãos livres, limites de gasto e restrições de aprendizagem.",
+      "mode": "information"
+    },
+    "natureza_chakra": {
+      "name": "Natureza de Chakra",
+      "short": "Desbloqueia a definição da Natureza de Chakra.",
+      "description": "A definição da Natureza de Chakra depende de rolagem e será concluída na segunda fase do sistema.",
+      "mode": "deferred-roll"
+    },
+    "movimento_i": {
+      "name": "Movimento I",
+      "short": "Movimento em superfícies verticais e tetos com custo de Chakra e terreno difícil.",
+      "description": "Sem armadura e sem escudo, pode mover-se por superfícies verticais e tetos ao custo de 1 Chakra a cada 9 metros ou a cada turno; nessas circunstâncias o terreno conta como difícil.",
+      "mode": "fixed"
+    },
+    "pontos_cla": {
+      "name": "Pontos de Clã",
+      "short": "Recebe 3 Pontos de Clã neste nível.",
+      "description": "Recebe 3 Pontos de Clã. Eles podem ser gastos em habilidades exclusivas do clã ou convertidos em Pontos-chave na escala de 1 para 2, mas não no sentido contrário.",
+      "mode": "fixed"
+    },
+    "pontos_chave": {
+      "name": "Pontos-chave",
+      "short": "Desbloqueia a reserva fixa de Pontos-chave da progressão.",
+      "description": "Pontos usados para liberar características do personagem. Podem ser usados para desbloquear habilidades em tempos livres entre aventuras.",
+      "mode": "fixed"
+    },
+    "ataque_extra_i": {
+      "name": "Ataque Extra I",
+      "short": "Pode atacar duas vezes ao realizar a ação de Ataque.",
+      "description": "Pode atacar duas vezes, em vez de uma, sempre que realizar a ação de Ataque no turno.",
+      "mode": "fixed"
+    },
+    "movimento_ii": {
+      "name": "Movimento II",
+      "short": "Pode gastar 2 Chakra para Disparada, Desengajar ou Esconder como Ação Bônus e dobrar o salto no turno.",
+      "description": "Pode gastar 2 Chakra para realizar Disparada, Desengajar ou Esconder como Ação Bônus no turno, e a distância de salto é dobrada naquele turno.",
+      "mode": "fixed"
+    },
+    "resistencia": {
+      "name": "Resistência",
+      "short": "Escolhe Ferocidade, Evasão, Resistência ou Discernimento.",
+      "description": "Ao ser submetido a um efeito que permite teste de resistência, pode usar a característica escolhida no lugar da normalmente indicada. Em sucesso não recebe dano; em falha recebe metade.",
+      "mode": "required-choice"
+    },
+    "movimento_iii": {
+      "name": "Movimento III",
+      "short": "Movimento vertical e em tetos não custa mais Chakra e ocorre normalmente.",
+      "description": "Mover-se por superfícies verticais e de cabeça para baixo em tetos não custa mais Chakra e pode ser feito normalmente.",
+      "mode": "fixed"
+    },
+    "ataque_extra_ii": {
+      "name": "Ataque Extra II",
+      "short": "Pode atacar três vezes ao realizar a ação de Ataque.",
+      "description": "Pode atacar três vezes, em vez de duas, sempre que realizar a ação de Ataque no turno.",
+      "mode": "fixed"
+    },
+    "modulacao_chakra": {
+      "name": "Modulação de Chakra",
+      "short": "Desbloqueia alterações de parâmetros de Jutsu mediante custo adicional de Chakra.",
+      "description": "Pode aumentar alcance, dano, área, duração, tempo de conjuração e outros parâmetros, pagando os custos definidos na regra de Modulação de Chakra.",
+      "mode": "fixed"
+    },
+    "jutsu_assinatura": {
+      "name": "Jutsu Assinatura",
+      "short": "Desbloqueia a criação de um Jutsu próprio com auxílio do mestre.",
+      "description": "Uma vez por descanso longo, pode usar o Jutsu Assinatura gastando metade do Chakra necessário. A criação exige pelo menos 15 de Sabedoria e uma Natureza de Chakra conhecida.",
+      "mode": "guided-choice"
+    }
+  },
+  "choices": {
+    "resistencia_nivel_7": {
+      "feature": "resistencia",
+      "level": 7,
+      "required": true,
+      "label": "Escolha sua Resistência",
+      "options": [
+        {
+          "id": "ferocidade",
+          "label": "Ferocidade",
+          "ability": "Força"
+        },
+        {
+          "id": "evasao",
+          "label": "Evasão",
+          "ability": "Destreza"
+        },
+        {
+          "id": "resistencia",
+          "label": "Resistência",
+          "ability": "Constituição"
+        },
+        {
+          "id": "discernimento",
+          "label": "Discernimento",
+          "ability": "Sabedoria e Inteligência"
+        }
+      ]
+    }
+  },
+  "levels": [
+    {
+      "level": 0,
+      "proficiency": null,
+      "jutsuRank": null,
+      "keyPoints": 0,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 0,
+      "features": [
+        "proficiencias_basicas"
+      ]
+    },
+    {
+      "level": 1,
+      "proficiency": 2,
+      "jutsuRank": "E",
+      "keyPoints": 0,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 1,
+      "features": [
+        "defesa_sem_armadura",
+        "regras_chakra",
+        "regras_jutsu"
+      ]
+    },
+    {
+      "level": 2,
+      "proficiency": 2,
+      "jutsuRank": "D",
+      "keyPoints": 0,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 1,
+      "features": [
+        "natureza_chakra",
+        "movimento_i"
+      ]
+    },
+    {
+      "level": 3,
+      "proficiency": 2,
+      "jutsuRank": "C",
+      "keyPoints": 0,
+      "clanPointsGrant": 3,
+      "attacksPerAction": 1,
+      "features": [
+        "pontos_cla"
+      ]
+    },
+    {
+      "level": 4,
+      "proficiency": 2,
+      "jutsuRank": "C",
+      "keyPoints": 10,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 1,
+      "features": [
+        "pontos_chave"
+      ]
+    },
+    {
+      "level": 5,
+      "proficiency": 3,
+      "jutsuRank": "B",
+      "keyPoints": 12,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 2,
+      "features": [
+        "ataque_extra_i"
+      ]
+    },
+    {
+      "level": 6,
+      "proficiency": 3,
+      "jutsuRank": "B",
+      "keyPoints": 14,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 2,
+      "features": [
+        "movimento_ii"
+      ]
+    },
+    {
+      "level": 7,
+      "proficiency": 3,
+      "jutsuRank": "B",
+      "keyPoints": 16,
+      "clanPointsGrant": 3,
+      "attacksPerAction": 2,
+      "features": [
+        "pontos_cla",
+        "resistencia"
+      ]
+    },
+    {
+      "level": 8,
+      "proficiency": 3,
+      "jutsuRank": "B",
+      "keyPoints": 22,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 2,
+      "features": []
+    },
+    {
+      "level": 9,
+      "proficiency": 4,
+      "jutsuRank": "A",
+      "keyPoints": 24,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 2,
+      "features": [
+        "movimento_iii"
+      ]
+    },
+    {
+      "level": 10,
+      "proficiency": 4,
+      "jutsuRank": "A",
+      "keyPoints": 26,
+      "clanPointsGrant": 3,
+      "attacksPerAction": 2,
+      "features": [
+        "pontos_cla"
+      ]
+    },
+    {
+      "level": 11,
+      "proficiency": 4,
+      "jutsuRank": "A",
+      "keyPoints": 28,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": [
+        "ataque_extra_ii"
+      ]
+    },
+    {
+      "level": 12,
+      "proficiency": 4,
+      "jutsuRank": "A",
+      "keyPoints": 34,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": []
+    },
+    {
+      "level": 13,
+      "proficiency": 5,
+      "jutsuRank": "A",
+      "keyPoints": 36,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": [
+        "modulacao_chakra"
+      ]
+    },
+    {
+      "level": 14,
+      "proficiency": 5,
+      "jutsuRank": "A",
+      "keyPoints": 38,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": []
+    },
+    {
+      "level": 15,
+      "proficiency": 5,
+      "jutsuRank": "S",
+      "keyPoints": 40,
+      "clanPointsGrant": 3,
+      "attacksPerAction": 3,
+      "features": [
+        "pontos_cla"
+      ]
+    },
+    {
+      "level": 16,
+      "proficiency": 5,
+      "jutsuRank": "S",
+      "keyPoints": 42,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": []
+    },
+    {
+      "level": 17,
+      "proficiency": 6,
+      "jutsuRank": "S",
+      "keyPoints": 44,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": []
+    },
+    {
+      "level": 18,
+      "proficiency": 6,
+      "jutsuRank": "S",
+      "keyPoints": 46,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": []
+    },
+    {
+      "level": 19,
+      "proficiency": 6,
+      "jutsuRank": "S",
+      "keyPoints": 48,
+      "clanPointsGrant": 3,
+      "attacksPerAction": 3,
+      "features": [
+        "pontos_cla"
+      ]
+    },
+    {
+      "level": 20,
+      "proficiency": 6,
+      "jutsuRank": "S",
+      "keyPoints": 50,
+      "clanPointsGrant": 0,
+      "attacksPerAction": 3,
+      "features": [
+        "jutsu_assinatura"
+      ]
+    }
+  ]
+}
