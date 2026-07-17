@@ -1,5 +1,5 @@
-/* Shinobi 1.10.5 — Service Worker com navegação network-first e recuperação de cache. */
-const APP_VERSION = "1.10.5";
+/* Shinobi 1.10.6 — Service Worker com navegação network-first e recuperação de cache. */
+const APP_VERSION = "1.10.6";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -30,6 +30,7 @@ const APP_SHELL = [
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
   `./assets/ui-notes-parchment.jpg?v=${APP_VERSION}`,
+  `./assets/inventory-kit-medico.webp?v=${APP_VERSION}`,
   `./icon_192x192.png?v=${APP_VERSION}`,
   `./icon_512x512.png?v=${APP_VERSION}`
 ];
