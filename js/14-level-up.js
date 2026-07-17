@@ -1,11 +1,11 @@
-/* Shinobi 2.0.0 — Level Up de benefícios fixos, integrado sobre a base 1.10.8. */
+/* Shinobi 2.0.1 — Level Up fixo com escolhas múltiplas e migração retroativa. */
 (function(){
   "use strict";
 
-  if(window.__shinobiLevelUpFixosV200) return;
-  window.__shinobiLevelUpFixosV200 = true;
+  if(window.__shinobiLevelUpFixosV201) return;
+  window.__shinobiLevelUpFixosV201 = true;
 
-  const VERSAO = "2.0.0";
+  const VERSAO = "2.0.1";
   const URL_PROGRESSAO = `./data/progressao-ninja.json?v=${VERSAO}`;
   let regras = null;
   let mapaNiveis = new Map();
@@ -37,6 +37,34 @@
 
   function regraNivel(nivel){
     return mapaNiveis.get(numeroInteiro(nivel, 1)) || null;
+  }
+
+  function quantidadeExigida(escolha){
+    return Math.max(1, numeroInteiro(escolha?.selectionCount ?? escolha?.minSelections, 1));
+  }
+
+  function maximoEscolhas(escolha){
+    return Math.max(quantidadeExigida(escolha), numeroInteiro(escolha?.maxSelections, quantidadeExigida(escolha)));
+  }
+
+  function normalizarSelecao(escolha, valor){
+    const permitidas=new Set((escolha?.options || []).map(opcao=>String(opcao.id)));
+    const origem=Array.isArray(valor) ? valor : (String(valor ?? "").trim() ? [valor] : []);
+    const unicas=[];
+    origem.forEach(item=>{
+      const id=String(item ?? "").trim();
+      if(id && permitidas.has(id) && !unicas.includes(id)) unicas.push(id);
+    });
+    return unicas.slice(0,maximoEscolhas(escolha));
+  }
+
+  function escolhaCompleta(escolha, valor){
+    return normalizarSelecao(escolha,valor).length===quantidadeExigida(escolha);
+  }
+
+  function selecaoParaSalvar(escolha, valores){
+    const normalizada=normalizarSelecao(escolha,valores);
+    return quantidadeExigida(escolha)>1 ? normalizada : (normalizada[0] || "");
   }
 
   function nivelAtual(){
@@ -76,6 +104,44 @@
     };
   }
 
+  function registrarAtualizacoesRetroativas(progresso,nivel){
+    const registrados=new Set(
+      (progresso.history || [])
+        .map(item=>numeroInteiro(item?.toLevel,-1))
+        .filter(item=>item>=1)
+    );
+    const adicionados=[];
+    const instante=new Date().toISOString();
+
+    for(let alvo=1;alvo<=nivel;alvo+=1){
+      if(registrados.has(alvo)) continue;
+      progresso.history.push({
+        type:alvo===1?"initial-level":"retroactive-level",
+        fromLevel:Math.max(0,alvo-1),
+        toLevel:alvo,
+        appliedAt:instante,
+        fixedAfter:valoresFixos(alvo),
+        unlockedFeatures:[...(regraNivel(alvo)?.features || [])],
+        retroactive:true,
+        deferredPreserved:["vida","chakra"]
+      });
+      adicionados.push(alvo);
+    }
+
+    if(adicionados.length && progresso.migratedFromExistingLevel){
+      progresso.lastRetroactiveUpdate={
+        levels:adicionados,
+        fromLevel:adicionados[0],
+        toLevel:adicionados[adicionados.length-1],
+        appliedAt:instante
+      };
+      progresso.retroactiveReviewPending=true;
+    }
+
+    progresso.retroactiveBackfillTo=Math.max(numeroInteiro(progresso.retroactiveBackfillTo,0),nivel);
+    return adicionados.length>0;
+  }
+
   function garantirEstruturaProgressao(){
     const atual=nivelAtual();
     const fixos=valoresFixos(atual);
@@ -83,7 +149,7 @@
 
     if(!estado.progressaoFixa || typeof estado.progressaoFixa !== "object" || Array.isArray(estado.progressaoFixa)){
       estado.progressaoFixa={
-        schemaVersion:1,
+        schemaVersion:2,
         engineVersion:VERSAO,
         initializedAt:new Date().toISOString(),
         migratedFromExistingLevel:atual>1,
@@ -109,8 +175,19 @@
       alterou=true;
     }
 
+    Object.entries(regras?.choices || {}).forEach(([id,escolha])=>{
+      if(!(id in progresso.choices)) return;
+      const normalizada=selecaoParaSalvar(escolha,progresso.choices[id]);
+      if(JSON.stringify(progresso.choices[id])!==JSON.stringify(normalizada)){
+        progresso.choices[id]=normalizada;
+        alterou=true;
+      }
+    });
+
+    if(registrarAtualizacoesRetroativas(progresso,atual)) alterou=true;
+
     const atualizacoes={
-      schemaVersion:1,
+      schemaVersion:2,
       engineVersion:VERSAO,
       level:fixos.nivel,
       proficiency:fixos.proficiencia,
@@ -192,9 +269,18 @@
     if(view) view.textContent=String(valor);
   }
 
+  function totalSelecoesPendentesAte(nivel){
+    const salvas=estado.progressaoFixa?.choices || {};
+    return Object.entries(regras?.choices || {}).reduce((total,[id,escolha])=>{
+      if(!escolha.required || numeroInteiro(escolha.level,999)>nivel) return total;
+      return total + Math.max(0,quantidadeExigida(escolha)-normalizarSelecao(escolha,salvas[id]).length);
+    },0);
+  }
+
   function textoStatus(){
     if(!regras) return "Carregando";
-    if(escolhasPendentesAte(nivelAtual()).length) return "Escolha pendente";
+    const faltam=totalSelecoesPendentesAte(nivelAtual());
+    if(faltam) return `${faltam} escolha${faltam===1?"":"s"} pendente${faltam===1?"":"s"}`;
     return nivelAtual() >= numeroInteiro(regras.maxLevel,20) ? "Nível máximo" : "Fixos ativos";
   }
 
@@ -217,6 +303,7 @@
     const maximo=fixos.nivel >= numeroInteiro(regras.maxLevel,20);
     const escolhasPendentes=escolhasPendentesAte(fixos.nivel);
     const precisaEscolher=escolhasPendentes.length>0;
+    const quantidadePendente=totalSelecoesPendentesAte(fixos.nivel);
     host.innerHTML=`
       <section class="levelUpResumoCard" aria-label="Resumo da progressão fixa">
         <div class="levelUpResumoTopo">
@@ -233,7 +320,7 @@
           <div class="levelUpResumoItem"><span>Ataques/Ação</span><strong>${fixos.ataquesPorAcao}</strong></div>
         </div>
         <div class="levelUpResumoAcoes">
-          <button type="button" class="levelUpBtn" onclick="${precisaEscolher?"abrirEscolhasPendentes()":"abrirLevelUp()"}" ${(maximo&&!precisaEscolher)?"disabled":""}>${precisaEscolher?"Completar escolha":(maximo?"Nível máximo":"Subir de nível")}</button>
+          <button type="button" class="levelUpBtn" onclick="${precisaEscolher?"abrirEscolhasPendentes()":"abrirLevelUp()"}" ${(maximo&&!precisaEscolher)?"disabled":""}>${precisaEscolher?`Completar ${quantidadePendente} escolha${quantidadePendente===1?"":"s"}`:(maximo?"Nível máximo":"Subir de nível")}</button>
           <button type="button" class="levelUpBtnSecundario" onclick="abrirProgressaoFixa()">Ver progressão</button>
         </div>
       </section>`;
@@ -299,25 +386,57 @@
         escolha.required &&
         numeroInteiro(escolha.level,999)>0 &&
         numeroInteiro(escolha.level,999)<=nivel &&
-        !String(salvas[escolha.id] || "").trim()
+        !escolhaCompleta(escolha,salvas[escolha.id])
       )
       .sort((a,b)=>numeroInteiro(a.level,0)-numeroInteiro(b.level,0));
   }
 
   function htmlEscolha(escolha){
     if(!escolha) return "";
-    const atual=estado.progressaoFixa?.choices?.[escolha.id] || "";
+    const atuais=normalizarSelecao(escolha,estado.progressaoFixa?.choices?.[escolha.id]);
+    const multipla=quantidadeExigida(escolha)>1;
+    const tipo=multipla?"checkbox":"radio";
     return `
-      <section class="levelUpSecao">
+      <section class="levelUpSecao" data-level-up-choice="${escaparHTML(escolha.id)}">
         <h3>${escaparHTML(escolha.label)}</h3>
+        <div class="levelUpEscolhaInstrucao">
+          <span>${escaparHTML(escolha.help || `Selecione ${quantidadeExigida(escolha)} opção${quantidadeExigida(escolha)===1?"":"ões"}.`)}</span>
+          <strong class="levelUpEscolhaContador" data-choice-counter>${atuais.length}/${quantidadeExigida(escolha)}</strong>
+        </div>
         <div class="levelUpEscolhas">
           ${(escolha.options || []).map(opcao=>`
             <label class="levelUpOpcao">
-              <input type="radio" name="levelUpEscolha" value="${escaparHTML(opcao.id)}" ${atual===opcao.id?"checked":""}>
+              <input type="${tipo}" name="levelUpEscolha" value="${escaparHTML(opcao.id)}" ${atuais.includes(opcao.id)?"checked":""}>
               <span><strong>${escaparHTML(opcao.label)}</strong><small>${escaparHTML(opcao.ability)}</small></span>
             </label>`).join("")}
         </div>
       </section>`;
+  }
+
+  function lerSelecaoModal(escolha){
+    if(!modalAtual || !escolha) return quantidadeExigida(escolha)>1?[]:"";
+    const valores=[...modalAtual.querySelectorAll('input[name="levelUpEscolha"]:checked')].map(input=>input.value);
+    return selecaoParaSalvar(escolha,valores);
+  }
+
+  function configurarControleEscolha(modal,escolha,botao){
+    if(!modal || !escolha) return;
+    const inputs=[...modal.querySelectorAll('input[name="levelUpEscolha"]')];
+    const atualizar=(alterado=null)=>{
+      let marcados=inputs.filter(input=>input.checked);
+      const maximo=maximoEscolhas(escolha);
+      if(marcados.length>maximo && alterado){
+        alterado.checked=false;
+        marcados=inputs.filter(input=>input.checked);
+      }
+      const completo=marcados.length===quantidadeExigida(escolha);
+      inputs.forEach(input=>{ input.disabled=!input.checked && marcados.length>=maximo; });
+      const contador=modal.querySelector('[data-choice-counter]');
+      if(contador) contador.textContent=`${marcados.length}/${quantidadeExigida(escolha)}`;
+      if(botao) botao.disabled=!completo;
+    };
+    inputs.forEach(input=>input.addEventListener("change",()=>atualizar(input)));
+    atualizar();
   }
 
   function abrirLevelUp(){
@@ -385,11 +504,7 @@
 
     const modal=criarModal(corpo,acoes);
     if(escolha){
-      const botao=modal.querySelector("#confirmarLevelUpBtn");
-      const radios=modal.querySelectorAll('input[name="levelUpEscolha"]');
-      const validar=()=>{ if(botao) botao.disabled=!modal.querySelector('input[name="levelUpEscolha"]:checked'); };
-      radios.forEach(radio=>radio.addEventListener("change",validar));
-      validar();
+      configurarControleEscolha(modal,escolha,modal.querySelector("#confirmarLevelUpBtn"));
     }
   }
 
@@ -417,16 +532,14 @@
         <button type="button" id="salvarEscolhaPendenteBtn" class="levelUpConfirmar" onclick="salvarEscolhaPendente('${escaparHTML(pendente.id)}')" disabled>Salvar escolha</button>
       </footer>`;
     const modal=criarModal(corpo,acoes);
-    const botao=modal.querySelector("#salvarEscolhaPendenteBtn");
-    const validar=()=>{ if(botao) botao.disabled=!modal.querySelector('input[name="levelUpEscolha"]:checked'); };
-    modal.querySelectorAll('input[name="levelUpEscolha"]').forEach(radio=>radio.addEventListener("change",validar));
-    validar();
+    configurarControleEscolha(modal,pendente,modal.querySelector("#salvarEscolhaPendenteBtn"));
   }
 
   function salvarEscolhaPendente(id){
-    const selecionada=modalAtual?.querySelector('input[name="levelUpEscolha"]:checked')?.value || "";
-    if(!selecionada){
-      alert("Escolha uma opção para continuar.");
+    const escolha=regras?.choices?.[id];
+    const selecionada=lerSelecaoModal(escolha);
+    if(!escolhaCompleta(escolha,selecionada)){
+      alert(`Selecione exatamente ${quantidadeExigida(escolha)} opções para continuar.`);
       return;
     }
 
@@ -436,7 +549,7 @@
       estado.progressaoFixa.choices[id]=selecionada;
       estado.progressaoFixa.history.push({
         type:"completed-choice",
-        level:nivelAtual(),
+        level:numeroInteiro(escolha?.level,nivelAtual()),
         choice:{id,value:selecionada},
         appliedAt:new Date().toISOString()
       });
@@ -463,9 +576,9 @@
     }
 
     const escolha=escolhaObrigatoriaDoNivel(alvo);
-    const selecionada=modalAtual?.querySelector('input[name="levelUpEscolha"]:checked')?.value || "";
-    if(escolha && !selecionada){
-      alert("Escolha uma característica para concluir este nível.");
+    const selecionada=escolha?lerSelecaoModal(escolha):"";
+    if(escolha && !escolhaCompleta(escolha,selecionada)){
+      alert(`Selecione exatamente ${quantidadeExigida(escolha)} opções para concluir este nível.`);
       return;
     }
 
@@ -532,8 +645,13 @@
 
   function escolhaTexto(id,valor){
     const escolha=regras.choices?.[id];
-    const opcao=escolha?.options?.find(item=>item.id===valor);
-    return opcao ? `${opcao.label} (${opcao.ability})` : valor || "Não definida";
+    if(!escolha) return String(valor || "Não definida");
+    const valores=normalizarSelecao(escolha,valor);
+    if(!valores.length) return "Não definida";
+    return valores.map(idOpcao=>{
+      const opcao=escolha.options?.find(item=>item.id===idOpcao);
+      return opcao ? `${opcao.label} (${opcao.ability})` : idOpcao;
+    }).join(", ");
   }
 
   function abrirProgressaoFixa(){
@@ -571,7 +689,10 @@
               const data=item.appliedAt?new Date(item.appliedAt).toLocaleString("pt-BR"):"Data não registrada";
               if(item.type==="completed-choice"){
                 const escolha=item.choice||{};
-                return `<article class="levelUpHistoricoItem"><strong>Escolha do nível ${numeroInteiro(item.level,0)}</strong><small>${escaparHTML(escolhaTexto(escolha.id,escolha.value))} · ${escaparHTML(data)}</small></article>`;
+                return `<article class="levelUpHistoricoItem"><strong>Escolhas do nível ${numeroInteiro(item.level,0)}</strong><small>${escaparHTML(escolhaTexto(escolha.id,escolha.value))} · ${escaparHTML(data)}</small></article>`;
+              }
+              if(item.type==="retroactive-level" || item.type==="initial-level"){
+                return `<article class="levelUpHistoricoItem"><strong>Nível ${numeroInteiro(item.toLevel,0)} aplicado retroativamente</strong><small>Benefícios fixos e características anteriores restaurados · ${escaparHTML(data)}</small></article>`;
               }
               return `<article class="levelUpHistoricoItem"><strong>Nível ${numeroInteiro(item.fromLevel,0)} → ${numeroInteiro(item.toLevel,0)}</strong><small>${escaparHTML(data)} · PV e Chakra pendentes</small></article>`;
             }).join(""):'<div class="levelUpVazio">Esta ficha foi migrada no nível atual. Os próximos Level Ups aparecerão aqui.</div>'}
@@ -580,6 +701,42 @@
       </div>`;
     const acoes=`<footer class="levelUpModalAcoes"><button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Fechar</button><button type="button" class="levelUpConfirmar" onclick="fecharLevelUp();abrirLevelUp()" ${atual>=numeroInteiro(regras.maxLevel,20)?"disabled":""}>Subir de nível</button></footer>`;
     criarModal(corpo,acoes);
+  }
+
+  function abrirRevisaoRetroativa(){
+    if(!regras) return;
+    const progresso=estado.progressaoFixa || {};
+    const atualizacao=progresso.lastRetroactiveUpdate;
+    if(!atualizacao || !progresso.retroactiveReviewPending) return;
+    const ate=numeroInteiro(atualizacao.toLevel,nivelAtual());
+    const linhas=[];
+    for(let nivel=1;nivel<=ate;nivel+=1){
+      const linha=regraNivel(nivel);
+      const nomes=(linha?.features || []).map(id=>regras.features?.[id]?.name || id);
+      linhas.push(`<article class="levelUpCaracteristica"><strong>Nível ${nivel}</strong><p>${nomes.length?escaparHTML(nomes.join(" · ")):"Valores fixos conferidos"}</p></article>`);
+    }
+    const faltam=totalSelecoesPendentesAte(ate);
+    const corpo=`
+      <header class="levelUpModalCabecalho">
+        <div><span class="levelUpModalSelo">Migração da ficha</span><h2>Níveis anteriores atualizados</h2></div>
+        <button type="button" class="levelUpFechar" onclick="fecharLevelUp()" aria-label="Fechar">×</button>
+      </header>
+      <div class="levelUpModalCorpo">
+        <div class="levelUpAvisoFase">Sua ficha já estava no nível ${ate}. O sistema aplicou retroativamente <strong>todos os benefícios fixos dos níveis 1 a ${ate}</strong>. PV e Chakra foram preservados sem alteração.</div>
+        <section class="levelUpSecao"><h3>Atualizações aplicadas</h3><div class="levelUpLista">${linhas.join("")}</div></section>
+        ${faltam?`<div class="levelUpAvisoFase levelUpAvisoEscolhas">Ainda faltam <strong>${faltam} escolhas</strong> da característica Resistência do nível 7.</div>`:""}
+      </div>`;
+    const acoes=`<footer class="levelUpModalAcoes"><button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Ver depois</button><button type="button" class="levelUpConfirmar" onclick="confirmarRevisaoRetroativa()">${faltam?"Continuar para escolhas":"Concluir revisão"}</button></footer>`;
+    criarModal(corpo,acoes);
+  }
+
+  function confirmarRevisaoRetroativa(){
+    garantirEstruturaProgressao();
+    estado.progressaoFixa.retroactiveReviewPending=false;
+    persistirSeguro();
+    fecharModal();
+    atualizarIntegracoes();
+    if(escolhasPendentesAte(nivelAtual()).length) abrirEscolhasPendentes();
   }
 
   function validarRegras(dados){
@@ -622,6 +779,9 @@
       sincronizarCamposFixos();
       persistirSeguro();
       atualizarIntegracoes();
+      if(estado.progressaoFixa?.retroactiveReviewPending){
+        setTimeout(abrirRevisaoRetroativa,260);
+      }
     }catch(erro){
       console.error("Falha ao iniciar Level Up",erro);
       host.innerHTML=`<section class="levelUpResumoCard"><div class="levelUpResumoTitulo"><small>Progressão</small><strong>Não foi possível carregar as regras</strong></div><div class="levelUpResumoAcoes"><button type="button" class="levelUpBtn" onclick="location.reload()">Recarregar</button></div></section>`;
@@ -633,6 +793,8 @@
   window.salvarEscolhaPendente=salvarEscolhaPendente;
   window.confirmarLevelUp=confirmarLevelUp;
   window.abrirProgressaoFixa=abrirProgressaoFixa;
+  window.abrirRevisaoRetroativa=abrirRevisaoRetroativa;
+  window.confirmarRevisaoRetroativa=confirmarRevisaoRetroativa;
   window.fecharLevelUp=fecharModal;
   window.shinobiLevelUp={
     getRules:()=>regras,
