@@ -1,6 +1,6 @@
 {
-  "version": "2.0.0",
-  "releasedAt": "2026-07-17T22:17:35Z",
-  "notes": "Integra o sistema de Level Up dos benefícios fixos sobre a base completa 1.10.8.",
-  "message": "Mantém catálogo retrátil, inventário com catálogo e ícones de ataques; adiciona progressão fixa, histórico, proficiência automática e ataques por ação. PV e Chakra continuam para a fase 2."
+  "version": "2.0.1",
+  "releasedAt": "2026-07-17T23:05:00Z",
+  "notes": "Corrige Resistência do nível 7 para três escolhas e aplica retroativamente os benefícios fixos dos níveis anteriores em fichas já existentes.",
+  "message": "Fichas já no nível 7 recebem a revisão dos níveis 1 a 7; escolhas antigas são preservadas e completadas até três opções. PV e Chakra continuam inalterados."
 }
