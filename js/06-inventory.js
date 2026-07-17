@@ -1,4 +1,4 @@
-/* Shinobi 1.10.5 — catálogo visual compartilhado entre inventário e ataques. */
+/* Shinobi 1.10.6 — catálogo visual compartilhado entre inventário e ataques. */
 
 /* ===== Inventário visual compacto ===== */
 (function(){
@@ -34,7 +34,8 @@
     "corrente": "assets/inventory-corrente.webp",
     "chicote": "assets/inventory-chicote.webp",
     "lanca": "assets/inventory-lanca.webp",
-    "pilula-de-chakra": "assets/inventory-pilula-de-chakra.webp"
+    "pilula-de-chakra": "assets/inventory-pilula-de-chakra.webp",
+    "kit-medico": "assets/inventory-kit-medico.webp"
   });
 
   /* Os nomes são normalizados; versões repetidas com acentos são desnecessárias. */
@@ -60,6 +61,9 @@
     "shuriken vento": "shuriken-de-vento",
     "dispositivo disparo": "dispositivo-de-disparo",
     "foice": "foice-curta",
+    "kit medico": "kit-medico",
+    "kit de primeiros socorros": "kit-medico",
+    "primeiros socorros": "kit-medico",
     "pilula de chakra": "pilula-de-chakra",
     "pilula chakra": "pilula-de-chakra",
     "chakra": "pilula-de-chakra",
