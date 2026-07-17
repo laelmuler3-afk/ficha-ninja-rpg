@@ -1,30 +1,32 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-app-version="1.10.8">
+<html lang="pt-BR" data-app-version="2.0.0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ficha Ninja RPG</title>
-<link rel="manifest" href="manifest.json?v=1.10.8">
+<link rel="manifest" href="manifest.json?v=2.0.0">
 <meta name="theme-color" content="#0b0f14">
 <script>window.APP_VERSION=document.documentElement.dataset.appVersion;</script>
-<link rel="stylesheet" href="css/app.css?v=1.10.8">
-<link rel="stylesheet" href="css/update.css?v=1.10.8">
-<link rel="stylesheet" href="css/catalogo.css?v=1.10.8">
-<link rel="stylesheet" href="css/regras-natureza.css?v=1.10.8">
-<link rel="stylesheet" href="css/batalha-viva.css?v=1.10.8">
-<script defer src="js/08-update.js?v=1.10.8"></script>
-<script defer src="js/01-core.js?v=1.10.8"></script>
-<script defer src="js/02-runtime.js?v=1.10.8"></script>
-<script defer src="js/03-images.js?v=1.10.8"></script>
-<script defer src="js/04-jutsus.js?v=1.10.8"></script>
-<script defer src="js/09-catalogo.js?v=1.10.8"></script>
-<script defer src="js/05-battle.js?v=1.10.8"></script>
-<script defer src="js/06-inventory.js?v=1.10.8"></script>
-<script defer src="js/07-profile.js?v=1.10.8"></script>
-<script defer src="js/10-regras-natureza.js?v=1.10.8"></script>
-<script defer src="js/11-batalha-ui.js?v=1.10.8"></script>
-<script defer src="js/12-efeitos-jutsus.js?v=1.10.8"></script>
-<script defer src="js/13-motor-universal.js?v=1.10.8"></script>
+<link rel="stylesheet" href="css/app.css?v=2.0.0">
+<link rel="stylesheet" href="css/update.css?v=2.0.0">
+<link rel="stylesheet" href="css/catalogo.css?v=2.0.0">
+<link rel="stylesheet" href="css/regras-natureza.css?v=2.0.0">
+<link rel="stylesheet" href="css/batalha-viva.css?v=2.0.0">
+<link rel="stylesheet" href="css/level-up.css?v=2.0.0">
+<script defer src="js/08-update.js?v=2.0.0"></script>
+<script defer src="js/01-core.js?v=2.0.0"></script>
+<script defer src="js/02-runtime.js?v=2.0.0"></script>
+<script defer src="js/03-images.js?v=2.0.0"></script>
+<script defer src="js/04-jutsus.js?v=2.0.0"></script>
+<script defer src="js/09-catalogo.js?v=2.0.0"></script>
+<script defer src="js/05-battle.js?v=2.0.0"></script>
+<script defer src="js/06-inventory.js?v=2.0.0"></script>
+<script defer src="js/07-profile.js?v=2.0.0"></script>
+<script defer src="js/10-regras-natureza.js?v=2.0.0"></script>
+<script defer src="js/11-batalha-ui.js?v=2.0.0"></script>
+<script defer src="js/12-efeitos-jutsus.js?v=2.0.0"></script>
+<script defer src="js/13-motor-universal.js?v=2.0.0"></script>
+<script defer src="js/14-level-up.js?v=2.0.0"></script>
 </head>
 <body>
   <div class="app">
@@ -156,7 +158,7 @@
 
           <div class="nivelCompacto">
             <small>Nível</small>
-            <input id="nivelDisplayMini" data-save="nivel" type="number" value="5">
+            <input id="nivelDisplayMini" data-save="nivel" type="number" min="1" max="20" value="1" readonly>
           </div>
         </div>
         <div class="miniBarra"><span id="perfilXpBarra"></span></div>
@@ -193,7 +195,7 @@
       <div><label>CA</label><input id="campoCA" data-save="ca" type="number" value="10" readonly></div>
       <div class="bonusCaCard"><label>Bônus CA</label><input id="bonusCA" data-save="bonusCA" type="number" value="0"></div>
       <div><label>CD</label><input data-save="cd" type="number" value="10"></div>
-      <div><label>Prof.</label><input id="bonusProficiencia" data-save="proficiencia" type="number" value="2"></div>
+      <div><label>Prof.</label><input id="bonusProficiencia" data-save="proficiencia" type="number" value="2" readonly></div>
       <div><label>Vel.</label><input data-save="velocidade" type="number" value="9"></div>
       <div><label>Inic.</label><input data-save="iniciativa" type="number" value="1"></div>
     </div>
