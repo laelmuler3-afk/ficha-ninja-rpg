@@ -1,6 +1,6 @@
 {
-  "version": "1.10.7",
-  "releasedAt": "2026-07-17T14:45:00Z",
-  "notes": "Adiciona um catálogo visual ao botão Adicionar item.",
-  "message": "Escolha itens pelas imagens, ajuste a quantidade e adicione sem digitar o nome."
+  "version": "1.10.8",
+  "releasedAt": "2026-07-17T15:35:00Z",
+  "notes": "Compacta e moderniza o Catálogo de Jutsus com filtros retráteis.",
+  "message": "A pesquisa fica sempre visível, os filtros abrem sob demanda e os cards ocupam menos espaço no celular."
 }
