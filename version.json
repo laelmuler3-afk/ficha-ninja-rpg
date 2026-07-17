@@ -1,6 +1,6 @@
 {
-  "version": "1.10.5",
-  "releasedAt": "2026-07-16T23:35:00Z",
-  "notes": "Reutiliza os ícones do inventário nos ataques armados.",
-  "message": "Ataques armados agora exibem automaticamente a imagem da arma vinculada ou reconhecida pelo nome."
+  "version": "1.10.6",
+  "releasedAt": "2026-07-17T14:20:00Z",
+  "notes": "Adiciona o Kit médico ao catálogo visual compartilhado.",
+  "message": "O Kit médico agora exibe sua imagem automaticamente no inventário e em referências por nome."
 }
