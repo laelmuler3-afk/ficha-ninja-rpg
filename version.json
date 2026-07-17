@@ -1,6 +1,6 @@
 {
-  "version": "1.10.6",
-  "releasedAt": "2026-07-17T14:20:00Z",
-  "notes": "Adiciona o Kit médico ao catálogo visual compartilhado.",
-  "message": "O Kit médico agora exibe sua imagem automaticamente no inventário e em referências por nome."
+  "version": "1.10.7",
+  "releasedAt": "2026-07-17T14:45:00Z",
+  "notes": "Adiciona um catálogo visual ao botão Adicionar item.",
+  "message": "Escolha itens pelas imagens, ajuste a quantidade e adicione sem digitar o nome."
 }
