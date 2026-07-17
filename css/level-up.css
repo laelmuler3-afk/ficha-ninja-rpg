@@ -1,4 +1,4 @@
-/* Shinobi 2.0.0 — Level Up: benefícios fixos */
+/* Shinobi 2.0.1 — Level Up: escolhas múltiplas e migração retroativa */
 .levelUpResumoCard{
   margin:10px 16px 0;
   padding:14px;
@@ -76,3 +76,8 @@ body.levelUpAberto{overflow:hidden;}
   .levelUpComparacao{grid-template-columns:1fr;}
   .levelUpPendencias{grid-template-columns:1fr;}
 }
+
+.levelUpEscolhaInstrucao{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;padding:9px 10px;border:1px solid rgba(226,179,109,.18);background:rgba(0,0,0,.18);color:#c7b49d;font-size:12px;line-height:1.35;}
+.levelUpEscolhaContador{flex:0 0 auto;padding:4px 7px;border:1px solid rgba(90,214,132,.42);background:rgba(28,102,56,.16);color:#9ae8b5;font-size:12px;}
+.levelUpAvisoEscolhas{margin-top:14px;border-left-color:#d9b23e;background:rgba(113,88,21,.16);}
+.levelUpOpcao input:disabled:not(:checked)+span{opacity:.46;}
