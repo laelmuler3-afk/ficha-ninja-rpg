@@ -1,6 +1,6 @@
 {
-  "version": "2.0.1",
-  "releasedAt": "2026-07-17T23:05:00Z",
-  "notes": "Corrige Resistência do nível 7 para três escolhas e aplica retroativamente os benefícios fixos dos níveis anteriores em fichas já existentes.",
-  "message": "Fichas já no nível 7 recebem a revisão dos níveis 1 a 7; escolhas antigas são preservadas e completadas até três opções. PV e Chakra continuam inalterados."
+  "version": "2.1.0",
+  "releasedAt": "2026-07-18T00:40:00Z",
+  "notes": "Level Up completo com cálculo de Vida e Chakra por clã, preservação dos valores antigos e novos mostradores de progressão.",
+  "message": "Personagens existentes mantêm PV e Chakra atuais. A partir do próximo nível, o app calcula rolagem ou média de Vida, rolagem de Chakra, modificadores do clã e Chakra-base do nível."
 }
