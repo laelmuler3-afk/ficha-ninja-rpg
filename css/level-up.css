@@ -1,4 +1,4 @@
-/* Shinobi 2.0.1 — Level Up: escolhas múltiplas e migração retroativa */
+/* Shinobi 2.1.0 — Level Up completo: Vida, Chakra, recursos e progressão */
 .levelUpResumoCard{
   margin:10px 16px 0;
   padding:14px;
@@ -81,3 +81,61 @@ body.levelUpAberto{overflow:hidden;}
 .levelUpEscolhaContador{flex:0 0 auto;padding:4px 7px;border:1px solid rgba(90,214,132,.42);background:rgba(28,102,56,.16);color:#9ae8b5;font-size:12px;}
 .levelUpAvisoEscolhas{margin-top:14px;border-left-color:#d9b23e;background:rgba(113,88,21,.16);}
 .levelUpOpcao input:disabled:not(:checked)+span{opacity:.46;}
+
+
+/* 2.1.0 — recursos permanentes e características retráteis */
+.levelUpRecursosBloco{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:10px;
+  padding:9px;
+  border:1px solid rgba(88,164,226,.22);
+  background:linear-gradient(135deg,rgba(20,60,91,.18),rgba(0,0,0,.18));
+}
+.levelUpRecursosBloco>div{padding:9px 10px;border:1px solid rgba(118,185,234,.18);background:rgba(0,0,0,.22);}
+.levelUpRecursosBloco span{display:block;color:#a9c8df;font-size:9px;font-weight:900;letter-spacing:.75px;text-transform:uppercase;}
+.levelUpRecursosBloco strong{display:block;margin-top:3px;color:#dff3ff;font-size:20px;line-height:1;}
+.levelUpRecursosBloco small{display:block;margin-top:4px;color:#7894a8;font-size:9px;}
+.levelUpProgressaoDetalhes{margin-top:10px;border:1px solid rgba(226,179,109,.18);background:rgba(0,0,0,.18);}
+.levelUpProgressaoDetalhes>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:42px;padding:0 11px;color:#dec5a3;font-size:11px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;cursor:pointer;list-style:none;}
+.levelUpProgressaoDetalhes>summary::-webkit-details-marker{display:none;}
+.levelUpProgressaoDetalhes>summary strong{display:grid;place-items:center;min-width:24px;height:24px;border:1px solid rgba(226,179,109,.24);color:#f2d09d;font-size:11px;}
+.levelUpProgressaoLista{display:grid;gap:6px;padding:0 9px 9px;}
+.levelUpProgressaoLista article{padding:9px;border:1px solid rgba(226,179,109,.14);background:rgba(255,255,255,.025);}
+.levelUpProgressaoLista article strong{display:block;color:#f0d5ae;font-size:12px;}
+.levelUpProgressaoLista article small{display:block;margin-top:3px;color:#a8957e;font-size:10px;line-height:1.35;}
+
+/* Calculadora de Vida e Chakra */
+.levelUpCalculadora{padding:13px;border:1px solid rgba(91,165,220,.26);background:rgba(8,30,48,.22);}
+.levelUpCampoCompleto,.levelUpCampoRolagem{display:grid;gap:6px;}
+.levelUpCampoCompleto>span,.levelUpCampoRolagem>span{color:#c9b89f;font-size:10px;font-weight:900;letter-spacing:.65px;text-transform:uppercase;}
+.levelUpCampoCompleto select,.levelUpCampoRolagem input{
+  width:100%;min-height:44px;box-sizing:border-box;padding:0 11px;border:1px solid rgba(226,179,109,.28);border-radius:0;background:#11171d;color:#f6e8d3;font:inherit;outline:none;
+}
+.levelUpCampoCompleto select:focus,.levelUpCampoRolagem input:focus{border-color:#e9823d;box-shadow:0 0 0 2px rgba(233,130,61,.13);}
+.levelUpCampoCompleto small,.levelUpCampoRolagem small{color:#8296a5;font-size:10px;line-height:1.35;}
+.levelUpRecursoPainel{margin-top:12px;padding:12px;border:1px solid rgba(226,179,109,.18);background:rgba(0,0,0,.22);}
+.levelUpRecursoPainel>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.levelUpRecursoPainel>header div{display:flex;align-items:baseline;gap:8px;}
+.levelUpRecursoPainel>header span{color:#a8b7c3;font-size:10px;font-weight:900;letter-spacing:.75px;text-transform:uppercase;}
+.levelUpRecursoPainel>header strong{color:#fff0d7;font-size:17px;}
+.levelUpRecursoPainel>header b{display:grid;place-items:center;min-width:56px;min-height:38px;padding:0 8px;border:1px solid rgba(92,205,134,.36);background:rgba(28,102,56,.16);color:#9beab8;font-size:19px;}
+.levelUpChakraPainel>header b{border-color:rgba(73,167,232,.4);background:rgba(30,88,132,.18);color:#a9ddff;}
+.levelUpMetodoFixo{padding:9px;border-left:3px solid #d99b51;background:rgba(113,69,21,.14);color:#cbb79e;font-size:11px;line-height:1.4;}
+.levelUpMetodoEscolha{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px;}
+.levelUpMetodoEscolha label{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 9px;border:1px solid rgba(226,179,109,.2);background:rgba(255,255,255,.025);color:#d9c4a8;font-size:11px;font-weight:800;cursor:pointer;}
+.levelUpMetodoEscolha label:has(input:checked){border-color:rgba(91,197,132,.5);background:rgba(28,102,56,.16);color:#b7efca;}
+.levelUpMetodoEscolha input{accent-color:#e9823d;}
+.levelUpCampoRolagem input:disabled{opacity:.45;cursor:not-allowed;}
+.levelUpFormula{margin-top:9px;padding:9px;border:1px solid rgba(118,185,234,.15);background:rgba(10,26,38,.3);color:#b8c5ce;font-size:11px;line-height:1.45;}
+.levelUpFormula b{display:inline-block;margin-left:5px;color:#e4cba8;font-weight:800;}
+.levelUpErroCalculo{margin-top:10px;padding:10px;border-left:3px solid #d85345;background:rgba(130,38,31,.18);color:#ffb7ae;font-size:11px;line-height:1.4;}
+.levelUpNotaRegra{margin-top:10px;color:#8ea0ad;font-size:10px;line-height:1.4;}
+.levelUpNotaRegra strong{color:#c6d6e0;}
+
+@media (max-width:520px){
+  .levelUpRecursosBloco{grid-template-columns:1fr 1fr;}
+  .levelUpMetodoEscolha{grid-template-columns:1fr;}
+  .levelUpCalculadora{padding:10px;}
+}
