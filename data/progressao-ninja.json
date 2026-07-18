@@ -1,21 +1,9 @@
 {
-  "schemaVersion": 2,
-  "version": "2.0.1",
-  "phase": "fixed-only",
-  "title": "Progressão Shinobi — benefícios fixos",
+  "schemaVersion": 3,
+  "version": "2.1.0",
+  "phase": "full-level-up",
+  "title": "Progressão Shinobi — Level Up completo",
   "maxLevel": 20,
-  "deferred": [
-    {
-      "id": "vida",
-      "label": "Ganho de Vida",
-      "reason": "Aguardando regra de rolagem e modificadores."
-    },
-    {
-      "id": "chakra",
-      "label": "Ganho de Chakra",
-      "reason": "Aguardando regra de rolagem, clã e modificadores."
-    }
-  ],
   "features": {
     "proficiencias_basicas": {
       "name": "Proficiências iniciais",
@@ -152,7 +140,8 @@
       "attacksPerAction": 0,
       "features": [
         "proficiencias_basicas"
-      ]
+      ],
+      "chakraBase": 0
     },
     {
       "level": 1,
@@ -165,7 +154,8 @@
         "defesa_sem_armadura",
         "regras_chakra",
         "regras_jutsu"
-      ]
+      ],
+      "chakraBase": 5
     },
     {
       "level": 2,
@@ -177,7 +167,8 @@
       "features": [
         "natureza_chakra",
         "movimento_i"
-      ]
+      ],
+      "chakraBase": 10
     },
     {
       "level": 3,
@@ -188,7 +179,8 @@
       "attacksPerAction": 1,
       "features": [
         "pontos_cla"
-      ]
+      ],
+      "chakraBase": 15
     },
     {
       "level": 4,
@@ -199,7 +191,8 @@
       "attacksPerAction": 1,
       "features": [
         "pontos_chave"
-      ]
+      ],
+      "chakraBase": 20
     },
     {
       "level": 5,
@@ -210,7 +203,8 @@
       "attacksPerAction": 2,
       "features": [
         "ataque_extra_i"
-      ]
+      ],
+      "chakraBase": 25
     },
     {
       "level": 6,
@@ -221,7 +215,8 @@
       "attacksPerAction": 2,
       "features": [
         "movimento_ii"
-      ]
+      ],
+      "chakraBase": 30
     },
     {
       "level": 7,
@@ -233,7 +228,8 @@
       "features": [
         "pontos_cla",
         "resistencia"
-      ]
+      ],
+      "chakraBase": 40
     },
     {
       "level": 8,
@@ -242,7 +238,8 @@
       "keyPoints": 22,
       "clanPointsGrant": 0,
       "attacksPerAction": 2,
-      "features": []
+      "features": [],
+      "chakraBase": 40
     },
     {
       "level": 9,
@@ -253,7 +250,8 @@
       "attacksPerAction": 2,
       "features": [
         "movimento_iii"
-      ]
+      ],
+      "chakraBase": 50
     },
     {
       "level": 10,
@@ -264,7 +262,8 @@
       "attacksPerAction": 2,
       "features": [
         "pontos_cla"
-      ]
+      ],
+      "chakraBase": 60
     },
     {
       "level": 11,
@@ -275,7 +274,8 @@
       "attacksPerAction": 3,
       "features": [
         "ataque_extra_ii"
-      ]
+      ],
+      "chakraBase": 70
     },
     {
       "level": 12,
@@ -284,7 +284,8 @@
       "keyPoints": 34,
       "clanPointsGrant": 0,
       "attacksPerAction": 3,
-      "features": []
+      "features": [],
+      "chakraBase": 70
     },
     {
       "level": 13,
@@ -295,7 +296,8 @@
       "attacksPerAction": 3,
       "features": [
         "modulacao_chakra"
-      ]
+      ],
+      "chakraBase": 80
     },
     {
       "level": 14,
@@ -304,7 +306,8 @@
       "keyPoints": 38,
       "clanPointsGrant": 0,
       "attacksPerAction": 3,
-      "features": []
+      "features": [],
+      "chakraBase": 80
     },
     {
       "level": 15,
@@ -315,7 +318,8 @@
       "attacksPerAction": 3,
       "features": [
         "pontos_cla"
-      ]
+      ],
+      "chakraBase": 90
     },
     {
       "level": 16,
@@ -324,7 +328,8 @@
       "keyPoints": 42,
       "clanPointsGrant": 0,
       "attacksPerAction": 3,
-      "features": []
+      "features": [],
+      "chakraBase": 90
     },
     {
       "level": 17,
@@ -333,7 +338,8 @@
       "keyPoints": 44,
       "clanPointsGrant": 0,
       "attacksPerAction": 3,
-      "features": []
+      "features": [],
+      "chakraBase": 100
     },
     {
       "level": 18,
@@ -342,7 +348,8 @@
       "keyPoints": 46,
       "clanPointsGrant": 0,
       "attacksPerAction": 3,
-      "features": []
+      "features": [],
+      "chakraBase": 100
     },
     {
       "level": 19,
@@ -353,7 +360,8 @@
       "attacksPerAction": 3,
       "features": [
         "pontos_cla"
-      ]
+      ],
+      "chakraBase": 110
     },
     {
       "level": 20,
@@ -364,7 +372,392 @@
       "attacksPerAction": 3,
       "features": [
         "jutsu_assinatura"
-      ]
+      ],
+      "chakraBase": 130
+    }
+  ],
+  "resourceRules": {
+    "life": {
+      "level1": "No nível 1, use o valor máximo do dado de Vida do clã e some os ajustes do clã.",
+      "afterLevel1": "A partir do nível 2, informe o resultado rolado ou use a média igual à metade do dado + 1; depois some os ajustes do clã.",
+      "averageFormula": "metade do dado + 1"
+    },
+    "chakra": {
+      "allLevels": "Em todos os níveis, informe o resultado do dado de Chakra do clã, some os ajustes do clã e o Chakra-base do nível alcançado."
+    },
+    "existingCharacterMigration": "Preserve PV e Chakra atuais e inicie o histórico detalhado no próximo Level Up.",
+    "squaredNotation": "CON² e INT² são tratados como duas vezes o modificador correspondente."
+  },
+  "clans": [
+    {
+      "id": "aburame",
+      "label": "Aburame",
+      "aliases": [
+        "ABURAME"
+      ],
+      "life": {
+        "die": 6,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "sabedoria",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "akimichi",
+      "label": "Akimichi",
+      "aliases": [
+        "AKIMICHI"
+      ],
+      "life": {
+        "die": 12,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 2
+          }
+        ],
+        "flat": 0,
+        "notation": "1d12 + CON²"
+      },
+      "chakra": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 2
+          }
+        ],
+        "flat": 0,
+        "notation": "1d10 + CON²"
+      }
+    },
+    {
+      "id": "hyuuga",
+      "label": "Hyuuga",
+      "aliases": [
+        "HYUUGA",
+        "HYUGA"
+      ],
+      "life": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "sabedoria",
+            "multiplier": 1
+          },
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "inuzuka",
+      "label": "Inuzuka",
+      "aliases": [
+        "INUZUKA"
+      ],
+      "life": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 1
+      },
+      "chakra": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "carisma",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "izuna",
+      "label": "Izuna",
+      "aliases": [
+        "IZUNA"
+      ],
+      "life": {
+        "die": 8,
+        "adjustments": [],
+        "flat": 1
+      },
+      "chakra": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "carisma",
+            "multiplier": 1
+          },
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "lee",
+      "label": "Lee",
+      "aliases": [
+        "LEE",
+        "ROCK LEE"
+      ],
+      "life": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 6,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "naara",
+      "label": "Naara",
+      "aliases": [
+        "NAARA",
+        "NARA"
+      ],
+      "life": {
+        "die": 6,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "inteligencia",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "sarutobi",
+      "label": "Sarutobi",
+      "aliases": [
+        "SARUTOBI"
+      ],
+      "life": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 1
+      },
+      "chakra": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "uchiha",
+      "label": "Uchiha",
+      "aliases": [
+        "UCHIHA"
+      ],
+      "life": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "carisma",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "uzumaki",
+      "label": "Uzumaki",
+      "aliases": [
+        "UZUMAKI"
+      ],
+      "life": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 12,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          },
+          {
+            "ability": "inteligencia",
+            "multiplier": 2
+          }
+        ],
+        "flat": 0,
+        "notation": "1d12 + CON + INT²"
+      }
+    },
+    {
+      "id": "yamanaka",
+      "label": "Yamanaka",
+      "aliases": [
+        "YAMANAKA"
+      ],
+      "life": {
+        "die": 6,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "carisma",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "yuuhi",
+      "label": "Yuuhi",
+      "aliases": [
+        "YUUHI",
+        "YUHI"
+      ],
+      "life": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 8,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
+    },
+    {
+      "id": "out-clan",
+      "label": "Out Clan",
+      "aliases": [
+        "OUT CLAN",
+        "OUTCLAN",
+        "SEM CLA",
+        "SEM CLÃ",
+        "SEM-CLA",
+        "SEM-CLÃ"
+      ],
+      "life": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      },
+      "chakra": {
+        "die": 10,
+        "adjustments": [
+          {
+            "ability": "constituicao",
+            "multiplier": 1
+          }
+        ],
+        "flat": 0
+      }
     }
   ]
 }
