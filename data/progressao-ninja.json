@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "phase": "full-level-up",
   "title": "Progressão Shinobi — Level Up completo",
   "maxLevel": 20,
@@ -20,7 +20,7 @@
     "regras_chakra": {
       "name": "Regras de Chakra",
       "short": "Desbloqueia as regras gerais de uso, indisponibilidade e recuperação de Chakra.",
-      "description": "As regras gerais de Chakra passam a valer. Nesta primeira fase, o Level Up não altera o Chakra atual nem o máximo.",
+      "description": "As regras gerais de Chakra passam a valer, incluindo o cálculo de progressão por nível conforme o clã e o Chakra-base.",
       "mode": "deferred-calculation"
     },
     "regras_jutsu": {
@@ -32,7 +32,7 @@
     "natureza_chakra": {
       "name": "Natureza de Chakra",
       "short": "Desbloqueia a definição da Natureza de Chakra.",
-      "description": "A definição da Natureza de Chakra depende de rolagem e será concluída na segunda fase do sistema.",
+      "description": "Desbloqueia a definição da Natureza de Chakra conforme a rolagem e as orientações do mestre.",
       "mode": "deferred-roll"
     },
     "movimento_i": {
