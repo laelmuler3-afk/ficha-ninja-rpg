@@ -1,4 +1,4 @@
-/* Shinobi 2.1.0 — Level Up completo: Vida, Chakra, recursos e progressão */
+/* Shinobi 2.1.1 — Level Up completo: Vida, Chakra, recursos e progressão */
 .levelUpResumoCard{
   margin:10px 16px 0;
   padding:14px;
@@ -83,7 +83,7 @@ body.levelUpAberto{overflow:hidden;}
 .levelUpOpcao input:disabled:not(:checked)+span{opacity:.46;}
 
 
-/* 2.1.0 — recursos permanentes e características retráteis */
+/* 2.1.1 — recursos permanentes e características retráteis */
 .levelUpRecursosBloco{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
