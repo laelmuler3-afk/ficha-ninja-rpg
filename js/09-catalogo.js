@@ -1,4 +1,4 @@
-/* Shinobi 1.5.0 — Catálogo de jutsus
+/* Shinobi 2.1.0 — Catálogo de jutsus com Rank máximo da progressão
  *
  * Responsabilidades:
  * - carregar o catálogo JSON somente quando necessário;
@@ -167,6 +167,21 @@
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
+  }
+
+  const ORDEM_RANK_JUTSU={E:1,D:2,C:3,B:4,A:5,S:6};
+
+  function rankMaximoPersonagem(){
+    const api=window.shinobiLevelUp?.getMaxJutsuRank?.();
+    const salvo=typeof estado!=="undefined" ? estado?.progressaoFixa?.jutsuRankMax : "";
+    return String(api || salvo || "").trim().toUpperCase();
+  }
+
+  function jutsuAcimaDoRank(jutsu){
+    const maximo=rankMaximoPersonagem();
+    const rank=String(jutsu?.rank || "").trim().toUpperCase();
+    if(!maximo || !(maximo in ORDEM_RANK_JUTSU) || !(rank in ORDEM_RANK_JUTSU)) return false;
+    return ORDEM_RANK_JUTSU[rank] > ORDEM_RANK_JUTSU[maximo];
   }
 
   function chaveJutsu(jutsu){
@@ -478,6 +493,8 @@
     const elemento = ELEMENTOS[elementoId];
     const selecionado = selecionados.has(id);
     const jaPossui = idsFicha.has(id);
+    const acimaDoRank = jutsuAcimaDoRank(jutsu);
+    const rankMaximo = rankMaximoPersonagem();
 
     const custo = textoOuTraco(jutsu.custo);
     const dano = textoOuTraco(jutsu.dano);
@@ -485,7 +502,7 @@
 
     return `
       <article
-        class="catalogoCarta ${elemento.classe} ${selecionado ? "catalogoCartaSelecionada" : ""} ${jaPossui ? "catalogoCartaAdquirida" : ""}"
+        class="catalogoCarta ${elemento.classe} ${selecionado ? "catalogoCartaSelecionada" : ""} ${jaPossui ? "catalogoCartaAdquirida" : ""} ${acimaDoRank ? "catalogoCartaAcimaRank" : ""}"
         data-catalogo-id="${escaparHtml(id)}"
         style="display:block;width:100%;min-height:172px;margin:0 0 9px;overflow:hidden;box-sizing:border-box"
       >
@@ -515,6 +532,8 @@
               <b>${escaparHtml(acao)}</b>
               <b>Dano: ${escaparHtml(dano)}</b>
             </span>
+
+            ${acimaDoRank ? `<span class="catalogoAvisoRank">Acima do Rank máximo ${escaparHtml(rankMaximo)}</span>` : ""}
 
             <span class="catalogoCartaResumo">
               ${escaparHtml(resumoDescricao(jutsu))}
@@ -1081,6 +1100,9 @@
         </header>
 
         <div class="catalogoJutsusFerramentas">
+          <div id="catalogoRankProgressao" class="catalogoRankProgressao">
+            Rank máximo da ficha: <strong>${escaparHtml(rankMaximoPersonagem() || "—")}</strong>
+          </div>
           <div class="catalogoBuscaLinha">
             <label class="catalogoBuscaBox">
               <span class="catalogoBuscaIcone" aria-hidden="true">⌕</span>
