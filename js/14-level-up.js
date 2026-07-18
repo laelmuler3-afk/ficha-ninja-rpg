@@ -1,11 +1,11 @@
-/* Shinobi 2.1.0 — Level Up completo: fixos, Vida, Chakra, recursos e migração segura. */
+/* Shinobi 2.1.1 — Level Up completo com proteção de migração e revisão de estabilidade. */
 (function(){
   "use strict";
 
-  if(window.__shinobiLevelUpV210) return;
-  window.__shinobiLevelUpV210=true;
+  if(window.__shinobiLevelUpV211) return;
+  window.__shinobiLevelUpV211=true;
 
-  const VERSAO="2.1.0";
+  const VERSAO="2.1.1";
   const URL_PROGRESSAO=`./data/progressao-ninja.json?v=${VERSAO}`;
   const ATRIBUTOS={
     forca:"Força",
@@ -198,11 +198,17 @@
   function fichaPareceNovaSemDados(){
     if(estado?.progressaoFixa) return false;
     if(nivelAtual()!==1) return false;
+    if(estado?.__novaFichaLevelUp===true) return true;
     const camposTexto=["nome","cla","rank","vila","idade"];
     const temIdentidade=camposTexto.some(chave=>String(estado?.[chave]??campoSalvo(chave)?.value??"").trim());
     const atributos=Object.keys(ATRIBUTOS).some(chave=>pontuacaoAtributo(chave)>0);
     const temListas=(estado?.jutsus?.length||0)+(estado?.armados?.length||0)+(estado?.inventarioItens?.length||0)>0;
-    return !temIdentidade&&!atributos&&!temListas;
+    const temRecursosPersistidos=["pv","pvMax","chakra","chakraMax"].some(chave=>numero(estado?.[chave],0)>0);
+    const origem=window.__shinobiFichaOrigem?.chave===CHAVE?window.__shinobiFichaOrigem:null;
+    const semRegistroAnterior=origem?.tinhaRegistro===false;
+    const registroInicialVazio=origem?.tinhaRegistro===true&&(origem.chavesIniciais||[]).every(chave=>chave==="__novaFichaLevelUp");
+    if(semRegistroAnterior||registroInicialVazio) return !temIdentidade&&!atributos&&!temListas;
+    return !temIdentidade&&!atributos&&!temListas&&!temRecursosPersistidos&&Object.keys(estado||{}).every(chave=>chave==="__novaFichaLevelUp");
   }
 
   function registrarAtualizacoesRetroativas(progresso,nivel){
@@ -278,6 +284,10 @@
     }
 
     const progresso=estado.progressaoFixa;
+    if(estado.__novaFichaLevelUp!==undefined){
+      delete estado.__novaFichaLevelUp;
+      alterou=true;
+    }
     if(!progresso.choices||typeof progresso.choices!=="object"){
       progresso.choices={};
       alterou=true;
@@ -302,8 +312,11 @@
 
     if(registrarAtualizacoesRetroativas(progresso,atual)) alterou=true;
 
+    const snapshotVital=recursosAtuais();
+    const temRecursosExistentes=["pv","pvMax","chakra","chakraMax"].some(chave=>numero(estado?.[chave],0)>0);
+
     if(!progresso.vital||typeof progresso.vital!=="object"){
-      const snapshot=recursosAtuais();
+      const snapshot=snapshotVital;
       progresso.vital=novaSemDados?{
         schemaVersion:1,
         status:"needs-level-one-setup",
@@ -320,6 +333,20 @@
         preservedSnapshot:snapshot,
         migrationRule:"keep-current-values"
       };
+      alterou=true;
+    }else if(!novaSemDados&&progresso.vital.status==="needs-level-one-setup"&&temRecursosExistentes){
+      progresso.vital={
+        schemaVersion:1,
+        status:"preserved-existing",
+        initializedAt:progresso.vital.initializedAt||new Date().toISOString(),
+        preservedAtLevel:atual,
+        startLevel:Math.min(inteiro(regras?.maxLevel,20)+1,atual+1),
+        historyStartLevel:atual+1,
+        preservedSnapshot:snapshotVital,
+        migrationRule:"keep-current-values",
+        repairedFrom:"needs-level-one-setup"
+      };
+      progresso.migratedFromExistingLevel=true;
       alterou=true;
     }
 
@@ -1137,7 +1164,8 @@
   function atualizarIndicadorCatalogo(){
     const badge=document.getElementById("catalogoRankProgressao");
     if(!badge||!regras) return;
-    badge.innerHTML=`Rank máximo da ficha: <strong>${escaparHTML(valoresFixos(nivelAtual()).rankJutsu)}</strong>`;
+    const conteudo=`Rank máximo da ficha: <strong>${escaparHTML(valoresFixos(nivelAtual()).rankJutsu)}</strong>`;
+    if(badge.innerHTML!==conteudo) badge.innerHTML=conteudo;
   }
 
   function observarCatalogo(){

@@ -1,4 +1,4 @@
-/* Shinobi 2.1.0 — Catálogo de jutsus com Rank máximo da progressão
+/* Shinobi 2.1.1 — Catálogo de jutsus com Rank máximo da progressão
  *
  * Responsabilidades:
  * - carregar o catálogo JSON somente quando necessário;
@@ -13,7 +13,7 @@
   if(window.__catalogoJutsusV150) return;
   window.__catalogoJutsusV150 = true;
 
-  const URL_CATALOGO = `./data/catalogo-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || "1.10.8")}`;
+  const URL_CATALOGO = `./data/catalogo-jutsus.json?v=${encodeURIComponent(window.APP_VERSION || "2.1.1")}`;
   const LIMITE_INICIAL = 30;
   const PASSO_LISTAGEM = 30;
 
