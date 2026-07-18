@@ -1,107 +1,37 @@
-# Auditoria técnica — Ficha Ninja RPG v1.9.6
+# Auditoria técnica — Ficha Ninja RPG v2.1.1
 
-Data da revisão: 16/07/2026
+Data: 18/07/2026
 
-## Objetivo desta correção
+## Escopo
 
-A revisão anterior tratou o bônus de CA como se a falha estivesse ligada a um jutsu específico. Esse diagnóstico estava incompleto. A v1.9.6 revisa o **motor geral de efeitos dos jutsus**, para que o comportamento não dependa do nome de uma técnica.
-
-Ao pressionar **Usar jutsu**, todo efeito persistente cadastrado deve ser registrado na Área de Batalha. Bônus numéricos compatíveis devem alterar imediatamente CA, atributos, velocidade ou furtividade; bônus de ataque, dano e outros efeitos persistentes devem permanecer visíveis no resumo de efeitos ativos.
-
-## Causas reais encontradas
-
-1. **Condições válidas bloqueavam bônus silenciosamente**
-   - O motor aceitava apenas uma condição genérica de ataque.
-   - Efeitos como bônus de CA contra ataques à distância podiam ser descartados, apesar de estarem corretamente cadastrados.
-
-2. **Efeitos acumuláveis perdiam a referência da lista ativa**
-   - Ao usar um jutsu que permite várias instâncias, a lista de efeitos era reconstruída durante o mesmo processamento.
-   - O novo bônus era inserido em uma referência antiga e desaparecia antes de chegar à Área de Batalha.
-
-3. **A aplicação dependia de módulos intermediários**
-   - Parte dos efeitos só era aplicada porque outro módulo envolvia a função de uso do jutsu.
-   - Alterações na ordem de carregamento podiam impedir o registro sem apresentar erro visível.
-
-4. **Fichas antigas podiam substituir o catálogo atual**
-   - Um jutsu salvo com efeitos editados manualmente podia manter uma definição antiga ou incompleta.
-   - A versão local acabava suprimindo bônus oficiais do catálogo.
-
-5. **Efeitos fora de CA, atributos, velocidade e furtividade não tinham resumo geral**
-   - Bônus de ataque, dano, ações, alcance e outros efeitos persistentes podiam existir no estado interno sem ficarem claros para o jogador.
-
-6. **Leitura de descrições antigas era limitada**
-   - Jutsus criados manualmente ou salvos em versões anteriores podiam usar formatos como “a CA aumenta em +1”, que não eram reconhecidos de forma consistente.
+Revisão estrutural e dinâmica do pacote recebido para uso na mesa, cobrindo carregamento, salvamento, múltiplas fichas, progressão, Vida, Chakra, catálogo, inventário, batalha, efeitos de Jutsu, arquivos offline e atualizador.
 
 ## Correções aplicadas
 
-- A função principal **Usar jutsu** chama diretamente o motor de efeitos da batalha.
-- O cálculo da CA consulta diretamente os bônus ativos dos jutsus.
-- Modificadores de atributos consultam diretamente os efeitos ativos.
-- Velocidade consulta bônus e multiplicadores dos jutsus sem depender de um wrapper externo.
-- Furtividade permanece integrada ao mesmo motor de modificadores.
-- Condições de escopo, como “contra ataques à distância”, não eliminam mais o bônus; o escopo fica descrito no efeito ativo.
-- Condições que dependem de um acontecimento, como resultado obtido ou ataque escolhido, são confirmadas antes da ativação numérica em vez de serem descartadas silenciosamente.
-- A lista de efeitos ativos agora mantém a mesma referência durante o processamento, corrigindo jutsus acumuláveis.
-- Os efeitos oficiais do catálogo voltam a ser a fonte principal. Personalizações adicionais do usuário são preservadas, mas não removem bônus obrigatórios.
-- A migração de fichas antigas recompõe automaticamente efeitos oficiais incompletos.
-- O leitor de descrições antigas reconhece mais formas de escrever bônus de CA, atributos, velocidade e furtividade.
-- A Área de Batalha ganhou a seção **Outros bônus ativos**, usada para ataque, dano e demais efeitos persistentes que não correspondem a um campo numérico principal.
-- Remover ou encerrar um efeito recalcula imediatamente os valores da batalha.
-- O cache e todos os recursos foram versionados como `1.9.6` para impedir mistura com código anterior.
+1. **CA de ficha nova:** Destreza ainda não preenchida deixava a fórmula interpretar `0` como modificador `-5`, exibindo CA 7. Agora a CA permanece no valor atual/padrão até existir uma pontuação válida.
+2. **Migração de nível 1:** uma ficha antiga com identidade vazia, mas com PV ou Chakra preenchidos, podia ser confundida com ficha nova. Agora recursos existentes são reconhecidos e preservados.
+3. **Reparo de migração anterior:** fichas que já haviam recebido o estado `needs-level-one-setup`, mas possuem recursos, são convertidas para preservação segura sem alterar os valores.
+4. **Nova ficha identificável:** fichas criadas pelo seletor passam a receber um marcador temporário, removido após a inicialização da progressão.
+5. **Catálogo de Jutsus:** o observador do mostrador de Rank podia disparar continuamente ao reescrever o próprio conteúdo. A atualização agora só altera o mostrador quando o valor realmente mudou, evitando ciclo de renderização e travamento ao abrir o catálogo.
+6. **Versão interna:** JavaScript, HTML, Service Worker, tabela de progressão e cache foram alinhados em 2.1.1.
+7. **Textos de progressão:** descrições antigas que ainda falavam em “primeira” e “segunda fase” foram atualizadas para o sistema completo.
 
-## Validação integral do catálogo
+## Validações executadas
 
-- **153 jutsus do catálogo** foram carregados e comparados com **153 definições de efeitos**.
-- Todos os 153 fluxos de uso foram executados pelo motor sem erro de JavaScript.
-- **29 modificadores numéricos automáticos diretos** foram testados individualmente, incluindo:
-  - CA;
-  - Força, Destreza, Constituição, Inteligência, Sabedoria e Carisma;
-  - velocidade fixa, bônus de velocidade e multiplicação de velocidade;
-  - furtividade;
-  - escolhas de efeito;
-  - condições de escopo;
-  - efeitos acumuláveis.
-- O jutsu acumulável foi usado repetidamente e manteve as instâncias ativas.
-- Um jutsu antigo com nome divergente e marcação de edição manual foi reparado e voltou a aplicar seus bônus oficiais.
-- Uma descrição manual contendo “sua CA aumenta em +1” foi interpretada e alterou uma CA base 18 para 19.
-- Bônus persistentes de ataque e dano foram exibidos em **Outros bônus ativos**.
-- Ao remover o efeito, a CA retornou ao valor anterior.
+- Sintaxe de todos os JavaScripts.
+- Validade de todos os JSONs.
+- Referências de scripts, estilos, dados e arquivos do Service Worker.
+- IDs duplicados no HTML.
+- 153 Jutsus com IDs únicos.
+- 33 itens catalogados com imagens correspondentes.
+- Tabela de progressão completa dos níveis 0 a 20.
+- Migração de personagem existente no nível 7.
+- Três escolhas obrigatórias de Resistência no nível 7.
+- Cálculo de Vida e Chakra para fichas novas e Level Up.
+- Preservação de PV/Chakra gastos ao aumentar os máximos.
+- Bônus de Passos do Vento e Punhos Silensiosos na batalha.
+- Rank máximo no catálogo e Ataques por Ação na batalha.
 
-## Testes de integração
+## Observação
 
-- Todos os módulos principais foram carregados juntos no ambiente de teste.
-- Foram testados exemplos de:
-  - bônus direto de CA;
-  - bônus de CA condicionado;
-  - bônus acumulável escolhido pelo jogador;
-  - velocidade aumentada;
-  - multiplicação de velocidade;
-  - efeitos antigos reparados automaticamente.
-- Nenhum erro de execução foi registrado no conjunto integrado.
-- Sintaxe validada em todos os arquivos JavaScript e no service worker.
-- Todos os JSON foram analisados sem erro.
-- Referências de arquivos do HTML foram verificadas; nenhum recurso obrigatório está ausente.
-- Responsividade conferida em 320, 390, 768 e 1024 px, sem estouro horizontal do documento.
-
-## Comportamento esperado
-
-Exemplo: personagem com CA 18 usa um jutsu que concede `+1 de CA`.
-
-1. O chakra é consumido conforme o jutsu.
-2. O efeito aparece imediatamente na Área de Batalha.
-3. A CA exibida passa para 19.
-4. Ao encerrar/remover o efeito, a CA volta para 18.
-
-Quando o bônus possuir um escopo, como “contra ataques à distância”, o valor é aplicado e o card informa essa limitação. Quando o bônus depender de um gatilho que ainda pode não ter acontecido, o aplicativo pergunta se a condição foi atendida.
-
-## Limite da automação
-
-Efeitos puramente narrativos, reações contra um alvo específico ou decisões que dependem do resultado da mesa continuam aparecendo como efeitos ativos, mas não podem alterar automaticamente um número quando não existe um campo correspondente ou quando a decisão cabe ao mestre/jogador. Eles não são mais ocultados.
-
-
-## v1.10.0 — Motor universal de efeitos
-
-- Agregação independente do nome do jutsu.
-- Suporte mecânico para bônus, multiplicadores, dados extras, vantagens, desvantagens, resistências, imunidades, vulnerabilidades, condições e ações extras.
-- Efeitos destinados ao alvo permanecem registrados sem alterar a ficha do usuário.
-- Novo painel “Efeitos mecânicos ativos” na Área de Batalha.
+Os testes cobrem a lógica e a estrutura do pacote. Como o app depende do armazenamento e do Service Worker de cada navegador, recomenda-se abrir com internet após a publicação e manter um backup exportado antes da mesa.
