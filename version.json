@@ -1,6 +1,6 @@
 {
-  "version": "2.1.0",
-  "releasedAt": "2026-07-18T00:40:00Z",
-  "notes": "Level Up completo com cálculo de Vida e Chakra por clã, preservação dos valores antigos e novos mostradores de progressão.",
-  "message": "Personagens existentes mantêm PV e Chakra atuais. A partir do próximo nível, o app calcula rolagem ou média de Vida, rolagem de Chakra, modificadores do clã e Chakra-base do nível."
+  "version": "2.1.1",
+  "releasedAt": "2026-07-18T13:18:00Z",
+  "notes": "Revisão de estabilidade: protege PV e Chakra de fichas antigas no nível 1, corrige CA em atributos não preenchidos, elimina ciclo de renderização no catálogo e alinha versão/cache.",
+  "message": "Atualização recomendada para a mesa: preserva fichas existentes, mantém o Level Up completo e corrige inicialização, CA, abertura do catálogo e consistência do cache."
 }
