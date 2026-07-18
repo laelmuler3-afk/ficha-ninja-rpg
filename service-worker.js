@@ -1,5 +1,5 @@
-/* Shinobi 2.0.1 — Base 1.10.8 com Level Up fixo e recuperação de cache. */
-const APP_VERSION = "2.0.1";
+/* Shinobi 2.1.0 — Base 1.10.8 com Level Up completo de Vida, Chakra e progressão. */
+const APP_VERSION = "2.1.0";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
