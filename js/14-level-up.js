@@ -1,4 +1,4 @@
-/* Shinobi 2.1.1 — Level Up completo com proteção de migração e revisão de estabilidade. */
+/* Shinobi 2.1.1 — Level Up completo: revisão de migração, recursos e desempenho. */
 (function(){
   "use strict";
 
@@ -198,17 +198,14 @@
   function fichaPareceNovaSemDados(){
     if(estado?.progressaoFixa) return false;
     if(nivelAtual()!==1) return false;
-    if(estado?.__novaFichaLevelUp===true) return true;
     const camposTexto=["nome","cla","rank","vila","idade"];
-    const temIdentidade=camposTexto.some(chave=>String(estado?.[chave]??campoSalvo(chave)?.value??"").trim());
+    const temIdentidade=camposTexto.some(chave=>
+      Object.prototype.hasOwnProperty.call(estado||{},chave)&&String(estado?.[chave]??"").trim()
+    );
     const atributos=Object.keys(ATRIBUTOS).some(chave=>pontuacaoAtributo(chave)>0);
     const temListas=(estado?.jutsus?.length||0)+(estado?.armados?.length||0)+(estado?.inventarioItens?.length||0)>0;
-    const temRecursosPersistidos=["pv","pvMax","chakra","chakraMax"].some(chave=>numero(estado?.[chave],0)>0);
-    const origem=window.__shinobiFichaOrigem?.chave===CHAVE?window.__shinobiFichaOrigem:null;
-    const semRegistroAnterior=origem?.tinhaRegistro===false;
-    const registroInicialVazio=origem?.tinhaRegistro===true&&(origem.chavesIniciais||[]).every(chave=>chave==="__novaFichaLevelUp");
-    if(semRegistroAnterior||registroInicialVazio) return !temIdentidade&&!atributos&&!temListas;
-    return !temIdentidade&&!atributos&&!temListas&&!temRecursosPersistidos&&Object.keys(estado||{}).every(chave=>chave==="__novaFichaLevelUp");
+    const temRecursosSalvos=["pv","pvMax","chakra","chakraMax"].some(chave=>numero(estado?.[chave],0)>0);
+    return !temIdentidade&&!atributos&&!temListas&&!temRecursosSalvos;
   }
 
   function registrarAtualizacoesRetroativas(progresso,nivel){
@@ -227,8 +224,8 @@
         appliedAt:instante,
         fixedAfter:valoresFixos(alvo),
         unlockedFeatures:[...(regraNivel(alvo)?.features||[])],
-        retroactive:true,
-        resources:{status:"preserved-existing"}
+        retroactive:Boolean(progresso.migratedFromExistingLevel),
+        resources:{status:progresso.migratedFromExistingLevel?"preserved-existing":"pending-level-one"}
       });
       adicionados.push(alvo);
     }
@@ -284,10 +281,6 @@
     }
 
     const progresso=estado.progressaoFixa;
-    if(estado.__novaFichaLevelUp!==undefined){
-      delete estado.__novaFichaLevelUp;
-      alterou=true;
-    }
     if(!progresso.choices||typeof progresso.choices!=="object"){
       progresso.choices={};
       alterou=true;
@@ -312,11 +305,8 @@
 
     if(registrarAtualizacoesRetroativas(progresso,atual)) alterou=true;
 
-    const snapshotVital=recursosAtuais();
-    const temRecursosExistentes=["pv","pvMax","chakra","chakraMax"].some(chave=>numero(estado?.[chave],0)>0);
-
     if(!progresso.vital||typeof progresso.vital!=="object"){
-      const snapshot=snapshotVital;
+      const snapshot=recursosAtuais();
       progresso.vital=novaSemDados?{
         schemaVersion:1,
         status:"needs-level-one-setup",
@@ -333,20 +323,6 @@
         preservedSnapshot:snapshot,
         migrationRule:"keep-current-values"
       };
-      alterou=true;
-    }else if(!novaSemDados&&progresso.vital.status==="needs-level-one-setup"&&temRecursosExistentes){
-      progresso.vital={
-        schemaVersion:1,
-        status:"preserved-existing",
-        initializedAt:progresso.vital.initializedAt||new Date().toISOString(),
-        preservedAtLevel:atual,
-        startLevel:Math.min(inteiro(regras?.maxLevel,20)+1,atual+1),
-        historyStartLevel:atual+1,
-        preservedSnapshot:snapshotVital,
-        migrationRule:"keep-current-values",
-        repairedFrom:"needs-level-one-setup"
-      };
-      progresso.migratedFromExistingLevel=true;
       alterou=true;
     }
 
@@ -825,7 +801,7 @@
 
     const acoes=`
       <footer class="levelUpModalAcoes">
-        ${inicial?'<button type="button" class="levelUpCancelar" onclick="manterValoresNivelUmAtuais()">Manter valores atuais</button>':'<button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Cancelar</button>'}
+        <button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Cancelar</button>
         <button type="button" id="confirmarLevelUpBtn" class="levelUpConfirmar" onclick="confirmarLevelUpCompleto(${alvo},${inicial?"true":"false"})" disabled>${inicial?"Salvar nível 1":`Confirmar nível ${alvo}`}</button>
       </footer>`;
     const modal=criarModal(corpo,acoes);
@@ -1096,7 +1072,13 @@
     if(item.type==="completed-choice"){
       return `<article class="levelUpHistoricoItem"><strong>Escolhas do nível ${inteiro(item.level,0)}</strong><small>${escaparHTML(escolhaTexto(item.choice?.id,item.choice?.value))} · ${escaparHTML(data)}</small></article>`;
     }
-    if(item.type==="retroactive-level"||item.type==="initial-level"){
+    if(item.type==="initial-level"){
+      const migrado=item.retroactive===true||item.resources?.status==="preserved-existing";
+      return migrado
+        ?`<article class="levelUpHistoricoItem"><strong>Nível 1 aplicado retroativamente</strong><small>Benefícios fixos restaurados; PV e Chakra preservados · ${escaparHTML(data)}</small></article>`
+        :`<article class="levelUpHistoricoItem"><strong>Nível 1 iniciado</strong><small>Benefícios fixos preparados; configuração de PV e Chakra pendente · ${escaparHTML(data)}</small></article>`;
+    }
+    if(item.type==="retroactive-level"){
       return `<article class="levelUpHistoricoItem"><strong>Nível ${inteiro(item.toLevel,0)} aplicado retroativamente</strong><small>Benefícios fixos restaurados; PV e Chakra preservados · ${escaparHTML(data)}</small></article>`;
     }
     if(item.type==="resources-preserved"){
@@ -1164,14 +1146,21 @@
   function atualizarIndicadorCatalogo(){
     const badge=document.getElementById("catalogoRankProgressao");
     if(!badge||!regras) return;
-    const conteudo=`Rank máximo da ficha: <strong>${escaparHTML(valoresFixos(nivelAtual()).rankJutsu)}</strong>`;
-    if(badge.innerHTML!==conteudo) badge.innerHTML=conteudo;
+    badge.innerHTML=`Rank máximo da ficha: <strong>${escaparHTML(valoresFixos(nivelAtual()).rankJutsu)}</strong>`;
   }
 
   function observarCatalogo(){
     if(observadorCatalogo) return;
-    observadorCatalogo=new MutationObserver(()=>atualizarIndicadorCatalogo());
-    observadorCatalogo.observe(document.body,{childList:true,subtree:true});
+    let atualizacaoAgendada=false;
+    observadorCatalogo=new MutationObserver(()=>{
+      if(atualizacaoAgendada) return;
+      atualizacaoAgendada=true;
+      requestAnimationFrame(()=>{
+        atualizacaoAgendada=false;
+        atualizarIndicadorCatalogo();
+      });
+    });
+    observadorCatalogo.observe(document.body,{childList:true,subtree:false});
   }
 
   function validarRegras(dados){

@@ -577,7 +577,8 @@
     const treinado = Boolean(campoSalvo("p_furtividade")?.checked ?? estado?.p_furtividade);
     const bonusAtributoManual = bonusManualAtributo("destreza");
     const bonusModDestreza = bonusAutomatico("mod_destreza");
-    const base = modificador(destreza + bonusAtributoManual) + bonusModDestreza + (treinado ? proficiencia : 0);
+    const baseModDestreza = destreza > 0 ? modificador(destreza + bonusAtributoManual) : 0;
+    const base = baseModDestreza + bonusModDestreza + (treinado ? proficiencia : 0);
     const bonusJutsu = bonusAutomatico("furtividade");
     return {base,bonusJutsu,total:base+bonusJutsu,treinado,bonusModDestreza};
   }
@@ -631,7 +632,7 @@
       const atributo = numero(campoSalvo(chave)?.value ?? estado?.[chave],0);
       const bonusManual = bonusManualAtributo(chave);
       const bonusJutsu = bonusAutomatico(`mod_${chave}`);
-      const total = modificador(atributo + bonusManual) + bonusJutsu;
+      const total = (atributo > 0 ? modificador(atributo + bonusManual) : 0) + bonusJutsu;
       const detalhes=[];
       if(bonusManual) detalhes.push(`${comSinal(bonusManual)} atr.`);
       if(bonusJutsu) detalhes.push(`${comSinal(bonusJutsu)} jutsu`);
