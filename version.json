@@ -1,6 +1,6 @@
 {
-  "version": "2.1.5",
-  "releasedAt": "2026-07-19T19:55:00Z",
-  "notes": "As perícias agora destacam a seleção com borda luminosa, sem a bolinha lateral.",
-  "message": "Removido o marcador circular das perícias. As perícias marcadas agora ficam destacadas diretamente pela borda luminosa do card, deixando a tela mais limpa."
+  "version": "2.1.6",
+  "releasedAt": "2026-07-19T20:05:00Z",
+  "notes": "As perícias marcadas agora usam um marrom mais claro, sem transparência no fundo.",
+  "message": "A seleção das perícias foi refinada: em vez do efeito transparente, as caixas marcadas agora aparecem com um tom de marrom mais claro, mantendo o visual limpo e melhorando o contraste."
 }
