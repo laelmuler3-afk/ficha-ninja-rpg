@@ -1,6 +1,6 @@
 {
-  "version": "2.1.1",
-  "releasedAt": "2026-07-18T13:18:00Z",
-  "notes": "Revisão de estabilidade: protege PV e Chakra de fichas antigas no nível 1, corrige CA em atributos não preenchidos, elimina ciclo de renderização no catálogo e alinha versão/cache.",
-  "message": "Atualização recomendada para a mesa: preserva fichas existentes, mantém o Level Up completo e corrige inicialização, CA, abertura do catálogo e consistência do cache."
+  "version": "2.1.2",
+  "releasedAt": "2026-07-19T18:35:00Z",
+  "notes": "Adiciona os seis testes de resistência na Área de Batalha, com cálculo automático pelo modificador do atributo, proficiência e efeitos ativos.",
+  "message": "Configure as proficiências em Testes de resistência na aba Atributos. Os bônus são atualizados automaticamente durante a batalha."
 }
