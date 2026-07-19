@@ -1,4 +1,4 @@
-/* Ficha Ninja 2.1.5 — bônus das perícias com seleção por borda luminosa. */
+/* Ficha Ninja 2.1.6 — perícias com seleção em marrom mais claro. */
 #atributos .periciasLista label.periciaItem{
   position:relative;
   display:grid!important;
@@ -8,6 +8,7 @@
   min-width:0;
   padding:10px 12px!important;
   border:1px solid rgba(255,182,96,.18)!important;
+  background:linear-gradient(180deg,rgba(58,28,12,.96),rgba(30,14,6,.98))!important;
   transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease,background .18s ease;
 }
 
@@ -16,14 +17,13 @@
 }
 
 #atributos .periciasLista label.periciaItem.proficiente{
-  border-color:rgba(255,174,71,.78)!important;
-  background:linear-gradient(180deg,rgba(255,145,31,.12),rgba(47,19,6,.22))!important;
+  border-color:rgba(233,175,104,.85)!important;
+  background:linear-gradient(180deg,rgba(148,103,62,.98),rgba(116,78,45,.98))!important;
   box-shadow:
-    inset 0 1px 0 rgba(255,232,181,.18),
-    0 10px 18px rgba(0,0,0,.36),
-    0 0 0 1px rgba(255,140,35,.14),
-    0 0 18px rgba(255,122,24,.26),
-    0 0 34px rgba(255,122,24,.12)!important;
+    inset 0 1px 0 rgba(255,231,194,.22),
+    0 8px 16px rgba(0,0,0,.28),
+    0 0 0 1px rgba(186,127,59,.24),
+    0 0 14px rgba(255,145,49,.16)!important;
 }
 
 #atributos .periciasLista .periciaCheckbox{
@@ -74,10 +74,10 @@
 }
 
 #atributos .periciasLista .periciaBonus.proficiente{
-  border-color:rgba(255,177,90,.58);
-  background:linear-gradient(180deg,rgba(255,139,31,.34),rgba(88,31,8,.48));
-  color:#fff6dd;
-  box-shadow:inset 0 1px 0 rgba(255,239,198,.16),0 0 12px rgba(255,122,24,.20);
+  border-color:rgba(243,195,126,.62);
+  background:linear-gradient(180deg,rgba(218,157,88,.94),rgba(155,98,44,.96));
+  color:#fff8ea;
+  box-shadow:inset 0 1px 0 rgba(255,240,205,.18),0 0 10px rgba(255,140,44,.12);
 }
 
 #atributos .periciasLista .periciaNome{
