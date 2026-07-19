@@ -1,38 +1,70 @@
-/* Ficha Ninja 2.1.4 — apresentação dos bônus das perícias. */
+/* Ficha Ninja 2.1.5 — bônus das perícias com seleção por borda luminosa. */
 #atributos .periciasLista label.periciaItem{
+  position:relative;
   display:grid!important;
-  grid-template-columns:22px 44px minmax(0,1fr)!important;
+  grid-template-columns:52px minmax(0,1fr)!important;
   align-items:center!important;
-  column-gap:8px!important;
+  column-gap:10px!important;
   min-width:0;
-  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+  padding:10px 12px!important;
+  border:1px solid rgba(255,182,96,.18)!important;
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease,background .18s ease;
+}
+
+#atributos .periciasLista label.periciaItem:hover{
+  border-color:rgba(255,182,96,.28)!important;
 }
 
 #atributos .periciasLista label.periciaItem.proficiente{
-  border-color:rgba(255,177,90,.46)!important;
-  box-shadow:inset 0 1px 0 rgba(255,224,156,.16),0 7px 14px rgba(0,0,0,.38),0 0 0 1px rgba(255,122,24,.08)!important;
+  border-color:rgba(255,174,71,.78)!important;
+  background:linear-gradient(180deg,rgba(255,145,31,.12),rgba(47,19,6,.22))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,232,181,.18),
+    0 10px 18px rgba(0,0,0,.36),
+    0 0 0 1px rgba(255,140,35,.14),
+    0 0 18px rgba(255,122,24,.26),
+    0 0 34px rgba(255,122,24,.12)!important;
 }
 
 #atributos .periciasLista .periciaCheckbox{
-  grid-column:1;
-  margin:0!important;
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  margin:-1px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;
+  clip-path:inset(50%)!important;
+  border:0!important;
+  white-space:nowrap!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+#atributos .periciasLista label.periciaItem:focus-within{
+  outline:none;
+  border-color:rgba(255,193,106,.72)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,232,181,.16),
+    0 0 0 2px rgba(255,171,80,.18),
+    0 0 18px rgba(255,122,24,.18)!important;
 }
 
 #atributos .periciasLista .periciaBonus{
-  grid-column:2;
+  grid-column:1;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:44px;
-  min-width:44px;
-  min-height:30px;
+  width:52px;
+  min-width:52px;
+  min-height:32px;
   margin:0;
-  padding:5px 6px;
+  padding:5px 8px;
   border:1px solid rgba(255,210,138,.24);
-  border-radius:9px;
+  border-radius:11px;
   background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(0,0,0,.18));
   color:#fff1d2;
-  font-size:15px;
+  font-size:16px;
   font-weight:1000;
   line-height:1;
   letter-spacing:.15px;
@@ -49,24 +81,24 @@
 }
 
 #atributos .periciasLista .periciaNome{
-  grid-column:3;
+  grid-column:2;
   min-width:0;
   overflow-wrap:anywhere;
 }
 
 @media (max-width:430px){
   #atributos .periciasLista label.periciaItem{
-    grid-template-columns:22px 39px minmax(0,1fr)!important;
-    column-gap:6px!important;
-    padding:7px 6px!important;
+    grid-template-columns:48px minmax(0,1fr)!important;
+    column-gap:8px!important;
+    padding:8px 8px!important;
   }
 
   #atributos .periciasLista .periciaBonus{
-    width:39px;
-    min-width:39px;
-    min-height:28px;
-    padding:5px 4px;
-    font-size:13px;
+    width:48px;
+    min-width:48px;
+    min-height:30px;
+    padding:5px 6px;
+    font-size:14px;
   }
 
   #atributos .periciasLista .periciaNome{
@@ -80,6 +112,6 @@
   }
 
   #atributos .periciasLista label.periciaItem{
-    grid-template-columns:22px 42px minmax(0,1fr)!important;
+    grid-template-columns:50px minmax(0,1fr)!important;
   }
 }
