@@ -1,6 +1,6 @@
 {
-  "version": "2.1.4",
-  "releasedAt": "2026-07-19T19:30:00Z",
-  "notes": "As perícias agora exibem o bônus calculado na frente do nome.",
-  "message": "Todas recebem o modificador do atributo correspondente; as perícias marcadas também recebem o bônus de proficiência."
+  "version": "2.1.5",
+  "releasedAt": "2026-07-19T19:55:00Z",
+  "notes": "As perícias agora destacam a seleção com borda luminosa, sem a bolinha lateral.",
+  "message": "Removido o marcador circular das perícias. As perícias marcadas agora ficam destacadas diretamente pela borda luminosa do card, deixando a tela mais limpa."
 }
