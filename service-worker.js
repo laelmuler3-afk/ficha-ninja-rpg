@@ -1,5 +1,5 @@
 /* Shinobi 2.1.1 — revisão geral, correções de ficha nova e otimização de progressão. */
-const APP_VERSION = "2.1.2";
+const APP_VERSION = "2.1.3";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
