@@ -1,5 +1,5 @@
-/* Shinobi 2.1.1 — Revisão de estabilidade para Level Up, migração, cache e combate. */
-const APP_VERSION = "2.1.1";
+/* Shinobi 2.1.1 — revisão geral, correções de ficha nova e otimização de progressão. */
+const APP_VERSION = "2.1.2";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -28,6 +28,7 @@ const APP_SHELL = [
   `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
   `./js/13-motor-universal.js?v=${APP_VERSION}`,
   `./js/14-level-up.js?v=${APP_VERSION}`,
+  `./js/15-testes-resistencia.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
