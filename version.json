@@ -1,6 +1,6 @@
 {
-  "version": "2.1.3",
-  "releasedAt": "2026-07-19T18:55:00Z",
-  "notes": "Os testes de resistência agora usam automaticamente as escolhas da característica Resistência salvas na progressão, sem marcadores manuais duplicados.",
-  "message": "Ferocidade aplica proficiência em FOR, Evasão em DES, Resistência em CON e Discernimento em INT e SAB."
+  "version": "2.1.4",
+  "releasedAt": "2026-07-19T19:30:00Z",
+  "notes": "As perícias agora exibem o bônus calculado na frente do nome.",
+  "message": "Todas recebem o modificador do atributo correspondente; as perícias marcadas também recebem o bônus de proficiência."
 }
