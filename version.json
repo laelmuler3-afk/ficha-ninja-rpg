@@ -1,6 +1,6 @@
 {
-  "version": "2.1.2",
-  "releasedAt": "2026-07-19T18:35:00Z",
-  "notes": "Adiciona os seis testes de resistência na Área de Batalha, com cálculo automático pelo modificador do atributo, proficiência e efeitos ativos.",
-  "message": "Configure as proficiências em Testes de resistência na aba Atributos. Os bônus são atualizados automaticamente durante a batalha."
+  "version": "2.1.3",
+  "releasedAt": "2026-07-19T18:55:00Z",
+  "notes": "Os testes de resistência agora usam automaticamente as escolhas da característica Resistência salvas na progressão, sem marcadores manuais duplicados.",
+  "message": "Ferocidade aplica proficiência em FOR, Evasão em DES, Resistência em CON e Discernimento em INT e SAB."
 }
