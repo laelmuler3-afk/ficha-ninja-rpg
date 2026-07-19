@@ -1,5 +1,5 @@
-/* Shinobi 2.1.1 — revisão geral, correções de ficha nova e otimização de progressão. */
-const APP_VERSION = "2.1.3";
+/* Shinobi 2.1.4 — bônus automáticos das perícias. */
+const APP_VERSION = "2.1.4";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -14,6 +14,7 @@ const APP_SHELL = [
   `./css/regras-natureza.css?v=${APP_VERSION}`,
   `./css/batalha-viva.css?v=${APP_VERSION}`,
   `./css/level-up.css?v=${APP_VERSION}`,
+  `./css/pericias.css?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
@@ -29,6 +30,7 @@ const APP_SHELL = [
   `./js/13-motor-universal.js?v=${APP_VERSION}`,
   `./js/14-level-up.js?v=${APP_VERSION}`,
   `./js/15-testes-resistencia.js?v=${APP_VERSION}`,
+  `./js/16-pericias.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
