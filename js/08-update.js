@@ -1,13 +1,25 @@
-/* Shinobi 1.10.1 — atualizador observável com recuperação de estado travado. */
+/* Shinobi 2.1.7 — atualizador com versão sincronizada e recarga sem cache. */
 (function(){
   "use strict";
 
-  if(window.__shinobiAtualizadorV1101) return;
-  window.__shinobiAtualizadorV1101 = true;
+  if(window.__shinobiAtualizadorV217) return;
+  window.__shinobiAtualizadorV217 = true;
 
-  const APP_VERSION = String(
-    document.documentElement.dataset.appVersion || "1.10.1"
-  );
+  const versaoDoScript = (()=>{
+    try{
+      return new URL(document.currentScript?.src || "", window.location.href)
+        .searchParams.get("v") || "";
+    }catch(_erro){
+      return "";
+    }
+  })();
+  const versaoDoDocumento = String(document.documentElement.dataset.appVersion || "").trim();
+  // A versão do arquivo realmente carregado é a fonte mais segura. Isso evita
+  // loops quando o HTML fica com um data-app-version antigo por engano.
+  const APP_VERSION = String(versaoDoScript || versaoDoDocumento || "2.1.7");
+  document.documentElement.dataset.appVersion = APP_VERSION;
+  window.APP_VERSION = APP_VERSION;
+
   const SW_URL = `./service-worker.js?v=${encodeURIComponent(APP_VERSION)}`;
   const VERSION_URL = "./version.json";
   const INTERVALO_PERIODICO = 5 * 60 * 1000;
@@ -38,6 +50,30 @@
     }
     return 0;
   }
+
+  function limparMarcadorRecargaDaUrl(){
+    try{
+      const url=new URL(window.location.href);
+      if(!url.searchParams.has("_shinobi_reload")) return;
+      url.searchParams.delete("_shinobi_reload");
+      window.history.replaceState(null,"",`${url.pathname}${url.search}${url.hash}`);
+    }catch(_erro){}
+  }
+
+  function recarregarAplicacao(){
+    if(recarregando) return;
+    recarregando=true;
+    salvarFicha();
+    try{
+      const url=new URL(window.location.href);
+      url.searchParams.set("_shinobi_reload",String(Date.now()));
+      window.location.replace(url.href);
+    }catch(_erro){
+      window.location.reload();
+    }
+  }
+
+  limparMarcadorRecargaDaUrl();
 
   function obterPainel(){
     let painel=document.getElementById("shinobiAtualizacaoPainel");
@@ -106,8 +142,7 @@
     aviso.querySelector("#shinobiBotaoAtualizar")?.addEventListener("click",()=>{
       const acao=aviso.dataset.acao||"aplicar";
       if(acao==="recarregar"){
-        salvarFicha();
-        window.location.reload();
+        recarregarAplicacao();
         return;
       }
       if(acao==="verificar"){
@@ -216,10 +251,7 @@
 
     clearTimeout(timerRecarga);
     timerRecarga=window.setTimeout(()=>{
-      if(!recarregando){
-        salvarFicha();
-        window.location.reload();
-      }
+      if(!recarregando) recarregarAplicacao();
     },10000);
   }
 
@@ -237,8 +269,8 @@
   }
 
   function acompanharWorker(worker){
-    if(!worker||worker.__shinobiAcompanhadoV1101) return;
-    worker.__shinobiAcompanhadoV1101=true;
+    if(!worker||worker.__shinobiAcompanhadoV217) return;
+    worker.__shinobiAcompanhadoV217=true;
 
     worker.addEventListener("statechange",()=>{
       if(worker.state==="installed"){
@@ -263,8 +295,8 @@
   }
 
   function acompanharRegistro(registro){
-    if(!registro||registro.__shinobiAcompanhadoV1101) return;
-    registro.__shinobiAcompanhadoV1101=true;
+    if(!registro||registro.__shinobiAcompanhadoV217) return;
+    registro.__shinobiAcompanhadoV217=true;
 
     if(registro.waiting&&navigator.serviceWorker.controller){
       anunciarAtualizacaoPronta();
@@ -491,10 +523,8 @@
 
   navigator.serviceWorker?.addEventListener("controllerchange",()=>{
     if(recarregando) return;
-    recarregando=true;
-    salvarFicha();
     clearTimeout(timerRecarga);
-    window.location.reload();
+    recarregarAplicacao();
   });
 
   document.addEventListener("visibilitychange",()=>{
