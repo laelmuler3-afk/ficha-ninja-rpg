@@ -1,6 +1,6 @@
 {
-  "version": "2.1.6",
-  "releasedAt": "2026-07-19T20:05:00Z",
-  "notes": "As perícias marcadas agora usam um marrom mais claro, sem transparência no fundo.",
-  "message": "A seleção das perícias foi refinada: em vez do efeito transparente, as caixas marcadas agora aparecem com um tom de marrom mais claro, mantendo o visual limpo e melhorando o contraste."
+  "version": "2.1.7",
+  "releasedAt": "2026-07-19T20:40:00Z",
+  "notes": "Corrigido o aviso de atualização que reaparecia após recarregar.",
+  "message": "A versão declarada pelo HTML agora fica sincronizada com o service worker. A recarga também usa um marcador temporário para evitar reutilização da página antiga."
 }
