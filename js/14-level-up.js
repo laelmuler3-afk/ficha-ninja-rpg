@@ -391,6 +391,7 @@
     renderizarResumo();
     renderizarAtaquesPorAcaoBatalha();
     atualizarIndicadorCatalogo();
+    if(typeof window.atualizarTestesResistenciaBatalha==="function") window.atualizarTestesResistenciaBatalha();
   }
 
   function renderizarAtaquesPorAcaoBatalha(){

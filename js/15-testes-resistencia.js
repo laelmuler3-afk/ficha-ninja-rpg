@@ -1,17 +1,39 @@
-/* Ficha Ninja 2.1.2 — testes de resistência no padrão d20/D&D. */
+/* Ficha Ninja 2.1.3 — testes de resistência integrados à progressão. */
 (function(){
   "use strict";
 
-  if(window.__testesResistenciaBatalhaV212) return;
-  window.__testesResistenciaBatalhaV212 = true;
+  if(window.__testesResistenciaBatalhaV213) return;
+  window.__testesResistenciaBatalhaV213 = true;
 
   const ATRIBUTOS = [
-    {chave:"forca", sigla:"FOR", nome:"Força", prof:"save_forca_prof", view:"saveForcaView", estado:"saveForcaEstado", detalhe:"saveForcaDetalhe"},
-    {chave:"destreza", sigla:"DES", nome:"Destreza", prof:"save_destreza_prof", view:"saveDestrezaView", estado:"saveDestrezaEstado", detalhe:"saveDestrezaDetalhe"},
-    {chave:"constituicao", sigla:"CON", nome:"Constituição", prof:"save_constituicao_prof", view:"saveConstituicaoView", estado:"saveConstituicaoEstado", detalhe:"saveConstituicaoDetalhe"},
-    {chave:"inteligencia", sigla:"INT", nome:"Inteligência", prof:"save_inteligencia_prof", view:"saveInteligenciaView", estado:"saveInteligenciaEstado", detalhe:"saveInteligenciaDetalhe"},
-    {chave:"sabedoria", sigla:"SAB", nome:"Sabedoria", prof:"save_sabedoria_prof", view:"saveSabedoriaView", estado:"saveSabedoriaEstado", detalhe:"saveSabedoriaDetalhe"},
-    {chave:"carisma", sigla:"CAR", nome:"Carisma", prof:"save_carisma_prof", view:"saveCarismaView", estado:"saveCarismaEstado", detalhe:"saveCarismaDetalhe"}
+    {chave:"forca", sigla:"FOR", nome:"Força", view:"saveForcaView", estado:"saveForcaEstado", detalhe:"saveForcaDetalhe"},
+    {chave:"destreza", sigla:"DES", nome:"Destreza", view:"saveDestrezaView", estado:"saveDestrezaEstado", detalhe:"saveDestrezaDetalhe"},
+    {chave:"constituicao", sigla:"CON", nome:"Constituição", view:"saveConstituicaoView", estado:"saveConstituicaoEstado", detalhe:"saveConstituicaoDetalhe"},
+    {chave:"inteligencia", sigla:"INT", nome:"Inteligência", view:"saveInteligenciaView", estado:"saveInteligenciaEstado", detalhe:"saveInteligenciaDetalhe"},
+    {chave:"sabedoria", sigla:"SAB", nome:"Sabedoria", view:"saveSabedoriaView", estado:"saveSabedoriaEstado", detalhe:"saveSabedoriaDetalhe"},
+    {chave:"carisma", sigla:"CAR", nome:"Carisma", view:"saveCarismaView", estado:"saveCarismaEstado", detalhe:"saveCarismaDetalhe"}
+  ];
+
+  const CHAVE_ESCOLHA_RESISTENCIA = "resistencia_nivel_7";
+  const ESCOLHAS_POR_ATRIBUTO = {
+    ferocidade:["forca"],
+    evasao:["destreza"],
+    resistencia:["constituicao"],
+    discernimento:["inteligencia","sabedoria"]
+  };
+  const ROTULOS_ESCOLHAS = {
+    ferocidade:"Ferocidade",
+    evasao:"Evasão",
+    resistencia:"Resistência",
+    discernimento:"Discernimento"
+  };
+  const CHAVES_MANUAIS_ANTIGAS = [
+    "save_forca_prof",
+    "save_destreza_prof",
+    "save_constituicao_prof",
+    "save_inteligencia_prof",
+    "save_sabedoria_prof",
+    "save_carisma_prof"
   ];
 
   let frame = null;
@@ -29,6 +51,68 @@
   function comSinal(valor){
     const n = numero(valor,0);
     return n >= 0 ? `+${n}` : String(n);
+  }
+
+  function normalizarToken(valor){
+    return String(valor ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-z0-9]+/g,"_")
+      .replace(/^_+|_+$/g,"");
+  }
+
+  function normalizarListaEscolhas(valor){
+    if(Array.isArray(valor)) return valor.flatMap(normalizarListaEscolhas);
+    if(valor && typeof valor === "object"){
+      if("value" in valor) return normalizarListaEscolhas(valor.value);
+      if("selected" in valor) return normalizarListaEscolhas(valor.selected);
+      return Object.entries(valor)
+        .filter(([,ativo])=>Boolean(ativo))
+        .map(([id])=>normalizarToken(id))
+        .filter(Boolean);
+    }
+    const texto = String(valor ?? "").trim();
+    if(!texto) return [];
+    return texto
+      .split(/[;,|]/)
+      .map(normalizarToken)
+      .filter(Boolean);
+  }
+
+  function escolhasSalvasResistencia(){
+    let valor = null;
+    try{
+      valor = estado?.progressaoFixa?.choices?.[CHAVE_ESCOLHA_RESISTENCIA] ?? null;
+      if(valor == null){
+        const historico = Array.isArray(estado?.progressaoFixa?.history)
+          ? estado.progressaoFixa.history
+          : [];
+        const registro = [...historico].reverse().find(item=>
+          item?.choice?.id === CHAVE_ESCOLHA_RESISTENCIA
+        );
+        valor = registro?.choice?.value ?? null;
+      }
+    }catch(erro){
+      valor = null;
+    }
+
+    const permitidas = new Set(Object.keys(ESCOLHAS_POR_ATRIBUTO));
+    return [...new Set(normalizarListaEscolhas(valor).filter(id=>permitidas.has(id)))];
+  }
+
+  function perfilProficiencias(){
+    const escolhas = escolhasSalvasResistencia();
+    const atributos = new Set();
+    escolhas.forEach(id=>{
+      (ESCOLHAS_POR_ATRIBUTO[id] || []).forEach(chave=>atributos.add(chave));
+    });
+    return {escolhas, atributos};
+  }
+
+  function escolhaQueConcede(chave,perfil){
+    return perfil.escolhas.find(id=>(ESCOLHAS_POR_ATRIBUTO[id] || []).includes(chave)) || "";
   }
 
   function modificadorPontuacao(pontuacao){
@@ -89,13 +173,14 @@
     return "";
   }
 
-  function dadosTeste(config,perfil){
+  function dadosTeste(config,perfilEfeito,perfilProf){
     const pontuacaoBase = numero(campoSalvo(config.chave)?.value,0);
     const bonusManual = bonusManualAtributo(config.chave);
     const modificadorBase = modificadorPontuacao(pontuacaoBase + bonusManual);
     const bonusModJutsu = bonusModificadorJutsu(config.chave);
     const modificadorFinal = modificadorBase + bonusModJutsu;
-    const proficiente = Boolean(campoSalvo(config.prof)?.checked);
+    const escolhaOrigem = escolhaQueConcede(config.chave,perfilProf);
+    const proficiente = Boolean(escolhaOrigem);
     const bonusProf = proficiente ? numero(campoSalvo("proficiencia")?.value,0) : 0;
     const bonusTeste = bonusEspecificoTeste(config.chave);
     return {
@@ -105,10 +190,11 @@
       bonusModJutsu,
       modificadorFinal,
       proficiente,
+      escolhaOrigem,
       bonusProf,
       bonusTeste,
       total:modificadorFinal + bonusProf + bonusTeste,
-      rolagem:estadoRolagem(config.chave,perfil)
+      rolagem:estadoRolagem(config.chave,perfilEfeito)
     };
   }
 
@@ -128,8 +214,14 @@
     return partes.join(" · ") || config.nome;
   }
 
+  function textoOrigem(dados){
+    return dados.escolhaOrigem ? ROTULOS_ESCOLHAS[dados.escolhaOrigem] || dados.escolhaOrigem : "";
+  }
+
   function atualizar(){
-    const perfil = perfilEfeitos();
+    const perfilEfeito = perfilEfeitos();
+    const perfilProf = perfilProficiencias();
+
     ATRIBUTOS.forEach(config=>{
       const card = document.querySelector(`[data-teste-resistencia="${config.chave}"]`);
       const view = document.getElementById(config.view);
@@ -137,7 +229,7 @@
       const detalhe = document.getElementById(config.detalhe);
       if(!card || !view) return;
 
-      const dados = dadosTeste(config,perfil);
+      const dados = dadosTeste(config,perfilEfeito,perfilProf);
       view.textContent = comSinal(dados.total);
       if(estadoView) estadoView.textContent = textoEstado(dados);
       if(detalhe) detalhe.textContent = textoDetalhe(config,dados);
@@ -146,7 +238,9 @@
       card.classList.toggle("comVantagem",dados.rolagem === "vantagem");
       card.classList.toggle("comDesvantagem",dados.rolagem === "desvantagem");
       card.classList.toggle("vantagemAnulada",dados.rolagem === "anulada");
-      card.title = `${config.nome}: ${comSinal(dados.total)} — ${textoDetalhe(config,dados)}`;
+
+      const origem = textoOrigem(dados);
+      card.title = `${config.nome}: ${comSinal(dados.total)} — ${textoDetalhe(config,dados)}${origem ? ` — ${origem}` : ""}`;
     });
   }
 
@@ -158,6 +252,29 @@
     });
   }
 
+  function persistirLimpezaMarcadoresAntigos(){
+    try{
+      if(typeof estado === "undefined" || !estado || typeof estado !== "object") return;
+      let alterou = false;
+      CHAVES_MANUAIS_ANTIGAS.forEach(chave=>{
+        if(Object.prototype.hasOwnProperty.call(estado,chave)){
+          delete estado[chave];
+          alterou = true;
+        }
+      });
+      if(!estado.__testesResistenciaAutomaticosV213){
+        estado.__testesResistenciaAutomaticosV213 = true;
+        alterou = true;
+      }
+      if(alterou){
+        if(typeof persistirEstadoLocal === "function") persistirEstadoLocal();
+        else if(typeof CHAVE !== "undefined") localStorage.setItem(CHAVE,JSON.stringify(estado));
+      }
+    }catch(erro){
+      console.warn("Não foi possível limpar os marcadores antigos de resistência.",erro);
+    }
+  }
+
   function instalarObservador(){
     const host = document.getElementById("resistenciasBatalhaHost");
     if(!host || observador) return;
@@ -166,6 +283,7 @@
   }
 
   function iniciar(){
+    persistirLimpezaMarcadoresAntigos();
     instalarObservador();
     agendar();
     setTimeout(agendar,250);
@@ -174,7 +292,6 @@
 
   const seletor = [
     ...ATRIBUTOS.map(item=>`[data-save="${item.chave}"]`),
-    ...ATRIBUTOS.map(item=>`[data-save="${item.prof}"]`),
     '[data-save="proficiencia"]',
     '[data-bonus-batalha]'
   ].join(",");
@@ -192,8 +309,11 @@
 
   window.addEventListener("pageshow",()=>setTimeout(iniciar,80));
   window.atualizarTestesResistenciaBatalha = agendar;
+  window.obterResistenciasProficientesAutomaticas = function(){
+    return [...perfilProficiencias().atributos];
+  };
   window.calcularTesteResistenciaBatalha = function(chave){
     const config = ATRIBUTOS.find(item=>item.chave === chave);
-    return config ? dadosTeste(config,perfilEfeitos()) : null;
+    return config ? dadosTeste(config,perfilEfeitos(),perfilProficiencias()) : null;
   };
 })();
