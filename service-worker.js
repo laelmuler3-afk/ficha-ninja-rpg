@@ -1,5 +1,5 @@
-/* Shinobi 2.1.6 — perícias com destaque por borda luminosa. */
-const APP_VERSION = "2.1.6";
+/* Shinobi 2.1.7 — correção do ciclo de atualização. */
+const APP_VERSION = "2.1.7";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
