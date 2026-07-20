@@ -70,6 +70,30 @@
     return participanteId?ativos.filter(e=>e.participantId===participanteId):[];
   }
 
+  function textoMecanicaRemota(item){
+    const direto=String(item?.text||"").trim();
+    if(direto)return direto;
+    const alvo=String(item?.target||"efeito").replace(/_/g," ");
+    const valor=item?.value;
+    if(item?.operation==="multiplicar"&&valor!==""&&valor!==undefined)return `${alvo} ×${valor}`;
+    if(["somar","subtrair"].includes(item?.operation)&&valor!==""&&valor!==undefined){
+      const n=Number(valor),formatado=Number.isFinite(n)&&n>0?`+${n}`:String(valor);
+      return `${alvo} ${formatado}`;
+    }
+    return valor!==""&&valor!==undefined?`${alvo}: ${valor}`:alvo;
+  }
+
+  function mecanicasDoEfeito(efeito){
+    const detalhes=Array.isArray(efeito?.details)?efeito.details:[];
+    return detalhes.map(textoMecanicaRemota).filter(Boolean);
+  }
+
+  function resumoDoEfeito(efeito){
+    const resumo=String(efeito?.summary||"").trim();
+    if(resumo)return resumo;
+    return mecanicasDoEfeito(efeito).slice(0,4).join(" • ");
+  }
+
   function conexaoPainel(st){
     if(navigator.onLine===false)return "offline";
     const presenca=st?.presencas?.[st?.user?.uid];
@@ -217,7 +241,8 @@
     const efeitosHtml=efeitos.length?efeitos.map(efeito=>{
       const participante=st.sala?.participants?.[efeito.participantId];
       const complemento=master&&participante?` • ${participante.displayName}`:"";
-      return `<li><span>${esc(efeito.name||"Efeito")}${esc(complemento)}</span><b>${rodadasRestantes(efeito,combat)}r</b></li>`;
+      const resumo=resumoDoEfeito(efeito);
+      return `<li><span class="shinobiTurnoEfeitoTexto"><strong>${esc(efeito.name||"Efeito")}${esc(complemento)}</strong>${resumo?`<small>${esc(resumo)}</small>`:""}</span><b>${rodadasRestantes(efeito,combat)}r</b></li>`;
     }).join(""):`<li class="vazio"><span>Nenhum efeito ativo</span></li>`;
 
     painelFlutuante.className=`shinobiTurnoFlutuante ${expandido?"expandido":"minimizado"} ${meuTurno?"meuTurno":""}`.trim();
@@ -435,17 +460,22 @@
   function renderNuvem(st){
     const locais=window.ShinobiOnline?.listarFichasLocais?.()||[];
     const nuvem=st.fichasNuvem||[];
+    const contaSincronizavel=Boolean(st.user&&!st.user.anonymous);
     return `<details class="onlineCard onlineDetails">
       <summary><span><b>Backup e sincronização</b><small>${nuvem.length} ficha(s) na nuvem</small></span></summary>
       <div class="onlineDetailsConteudo">
+        ${contaSincronizavel?"":`<p class="onlineAviso">A entrada rápida anônima funciona para participar da sala, mas não identifica a mesma pessoa em outro aparelho. Para sincronizar celular e tablet, saia e entre com a mesma Conta Google nos dois.</p>`}
         <div class="onlineAcoesLinha">
           <button type="button" class="onlineBtn secundario" data-action="sync-current">Sincronizar ficha atual</button>
           <button type="button" class="onlineBtn secundario" data-action="sync-all">Sincronizar todas</button>
         </div>
         <div class="onlineListaNuvem">
-          ${nuvem.length?nuvem.map(f=>`<article><div><strong>${esc(f.characterName||f.name)}</strong><small>${esc(f.name)} • revisão ${num(f.revision,1)}</small></div><button type="button" class="onlineBtn texto" data-action="restore-cloud" data-sheet-id="${esc(f.id)}">Restaurar</button></article>`).join(""):`<p class="onlineVazio">Nenhuma ficha enviada para a nuvem ainda.</p>`}
+          ${nuvem.length?nuvem.map(f=>{
+            const vinculada=locais.some(local=>local.sheetId===f.id);
+            return `<article><div><strong>${esc(f.characterName||f.name)}</strong><small>${esc(f.name)} • revisão ${num(f.revision,1)}${vinculada?" • vinculada a este aparelho":""}</small></div>${vinculada?`<span class="onlineStatusVinculo">Sincronização automática</span>`:`<button type="button" class="onlineBtn texto" data-action="restore-cloud" data-sheet-id="${esc(f.id)}">Baixar neste aparelho</button>`}</article>`;
+          }).join(""):`<p class="onlineVazio">Nenhuma ficha enviada para a nuvem ainda.</p>`}
         </div>
-        <small class="onlineRodape">As fichas continuam salvas no aparelho. A nuvem funciona como cópia e sincronização entre dispositivos.</small>
+        <small class="onlineRodape">Use a mesma Conta Google nos aparelhos. Depois que a ficha for baixada e vinculada uma vez, alterações salvas em um aparelho chegam automaticamente ao outro. Se ambos forem editados ao mesmo tempo, o app pedirá qual versão manter.</small>
       </div>
     </details>`;
   }
@@ -555,7 +585,9 @@
       <div class="onlineEfeitosLista">
         ${efeitos.length?efeitos.map(e=>{
           const p=st.sala?.participants?.[e.participantId],rest=rodadasRestantes(e,st.sala?.combat);
-          return `<article><div><strong>${esc(e.name)}</strong><small>${esc(p?.displayName||"Participante")} • ${rest} rodada(s) restante(s)</small></div>${master||e.ownerUid===st.user?.uid?`<button class="onlineBtn texto" data-action="end-effect" data-effect-id="${esc(e.id)}">Encerrar</button>`:""}</article>`;
+          const mecanicas=mecanicasDoEfeito(e);
+          const resumo=resumoDoEfeito(e);
+          return `<article class="onlineEfeitoItem"><div class="onlineEfeitoConteudo"><strong>${esc(e.name)}</strong><small>${esc(p?.displayName||"Participante")} • ${rest} rodada(s) restante(s) • ${esc(e.durationOriginal||`${e.totalRounds||rest} rodadas`)}</small>${mecanicas.length?`<div class="onlineEfeitoMecanicas">${mecanicas.map((mecanica,indice)=>`<span class="${String(e.details?.[indice]?.polarity||"").toLowerCase()}">${esc(mecanica)}</span>`).join("")}</div>`:resumo?`<p class="onlineEfeitoResumo">${esc(resumo)}</p>`:""}</div>${master||e.ownerUid===st.user?.uid?`<button class="onlineBtn texto" data-action="end-effect" data-effect-id="${esc(e.id)}">Encerrar</button>`:""}</article>`;
         }).join(""):`<p class="onlineVazio">Nenhum efeito com duração ativa.</p>`}
       </div>
       ${master?`<form data-form="add-effect" class="onlineForm onlineFormLinha onlineFormEfeito">
@@ -658,7 +690,7 @@
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
     if(acao==="sync-current")return executar(async()=>{await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:true,motivo:"manual"});await avisar("Ficha sincronizada","A ficha atual foi enviada para a nuvem.");});
     if(acao==="sync-all")return executar(async()=>{await window.ShinobiOnline.sincronizarTodasFichas();await avisar("Sincronização concluída","Todas as fichas deste aparelho foram verificadas.");});
-    if(acao==="restore-cloud")return executar(async()=>{if(await confirmar("Restaurar ficha","A ficha da nuvem será adicionada ou atualizada neste aparelho.")){await window.ShinobiOnline.restaurarFichaDaNuvem(el.dataset.sheetId,{asCopy:true});}});
+    if(acao==="restore-cloud")return executar(async()=>{if(await confirmar("Baixar ficha","A ficha ficará vinculada à mesma versão da nuvem neste aparelho.")){await window.ShinobiOnline.restaurarFichaDaNuvem(el.dataset.sheetId,{asCopy:false});}});
     if(acao==="resolve-conflict")return executar(async()=>{await window.ShinobiOnline.resolverConflito(el.dataset.sheetId,el.dataset.choice);conflitoAtual=null;});
     if(acao==="sort-initiative")return executar(()=>window.ShinobiOnline.ordenarIniciativa());
     if(acao==="start-combat")return executar(()=>window.ShinobiOnline.iniciarCombate());
@@ -755,7 +787,7 @@
   function instalarEventos(){
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
-    ["status","pronto","auth","campanhas","fichas-nuvem","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
+    ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
     window.ShinobiOnline.on("erro",e=>avisar("Erro online",e.detail.mensagem));
     window.ShinobiOnline.on("erro-sync",e=>{document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");console.warn(e.detail.mensagem);});
     window.ShinobiOnline.on("conflito-ficha",e=>{conflitoAtual=e.detail;abrir();agendarRender();});

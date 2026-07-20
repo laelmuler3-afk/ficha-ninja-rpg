@@ -1035,6 +1035,8 @@
     }
 
     let renovado=false;
+    let itemAtivo=null;
+    let onlineEffectIdAnterior="";
     if(persistentes.length){
       const item={
         id:id || `jutsu:${slug(jutsu?.nome||indice)}`,
@@ -1052,8 +1054,16 @@
         aplicadoEm:Date.now()
       };
       const existente=lista.findIndex(x=>x.id===item.id);
-      if(existente>=0){lista[existente]=item;renovado=true;}
-      else lista.push(item);
+      if(existente>=0){
+        const anterior=lista[existente]||{};
+        onlineEffectIdAnterior=String(anterior.onlineEffectId||"");
+        /* O vínculo antigo é devolvido ao módulo online para que uma renovação
+           encerre o contador anterior antes de publicar o novo. */
+        if(onlineEffectIdAnterior) item.onlineEffectId=onlineEffectIdAnterior;
+        lista[existente]=item;
+        renovado=true;
+      }else lista.push(item);
+      itemAtivo=item;
       salvarEstado();
       atualizarTudo();
     }
@@ -1067,7 +1077,16 @@
       await avisoShinobi(persistentes.length?"Efeitos aplicados":"Efeitos do jutsu",resumo);
     }
 
-    return {aplicado:persistentes.length>0,renovado,efeitos,persistentes};
+    return {
+      aplicado:persistentes.length>0,
+      renovado,
+      efeitos,
+      persistentes,
+      itemId:itemAtivo?.id||null,
+      duracao:itemAtivo?.duracao||duracaoEfetiva(jutsu,persistentes),
+      aplicadoEm:itemAtivo?.aplicadoEm||Date.now(),
+      onlineEffectIdAnterior:onlineEffectIdAnterior||null
+    };
   };
 
   window.removerEfeitoJutsuBatalha=async function(id){

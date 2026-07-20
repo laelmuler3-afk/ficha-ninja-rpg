@@ -65,6 +65,13 @@
     for(let i=0;i<str.length;i+=1){hash^=str.charCodeAt(i);hash=Math.imul(hash,16777619);}
     return (hash>>>0).toString(16).padStart(8,"0");
   }
+  function hashFicha(valor){
+    const copia=clonar(valor||{});
+    /* O nome interno depende da chave local usada em cada aparelho. Ele não
+       representa uma alteração real da personagem e não deve gerar conflito. */
+    if(copia?.__online&&typeof copia.__online==="object") delete copia.__online.name;
+    return hashLeve(copia);
+  }
   function lerJson(chave,padrao){
     try{const v=JSON.parse(localStorage.getItem(chave)||"");return v??padrao;}catch(_erro){return padrao;}
   }
@@ -167,6 +174,7 @@
       carregando:estadoOnline.carregando,
       conectado:estadoOnline.conectado,
       user:clonar(estadoOnline.user),
+      syncEntreDispositivos:Boolean(estadoOnline.user&&!estadoOnline.user.anonymous),
       salaId:estadoOnline.salaId,
       sala:clonar(estadoOnline.sala),
       presencas:clonar(estadoOnline.presencas),
@@ -691,7 +699,26 @@
     return null;
   }
 
-  async function adicionarEfeito({participantId,name,duration,source="manual",ownerUid}){
+  function normalizarDetalhesEfeito(valor){
+    const lista=Array.isArray(valor)?valor:[];
+    return lista.slice(0,16).map((item,indice)=>{
+      const bruto=item&&typeof item==="object"?item:{};
+      const valorMecanico=typeof bruto.value==="number"||typeof bruto.valor==="number"
+        ?Number(bruto.value??bruto.valor)
+        :texto(bruto.value??bruto.valor).slice(0,80);
+      return {
+        id:texto(bruto.id||`mecanica-${indice+1}`).slice(0,80),
+        polarity:texto(bruto.polarity??bruto.polaridade??"neutro").slice(0,24),
+        appliesTo:texto(bruto.appliesTo??bruto.aplicaEm??"usuario").slice(0,40),
+        target:texto(bruto.target??bruto.alvo??"efeito").slice(0,60),
+        operation:texto(bruto.operation??bruto.operacao??"").slice(0,30),
+        value:valorMecanico,
+        text:texto(bruto.text??bruto.texto??"").slice(0,220)
+      };
+    });
+  }
+
+  async function adicionarEfeito({participantId,name,duration,source="manual",ownerUid,summary="",details=[],localEffectId=""}){
     exigirUsuario();
     const participante=participantes()[participantId];
     if(!participante) throw new Error("Participante não encontrado.");
@@ -706,9 +733,13 @@
       ?Math.min(Math.max(0,Number(combat.turnIndex||0)),ordem.length-1)
       :0;
     const id=idAleatorio("effect");
+    const detalhes=normalizarDetalhesEfeito(details);
     const efeito={
       id,participantId,ownerUid:ownerUid||participante.ownerUid||estadoOnline.user.uid,
-      name:texto(name)||"Efeito",source,durationOriginal:regra.original,totalRounds:regra.rounds,
+      name:(texto(name)||"Efeito").slice(0,120),source:texto(source).slice(0,140),
+      summary:texto(summary).slice(0,500),details:detalhes,
+      localEffectId:texto(localEffectId).slice(0,160),
+      durationOriginal:regra.original,totalRounds:regra.rounds,
       startRound:round,startTurnIndex:turnIndex,
       expiresAtRound:round+regra.rounds,expiresAtTurnIndex:turnIndex,
       status:"active",createdAt:agora()
@@ -719,16 +750,26 @@
 
   async function encerrarEfeito(effectId){
     exigirUsuario();
-    const efeito=estadoOnline.sala?.effects?.[effectId];
+    const refEfeito=estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects/${effectId}`);
+    let efeito=estadoOnline.sala?.effects?.[effectId];
+    if(!efeito){
+      const remoto=await estadoOnline.api.get(refEfeito);
+      efeito=remoto.val();
+    }
     if(!efeito) return;
     const ehMestre=estadoOnline.sala?.masterUid===estadoOnline.user.uid;
     if(!ehMestre&&efeito.ownerUid!==estadoOnline.user.uid) throw new Error("Você não pode encerrar este efeito.");
-    await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects/${effectId}`),{status:"ended",endedAt:agora()});
+    await estadoOnline.api.update(refEfeito,{status:"ended",endedAt:agora()});
   }
 
   async function atualizarEfeitosDaSala(round,turnIndex=0){
     exigirMestre();
-    const api=estadoOnline.api,efeitos=estadoOnline.sala?.effects||{},updates={};
+    const api=estadoOnline.api,updates={};
+    /* Lê os efeitos diretamente do banco depois da troca de turno. Isso evita
+       perder um buff recém-publicado pelo jogador por causa de um snapshot
+       local que ainda não chegou ao aparelho do mestre. */
+    const snapshotEfeitos=await api.get(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects`));
+    const efeitos=snapshotEfeitos.val()||{};
     const rodadaAtual=Math.max(1,Number(round||1));
     const indiceAtual=Math.max(0,Number(turnIndex||0));
     Object.entries(efeitos).forEach(([id,e])=>{
@@ -854,19 +895,90 @@
     }
   }
 
+  function estadoSync(){return lerJson(CHAVE_SYNC,{})||{};}
+  function gravarEstadoSync(v){salvarJson(CHAVE_SYNC,v);}
+
+  function atualizarMetaSync(sheetId,cloud,dataHash){
+    const sync=estadoSync();
+    sync[sheetId]={
+      revision:Number(cloud?.revision||0),
+      lastHash:texto(cloud?.hash)||dataHash||"",
+      lastSyncedAt:Number(cloud?.updatedAt||agora()),
+      deviceId:texto(cloud?.deviceId)
+    };
+    gravarEstadoSync(sync);
+  }
+
+  function aplicarFichaDaNuvemNoLocal(sheetId,cloud,local){
+    if(!local||!cloud) return false;
+    const data=clonar(cloud.data||{});
+    data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
+    data.__online.sheetId=sheetId;
+    /* O nome local é preservado para não quebrar a chave usada pelo aplicativo.
+       O conteúdo da ficha, incluindo XP, inventário e jutsus, vem da nuvem. */
+    data.__online.name=local.name;
+    localStorage.setItem(local.key,JSON.stringify(data));
+    const hash=texto(cloud.hash)||hashFicha(data);
+    atualizarMetaSync(sheetId,cloud,hash);
+    const ativa=fichaAtualLocal()?.sheetId===sheetId;
+    emitir("ficha-atualizada-nuvem",{
+      sheetId,
+      name:local.name,
+      characterName:texto(data.nome)||local.characterName||local.name,
+      revision:Number(cloud.revision||0),
+      active:ativa
+    });
+    return true;
+  }
+
+  function processarAtualizacoesNuvem(valor){
+    if(!estadoOnline.user||estadoOnline.user.anonymous) return;
+    const locais=listarFichasLocais();
+    const sync=estadoSync();
+    Object.entries(valor||{}).forEach(([sheetId,cloud])=>{
+      const local=locais.find(f=>f.sheetId===sheetId);
+      if(!local) return; // Primeiro vínculo no aparelho continua sendo uma ação explícita.
+
+      const meta=sync[sheetId]||{};
+      const cloudRevision=Number(cloud?.revision||0);
+      const localRevision=Number(meta.revision||0);
+      if(cloudRevision<=localRevision) return;
+
+      const localHash=hashFicha(local.data||{});
+      const cloudHash=texto(cloud?.hash)||hashFicha(cloud?.data||{});
+
+      /* Se o snapshot é a confirmação do próprio envio, apenas atualiza a revisão.
+         Isso evita falso conflito enquanto a transação do Firebase termina. */
+      if(localHash===cloudHash||texto(cloud?.deviceId)===obterDeviceId()){
+        atualizarMetaSync(sheetId,cloud,cloudHash);
+        return;
+      }
+
+      const baseHash=texto(meta.lastHash);
+      const localFoiAlterado=Boolean(baseHash&&localHash!==baseHash);
+      if(localFoiAlterado){
+        emitir("conflito-ficha",{sheetId,local,cloud});
+        return;
+      }
+
+      aplicarFichaDaNuvemNoLocal(sheetId,cloud,local);
+    });
+  }
+
   function observarFichasNuvem(){
     if(!estadoOnline.user) return;
     estadoOnline.unsubscribeFichas?.();
     const api=estadoOnline.api;
     estadoOnline.unsubscribeFichas=api.onValue(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`),snap=>{
       const valor=snap.val()||{};
-      estadoOnline.fichasNuvem=Object.entries(valor).map(([id,f])=>({id,...f,data:undefined})).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+      estadoOnline.fichasNuvem=Object.entries(valor).map(([id,f])=>({
+        id,...f,data:undefined,
+        linked:listarFichasLocais().some(local=>local.sheetId===id)
+      })).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+      try{processarAtualizacoesNuvem(valor);}catch(erro){emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});}
       emitir("fichas-nuvem",snapshot());
     });
   }
-
-  function estadoSync(){return lerJson(CHAVE_SYNC,{})||{};}
-  function gravarEstadoSync(v){salvarJson(CHAVE_SYNC,v);}
 
   async function sincronizarFicha(localSheetName,{force=false,backup=false,motivo="autosave"}={}){
     exigirUsuario();
@@ -875,7 +987,7 @@
     const api=estadoOnline.api,uid=estadoOnline.user.uid,sheetId=ficha.sheetId;
     const sync=estadoSync(),meta=sync[sheetId]||{};
     const data=garantirMetadadosFichaLocal(ficha.name,ficha.data);
-    const conteudoHash=hashLeve(data);
+    const conteudoHash=hashFicha(data);
     if(!force&&meta.lastHash===conteudoHash) return {skipped:true};
     const refFicha=api.ref(estadoOnline.db,`userSheets/${uid}/${sheetId}`);
     let conflito=null;
@@ -952,7 +1064,7 @@
     localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(lista));
     const sync=estadoSync();
     sync[idFinal]={
-      revision:Number(cloud.revision||0),lastHash:texto(cloud.hash)||hashLeve(data),
+      revision:Number(cloud.revision||0),lastHash:texto(cloud.hash)||hashFicha(data),
       lastSyncedAt:Number(cloud.updatedAt||agora()),deviceId:texto(cloud.deviceId)
     };
     gravarEstadoSync(sync);
