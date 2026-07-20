@@ -1,5 +1,5 @@
-/* Shinobi 2.2.0 — mesa online, sincronização e turnos. */
-const APP_VERSION = "2.2.0";
+/* Shinobi 2.2.1 — mostrador flutuante, mesa online e turnos. */
+const APP_VERSION = "2.2.1";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
