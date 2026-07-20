@@ -1,6 +1,6 @@
 {
-  "version": "2.1.7",
-  "releasedAt": "2026-07-19T20:40:00Z",
-  "notes": "Corrigido o aviso de atualização que reaparecia após recarregar.",
-  "message": "A versão declarada pelo HTML agora fica sincronizada com o service worker. A recarga também usa um marcador temporário para evitar reutilização da página antiga."
+  "version": "2.1.8",
+  "releasedAt": "2026-07-19T23:58:00Z",
+  "notes": "A Área de Batalha agora reconhece resistências e imunidades ao aplicar dano.",
+  "message": "Informe o valor e o tipo do dano. Resistências reduzem o dano pela metade, arredondando para baixo; imunidades zeram o dano. As proteções já existentes na ficha são lidas automaticamente."
 }
