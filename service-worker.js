@@ -1,5 +1,5 @@
-/* Shinobi 2.2.3 — buffs sincronizados e duração automática pela mesa. */
-const APP_VERSION = "2.2.3";
+/* Shinobi 2.2.4 — auditoria geral, fila confiável de buffs e sincronização entre aparelhos. */
+const APP_VERSION = "2.2.4";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
