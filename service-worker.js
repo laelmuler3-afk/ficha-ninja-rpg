@@ -1,5 +1,5 @@
-/* Shinobi 2.1.7 — correção do ciclo de atualização. */
-const APP_VERSION = "2.1.7";
+/* Shinobi 2.1.8 — correção do ciclo de atualização. */
+const APP_VERSION = "2.1.8";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -31,6 +31,7 @@ const APP_SHELL = [
   `./js/14-level-up.js?v=${APP_VERSION}`,
   `./js/15-testes-resistencia.js?v=${APP_VERSION}`,
   `./js/16-pericias.js?v=${APP_VERSION}`,
+  `./js/17-dano-inteligente.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
