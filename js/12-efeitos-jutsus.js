@@ -758,6 +758,7 @@
               </div>
               <strong>${escaparHtml(item.nome)}</strong>
               ${item.duracao?`<small>Duração: ${escaparHtml(item.duracao)}</small>`:""}
+              ${item.onlineSyncPendente?`<small class="efeitoJutsuSyncStatus${item.onlineErro?" comErro":""}">${item.onlineErro?`Sincronização pendente: ${escaparHtml(item.onlineErro)}`:"Sincronizando com a mesa…"}</small>`:""}
             </div>
             <button type="button" onclick="removerEfeitoJutsuBatalha('${escaparHtml(item.id)}')" aria-label="Encerrar ${escaparHtml(item.nome)}">×</button>
           </div>

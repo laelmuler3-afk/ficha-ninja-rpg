@@ -24,13 +24,26 @@
   function participantes(st){return listaDeObjeto(st?.sala?.participants).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"pt-BR"));}
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
   function participanteAtual(st){const o=ordem(st);return st?.sala?.participants?.[o[num(st?.sala?.combat?.turnIndex)]]||null;}
-  function conectado(st,p){return p.type==="player"&&Boolean(st?.presencas?.[p.ownerUid]?.connected);}
-  function rodadasRestantes(efeito,combat){
+  function presencaConectada(valor){
+    if(valor?.connected===true)return true; // formato legado
+    return Object.values(valor||{}).some(item=>item&&typeof item==="object"&&item.connected===true);
+  }
+  function conectado(st,p){return p.type==="player"&&presencaConectada(st?.presencas?.[p.ownerUid]);}
+  function rodadasRestantes(efeito,combat,ordemAtual=[]){
+    if(efeito?.timed===false||!Number.isFinite(Number(efeito?.expiresAtRound)))return null;
     const rodadaAtual=Math.max(1,num(combat?.round,1));
     const indiceAtual=Math.max(0,num(combat?.turnIndex));
     const rodadaFim=Math.max(1,num(efeito?.expiresAtRound,rodadaAtual));
-    const indiceFim=Math.max(0,num(efeito?.expiresAtTurnIndex??efeito?.startTurnIndex));
+    const lista=Array.isArray(ordemAtual)?ordemAtual:Object.values(ordemAtual||{});
+    const participanteFim=String(efeito?.expiresAtParticipantId||efeito?.startTurnParticipantId||"");
+    const indiceEncontrado=participanteFim?lista.indexOf(participanteFim):-1;
+    const indiceFim=Math.max(0,indiceEncontrado>=0?indiceEncontrado:num(efeito?.expiresAtTurnIndex??efeito?.startTurnIndex));
     if(rodadaAtual>rodadaFim||(rodadaAtual===rodadaFim&&indiceAtual>=indiceFim))return 0;
+    const total=lista.length;
+    if(total>0){
+      const turnosAteFim=(rodadaFim-rodadaAtual)*total+(indiceFim-indiceAtual);
+      return Math.max(1,Math.ceil(turnosAteFim/total));
+    }
     const diferenca=rodadaFim-rodadaAtual;
     return diferenca>0?diferenca:1;
   }
@@ -97,7 +110,7 @@
   function conexaoPainel(st){
     if(navigator.onLine===false)return "offline";
     const presenca=st?.presencas?.[st?.user?.uid];
-    if(presenca?.connected===true)return "online";
+    if(presencaConectada(presenca))return "online";
     if(st?.conectado)return "conectando";
     return "offline";
   }
@@ -221,7 +234,7 @@
           <button type="button" data-widget-action="minimizar" data-widget-no-drag aria-label="Minimizar mostrador">−</button>
         </header>
         <div class="shinobiTurnoWidgetCorpo"><p class="shinobiTurnoWidgetStatus">Recuperando a última sala usada neste aparelho.</p></div>
-        <footer class="shinobiTurnoWidgetRodape"><button type="button" class="onlineBtn secundario" data-widget-action="abrir-sala">Entrar na sala</button></footer>`:`
+        <footer class="shinobiTurnoWidgetRodape"><button type="button" class="onlineBtn secundario" data-widget-action="abrir-sala">Abrir sala</button></footer>`:`
         <button type="button" class="shinobiTurnoWidgetMini" data-widget-action="alternar" data-widget-drag>
           <span class="shinobiTurnoWidgetDot conectando" aria-hidden="true"></span>
           <span><small>MESA ONLINE</small><strong>Reconectando...</strong></span>
@@ -242,7 +255,8 @@
       const participante=st.sala?.participants?.[efeito.participantId];
       const complemento=master&&participante?` • ${participante.displayName}`:"";
       const resumo=resumoDoEfeito(efeito);
-      return `<li><span class="shinobiTurnoEfeitoTexto"><strong>${esc(efeito.name||"Efeito")}${esc(complemento)}</strong>${resumo?`<small>${esc(resumo)}</small>`:""}</span><b>${rodadasRestantes(efeito,combat)}r</b></li>`;
+      const restante=rodadasRestantes(efeito,combat,lista);
+      return `<li><span class="shinobiTurnoEfeitoTexto"><strong>${esc(efeito.name||"Efeito")}${esc(complemento)}</strong>${resumo?`<small>${esc(resumo)}</small>`:""}</span><b>${restante==null?"∞":`${restante}r`}</b></li>`;
     }).join(""):`<li class="vazio"><span>Nenhum efeito ativo</span></li>`;
 
     painelFlutuante.className=`shinobiTurnoFlutuante ${expandido?"expandido":"minimizado"} ${meuTurno?"meuTurno":""}`.trim();
@@ -263,7 +277,7 @@
       </div>
       <footer class="shinobiTurnoWidgetRodape">
         ${master?(combat.started?`<div class="shinobiTurnoWidgetControles"><button type="button" class="onlineBtn secundario" data-widget-action="turno-anterior">‹ Anterior</button><button type="button" class="onlineBtn primario" data-widget-action="proximo-turno">Próximo ›</button></div>`:`<button type="button" class="onlineBtn primario" data-widget-action="iniciar-combate">Iniciar combate</button>`):""}
-        <button type="button" class="onlineBtn secundario entrarSala" data-widget-action="abrir-sala">Entrar na sala</button>
+        <button type="button" class="onlineBtn secundario entrarSala" data-widget-action="abrir-sala">Abrir sala</button>
       </footer>`:`
       <button type="button" class="shinobiTurnoWidgetMini" data-widget-action="alternar" data-widget-drag aria-label="Expandir mostrador da mesa online">
         <span class="shinobiTurnoWidgetDot ${conexao}" aria-hidden="true"></span>
@@ -421,7 +435,8 @@
   }
 
   function opcoesFichasLocais(selecionada=""){
-    return (window.ShinobiOnline?.listarFichasLocais?.()||[]).map(f=>`<option value="${esc(f.name)}" ${f.name===selecionada?"selected":""}>${esc(f.characterName)} — ${esc(f.name)}</option>`).join("");
+    const atual=selecionada||window.ShinobiOnline?.fichaAtualLocal?.()?.name||"";
+    return (window.ShinobiOnline?.listarFichasLocais?.()||[]).map(f=>`<option value="${esc(f.name)}" ${f.name===atual?"selected":""}>${esc(f.characterName)} — ${esc(f.name)}</option>`).join("");
   }
 
   function renderEntradaSala(st){
@@ -466,8 +481,8 @@
       <div class="onlineDetailsConteudo">
         ${contaSincronizavel?"":`<p class="onlineAviso">A entrada rápida anônima funciona para participar da sala, mas não identifica a mesma pessoa em outro aparelho. Para sincronizar celular e tablet, saia e entre com a mesma Conta Google nos dois.</p>`}
         <div class="onlineAcoesLinha">
-          <button type="button" class="onlineBtn secundario" data-action="sync-current">Sincronizar ficha atual</button>
-          <button type="button" class="onlineBtn secundario" data-action="sync-all">Sincronizar todas</button>
+          <button type="button" class="onlineBtn secundario" data-action="sync-current" ${contaSincronizavel?"":"disabled"}>Sincronizar ficha atual</button>
+          <button type="button" class="onlineBtn secundario" data-action="sync-all" ${contaSincronizavel?"":"disabled"}>Sincronizar todas</button>
         </div>
         <div class="onlineListaNuvem">
           ${nuvem.length?nuvem.map(f=>{
@@ -577,6 +592,7 @@
   }
 
   function efeitosAtivos(st){return listaDeObjeto(st.sala?.effects).filter(e=>e.status==="active");}
+  function classePolaridade(valor){const v=String(valor||"").toLowerCase();return ["buff","debuff","custo","neutro"].includes(v)?v:"neutro";}
   function renderEfeitos(st,master){
     const efeitos=efeitosAtivos(st);
     return `<section class="onlineCard">
@@ -584,17 +600,19 @@
       <p class="onlineExplicacao">Uma rodada completa representa 6 segundos. O contador só diminui depois que todos tiverem jogado.</p>
       <div class="onlineEfeitosLista">
         ${efeitos.length?efeitos.map(e=>{
-          const p=st.sala?.participants?.[e.participantId],rest=rodadasRestantes(e,st.sala?.combat);
-          const mecanicas=mecanicasDoEfeito(e);
+          const p=st.sala?.participants?.[e.participantId],rest=rodadasRestantes(e,st.sala?.combat,ordem(st));
+          const detalhes=Array.isArray(e.details)?e.details:[];
+          const mecanicas=detalhes.map(item=>({texto:textoMecanicaRemota(item),polaridade:classePolaridade(item?.polarity)})).filter(item=>item.texto);
           const resumo=resumoDoEfeito(e);
-          return `<article class="onlineEfeitoItem"><div class="onlineEfeitoConteudo"><strong>${esc(e.name)}</strong><small>${esc(p?.displayName||"Participante")} • ${rest} rodada(s) restante(s) • ${esc(e.durationOriginal||`${e.totalRounds||rest} rodadas`)}</small>${mecanicas.length?`<div class="onlineEfeitoMecanicas">${mecanicas.map((mecanica,indice)=>`<span class="${String(e.details?.[indice]?.polarity||"").toLowerCase()}">${esc(mecanica)}</span>`).join("")}</div>`:resumo?`<p class="onlineEfeitoResumo">${esc(resumo)}</p>`:""}</div>${master||e.ownerUid===st.user?.uid?`<button class="onlineBtn texto" data-action="end-effect" data-effect-id="${esc(e.id)}">Encerrar</button>`:""}</article>`;
+          const duracao=rest==null?esc(e.durationOriginal||"Até ser encerrado"):`${rest} rodada(s) restante(s) • ${esc(e.durationOriginal||`${e.totalRounds||rest} rodadas`)}`;
+          return `<article class="onlineEfeitoItem"><div class="onlineEfeitoConteudo"><strong>${esc(e.name)}</strong><small>${esc(p?.displayName||"Participante")} • ${duracao}</small>${mecanicas.length?`<div class="onlineEfeitoMecanicas">${mecanicas.map(item=>`<span class="${item.polaridade}">${esc(item.texto)}</span>`).join("")}</div>`:resumo?`<p class="onlineEfeitoResumo">${esc(resumo)}</p>`:""}</div>${master||e.ownerUid===st.user?.uid?`<button class="onlineBtn texto" data-action="end-effect" data-effect-id="${esc(e.id)}">Encerrar</button>`:""}</article>`;
         }).join(""):`<p class="onlineVazio">Nenhum efeito com duração ativa.</p>`}
       </div>
       ${master?`<form data-form="add-effect" class="onlineForm onlineFormLinha onlineFormEfeito">
         <label>Participante<select name="participantId">${participantes(st).map(p=>`<option value="${esc(p.id)}">${esc(p.displayName)}</option>`).join("")}</select></label>
         <label>Efeito<input name="name" placeholder="Atordoado" required></label>
         <label>Rodadas<input name="duration" type="number" min="1" value="1" required></label>
-        <button class="onlineBtn secundario" type="submit">Adicionar</button>
+        <button class="onlineBtn secundario" type="submit" ${participantes(st).length?"":"disabled"}>Adicionar</button>
       </form>`:""}
     </section>`;
   }
@@ -663,7 +681,7 @@
     const conteudo=document.getElementById("shinobiOnlineConteudo");
     conteudo?.classList.add("ocupado");
     try{return await acao();}
-    catch(erro){await avisar("Não foi possível concluir",window.ShinobiOnline?.erroAmigavel?.(erro)||erro.message||String(erro));throw erro;}
+    catch(erro){await avisar("Não foi possível concluir",window.ShinobiOnline?.erroAmigavel?.(erro)||erro.message||String(erro));return null;}
     finally{conteudo?.classList.remove("ocupado");agendarRender();}
   }
 
@@ -795,6 +813,15 @@
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);
     });
     window.ShinobiOnline.on("convite-url",()=>{if(obterEstado().user)abrir();});
+    window.addEventListener("shinobi:online:erro-sync",evento=>{
+      document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");
+      const mensagem=evento.detail?.mensagem||"A sincronização com a mesa está pendente e será tentada novamente.";
+      avisar("Sincronização pendente",mensagem);
+    });
+    window.addEventListener("shinobi:online:efeito-sincronizado",()=>{
+      document.getElementById("shinobiOnlineTopoBtn")?.classList.remove("onlineErro");
+      agendarRender();
+    });
     window.addEventListener("online",agendarRender,{passive:true});
     window.addEventListener("offline",agendarRender,{passive:true});
   }
