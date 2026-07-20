@@ -1,6 +1,6 @@
 {
-  "version": "2.2.1",
-  "releasedAt": "2026-07-20T17:20:00Z",
-  "notes": "Mostrador flutuante e móvel da sala online, com modos minimizado e expandido.",
-  "message": "A sala agora permanece acessível em todas as páginas por um mostrador flutuante. Ele pode ser arrastado, minimizado ou expandido para acompanhar rodada, turno atual, próximo participante, efeitos e controles rápidos do mestre."
+  "version": "2.2.3",
+  "releasedAt": "2026-07-20T19:15:00Z",
+  "notes": "Buffs de jutsu sincronizados com o mestre e encerrados automaticamente pela contagem de rodadas.",
+  "message": "Ao usar um jutsu com efeito persistente dentro de uma sala, o aplicativo publica o nome, os bônus/debuffs e a duração para o mestre. A cada avanço de turno, a sala confere os efeitos diretamente no Firebase. Quando o tempo termina, o efeito some da mesa e os modificadores são removidos automaticamente da ficha do jogador. Trinta segundos correspondem a cinco rodadas completas."
 }
