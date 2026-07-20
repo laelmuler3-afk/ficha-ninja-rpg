@@ -1285,6 +1285,7 @@
     assinatura:assinaturaEfeitos,
     repararAtivos:migrarEfeitosAtivosDoCatalogo,
     localizar:registroDoJutsu,
+    atualizar:atualizarTudo,
     condicaoPermiteAutomatico,
     auditarCatalogo(){
       const lista=Array.isArray(registro?.jutsus)?registro.jutsus:[];
