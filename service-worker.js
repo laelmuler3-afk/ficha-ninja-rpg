@@ -1,5 +1,5 @@
-/* Shinobi 2.1.8 — correção do ciclo de atualização. */
-const APP_VERSION = "2.1.8";
+/* Shinobi 2.2.0 — mesa online, sincronização e turnos. */
+const APP_VERSION = "2.2.0";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -15,6 +15,7 @@ const APP_SHELL = [
   `./css/batalha-viva.css?v=${APP_VERSION}`,
   `./css/level-up.css?v=${APP_VERSION}`,
   `./css/pericias.css?v=${APP_VERSION}`,
+  `./css/online.css?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
@@ -32,6 +33,11 @@ const APP_SHELL = [
   `./js/15-testes-resistencia.js?v=${APP_VERSION}`,
   `./js/16-pericias.js?v=${APP_VERSION}`,
   `./js/17-dano-inteligente.js?v=${APP_VERSION}`,
+  `./js/18-online-config.js?v=${APP_VERSION}`,
+  `./js/19-online-core.js?v=${APP_VERSION}`,
+  `./vendor/qrcode-local.js?v=${APP_VERSION}`,
+  `./js/20-online-ui.js?v=${APP_VERSION}`,
+  `./js/21-online-hooks.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
