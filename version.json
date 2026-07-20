@@ -1,6 +1,6 @@
 {
-  "version": "2.1.8",
-  "releasedAt": "2026-07-19T23:58:00Z",
-  "notes": "A Área de Batalha agora reconhece resistências e imunidades ao aplicar dano.",
-  "message": "Informe o valor e o tipo do dano. Resistências reduzem o dano pela metade, arredondando para baixo; imunidades zeram o dano. As proteções já existentes na ficha são lidas automaticamente."
+  "version": "2.2.0",
+  "releasedAt": "2026-07-20T13:33:00Z",
+  "notes": "Nova base online com Firebase, salas por QR Code, turnos, NPCs, duração de jutsus, XP e backup de fichas.",
+  "message": "O mestre agora pode criar campanhas e salas, importar fichas como NPCs ou criar inimigos rápidos. Jogadores entram por QR Code ou código, acompanham turnos e recebem XP. As fichas podem ser sincronizadas com a nuvem após configurar o Firebase."
 }
