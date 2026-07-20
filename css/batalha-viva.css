@@ -1111,3 +1111,111 @@
     font-size:6.5px;
   }
 }
+
+
+/* ===== Ficha Ninja 2.1.8 — aplicação inteligente de dano ===== */
+#batalha .danoInteligenteTipoLabel{
+  margin-top:12px!important;
+}
+
+#batalha .danoInteligenteTipo{
+  width:100%;
+  min-height:44px;
+  padding:9px 11px;
+  border:1px solid rgba(255,177,90,.28);
+  border-radius:8px;
+  background:#140d08;
+  color:#fff1d7;
+  font-size:14px;
+  font-weight:900;
+}
+
+#batalha .danoInteligenteIgnorar{
+  display:flex!important;
+  align-items:center;
+  gap:9px;
+  margin:10px 0 0!important;
+  padding:9px 10px;
+  border:1px solid rgba(255,196,112,.17);
+  border-radius:8px;
+  background:rgba(255,255,255,.035);
+  color:#d8c7ae!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  line-height:1.3;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+
+#batalha .danoInteligenteIgnorar input{
+  flex:0 0 auto;
+  width:18px;
+  height:18px;
+  margin:0;
+  accent-color:#d27b30;
+}
+
+#batalha .danoInteligentePrevia{
+  margin-top:10px;
+  padding:11px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:9px;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.18));
+}
+
+#batalha .danoInteligentePreviaTopo{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+#batalha .danoInteligentePreviaTopo span{
+  color:#f3dfc2;
+  font-size:12px;
+  font-weight:1000;
+}
+
+#batalha .danoInteligentePreviaTopo strong{
+  color:#fff;
+  font-size:20px;
+  line-height:1;
+  white-space:nowrap;
+}
+
+#batalha .danoInteligentePrevia p{
+  margin:7px 0 0;
+  color:#b8ab99;
+  font-size:11px;
+  line-height:1.35;
+}
+
+#batalha .danoInteligentePrevia small{
+  display:block;
+  margin-top:5px;
+  color:#9d8d79;
+  font-size:10px;
+}
+
+#batalha .danoInteligentePrevia.resistencia{
+  border-color:rgba(75,169,255,.45);
+  background:linear-gradient(180deg,rgba(39,113,181,.20),rgba(10,30,48,.36));
+}
+
+#batalha .danoInteligentePrevia.resistencia .danoInteligentePreviaTopo strong{color:#bfe2ff}
+
+#batalha .danoInteligentePrevia.imunidade{
+  border-color:rgba(91,223,135,.48);
+  background:linear-gradient(180deg,rgba(43,142,78,.20),rgba(9,42,21,.38));
+}
+
+#batalha .danoInteligentePrevia.imunidade .danoInteligentePreviaTopo strong{color:#c5ffd5}
+
+#batalha .danoInteligentePrevia.ignorado{
+  border-color:rgba(255,176,82,.42);
+  background:linear-gradient(180deg,rgba(158,91,25,.20),rgba(50,28,8,.36));
+}
+
+@media (max-width:360px){
+  #batalha .danoInteligentePreviaTopo{align-items:flex-start;flex-direction:column}
+}
