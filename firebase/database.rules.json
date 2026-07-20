@@ -1,0 +1,118 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "userSheets": {
+      "$uid": {
+        "$sheetId": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['name','revision','updatedAt','data'])",
+          "revision": {
+            ".validate": "newData.isNumber() && newData.val() >= 1"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber()"
+          }
+        },
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "sheetBackups": {
+      "$uid": {
+        "$sheetId": {
+          "$backupId": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        },
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "campaigns": {
+      "$campaignId": {
+        ".read": "auth != null && data.child('masterUid').val() === auth.uid",
+        ".write": "auth != null && ((!data.exists() && newData.child('masterUid').val() === auth.uid) || data.child('masterUid').val() === auth.uid)",
+        "masterUid": {
+          ".validate": "newData.val() === auth.uid"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80"
+        }
+      },
+      ".indexOn": [
+        "masterUid"
+      ],
+      ".read": "auth != null && query.orderByChild === 'masterUid' && query.equalTo === auth.uid"
+    },
+    "roomCodes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('masterUid').val() === auth.uid) || data.child('masterUid').val() === auth.uid)",
+        "masterUid": {
+          ".validate": "newData.val() === auth.uid"
+        }
+      }
+    },
+    "roomPublic": {
+      "$roomId": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('masterUid').val() === auth.uid) || data.child('masterUid').val() === auth.uid)",
+        "masterUid": {
+          ".validate": "newData.val() === auth.uid"
+        }
+      }
+    },
+    "roomMemberships": {
+      "$roomId": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('roomPublic').child($roomId).child('masterUid').val() === auth.uid)",
+          ".write": "auth != null && (auth.uid === $uid || root.child('roomPublic').child($roomId).child('masterUid').val() === auth.uid)",
+          ".validate": "!newData.exists() || (newData.hasChildren(['role','joinedAt']) && ((auth.uid === $uid && newData.child('role').val() === 'player' && root.child('roomPublic').child($roomId).child('status').val() === 'open') || root.child('roomPublic').child($roomId).child('masterUid').val() === auth.uid))"
+        }
+      }
+    },
+    "rooms": {
+      "$roomId": {
+        ".read": "auth != null && (data.child('masterUid').val() === auth.uid || root.child('roomMemberships').child($roomId).child(auth.uid).exists())",
+        ".write": "auth != null && ((!data.exists() && newData.child('masterUid').val() === auth.uid) || data.child('masterUid').val() === auth.uid)",
+        "participants": {
+          "$participantId": {
+            ".write": "auth != null && (root.child('rooms').child($roomId).child('masterUid').val() === auth.uid || (!data.exists() && newData.exists() && $participantId === auth.uid && newData.child('id').val() === auth.uid && newData.child('ownerUid').val() === auth.uid && newData.child('type').val() === 'player' && !newData.child('initiative').exists()) || (data.exists() && newData.exists() && $participantId === auth.uid && data.child('ownerUid').val() === auth.uid && newData.child('id').val() === data.child('id').val() && newData.child('ownerUid').val() === auth.uid && newData.child('type').val() === 'player' && newData.child('initiative').val() === data.child('initiative').val()) || (data.exists() && !newData.exists() && $participantId === auth.uid && data.child('ownerUid').val() === auth.uid))"
+          }
+        },
+        "effects": {
+          "$effectId": {
+            ".write": "auth != null && (root.child('rooms').child($roomId).child('masterUid').val() === auth.uid || (!data.exists() && newData.exists() && newData.child('ownerUid').val() === auth.uid && newData.child('status').val() === 'active' && root.child('rooms').child($roomId).child('participants').child(newData.child('participantId').val()).child('ownerUid').val() === auth.uid) || (data.exists() && newData.exists() && data.child('ownerUid').val() === auth.uid && newData.child('ownerUid').val() === data.child('ownerUid').val() && newData.child('participantId').val() === data.child('participantId').val() && newData.child('totalRounds').val() === data.child('totalRounds').val() && newData.child('startRound').val() === data.child('startRound').val() && newData.child('startTurnIndex').val() === data.child('startTurnIndex').val() && newData.child('expiresAtRound').val() === data.child('expiresAtRound').val() && newData.child('expiresAtTurnIndex').val() === data.child('expiresAtTurnIndex').val() && data.child('status').val() === 'active' && newData.child('status').val() === 'ended'))"
+          }
+        },
+        "eventAcks": {
+          "$eventId": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid"
+            }
+          }
+        },
+        "masterUid": {
+          ".validate": "newData.val() === auth.uid"
+        }
+      }
+    },
+    "presence": {
+      "$roomId": {
+        ".read": "auth != null && (root.child('roomPublic').child($roomId).child('masterUid').val() === auth.uid || root.child('roomMemberships').child($roomId).child(auth.uid).exists())",
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    }
+  }
+}
