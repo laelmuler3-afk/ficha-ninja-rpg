@@ -141,7 +141,7 @@ body.onlineAberto{overflow:hidden}
 @media (max-width:560px){.onlineListaNuvem article{align-items:flex-start}.onlineStatusVinculo{text-align:left}}
 
 
-/* v2.2.3 — detalhes mecânicos dos buffs sincronizados */
+/* v2.2.4 — detalhes mecânicos e estado de sincronização dos buffs */
 .onlineEfeitosLista .onlineEfeitoItem{align-items:flex-start}
 .onlineEfeitoConteudo{display:grid;gap:4px;min-width:0;flex:1}
 .onlineEfeitoMecanicas{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
@@ -153,3 +153,16 @@ body.onlineAberto{overflow:hidden}
 .shinobiTurnoWidgetEfeitos .shinobiTurnoEfeitoTexto{display:grid;gap:2px;min-width:0;overflow:hidden;white-space:normal}
 .shinobiTurnoWidgetEfeitos .shinobiTurnoEfeitoTexto strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e4cfac;font:800 10px/1.2 system-ui}
 .shinobiTurnoWidgetEfeitos .shinobiTurnoEfeitoTexto small{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:#9f8e77;font:600 9px/1.25 system-ui}
+
+/* Estado da publicação de buffs no Firebase. */
+.efeitoJutsuSyncStatus{
+  display:block;
+  margin-top:.3rem;
+  color:#d8aa67;
+  font-weight:700;
+}
+.efeitoJutsuSyncStatus.comErro{
+  color:#ff9b91;
+  overflow-wrap:anywhere;
+}
+
