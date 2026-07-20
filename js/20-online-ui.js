@@ -8,6 +8,11 @@
   let scannerStream=null;
   let scannerFrame=null;
   let conflitoAtual=null;
+  let painelFlutuante=null;
+  let arrastoPainel=null;
+  let ignorarCliquePainel=false;
+
+  const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
 
   const esc=valor=>String(valor==null?"":valor).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const num=(v,p=0)=>Number.isFinite(Number(v))?Number(v):p;
@@ -28,6 +33,237 @@
     if(rodadaAtual>rodadaFim||(rodadaAtual===rodadaFim&&indiceAtual>=indiceFim))return 0;
     const diferenca=rodadaFim-rodadaAtual;
     return diferenca>0?diferenca:1;
+  }
+
+  function preferenciasPainel(){
+    const padrao={modo:"minimizado",x:null,y:null};
+    try{
+      const salvo=JSON.parse(localStorage.getItem(CHAVE_PAINEL_FLUTUANTE)||"null");
+      if(!salvo||typeof salvo!=="object")return padrao;
+      return {
+        modo:salvo.modo==="expandido"?"expandido":"minimizado",
+        x:salvo.x!==null&&salvo.x!==""&&Number.isFinite(Number(salvo.x))?Number(salvo.x):null,
+        y:salvo.y!==null&&salvo.y!==""&&Number.isFinite(Number(salvo.y))?Number(salvo.y):null
+      };
+    }catch(_erro){return padrao;}
+  }
+
+  function salvarPreferenciasPainel(alteracoes={}){
+    const atual=preferenciasPainel();
+    const novo={...atual,...alteracoes};
+    novo.modo=novo.modo==="expandido"?"expandido":"minimizado";
+    try{localStorage.setItem(CHAVE_PAINEL_FLUTUANTE,JSON.stringify(novo));}catch(_erro){}
+    return novo;
+  }
+
+  function proximoParticipante(st){
+    const lista=ordem(st),combat=st?.sala?.combat||{};
+    if(!combat.started||!lista.length)return null;
+    const indice=(Math.max(0,num(combat.turnIndex))+1)%lista.length;
+    return st?.sala?.participants?.[lista[indice]]||null;
+  }
+
+  function efeitosDoPainel(st){
+    const ativos=listaDeObjeto(st?.sala?.effects).filter(e=>e?.status==="active");
+    if(ehMestre(st))return ativos;
+    const participanteId=sessaoLocal()?.participantId;
+    return participanteId?ativos.filter(e=>e.participantId===participanteId):[];
+  }
+
+  function conexaoPainel(st){
+    if(navigator.onLine===false)return "offline";
+    const presenca=st?.presencas?.[st?.user?.uid];
+    if(presenca?.connected===true)return "online";
+    if(st?.conectado)return "conectando";
+    return "offline";
+  }
+
+  function instalarPainelFlutuante(){
+    if(painelFlutuante&&document.body.contains(painelFlutuante))return painelFlutuante;
+    painelFlutuante=document.getElementById("shinobiTurnoFlutuante");
+    if(!painelFlutuante){
+      painelFlutuante=document.createElement("aside");
+      painelFlutuante.id="shinobiTurnoFlutuante";
+      painelFlutuante.className="shinobiTurnoFlutuante";
+      painelFlutuante.hidden=true;
+      painelFlutuante.setAttribute("aria-label","Mostrador flutuante da mesa online");
+      document.body.appendChild(painelFlutuante);
+    }
+    if(!painelFlutuante.dataset.eventosInstalados){
+      painelFlutuante.dataset.eventosInstalados="1";
+      painelFlutuante.addEventListener("click",tratarCliquePainel);
+      painelFlutuante.addEventListener("pointerdown",iniciarArrastoPainel);
+      painelFlutuante.addEventListener("pointermove",moverPainel);
+      painelFlutuante.addEventListener("pointerup",finalizarArrastoPainel);
+      painelFlutuante.addEventListener("pointercancel",finalizarArrastoPainel);
+    }
+    if(!window.__shinobiPainelFlutuanteResize){
+      window.__shinobiPainelFlutuanteResize=true;
+      window.addEventListener("resize",()=>ajustarPosicaoPainel(),{passive:true});
+      window.addEventListener("orientationchange",()=>setTimeout(ajustarPosicaoPainel,120),{passive:true});
+    }
+    return painelFlutuante;
+  }
+
+  function limitesPainel(){
+    if(!painelFlutuante)return{minX:8,minY:8,maxX:8,maxY:8};
+    const rect=painelFlutuante.getBoundingClientRect();
+    const margem=8;
+    const reservaInferior=78;
+    return {
+      minX:margem,
+      minY:margem,
+      maxX:Math.max(margem,window.innerWidth-rect.width-margem),
+      maxY:Math.max(margem,window.innerHeight-rect.height-reservaInferior)
+    };
+  }
+
+  function posicionarPainel(x,y,{salvar=true}={}){
+    if(!painelFlutuante||painelFlutuante.hidden)return;
+    const limites=limitesPainel();
+    const xFinal=Math.min(limites.maxX,Math.max(limites.minX,num(x,limites.maxX)));
+    const yFinal=Math.min(limites.maxY,Math.max(limites.minY,num(y,limites.maxY)));
+    painelFlutuante.style.left=`${Math.round(xFinal)}px`;
+    painelFlutuante.style.top=`${Math.round(yFinal)}px`;
+    painelFlutuante.style.right="auto";
+    painelFlutuante.style.bottom="auto";
+    if(salvar)salvarPreferenciasPainel({x:Math.round(xFinal),y:Math.round(yFinal)});
+  }
+
+  function ajustarPosicaoPainel(){
+    if(!painelFlutuante||painelFlutuante.hidden)return;
+    requestAnimationFrame(()=>{
+      if(!painelFlutuante||painelFlutuante.hidden)return;
+      const pref=preferenciasPainel(),rect=painelFlutuante.getBoundingClientRect();
+      const x=pref.x==null?window.innerWidth-rect.width-12:pref.x;
+      const y=pref.y==null?window.innerHeight-rect.height-92:pref.y;
+      posicionarPainel(x,y);
+    });
+  }
+
+  function iniciarArrastoPainel(evento){
+    const alca=evento.target.closest("[data-widget-drag]");
+    if(!alca||evento.target.closest("[data-widget-no-drag]")||evento.button>0)return;
+    const rect=painelFlutuante.getBoundingClientRect();
+    arrastoPainel={
+      pointerId:evento.pointerId,
+      inicioX:evento.clientX,inicioY:evento.clientY,
+      origemX:rect.left,origemY:rect.top,movido:false
+    };
+    painelFlutuante.setPointerCapture?.(evento.pointerId);
+    painelFlutuante.classList.add("arrastando");
+  }
+
+  function moverPainel(evento){
+    if(!arrastoPainel||arrastoPainel.pointerId!==evento.pointerId)return;
+    const dx=evento.clientX-arrastoPainel.inicioX,dy=evento.clientY-arrastoPainel.inicioY;
+    if(!arrastoPainel.movido&&Math.hypot(dx,dy)<4)return;
+    arrastoPainel.movido=true;
+    evento.preventDefault();
+    posicionarPainel(arrastoPainel.origemX+dx,arrastoPainel.origemY+dy,{salvar:false});
+  }
+
+  function finalizarArrastoPainel(evento){
+    if(!arrastoPainel||arrastoPainel.pointerId!==evento.pointerId)return;
+    const movido=arrastoPainel.movido;
+    arrastoPainel=null;
+    painelFlutuante.releasePointerCapture?.(evento.pointerId);
+    painelFlutuante.classList.remove("arrastando");
+    if(movido){
+      const rect=painelFlutuante.getBoundingClientRect();
+      posicionarPainel(rect.left,rect.top);
+      ignorarCliquePainel=true;
+      setTimeout(()=>{ignorarCliquePainel=false;},280);
+    }
+  }
+
+  function renderPainelFlutuante(st=obterEstado()){
+    instalarPainelFlutuante();
+    const sessao=sessaoLocal();
+    const reconectando=Boolean(sessao?.roomId&&st?.user&&!st?.sala&&st?.configurado);
+    if(!st?.sala&&!reconectando){painelFlutuante.hidden=true;return;}
+
+    painelFlutuante.hidden=false;
+    const pref=preferenciasPainel(),expandido=pref.modo==="expandido";
+    painelFlutuante.classList.toggle("expandido",expandido);
+    painelFlutuante.classList.toggle("minimizado",!expandido);
+
+    if(reconectando){
+      painelFlutuante.className=`shinobiTurnoFlutuante ${expandido?"expandido":"minimizado"} reconectando`;
+      painelFlutuante.innerHTML=expandido?`
+        <header class="shinobiTurnoWidgetCabecalho" data-widget-drag>
+          <span class="shinobiTurnoWidgetAlca" aria-hidden="true">⠿</span>
+          <div><small>MESA ONLINE</small><strong>Reconectando à sala...</strong></div>
+          <button type="button" data-widget-action="minimizar" data-widget-no-drag aria-label="Minimizar mostrador">−</button>
+        </header>
+        <div class="shinobiTurnoWidgetCorpo"><p class="shinobiTurnoWidgetStatus">Recuperando a última sala usada neste aparelho.</p></div>
+        <footer class="shinobiTurnoWidgetRodape"><button type="button" class="onlineBtn secundario" data-widget-action="abrir-sala">Entrar na sala</button></footer>`:`
+        <button type="button" class="shinobiTurnoWidgetMini" data-widget-action="alternar" data-widget-drag>
+          <span class="shinobiTurnoWidgetDot conectando" aria-hidden="true"></span>
+          <span><small>MESA ONLINE</small><strong>Reconectando...</strong></span>
+          <em>⌃</em>
+        </button>`;
+      ajustarPosicaoPainel();
+      return;
+    }
+
+    const master=ehMestre(st),combat=st.sala?.combat||{},lista=ordem(st);
+    const atual=participanteAtual(st),proximo=proximoParticipante(st);
+    const rodada=Math.max(1,num(combat.round,1));
+    const meuId=sessao?.participantId,meuTurno=Boolean(combat.started&&meuId&&atual?.id===meuId);
+    const conexao=conexaoPainel(st);
+    const statusTurno=combat.started?(meuTurno?"É o seu turno":`Turno de ${atual?.displayName||"—"}`):"Combate ainda não iniciado";
+    const efeitos=efeitosDoPainel(st).slice(0,3);
+    const efeitosHtml=efeitos.length?efeitos.map(efeito=>{
+      const participante=st.sala?.participants?.[efeito.participantId];
+      const complemento=master&&participante?` • ${participante.displayName}`:"";
+      return `<li><span>${esc(efeito.name||"Efeito")}${esc(complemento)}</span><b>${rodadasRestantes(efeito,combat)}r</b></li>`;
+    }).join(""):`<li class="vazio"><span>Nenhum efeito ativo</span></li>`;
+
+    painelFlutuante.className=`shinobiTurnoFlutuante ${expandido?"expandido":"minimizado"} ${meuTurno?"meuTurno":""}`.trim();
+    painelFlutuante.innerHTML=expandido?`
+      <header class="shinobiTurnoWidgetCabecalho" data-widget-drag>
+        <span class="shinobiTurnoWidgetAlca" aria-hidden="true">⠿</span>
+        <div><small>SALA ${esc(st.sala.code||"")}</small><strong>${esc(st.sala.title||"Mesa online")}</strong></div>
+        <button type="button" data-widget-action="minimizar" data-widget-no-drag aria-label="Minimizar mostrador">−</button>
+      </header>
+      <div class="shinobiTurnoWidgetCorpo">
+        <div class="shinobiTurnoWidgetResumo">
+          <div><small>RODADA</small><strong>${rodada}</strong></div>
+          <div><small>TURNO ATUAL</small><strong>${esc(atual?.displayName||"Aguardando")}</strong><em>${lista.length?`${num(combat.turnIndex)+1} de ${lista.length}`:"Sem iniciativa"}</em></div>
+        </div>
+        <p class="shinobiTurnoWidgetStatus ${meuTurno?"destaque":""}"><span class="shinobiTurnoWidgetDot ${conexao}" aria-hidden="true"></span>${esc(statusTurno)}</p>
+        <div class="shinobiTurnoWidgetProximo"><small>PRÓXIMO</small><strong>${esc(proximo?.displayName||"—")}</strong></div>
+        <div class="shinobiTurnoWidgetEfeitos"><small>${master?"EFEITOS ATIVOS":"SEUS EFEITOS"}</small><ul>${efeitosHtml}</ul></div>
+      </div>
+      <footer class="shinobiTurnoWidgetRodape">
+        ${master?(combat.started?`<div class="shinobiTurnoWidgetControles"><button type="button" class="onlineBtn secundario" data-widget-action="turno-anterior">‹ Anterior</button><button type="button" class="onlineBtn primario" data-widget-action="proximo-turno">Próximo ›</button></div>`:`<button type="button" class="onlineBtn primario" data-widget-action="iniciar-combate">Iniciar combate</button>`):""}
+        <button type="button" class="onlineBtn secundario entrarSala" data-widget-action="abrir-sala">Entrar na sala</button>
+      </footer>`:`
+      <button type="button" class="shinobiTurnoWidgetMini" data-widget-action="alternar" data-widget-drag aria-label="Expandir mostrador da mesa online">
+        <span class="shinobiTurnoWidgetDot ${conexao}" aria-hidden="true"></span>
+        <span><small>RODADA ${rodada}</small><strong>${esc(statusTurno)}</strong></span>
+        <em>⌃</em>
+      </button>`;
+    ajustarPosicaoPainel();
+  }
+
+  async function tratarCliquePainel(evento){
+    if(ignorarCliquePainel){evento.preventDefault();evento.stopPropagation();return;}
+    const el=evento.target.closest("[data-widget-action]");
+    if(!el)return;
+    const acao=el.dataset.widgetAction;
+    if(acao==="alternar"){
+      const modo=preferenciasPainel().modo==="expandido"?"minimizado":"expandido";
+      salvarPreferenciasPainel({modo});
+      renderPainelFlutuante();
+      return;
+    }
+    if(acao==="minimizar"){salvarPreferenciasPainel({modo:"minimizado"});renderPainelFlutuante();return;}
+    if(acao==="abrir-sala")return abrir();
+    if(acao==="turno-anterior")return executar(()=>window.ShinobiOnline.voltarTurno());
+    if(acao==="proximo-turno")return executar(()=>window.ShinobiOnline.avancarTurno());
+    if(acao==="iniciar-combate")return executar(()=>window.ShinobiOnline.iniciarCombate());
   }
 
   function instalarBotao(){
@@ -54,18 +290,8 @@
       const configGlobal=topo.querySelector(".configGlobal");
       topo.insertBefore(botao,configGlobal||null);
     }
-    const painelBatalha=document.querySelector("#batalha .batalhaViva");
-    if(painelBatalha&&!document.getElementById("shinobiTurnoMini")){
-      const mini=document.createElement("button");
-      mini.id="shinobiTurnoMini";
-      mini.type="button";
-      mini.className="shinobiTurnoMini";
-      mini.hidden=true;
-      mini.innerHTML='<span class="miniOnlineDot"></span><span><small>MESA ONLINE</small><strong id="shinobiTurnoMiniTexto">Aguardando combate</strong></span><em id="shinobiTurnoMiniRodada">Rodada 1</em>';
-      mini.addEventListener("click",abrir);
-      const cabecalho=painelBatalha.querySelector(".batalhaCabecalhoVivo");
-      cabecalho?.insertAdjacentElement("afterend",mini);
-    }
+    document.getElementById("shinobiTurnoMini")?.remove();
+    instalarPainelFlutuante();
     atualizarIndicadores();
   }
 
@@ -116,16 +342,7 @@
     });
     const textoTopo=document.querySelector("#shinobiOnlineTopoBtn .onlineTopoTexto");
     if(textoTopo) textoTopo.textContent=emSala?`Sala ${st.sala?.code||""}`:ativo?"Nuvem":"Online";
-    const mini=document.getElementById("shinobiTurnoMini");
-    if(mini){
-      mini.hidden=!emSala;
-      const atual=participanteAtual(st),combat=st.sala?.combat||{};
-      const textoMini=mini.querySelector("#shinobiTurnoMiniTexto");
-      const rodadaMini=mini.querySelector("#shinobiTurnoMiniRodada");
-      if(textoMini)textoMini.textContent=combat.started?(atual?.id===sessaoLocal()?.participantId?"É o seu turno":`Turno de ${atual?.displayName||"—"}`):"Combate ainda não iniciado";
-      if(rodadaMini)rodadaMini.textContent=`Rodada ${Math.max(1,num(combat.round,1))}`;
-      mini.classList.toggle("meuTurno",Boolean(combat.started&&atual?.id===sessaoLocal()?.participantId));
-    }
+    renderPainelFlutuante(st);
   }
 
   function agendarRender(){
@@ -546,11 +763,13 @@
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);
     });
     window.ShinobiOnline.on("convite-url",()=>{if(obterEstado().user)abrir();});
+    window.addEventListener("online",agendarRender,{passive:true});
+    window.addEventListener("offline",agendarRender,{passive:true});
   }
 
   function iniciar(){criarRoot();instalarBotao();instalarEventos();agendarRender();}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar,{once:true});else iniciar();
   window.addEventListener("pageshow",()=>setTimeout(iniciar,120));
 
-  window.ShinobiOnlineUI={abrir,fechar,renderizar};
+  window.ShinobiOnlineUI={abrir,fechar,renderizar,renderPainelFlutuante};
 })();
