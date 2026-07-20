@@ -1,6 +1,6 @@
 {
-  "version": "2.2.3",
-  "releasedAt": "2026-07-20T19:15:00Z",
-  "notes": "Buffs de jutsu sincronizados com o mestre e encerrados automaticamente pela contagem de rodadas.",
-  "message": "Ao usar um jutsu com efeito persistente dentro de uma sala, o aplicativo publica o nome, os bônus/debuffs e a duração para o mestre. A cada avanço de turno, a sala confere os efeitos diretamente no Firebase. Quando o tempo termina, o efeito some da mesa e os modificadores são removidos automaticamente da ficha do jogador. Trinta segundos correspondem a cinco rodadas completas."
+  "version": "2.2.4",
+  "releasedAt": "2026-07-20T21:45:00Z",
+  "notes": "Revisão geral da versão online, com correção definitiva da publicação e expiração de buffs, sincronização entre aparelhos e estabilidade de sala.",
+  "message": "Durações abreviadas como 30 seg e 1 min agora são convertidas corretamente em rodadas. Buffs usados com a sala ativa entram em uma fila persistente, são reenviados em falhas temporárias, aparecem para o mestre e terminam automaticamente no mesmo ponto da iniciativa. A revisão também corrige ficha ativa, presença em celular e tablet, iniciativa, saída de jogadores, XP e conflitos de sincronização."
 }
