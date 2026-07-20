@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "releasedAt": "2026-07-20T13:33:00Z",
-  "notes": "Nova base online com Firebase, salas por QR Code, turnos, NPCs, duração de jutsus, XP e backup de fichas.",
-  "message": "O mestre agora pode criar campanhas e salas, importar fichas como NPCs ou criar inimigos rápidos. Jogadores entram por QR Code ou código, acompanham turnos e recebem XP. As fichas podem ser sincronizadas com a nuvem após configurar o Firebase."
+  "version": "2.2.1",
+  "releasedAt": "2026-07-20T17:20:00Z",
+  "notes": "Mostrador flutuante e móvel da sala online, com modos minimizado e expandido.",
+  "message": "A sala agora permanece acessível em todas as páginas por um mostrador flutuante. Ele pode ser arrastado, minimizado ou expandido para acompanhar rodada, turno atual, próximo participante, efeitos e controles rápidos do mestre."
 }
