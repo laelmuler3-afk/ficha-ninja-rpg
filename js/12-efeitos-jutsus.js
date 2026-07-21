@@ -489,13 +489,25 @@
     if(!Array.isArray(estado[CHAVE_ESTADO])) estado[CHAVE_ESTADO] = [];
 
     const lista=estado[CHAVE_ESTADO];
-    const normalizada=lista
+    const quantidadeOriginal=lista.length;
+    const porId=new Map();
+
+    lista
       .filter(item => item && typeof item === "object")
-      .map((item,indice) => {
+      .forEach((item,indice) => {
         const efeitos = Array.isArray(item.efeitos)
           ? item.efeitos.map(normalizarEfeito)
           : bonusLegadoParaEfeitos(item.bonus);
-        return {
+        if(!efeitos.length) return;
+
+        /*
+         * Campos do módulo online precisam sobreviver a cada normalização. A
+         * implementação anterior recriava o objeto sem onlineEffectId e
+         * onlineRoomId. Ao reabrir o app, o mesmo buff parecia não publicado e
+         * era enviado novamente para a sala.
+         */
+        const normalizado={
+          ...item,
           id:String(item.id || `efeito-${indice}-${Date.now()}`),
           origemTipo:String(item.origemTipo || "jutsu"),
           origemId:String(item.origemId || ""),
@@ -508,13 +520,49 @@
           efeitos,
           bonus:calcularBonusDoItem(efeitos),
           multiplicadores:calcularMultiplicadoresDoItem(efeitos),
-          aplicadoEm:numero(item.aplicadoEm, Date.now())
+          aplicadoEm:numero(item.aplicadoEm, Date.now()),
+          onlineEffectId:String(item.onlineEffectId || ""),
+          onlineRoomId:String(item.onlineRoomId || ""),
+          onlinePublicadoEm:numero(item.onlinePublicadoEm,0),
+          onlineSyncPendente:Boolean(item.onlineSyncPendente),
+          onlineErro:numero(item.onlineErro,0),
+          duracaoOriginal:String(item.duracaoOriginal || ""),
+          duracaoRodadasTotal:numero(item.duracaoRodadasTotal,0),
+          duracaoRodadasRestantes:numero(item.duracaoRodadasRestantes,0),
+          rodadaAtivacao:numero(item.rodadaAtivacao,0),
+          turnoAtivacao:numero(item.turnoAtivacao,0),
+          expiraNaRodada:numero(item.expiraNaRodada,0),
+          expiraNoTurno:numero(item.expiraNoTurno,0)
         };
-      })
-      .filter(item => item.efeitos.length > 0);
 
+        const anterior=porId.get(normalizado.id);
+        if(!anterior){
+          porId.set(normalizado.id,normalizado);
+          return;
+        }
+
+        /* Repara fichas que já receberam cópias locais repetidas. Mantém a
+           ativação mais recente e reaproveita o vínculo online conhecido. */
+        const maisNovo=normalizado.aplicadoEm>=anterior.aplicadoEm?normalizado:anterior;
+        const outro=maisNovo===normalizado?anterior:normalizado;
+        if(!maisNovo.onlineEffectId&&outro.onlineEffectId) maisNovo.onlineEffectId=outro.onlineEffectId;
+        if(!maisNovo.onlineRoomId&&outro.onlineRoomId) maisNovo.onlineRoomId=outro.onlineRoomId;
+        if(!maisNovo.onlinePublicadoEm&&outro.onlinePublicadoEm) maisNovo.onlinePublicadoEm=outro.onlinePublicadoEm;
+        if(maisNovo.onlineEffectId) maisNovo.onlineSyncPendente=false;
+        porId.set(normalizado.id,maisNovo);
+      });
+
+    const normalizada=Array.from(porId.values());
+    const reparouDuplicatas=normalizada.length<quantidadeOriginal;
     /* Mantém a mesma referência para não perder inserções durante o cálculo de acúmulo. */
     lista.splice(0,lista.length,...normalizada);
+    if(reparouDuplicatas){
+      setTimeout(()=>{
+        try{
+          if(typeof CHAVE!=="undefined") localStorage.setItem(CHAVE,JSON.stringify(estado));
+        }catch(_erro){}
+      },0);
+    }
     return lista;
   }
 
@@ -758,7 +806,6 @@
               </div>
               <strong>${escaparHtml(item.nome)}</strong>
               ${item.duracao?`<small>Duração: ${escaparHtml(item.duracao)}</small>`:""}
-              ${item.onlineSyncPendente?`<small class="efeitoJutsuSyncStatus${item.onlineErro?" comErro":""}">${item.onlineErro?`Sincronização pendente: ${escaparHtml(item.onlineErro)}`:"Sincronizando com a mesa…"}</small>`:""}
             </div>
             <button type="button" onclick="removerEfeitoJutsuBatalha('${escaparHtml(item.id)}')" aria-label="Encerrar ${escaparHtml(item.nome)}">×</button>
           </div>
