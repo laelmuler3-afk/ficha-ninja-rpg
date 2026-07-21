@@ -1,6 +1,6 @@
 {
-  "version": "2.3.2",
-  "releasedAt": "2026-07-21T21:51:31Z",
-  "notes": "Melhoria de contraste e leitura na Carteira.",
-  "message": "A Carteira agora segue a mesma identidade visual da Loja: cards escuros, bordas quentes, textos claros, controles mais legíveis e blocos de conversão e histórico com alto contraste."
+  "version": "2.3.3",
+  "name": "Carteira com contraste corrigido",
+  "notes": "Tema da carteira carregado por arquivo CSS dedicado para evitar conflito de estilos e cache antigo no Android/PWA.",
+  "date": "2026-07-21"
 }
