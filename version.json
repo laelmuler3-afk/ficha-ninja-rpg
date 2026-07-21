@@ -1,6 +1,6 @@
 {
-  "version": "2.3.3",
-  "name": "Carteira com contraste corrigido",
-  "notes": "Tema da carteira carregado por arquivo CSS dedicado para evitar conflito de estilos e cache antigo no Android/PWA.",
+  "version": "2.3.4",
+  "name": "Atualizador estável e revisão geral",
+  "notes": "Corrige o aviso de recarregar que reaparecia após a atualização, sincroniza todas as referências de versão e evita alertas falsos do service worker.",
   "date": "2026-07-21"
 }
