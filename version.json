@@ -1,6 +1,6 @@
 {
-  "version": "2.2.6",
-  "releasedAt": "2026-07-21T00:55:00Z",
-  "notes": "Correção de buffs duplicados, login Google e uso da mesma conta em celular e tablet.",
-  "message": "Buffs de jutsu agora usam identificadores estáveis e não se repetem ao reabrir o app. Cópias antigas na sala são encerradas automaticamente. Celular e tablet com o mesmo e-mail atualizam o mesmo participante, preservam a iniciativa do mestre, mantêm presença por aparelho e recebem XP uma única vez."
+  "version": "2.2.7",
+  "releasedAt": "2026-07-21T10:25:45Z",
+  "notes": "Gerenciamento de campanhas pelo painel do mestre.",
+  "message": "Cada campanha agora possui um menu de três pontos no canto superior esquerdo para editar o nome ou excluir. Ao excluir uma campanha, salas vinculadas ainda abertas são encerradas com segurança antes da remoção."
 }
