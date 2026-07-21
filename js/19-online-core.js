@@ -29,12 +29,8 @@
     unsubscribeFichas:null,
     unsubscribeEventos:null,
     unsubscribeConnected:null,
-    presenceRef:null,
     syncTimer:null,
     processandoXp:false,
-    xpPendente:false,
-    operacoesDesdeLimpeza:0,
-    limpandoHistorico:false,
     ultimoErro:null
   };
 
@@ -94,6 +90,8 @@
       "auth/popup-blocked":"O navegador bloqueou a janela de login. Tente novamente.",
       "auth/unauthorized-domain":"Este domínio ainda não foi autorizado no Firebase Authentication.",
       "auth/network-request-failed":"Não foi possível conectar ao Firebase. Verifique a internet.",
+      "auth/credential-already-in-use":"Esta Conta Google já possui fichas na nuvem. Entre nela para acessar os dados.",
+      "auth/email-already-in-use":"Este e-mail já possui uma conta no aplicativo.",
       "PERMISSION_DENIED":"O Firebase recusou esta operação. Revise as regras do banco.",
       "permission-denied":"O Firebase recusou esta operação. Revise as regras do banco."
     };
@@ -113,16 +111,14 @@
     return estadoOnline.api;
   }
 
-  function definirUsuarioFirebase(user){
-    estadoOnline.user=user?{
+  function normalizarUsuarioFirebase(user){
+    return user?{
       uid:user.uid,
       anonymous:Boolean(user.isAnonymous),
       displayName:user.displayName||"Jogador",
       email:user.email||"",
       photoURL:user.photoURL||""
     }:null;
-    estadoOnline.conectado=Boolean(user);
-    return estadoOnline.user;
   }
 
   async function iniciar(){
@@ -142,8 +138,7 @@
 
     try{
       const api=await carregarFirebase();
-      const apps=typeof api.getApps==="function"?api.getApps():[];
-      const app=apps.length?apps[0]:api.initializeApp(window.SHINOBI_FIREBASE_CONFIG);
+      const app=api.initializeApp(window.SHINOBI_FIREBASE_CONFIG);
       estadoOnline.auth=api.getAuth(app);
       estadoOnline.db=api.getDatabase(app);
       if(api.setPersistence&&api.browserLocalPersistence){
@@ -151,7 +146,8 @@
       }
 
       api.onAuthStateChanged(estadoOnline.auth,async user=>{
-        definirUsuarioFirebase(user);
+        estadoOnline.user=normalizarUsuarioFirebase(user);
+        estadoOnline.conectado=Boolean(user);
         emitir("auth",snapshot());
         if(user){
           await registrarPerfilUsuario().catch(()=>{});
@@ -199,6 +195,10 @@
     if(!estadoOnline.api||!estadoOnline.auth||!estadoOnline.db) throw new Error("Firebase ainda está iniciando.");
   }
   function exigirUsuario(){exigirFirebase();if(!estadoOnline.user) throw new Error("Entre no modo online primeiro.");}
+  function exigirContaGoogle(){
+    exigirUsuario();
+    if(estadoOnline.user.anonymous) throw new Error("Entre com Google para salvar, baixar e sincronizar fichas entre aparelhos.");
+  }
   function exigirMestre(sala=estadoOnline.sala){
     exigirUsuario();
     if(!sala||sala.masterUid!==estadoOnline.user.uid) throw new Error("Somente o mestre pode executar esta ação.");
@@ -206,30 +206,63 @@
 
   async function entrarAnonimo(){
     await iniciar();exigirFirebase();
-    if(estadoOnline.auth.currentUser){
-      if(!estadoOnline.user) definirUsuarioFirebase(estadoOnline.auth.currentUser);
-      return snapshot();
-    }
-    const credencial=await estadoOnline.api.signInAnonymously(estadoOnline.auth);
-    if(credencial?.user&&!estadoOnline.user) definirUsuarioFirebase(credencial.user);
+    if(estadoOnline.auth.currentUser) return snapshot();
+    await estadoOnline.api.signInAnonymously(estadoOnline.auth);
     return snapshot();
   }
 
   async function entrarGoogle(){
     await iniciar();exigirFirebase();
-    const provider=new estadoOnline.api.GoogleAuthProvider();
+    const api=estadoOnline.api;
+    const provider=new api.GoogleAuthProvider();
     provider.setCustomParameters({prompt:"select_account"});
+    const atual=estadoOnline.auth.currentUser;
+
+    if(atual&&!atual.isAnonymous) return snapshot();
+
     try{
-      const credencial=await estadoOnline.api.signInWithPopup(estadoOnline.auth,provider);
-      if(credencial?.user&&!estadoOnline.user) definirUsuarioFirebase(credencial.user);
+      const resultado=atual?.isAnonymous
+        ? await api.linkWithPopup(atual,provider)
+        : await api.signInWithPopup(estadoOnline.auth,provider);
+      estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
+      estadoOnline.conectado=true;
+      emitir("auth",snapshot());
+      return snapshot();
     }catch(erro){
       if(["auth/popup-blocked","auth/operation-not-supported-in-this-environment"].includes(erro?.code)){
-        await estadoOnline.api.signInWithRedirect(estadoOnline.auth,provider);
+        if(atual?.isAnonymous&&api.linkWithRedirect){
+          await api.linkWithRedirect(atual,provider);
+        }else{
+          await api.signInWithRedirect(estadoOnline.auth,provider);
+        }
+        return snapshot();
+      }
+
+      /* Uma conta Google já usada em outro aparelho não pode ser vinculada a
+         um usuário anônimo novo. Nesse caso, removemos com segurança a
+         presença anônima, entramos na conta existente e reconectamos a ficha
+         à mesma sala. */
+      if(atual?.isAnonymous&&["auth/credential-already-in-use","auth/email-already-in-use"].includes(erro?.code)){
+        const sessao=lerJson(CHAVE_SESSAO,null);
+        const credencial=api.GoogleAuthProvider.credentialFromError?.(erro)||erro?.credential||null;
+        if(sessao?.role==="player") await sairDaSala({silencioso:true}).catch(()=>{});
+        let resultado;
+        if(credencial){
+          resultado=await api.signInWithCredential(estadoOnline.auth,credencial);
+        }else{
+          await api.signOut(estadoOnline.auth);
+          resultado=await api.signInWithPopup(estadoOnline.auth,provider);
+        }
+        estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
+        estadoOnline.conectado=true;
+        emitir("auth",snapshot());
+        if(sessao?.role==="player"&&sessao.code&&sessao.localSheetName){
+          await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName});
+        }
         return snapshot();
       }
       throw erro;
     }
-    return snapshot();
   }
 
   async function sair(){
@@ -352,8 +385,7 @@
   function listarFichasLocais(){
     let nomes=[];
     try{
-      if(typeof fichas!=="undefined"&&Array.isArray(fichas)) nomes=[...fichas];
-      else if(Array.isArray(window.fichas)) nomes=[...window.fichas];
+      if(Array.isArray(window.fichas)) nomes=[...window.fichas];
     }catch(_erro){}
     if(!nomes.length){
       try{nomes=JSON.parse(localStorage.getItem("ficha_ninja_lista_v1")||'["Principal"]');}catch(_erro){nomes=["Principal"];}
@@ -384,19 +416,12 @@
   }
 
   function fichaAtualLocal(){
-    let atual="";
-    try{
-      if(typeof fichaAtual!=="undefined") atual=texto(fichaAtual);
-      if(!atual) atual=texto(window.fichaAtual);
-    }catch(_erro){}
-    if(!atual) atual=texto(localStorage.getItem("ficha_ninja_ativa_v1"))||"Principal";
-    const locais=listarFichasLocais();
-    return locais.find(f=>f.name===atual)||locais[0]||null;
+    const atual=(()=>{try{return window.fichaAtual;}catch(_erro){return localStorage.getItem("ficha_ninja_ativa_v1")||"Principal";}})();
+    return listarFichasLocais().find(f=>f.name===atual)||listarFichasLocais()[0];
   }
 
   function limparDadosParaSala(valor,profundidade=0){
-    if(valor==null)return valor;
-    if(profundidade>6)return null;
+    if(valor==null||profundidade>5)return valor;
     if(typeof valor==="string"){
       if(/^data:image\//i.test(valor))return "";
       return valor.length>1800?`${valor.slice(0,1800)}…`:valor;
@@ -451,47 +476,23 @@
       role:"player",joinedAt:agora(),sheetId:ficha.sheetId
     });
     const resumo=resumoBatalhaDaFicha(ficha);
-    const participanteRef=api.ref(estadoOnline.db,`rooms/${encontrada.roomId}/participants/${estadoOnline.user.uid}`);
-    const participanteSnap=await api.get(participanteRef);
-    const existente=participanteSnap.val();
-    if(existente&&existente.ownerUid===estadoOnline.user.uid&&existente.type==="player"){
-      /* Um segundo aparelho da mesma conta não pode apagar a iniciativa já
-         definida pelo mestre. Atualizamos apenas os dados permitidos. */
-      await api.update(participanteRef,{
-        sheetId:ficha.sheetId,
-        localSheetName:ficha.name,
-        displayName:resumo.displayName,
-        initiativeBonus:resumo.initiativeBonus,
-        battle:resumo,
-        updatedAt:agora()
-      });
-    }else{
-      await api.set(participanteRef,{
-        id:estadoOnline.user.uid,
-        ownerUid:estadoOnline.user.uid,
-        type:"player",
-        connected:true,
-        sheetId:ficha.sheetId,
-        localSheetName:ficha.name,
-        displayName:resumo.displayName,
-        initiativeBonus:resumo.initiativeBonus,
-        initiative:null,
-        battle:resumo,
-        joinedAt:agora(),
-        updatedAt:agora()
-      });
-    }
+    await api.set(api.ref(estadoOnline.db,`rooms/${encontrada.roomId}/participants/${estadoOnline.user.uid}`),{
+      id:estadoOnline.user.uid,
+      ownerUid:estadoOnline.user.uid,
+      type:"player",
+      connected:true,
+      sheetId:ficha.sheetId,
+      localSheetName:ficha.name,
+      displayName:resumo.displayName,
+      initiativeBonus:resumo.initiativeBonus,
+      initiative:null,
+      battle:resumo,
+      joinedAt:agora(),
+      updatedAt:agora()
+    });
     salvarJson(CHAVE_SESSAO,{roomId:encontrada.roomId,participantId:estadoOnline.user.uid,role:"player",sheetId:ficha.sheetId,localSheetName:ficha.name,code:encontrada.code});
     await observarSala(encontrada.roomId);
     return encontrada;
-  }
-
-  async function removerMinhaPresenca(roomId){
-    if(!roomId||!estadoOnline.user||!estadoOnline.api||!estadoOnline.db)return;
-    const api=estadoOnline.api,deviceId=obterDeviceId();
-    const refPresenca=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}/${deviceId}`);
-    try{await api.onDisconnect(refPresenca).cancel();}catch(_erro){}
-    try{await api.remove(refPresenca);}catch(_erro){}
   }
 
   async function observarSala(roomId,{restaurar=false}={}){
@@ -510,28 +511,9 @@
         return;
       }
       estadoOnline.sala={id:roomId,...snap.val()};
-      if(estadoOnline.sala.status&&estadoOnline.sala.status!=="open"){
-        emitir("sala-encerrada",snapshot());
-        removerMinhaPresenca(roomId).finally(()=>{
-          const sessao=lerJson(CHAVE_SESSAO,null);
-          limparSessaoLocal();
-          emitir("saiu-sala",{roomId,uid:estadoOnline.user?.uid||"",reason:"closed",session:sessao});
-        });
-        return;
-      }
       emitir("sala",snapshot());
       processarEventosXp().catch(()=>{});
-    },erro=>{
-      const mensagem=erroAmigavel(erro);
-      emitir("erro",{mensagem,erro});
-      if(["PERMISSION_DENIED","permission-denied"].includes(texto(erro?.code))){
-        const sessao=lerJson(CHAVE_SESSAO,null);
-        removerMinhaPresenca(roomId).finally(()=>{
-          limparSessaoLocal();
-          emitir("saiu-sala",{roomId,uid:estadoOnline.user?.uid||"",reason:"permission",session:sessao});
-        });
-      }
-    });
+    },erro=>emitir("erro",{mensagem:erroAmigavel(erro),erro}));
     estadoOnline.unsubscribePresenca=api.onValue(api.ref(estadoOnline.db,`presence/${roomId}`),snap=>{
       estadoOnline.presencas=snap.val()||{};
       emitir("presenca",snapshot());
@@ -549,19 +531,12 @@
     exigirUsuario();
     const api=estadoOnline.api;
     const connectedRef=api.ref(estadoOnline.db,".info/connected");
-    const deviceId=obterDeviceId();
-    const uidRef=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}`);
-    const myPresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}/${deviceId}`);
-    estadoOnline.presenceRef=myPresence;
+    const myPresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}`);
     estadoOnline.unsubscribeConnected=api.onValue(connectedRef,async snap=>{
       if(snap.val()!==true) return;
       try{
-        /* Remove o formato antigo de presença por usuário. A partir desta
-           versão cada aparelho possui seu próprio nó, evitando que fechar o
-           celular marque o tablet como desconectado. */
-        await api.update(uidRef,{connected:null,lastSeen:null,deviceId:null,participantId:null}).catch(()=>{});
-        await api.onDisconnect(myPresence).set({connected:false,lastSeen:api.serverTimestamp(),participantId:lerJson(CHAVE_SESSAO,{})?.participantId||""});
-        await api.set(myPresence,{connected:true,lastSeen:api.serverTimestamp(),participantId:lerJson(CHAVE_SESSAO,{})?.participantId||""});
+        await api.onDisconnect(myPresence).set({connected:false,lastSeen:api.serverTimestamp(),deviceId:obterDeviceId()});
+        await api.set(myPresence,{connected:true,lastSeen:api.serverTimestamp(),deviceId:obterDeviceId(),participantId:lerJson(CHAVE_SESSAO,{})?.participantId||""});
       }catch(_erro){}
     });
   }
@@ -572,7 +547,6 @@
     estadoOnline.unsubscribePresenca?.();estadoOnline.unsubscribePresenca=null;
     estadoOnline.unsubscribeEventos?.();estadoOnline.unsubscribeEventos=null;
     estadoOnline.unsubscribeConnected?.();estadoOnline.unsubscribeConnected=null;
-    estadoOnline.presenceRef=null;
     estadoOnline.salaId=null;estadoOnline.sala=null;estadoOnline.presencas={};
     emitir("sala",snapshot());
   }
@@ -581,35 +555,14 @@
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||!estadoOnline.user){limparSessaoLocal();return;}
     const api=estadoOnline.api;
-    const roomId=sessao.roomId,uid=estadoOnline.user.uid,deviceId=obterDeviceId();
     try{
-      const devicePresence=api.ref(estadoOnline.db,`presence/${roomId}/${uid}/${deviceId}`);
-      await api.onDisconnect(devicePresence).cancel().catch(()=>{});
-      await api.remove(devicePresence).catch(()=>{});
-
+      await api.remove(api.ref(estadoOnline.db,`presence/${sessao.roomId}/${estadoOnline.user.uid}`));
       if(sessao.role==="player"){
-        const presencasSnap=await api.get(api.ref(estadoOnline.db,`presence/${roomId}/${uid}`)).catch(()=>null);
-        const presencas=presencasSnap?.val()||{};
-        const outroAparelhoAtivo=Object.values(presencas).some(item=>item&&typeof item==="object"&&item.connected===true);
-        if(!outroAparelhoAtivo){
-          const efeitosSnap=await api.get(api.ref(estadoOnline.db,`rooms/${roomId}/effects`)).catch(()=>null);
-          const updates={};
-          Object.entries(efeitosSnap?.val()||{}).forEach(([id,efeito])=>{
-            if(efeito?.ownerUid===uid&&efeito?.status==="active"){
-              updates[`rooms/${roomId}/effects/${id}/status`]="ended";
-              updates[`rooms/${roomId}/effects/${id}/endedAt`]=agora();
-            }
-          });
-          if(Object.keys(updates).length) await api.update(api.ref(estadoOnline.db),updates).catch(()=>{});
-          await api.remove(api.ref(estadoOnline.db,`rooms/${roomId}/participants/${uid}`));
-          await api.remove(api.ref(estadoOnline.db,`roomMemberships/${roomId}/${uid}`));
-        }
-      }else if(sessao.role==="master"){
-        await api.remove(api.ref(estadoOnline.db,`roomMemberships/${roomId}/${uid}`)).catch(()=>{});
+        await api.remove(api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`));
+        await api.remove(api.ref(estadoOnline.db,`roomMemberships/${sessao.roomId}/${estadoOnline.user.uid}`));
       }
     }catch(erro){if(!silencioso) throw erro;}
     limparSessaoLocal();
-    emitir("saiu-sala",{roomId,uid});
   }
 
   async function encerrarSala(){
@@ -621,12 +574,6 @@
     updates[`roomCodes/${room.code}/status`]="closed";
     updates[`roomPublic/${room.id}/status`]="closed";
     updates[`campaigns/${room.campaignId}/rooms/${room.id}/status`]="closed";
-    Object.entries(room.effects||{}).forEach(([id,efeito])=>{
-      if(efeito?.status==="active"){
-        updates[`rooms/${room.id}/effects/${id}/status`]="ended";
-        updates[`rooms/${room.id}/effects/${id}/endedAt`]=agora();
-      }
-    });
     await api.update(api.ref(estadoOnline.db),updates);
   }
 
@@ -695,27 +642,13 @@
 
   async function removerParticipante(participantId){
     exigirMestre();
-    const api=estadoOnline.api,roomId=estadoOnline.salaId;
-    const participante=participantes()[participantId];
+    const api=estadoOnline.api;
     const updates={};
-    updates[`rooms/${roomId}/participants/${participantId}`]=null;
+    updates[`rooms/${estadoOnline.salaId}/participants/${participantId}`]=null;
     const efeitos=estadoOnline.sala?.effects||{};
-    Object.entries(efeitos).forEach(([id,e])=>{if(e.participantId===participantId) updates[`rooms/${roomId}/effects/${id}`]=null;});
-    const ordemAntiga=normalizarOrdem();
-    const indiceAntigo=Math.max(0,Number(estadoOnline.sala?.combat?.turnIndex||0));
-    const atualId=ordemAntiga[indiceAntigo]||"";
-    const novaOrdem=ordemAntiga.filter(id=>id!==participantId);
-    let novoIndice=0;
-    if(novaOrdem.length){
-      if(atualId&&atualId!==participantId&&novaOrdem.includes(atualId)) novoIndice=novaOrdem.indexOf(atualId);
-      else novoIndice=Math.min(indiceAntigo,novaOrdem.length-1);
-    }
-    updates[`rooms/${roomId}/combat/order`]=novaOrdem;
-    updates[`rooms/${roomId}/combat/turnIndex`]=novoIndice;
-    if(!novaOrdem.length) updates[`rooms/${roomId}/combat/started`]=false;
-    if(participante?.type==="player"&&participante.ownerUid){
-      updates[`roomMemberships/${roomId}/${participante.ownerUid}`]=null;
-    }
+    Object.entries(efeitos).forEach(([id,e])=>{if(e.participantId===participantId) updates[`rooms/${estadoOnline.salaId}/effects/${id}`]=null;});
+    const ordem=normalizarOrdem().filter(id=>id!==participantId);
+    updates[`rooms/${estadoOnline.salaId}/combat/order`]=ordem;
     await api.update(api.ref(estadoOnline.db),updates);
   }
 
@@ -736,18 +669,13 @@
 
   async function ordenarIniciativa(){
     exigirMestre();
-    const combat=estadoOnline.sala?.combat||{};
-    const ordemAnterior=normalizarOrdem();
-    const atualId=combat.started?ordemAnterior[Math.max(0,Number(combat.turnIndex||0))]:"";
     const ordem=Object.values(participantes()).sort((a,b)=>{
       const ia=Number.isFinite(Number(a.initiative))?Number(a.initiative):-999;
       const ib=Number.isFinite(Number(b.initiative))?Number(b.initiative):-999;
       if(ib!==ia)return ib-ia;
       return Number(b.initiativeBonus||0)-Number(a.initiativeBonus||0);
     }).map(p=>p.id);
-    const turnIndex=combat.started&&atualId&&ordem.includes(atualId)?ordem.indexOf(atualId):0;
-    const round=combat.started?Math.max(1,Number(combat.round||1)):1;
-    await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/combat`),{order:ordem,turnIndex,round});
+    await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/combat`),{order:ordem,turnIndex:0,round:1});
     return ordem;
   }
 
@@ -781,7 +709,7 @@
     /* A duração é conferida em cada mudança de iniciativa. Dessa forma,
        um efeito de 5 rodadas termina no mesmo ponto da ordem em que começou,
        e não simplesmente no começo da quinta rodada. */
-    if(direcao>0) await atualizarEfeitosDaSala(combat.round,combat.turnIndex,combat.order||[]);
+    if(direcao>0) await atualizarEfeitosDaSala(combat.round,combat.turnIndex);
     return combat;
   }
   const avancarTurno=()=>alterarTurno(1);
@@ -789,21 +717,18 @@
 
   function analisarDuracaoRodadas(valor){
     const original=texto(valor);
-    const normal=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
-    if(!normal) return {rounds:null,timed:false,manual:true,original:"Até ser encerrado"};
+    const normal=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    if(!normal||/instant|ate ser encerr|manual|concentr/.test(normal)) return null;
 
-    const limitar=n=>Math.min(525600,Math.max(1,Math.ceil(Number(n)||1)));
     const dado=normal.match(/(\d+)\s*d\s*(\d+)(?:\s*([+-])\s*(\d+))?/);
     if(dado){
       const qtd=Math.max(1,Number(dado[1])),faces=Math.max(1,Number(dado[2]));let total=0;
       for(let i=0;i<qtd;i+=1) total+=1+Math.floor(Math.random()*faces);
       const ajuste=Number(dado[4]||0)*(dado[3]==="-"?-1:1);
       total=Math.max(1,total+ajuste);
-      if(/(?:min(?:uto)?s?\b)/.test(normal)) total*=10;
-      else if(/(?:horas?|\d\s*h\b)/.test(normal)) total*=600;
-      else if(/(?:dias?\b)/.test(normal)) total*=14400;
-      else if(/(?:seg(?:undo)?s?\b)/.test(normal)&&!/(?:turn|rodad)/.test(normal)) total=Math.ceil(total/6);
-      return {rounds:limitar(total),timed:true,rolled:true,original};
+      if(/minut/.test(normal)) total=Math.ceil(total*10);
+      else if(/segund/.test(normal)&&!/turn|rodad/.test(normal)) total=Math.ceil(total/6);
+      return {rounds:Math.max(1,total),rolled:true,original};
     }
 
     const obterNumero=regex=>{
@@ -811,33 +736,15 @@
       if(!achado)return NaN;
       return Number(String(achado[1]).replace(",","."));
     };
-    /* Formas em turnos e rodadas prevalecem quando a descrição também traz
-       segundos entre parênteses. */
-    let numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*(?:turnos?|rodadas?|turn\.?|rod\.?)(?:\b|$)/);
-    if(Number.isFinite(numero)&&numero>0)return {rounds:limitar(numero),timed:true,original};
-    numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*(?:minutos?|mins?|min\.?)(?:\b|$)/);
-    if(Number.isFinite(numero)&&numero>0)return {rounds:limitar(numero*10),timed:true,original};
-    numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*(?:segundos?|segs?|seg\.?|s)(?:\b|$)/);
-    if(Number.isFinite(numero)&&numero>0)return {rounds:limitar(numero/6),timed:true,original};
-    numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*(?:horas?|hrs?|hr\.?|h)(?:\b|$)/);
-    if(Number.isFinite(numero)&&numero>0)return {rounds:limitar(numero*600),timed:true,original};
-    numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*dias?(?:\b|$)/);
-    if(Number.isFinite(numero)&&numero>0)return {rounds:limitar(numero*14400),timed:true,original};
-
-    if(/proximo turno|próximo turno|inicio do proximo turno|final do proximo turno|fim do proximo turno|final do turno|fim do turno/.test(normal)){
-      return {rounds:1,timed:true,semantic:true,original};
-    }
-
-    if(/instant/.test(normal)&&!/(enquanto|terreno dificil|penalidade|reducao|efeito)/.test(normal)) return null;
-    if(/instant/.test(normal)&&/(enquanto|terreno dificil|efeito)/.test(normal)){
-      return {rounds:null,timed:false,manual:true,original};
-    }
-    if(/indefin|ate ser encerr|manual|concentr|enquanto|ate o chakra|fim do combate|ate sair|ate sofrer|ate ser destr|ate ser deton|ate completar|ate o efeito|proximo ataque|conforme o jutsu|x turnos?/.test(normal)){
-      return {rounds:null,timed:false,manual:true,original};
-    }
-    /* Efeitos persistentes com texto não reconhecido continuam visíveis para
-       o mestre e precisam ser encerrados manualmente. */
-    return {rounds:null,timed:false,manual:true,original};
+    /* Quando a descrição traz as duas formas — por exemplo
+       "5 turnos (30 segundos)" — a quantidade de turnos/rodadas prevalece. */
+    let numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*(?:turnos?|rodadas?)/);
+    if(Number.isFinite(numero)&&numero>0)return {rounds:Math.max(1,Math.ceil(numero)),original};
+    numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*minutos?/);
+    if(Number.isFinite(numero)&&numero>0)return {rounds:Math.max(1,Math.ceil(numero*10)),original};
+    numero=obterNumero(/(\d+(?:[.,]\d+)?)\s*segundos?/);
+    if(Number.isFinite(numero)&&numero>0)return {rounds:Math.max(1,Math.ceil(numero/6)),original};
+    return null;
   }
 
   function normalizarDetalhesEfeito(valor){
@@ -849,7 +756,7 @@
         :texto(bruto.value??bruto.valor).slice(0,80);
       return {
         id:texto(bruto.id||`mecanica-${indice+1}`).slice(0,80),
-        polarity:(()=>{const v=texto(bruto.polarity??bruto.polaridade??"neutro").toLowerCase();return ["buff","debuff","custo","neutro"].includes(v)?v:"neutro";})(),
+        polarity:texto(bruto.polarity??bruto.polaridade??"neutro").slice(0,24),
         appliesTo:texto(bruto.appliesTo??bruto.aplicaEm??"usuario").slice(0,40),
         target:texto(bruto.target??bruto.alvo??"efeito").slice(0,60),
         operation:texto(bruto.operation??bruto.operacao??"").slice(0,30),
@@ -859,65 +766,33 @@
     });
   }
 
-  async function adicionarEfeito({participantId,name,duration,source="manual",ownerUid,summary="",details=[],localEffectId="",effectId="",startRound=null,startTurnIndex=null,resolvedRounds=null,durationTimed=null,durationOriginal=""}){
+  async function adicionarEfeito({participantId,name,duration,source="manual",ownerUid,summary="",details=[],localEffectId=""}){
     exigirUsuario();
-    const api=estadoOnline.api,roomId=estadoOnline.salaId;
-    if(!roomId) throw new Error("Nenhuma sala ativa.");
-    let participante=participantes()[participantId];
-    if(!participante){
-      const snap=await api.get(api.ref(estadoOnline.db,`rooms/${roomId}/participants/${participantId}`));
-      participante=snap.val();
-    }
+    const participante=participantes()[participantId];
     if(!participante) throw new Error("Participante não encontrado.");
     const ehMestre=estadoOnline.sala?.masterUid===estadoOnline.user.uid;
     if(!ehMestre&&participante.ownerUid!==estadoOnline.user.uid) throw new Error("Você só pode publicar efeitos da sua própria ficha.");
-    const regra=durationTimed===false
-      ?{rounds:null,timed:false,manual:true,original:texto(durationOriginal)||texto(duration)||"Até ser encerrado"}
-      :Number.isFinite(Number(resolvedRounds))
-        ?{rounds:Math.min(525600,Math.max(1,Math.ceil(Number(resolvedRounds)))),timed:true,original:texto(durationOriginal)||texto(duration)||`${Math.max(1,Math.ceil(Number(resolvedRounds)))} rodadas`}
-        :typeof duration==="number"
-          ?{rounds:Math.min(525600,Math.max(1,Math.ceil(Number(duration)||1))),timed:true,original:texto(durationOriginal)||`${Math.max(1,Math.ceil(Number(duration)||1))} rodadas`}
-          :analisarDuracaoRodadas(duration);
+    const regra=typeof duration==="number"?{rounds:duration,original:`${duration} rodadas`}:analisarDuracaoRodadas(duration);
     if(!regra) return null;
     const combat=estadoOnline.sala?.combat||{};
-    const round=Math.max(1,Number(startRound??combat.round??1));
+    const round=Math.max(1,Number(combat.round||1));
     const ordem=normalizarOrdem();
-    const indicePadrao=combat.started&&ordem.length?Math.min(Math.max(0,Number(combat.turnIndex||0)),ordem.length-1):0;
-    const turnIndex=Math.min(Math.max(0,Number(startTurnIndex??indicePadrao)),Math.max(0,ordem.length-1));
-    const turnParticipantId=texto(ordem[turnIndex]||"");
-    const idSeguro=texto(effectId).replace(/[.#$\[\]\/]/g,"_").slice(0,180);
-    const id=idSeguro||idAleatorio("effect");
-    const refEfeito=api.ref(estadoOnline.db,`rooms/${roomId}/effects/${id}`);
-    const existenteSnap=await api.get(refEfeito).catch(()=>null);
-    const existente=existenteSnap?.val();
-    if(existente&&existente.ownerUid===(ownerUid||participante.ownerUid||estadoOnline.user.uid)&&existente.participantId===participantId){
-      return {id,...existente};
-    }
+    const turnIndex=combat.started&&ordem.length
+      ?Math.min(Math.max(0,Number(combat.turnIndex||0)),ordem.length-1)
+      :0;
+    const id=idAleatorio("effect");
     const detalhes=normalizarDetalhesEfeito(details);
-    const timed=regra.timed!==false&&Number.isFinite(Number(regra.rounds));
-    const rounds=timed?Math.min(525600,Math.max(1,Math.ceil(Number(regra.rounds)))):null;
     const efeito={
       id,participantId,ownerUid:ownerUid||participante.ownerUid||estadoOnline.user.uid,
       name:(texto(name)||"Efeito").slice(0,120),source:texto(source).slice(0,140),
       summary:texto(summary).slice(0,500),details:detalhes,
       localEffectId:texto(localEffectId).slice(0,160),
-      durationOriginal:regra.original||texto(duration)||"Até ser encerrado",timed,
-      totalRounds:rounds,
-      startRound:round,startTurnIndex:turnIndex,startTurnParticipantId:turnParticipantId,
-      expiresAtRound:timed?round+rounds:null,expiresAtTurnIndex:timed?turnIndex:null,
-      expiresAtParticipantId:timed?turnParticipantId:"",
+      durationOriginal:regra.original,totalRounds:regra.rounds,
+      startRound:round,startTurnIndex:turnIndex,
+      expiresAtRound:round+regra.rounds,expiresAtTurnIndex:turnIndex,
       status:"active",createdAt:agora()
     };
-    try{
-      await api.set(refEfeito,efeito);
-    }catch(erro){
-      /* Se a gravação chegou ao Firebase mas a resposta se perdeu, a nova
-         tentativa encontra o mesmo ID determinístico e não duplica o buff. */
-      const confirmado=await api.get(refEfeito).catch(()=>null);
-      const remoto=confirmado?.val();
-      if(remoto&&remoto.ownerUid===efeito.ownerUid&&remoto.participantId===participante.id) return {id,...remoto};
-      throw erro;
-    }
+    await estadoOnline.api.set(estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects/${id}`),efeito);
     return efeito;
   }
 
@@ -929,13 +804,13 @@
       const remoto=await estadoOnline.api.get(refEfeito);
       efeito=remoto.val();
     }
-    if(!efeito||efeito.status!=="active") return;
+    if(!efeito) return;
     const ehMestre=estadoOnline.sala?.masterUid===estadoOnline.user.uid;
     if(!ehMestre&&efeito.ownerUid!==estadoOnline.user.uid) throw new Error("Você não pode encerrar este efeito.");
     await estadoOnline.api.update(refEfeito,{status:"ended",endedAt:agora()});
   }
 
-  async function atualizarEfeitosDaSala(round,turnIndex=0,ordemAtual=[]){
+  async function atualizarEfeitosDaSala(round,turnIndex=0){
     exigirMestre();
     const api=estadoOnline.api,updates={};
     /* Lê os efeitos diretamente do banco depois da troca de turno. Isso evita
@@ -945,13 +820,9 @@
     const efeitos=snapshotEfeitos.val()||{};
     const rodadaAtual=Math.max(1,Number(round||1));
     const indiceAtual=Math.max(0,Number(turnIndex||0));
-    const ordem=Array.isArray(ordemAtual)?ordemAtual:Object.values(ordemAtual||{});
     Object.entries(efeitos).forEach(([id,e])=>{
-      if(e?.timed===false||!Number.isFinite(Number(e?.expiresAtRound))) return;
       const rodadaFim=Math.max(1,Number(e.expiresAtRound||1));
-      const participanteFim=texto(e.expiresAtParticipantId||e.startTurnParticipantId);
-      const indiceParticipante=participanteFim?ordem.indexOf(participanteFim):-1;
-      const indiceFim=Math.max(0,indiceParticipante>=0?indiceParticipante:Number(e.expiresAtTurnIndex??e.startTurnIndex??0));
+      const indiceFim=Math.max(0,Number(e.expiresAtTurnIndex??e.startTurnIndex??0));
       const chegouAoFim=rodadaAtual>rodadaFim||(rodadaAtual===rodadaFim&&indiceAtual>=indiceFim);
       if(e.status==="active"&&chegouAoFim){
         updates[`rooms/${estadoOnline.salaId}/effects/${id}/status`]="expired";
@@ -961,63 +832,19 @@
       }
     });
     if(Object.keys(updates).length) await api.update(api.ref(estadoOnline.db),updates);
-    podarHistoricoSala().catch(()=>{});
-  }
-
-  async function podarHistoricoSala({forcar=false}={}){
-    const roomId=estadoOnline.salaId,room=estadoOnline.sala;
-    if(!roomId||!room||room.masterUid!==estadoOnline.user?.uid||estadoOnline.limpandoHistorico)return;
-    const totalEventos=Object.keys(room.events||{}).length;
-    const totalEfeitos=Object.keys(room.effects||{}).length;
-    estadoOnline.operacoesDesdeLimpeza+=1;
-    if(!forcar&&estadoOnline.operacoesDesdeLimpeza<20&&totalEventos<=260&&totalEfeitos<=140)return;
-    estadoOnline.operacoesDesdeLimpeza=0;
-    estadoOnline.limpandoHistorico=true;
-    try{
-      const api=estadoOnline.api;
-      const [eventosSnap,acksSnap,efeitosSnap]=await Promise.all([
-        api.get(api.ref(estadoOnline.db,`rooms/${roomId}/events`)),
-        api.get(api.ref(estadoOnline.db,`rooms/${roomId}/eventAcks`)),
-        api.get(api.ref(estadoOnline.db,`rooms/${roomId}/effects`))
-      ]);
-      const eventos=eventosSnap.val()||{},acks=acksSnap.val()||{},efeitos=efeitosSnap.val()||{};
-      const updates={};
-      const ordenados=Object.entries(eventos).sort((a,b)=>Number(b[1]?.createdAt||0)-Number(a[1]?.createdAt||0));
-      let mantidos=0;
-      for(const [id,evento] of ordenados){
-        const ehXp=evento?.type==="XP_GRANTED";
-        const alvo=texto(evento?.payload?.targetUid);
-        const confirmado=!ehXp||Boolean(alvo&&acks?.[id]?.[alvo]);
-        if(mantidos<220||!confirmado){mantidos+=1;continue;}
-        updates[`rooms/${roomId}/events/${id}`]=null;
-        if(acks[id])updates[`rooms/${roomId}/eventAcks/${id}`]=null;
-      }
-      const inativos=Object.entries(efeitos)
-        .filter(([,efeito])=>efeito?.status&&efeito.status!=="active")
-        .sort((a,b)=>Number(b[1]?.endedAt||b[1]?.createdAt||0)-Number(a[1]?.endedAt||a[1]?.createdAt||0));
-      inativos.slice(100).forEach(([id])=>{updates[`rooms/${roomId}/effects/${id}`]=null;});
-      if(Object.keys(updates).length)await api.update(api.ref(estadoOnline.db),updates);
-    }catch(_erro){
-      /* Limpeza é preventiva e nunca pode interromper turno, XP ou efeito. */
-    }finally{estadoOnline.limpandoHistorico=false;}
   }
 
   async function registrarEvento(type,payload={}){
     if(!estadoOnline.salaId||!estadoOnline.user) return null;
     const api=estadoOnline.api,refEvento=api.push(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/events`));
     await api.set(refEvento,{id:refEvento.key,type,payload,createdBy:estadoOnline.user.uid,createdAt:agora()});
-    podarHistoricoSala().catch(()=>{});
     return refEvento.key;
   }
 
   function parseXpAtual(valor){
-    const bruto=texto(valor);
-    const inteiro=parte=>{
-      const limpo=texto(parte).replace(/\s/g,"").replace(/[.,](?=\d{3}(?:\D|$))/g,"").replace(/[^0-9-]/g,"");
-      return Math.max(0,Number(limpo)||0);
-    };
-    const partes=bruto.split("/");
-    return {current:inteiro(partes[0]),max:Math.max(1,inteiro(partes[1])||355000)};
+    const str=texto(valor);
+    const partes=str.match(/-?\d+/g)||[];
+    return {current:Math.max(0,Number(partes[0]||0)),max:Math.max(0,Number(partes[1]||355000))};
   }
   function formatarXp(current,max){return `${Math.max(0,Math.trunc(current))}/${Math.max(0,Math.trunc(max||355000))}`;}
 
@@ -1037,7 +864,6 @@
       };
     });
     await api.update(api.ref(estadoOnline.db),updates);
-    podarHistoricoSala().catch(()=>{});
   }
 
   function observarEventos(roomId){
@@ -1048,7 +874,7 @@
   }
 
   async function processarEventosXp(){
-    if(estadoOnline.processandoXp){estadoOnline.xpPendente=true;return;}
+    if(estadoOnline.processandoXp) return;
     const room=estadoOnline.sala,user=estadoOnline.user;
     if(!room||!user) return;
     estadoOnline.processandoXp=true;
@@ -1104,8 +930,7 @@
         const sincronizada=await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"xp"});
         if(sincronizada?.conflict) continue;
         processados[evento.id]=agora();
-        const recentesProcessados=Object.entries(processados).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,200);
-        salvarJson(CHAVE_XP_PROCESSADO,Object.fromEntries(recentesProcessados));
+        salvarJson(CHAVE_XP_PROCESSADO,processados);
         if(!confirmadoNaSala){
           await estadoOnline.api.set(
             estadoOnline.api.ref(estadoOnline.db,`rooms/${room.id}/eventAcks/${evento.id}/${user.uid}`),
@@ -1115,10 +940,6 @@
       }
     }finally{
       estadoOnline.processandoXp=false;
-      if(estadoOnline.xpPendente){
-        estadoOnline.xpPendente=false;
-        setTimeout(()=>processarEventosXp().catch(()=>{}),0);
-      }
     }
   }
 
@@ -1193,12 +1014,14 @@
   }
 
   function observarFichasNuvem(){
-    if(!estadoOnline.user||estadoOnline.user.anonymous){
-      estadoOnline.unsubscribeFichas?.();estadoOnline.unsubscribeFichas=null;
+    if(!estadoOnline.user) return;
+    estadoOnline.unsubscribeFichas?.();
+    estadoOnline.unsubscribeFichas=null;
+    if(estadoOnline.user.anonymous){
       estadoOnline.fichasNuvem=[];
+      emitir("fichas-nuvem",snapshot());
       return;
     }
-    estadoOnline.unsubscribeFichas?.();
     const api=estadoOnline.api;
     estadoOnline.unsubscribeFichas=api.onValue(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`),snap=>{
       const valor=snap.val()||{};
@@ -1212,8 +1035,7 @@
   }
 
   async function sincronizarFicha(localSheetName,{force=false,backup=false,motivo="autosave"}={}){
-    exigirUsuario();
-    if(estadoOnline.user.anonymous) throw new Error("Entre com Google para sincronizar fichas entre aparelhos.");
+    exigirContaGoogle();
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) throw new Error("Ficha local não encontrada.");
     const api=estadoOnline.api,uid=estadoOnline.user.uid,sheetId=ficha.sheetId;
@@ -1249,8 +1071,7 @@
   }
 
   async function criarBackupFicha(ficha,{reason="manual",revision=0}={}){
-    exigirUsuario();
-    if(estadoOnline.user.anonymous) throw new Error("Entre com Google para criar backups na nuvem.");
+    exigirContaGoogle();
     const api=estadoOnline.api,uid=estadoOnline.user.uid,id=`${agora()}_${slug(reason)}`;
     await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${id}`),{
       name:ficha.name,characterName:ficha.characterName,revision,createdAt:agora(),reason,data:ficha.data
@@ -1264,7 +1085,7 @@
   }
 
   async function sincronizarTodasFichas(){
-    exigirUsuario();
+    exigirContaGoogle();
     const resultados=[];
     for(const ficha of listarFichasLocais()){
       resultados.push(await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"sincronizacao-geral"}));
@@ -1273,8 +1094,7 @@
   }
 
   async function restaurarFichaDaNuvem(sheetId,{asCopy=false}={}){
-    exigirUsuario();
-    if(estadoOnline.user.anonymous) throw new Error("Entre com Google para baixar fichas da nuvem.");
+    exigirContaGoogle();
     const api=estadoOnline.api;
     const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}/${sheetId}`));
     if(!snap.exists()) throw new Error("Backup da nuvem não encontrado.");
@@ -1307,7 +1127,7 @@
   }
 
   async function resolverConflito(sheetId,acao){
-    exigirUsuario();
+    exigirContaGoogle();
     const local=listarFichasLocais().find(f=>f.sheetId===sheetId);
     if(acao==="nuvem") return restaurarFichaDaNuvem(sheetId,{asCopy:false});
     if(acao==="copia") return restaurarFichaDaNuvem(sheetId,{asCopy:true});
