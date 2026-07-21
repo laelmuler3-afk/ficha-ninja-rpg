@@ -161,3 +161,19 @@ body.onlineAberto{overflow:hidden}
 .onlineContaNuvem strong,.onlineContaNuvem small{display:block}.onlineContaNuvem small{margin-top:3px;color:#9eacb9;font-size:11px}
 .onlineNuvemAcoes{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 @media (max-width:560px){.onlineConta{align-items:flex-start;flex-wrap:wrap}.onlineContaAcoes{width:100%;justify-content:flex-start;padding-left:46px}.onlineListaNuvem article{display:grid}.onlineNuvemAcoes{justify-content:flex-start}}
+
+
+/* v2.2.7 — gerenciamento de campanhas */
+.onlineCampanhasTitulo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 8px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
+.onlineCampanhasTitulo h4{margin:0}.onlineCampanhasTitulo small{color:#9f8d75;font-size:10px}
+.onlineCampanhasLista{display:grid;gap:8px;margin-bottom:14px}
+.onlineCampanhaItem{position:relative;min-height:74px;padding:12px 12px 12px 48px;background:#0d1115;border:1px solid rgba(255,255,255,.08);border-radius:14px}
+.onlineCampanhaItem.menuAberto{z-index:3;border-color:rgba(225,168,92,.38)}
+.onlineCampanhaMenuBtn{position:absolute;left:10px;top:10px;width:30px;height:34px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:#171d23;color:#d8bea0;font:900 22px/1 system-ui;display:grid;place-items:center;cursor:pointer}
+.onlineCampanhaMenuBtn:active{transform:translateY(1px)}
+.onlineCampanhaInfo{display:grid;gap:3px;min-width:0}.onlineCampanhaInfo small{color:#b78c55;font:800 8px/1 system-ui;letter-spacing:.13em}.onlineCampanhaInfo strong{color:#f8e8ce;font-size:14px;overflow-wrap:anywhere}.onlineCampanhaInfo span{color:#958573;font-size:10px}
+.onlineCampanhaMenu{position:absolute;left:10px;top:47px;z-index:5;min-width:168px;padding:6px;background:#101419;border:1px solid rgba(225,168,92,.28);border-radius:12px;box-shadow:0 14px 28px rgba(0,0,0,.48);display:grid;gap:3px}
+.onlineCampanhaMenu button{border:0;border-radius:8px;background:transparent;color:#ead9bf;padding:10px 11px;text-align:left;font:750 12px/1.2 system-ui;cursor:pointer}
+.onlineCampanhaMenu button:active,.onlineCampanhaMenu button:hover{background:rgba(225,168,92,.1)}
+.onlineCampanhaMenu button.perigo{color:#ef918a}.onlineCampanhaMenu button.perigo:active,.onlineCampanhaMenu button.perigo:hover{background:rgba(215,90,82,.12)}
+.onlineCriarSalaForm{padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
