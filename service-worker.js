@@ -1,5 +1,5 @@
-/* Shinobi 2.3.2 — Contraste visual da Carteira. */
-const APP_VERSION = "2.3.2";
+/* Shinobi 2.3.3 — Contraste visual da Carteira. */
+const APP_VERSION = "2.3.3";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -9,6 +9,7 @@ const APP_SHELL = [
   `./index.html?v=${APP_VERSION}`,
   `./manifest.json?v=${APP_VERSION}`,
   `./css/app.css?v=${APP_VERSION}`,
+  `./css/carteira-v233.css?v=${APP_VERSION}`,
   `./css/update.css?v=${APP_VERSION}`,
   `./css/catalogo.css?v=${APP_VERSION}`,
   `./css/regras-natureza.css?v=${APP_VERSION}`,
