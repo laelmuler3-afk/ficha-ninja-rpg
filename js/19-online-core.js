@@ -317,6 +317,65 @@
     return nova.key;
   }
 
+  async function editarCampanha(campaignId,nome){
+    exigirContaGoogle();
+    const id=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===id);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    const nomeLimpo=texto(nome).slice(0,80);
+    if(!nomeLimpo) throw new Error("Informe o novo nome da campanha.");
+    if(nomeLimpo===campanha.name) return {ok:true,unchanged:true};
+    const api=estadoOnline.api;
+    await api.update(api.ref(estadoOnline.db,`campaigns/${id}`),{
+      name:nomeLimpo,
+      updatedAt:agora()
+    });
+    return {ok:true,name:nomeLimpo};
+  }
+
+  async function excluirCampanha(campaignId){
+    exigirContaGoogle();
+    const id=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===id);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+
+    const api=estadoOnline.api;
+    const roomIds=Object.keys(campanha.rooms||{});
+    const salas=await Promise.all(roomIds.map(async roomId=>{
+      const roomSnap=await api.get(api.ref(estadoOnline.db,`rooms/${roomId}`));
+      const data=roomSnap.exists()?roomSnap.val():null;
+      if(!data||data.masterUid!==estadoOnline.user.uid)return {roomId,data:null,publicExists:false,codeExists:false};
+      const code=texto(data.code||campanha.rooms?.[roomId]?.code);
+      const [publicSnap,codeSnap]=await Promise.all([
+        api.get(api.ref(estadoOnline.db,`roomPublic/${roomId}`)),
+        code?api.get(api.ref(estadoOnline.db,`roomCodes/${code}`)):Promise.resolve(null)
+      ]);
+      return {
+        roomId,data,code,
+        publicExists:Boolean(publicSnap?.exists()),
+        codeExists:Boolean(codeSnap?.exists())
+      };
+    }));
+
+    const updates={};
+    let salasEncerradas=0;
+    salas.forEach(({roomId,data,code,publicExists,codeExists})=>{
+      if(!data)return;
+      updates[`rooms/${roomId}/status`]="closed";
+      updates[`rooms/${roomId}/updatedAt`]=agora();
+      if(publicExists)updates[`roomPublic/${roomId}/status`]="closed";
+      if(code&&codeExists)updates[`roomCodes/${code}/status`]="closed";
+      salasEncerradas+=1;
+    });
+    updates[`campaigns/${id}`]=null;
+    await api.update(api.ref(estadoOnline.db),updates);
+
+    /* Se a campanha foi excluída em outro aparelho enquanto esta instalação
+       ainda acompanhava uma de suas salas, remove apenas a sessão local. */
+    if(estadoOnline.sala?.campaignId===id) limparSessaoLocal();
+    return {ok:true,closedRooms:salasEncerradas};
+  }
+
   async function gerarCodigoSala(){
     const api=estadoOnline.api;
     for(let tentativa=0;tentativa<20;tentativa+=1){
@@ -1282,7 +1341,7 @@
 
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
-    entrarAnonimo,entrarGoogle,sair,criarCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
+    entrarAnonimo,entrarGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,fichaAtualLocal,resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,

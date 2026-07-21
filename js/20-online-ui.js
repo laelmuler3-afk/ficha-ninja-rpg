@@ -11,6 +11,7 @@
   let painelFlutuante=null;
   let arrastoPainel=null;
   let ignorarCliquePainel=false;
+  let campanhaMenuAberto=null;
 
   const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
 
@@ -452,6 +453,27 @@
 
   function renderMestreHome(st){
     const campanhas=st.campanhas||[];
+    const listaCampanhas=campanhas.length?`
+      <div class="onlineCampanhasTitulo"><h4>Suas campanhas</h4><small>${campanhas.length} cadastrada(s)</small></div>
+      <div class="onlineCampanhasLista">
+        ${campanhas.map(c=>{
+          const salas=Object.values(c.rooms||{});
+          const abertas=salas.filter(sala=>sala?.status==="open").length;
+          const menuAberto=campanhaMenuAberto===c.id;
+          return `<article class="onlineCampanhaItem ${menuAberto?"menuAberto":""}">
+            <button type="button" class="onlineCampanhaMenuBtn" data-action="toggle-campaign-menu" data-campaign-id="${esc(c.id)}" aria-label="Opções da campanha ${esc(c.name)}" aria-expanded="${menuAberto?"true":"false"}">⋮</button>
+            <div class="onlineCampanhaInfo">
+              <small>CAMPANHA</small>
+              <strong>${esc(c.name)}</strong>
+              <span>${salas.length?`${salas.length} sessão(ões)${abertas?` • ${abertas} aberta(s)`:""}`:"Nenhuma sessão criada"}</span>
+            </div>
+            ${menuAberto?`<div class="onlineCampanhaMenu" role="menu">
+              <button type="button" data-action="edit-campaign" data-campaign-id="${esc(c.id)}" role="menuitem">Editar nome</button>
+              <button type="button" class="perigo" data-action="delete-campaign" data-campaign-id="${esc(c.id)}" role="menuitem">Excluir campanha</button>
+            </div>`:""}
+          </article>`;
+        }).join("")}
+      </div>`:"";
     return `<section class="onlineCard destaqueMestre">
       <span class="onlineCardSelo">PAINEL DO MESTRE</span>
       <h3>Campanhas e salas</h3>
@@ -459,7 +481,8 @@
         <label>Nova campanha<input name="name" maxlength="80" placeholder="Crônicas de Konoha" required></label>
         <button class="onlineBtn secundario" type="submit">Criar campanha</button>
       </form>
-      ${campanhas.length?`<form data-form="create-room" class="onlineForm">
+      ${listaCampanhas}
+      ${campanhas.length?`<form data-form="create-room" class="onlineForm onlineCriarSalaForm">
         <label>Campanha<select name="campaignId">${campanhas.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select></label>
         <label>Nome da sessão<input name="title" maxlength="80" placeholder="Batalha da ponte"></label>
         <button class="onlineBtn primario" type="submit">Criar sala e QR Code</button>
@@ -698,7 +721,11 @@
   }
 
   async function tratarClique(evento){
-    const el=evento.target.closest("[data-action]");if(!el)return;
+    const el=evento.target.closest("[data-action]");
+    if(!el){
+      if(campanhaMenuAberto){campanhaMenuAberto=null;agendarRender();}
+      return;
+    }
     const acao=el.dataset.action;
     if(acao==="close")return fechar();
     if(acao==="stop-scan")return pararScanner();
@@ -707,6 +734,42 @@
     if(acao==="login-anonymous")return executar(()=>window.ShinobiOnline.entrarAnonimo());
     if(acao==="logout")return executar(()=>window.ShinobiOnline.sair());
     if(acao==="scan-qr")return iniciarScanner();
+    if(acao==="toggle-campaign-menu"){
+      const id=el.dataset.campaignId;
+      campanhaMenuAberto=campanhaMenuAberto===id?null:id;
+      agendarRender();
+      return;
+    }
+    if(acao==="edit-campaign"){
+      const id=el.dataset.campaignId;
+      const campanha=obterEstado().campanhas?.find(item=>item.id===id);
+      if(!campanha)return;
+      const novoNome=prompt("Novo nome da campanha:",campanha.name||"");
+      if(novoNome===null)return;
+      campanhaMenuAberto=null;
+      return executar(async()=>{
+        await window.ShinobiOnline.editarCampanha(id,novoNome);
+        await avisar("Campanha atualizada","O novo nome foi salvo.");
+      });
+    }
+    if(acao==="delete-campaign"){
+      const id=el.dataset.campaignId;
+      const campanha=obterEstado().campanhas?.find(item=>item.id===id);
+      if(!campanha)return;
+      const salas=Object.values(campanha.rooms||{});
+      const abertas=salas.filter(sala=>sala?.status==="open").length;
+      const detalhe=salas.length
+        ? `Esta campanha possui ${salas.length} sessão(ões). ${abertas?`${abertas} sala(s) aberta(s) também serão encerradas. `:""}A exclusão da campanha não poderá ser desfeita.`
+        : "A campanha será removida permanentemente.";
+      const confirmado=await confirmar("Excluir campanha",`Excluir “${campanha.name}”?\n\n${detalhe}`);
+      if(!confirmado)return;
+      campanhaMenuAberto=null;
+      return executar(async()=>{
+        const resultado=await window.ShinobiOnline.excluirCampanha(id);
+        const complemento=resultado?.closedRooms?` ${resultado.closedRooms} sala(s) vinculada(s) foram encerradas.`:"";
+        await avisar("Campanha excluída",`A campanha foi removida.${complemento}`);
+      });
+    }
     if(acao==="copy-code")return copiar(obterEstado().sala?.code,"Código copiado.");
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
     if(acao==="sync-current")return executar(async()=>{await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:true,motivo:"manual"});await avisar("Ficha sincronizada","A ficha atual foi enviada para a nuvem.");});
