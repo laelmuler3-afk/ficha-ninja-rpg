@@ -1,6 +1,6 @@
 {
-  "version": "2.3.0",
-  "releasedAt": "2026-07-21T19:42:50Z",
-  "notes": "Carteira separada e Loja de Itens com compra e troco automático.",
-  "message": "As moedas foram removidas do inventário e migradas para a nova Carteira. O catálogo virou uma Loja: itens com preço podem ser comprados, o valor é descontado automaticamente e moedas maiores são quebradas para devolver o troco. A conversão usa 1 PD = 100 PO, 1 PO = 100 PP e 1 PP = 100 PC."
+  "version": "2.3.1",
+  "releasedAt": "2026-07-21T21:12:22Z",
+  "notes": "Melhoria de contraste e leitura na Loja de Itens.",
+  "message": "Os cards da Loja agora usam painéis escuros em marrom e preto, bordas laranja e textos de alto contraste, mantendo o fundo em pergaminho e a identidade visual do Ficha Ninja."
 }
