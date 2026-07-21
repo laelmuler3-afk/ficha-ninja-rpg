@@ -1734,3 +1734,853 @@ body.catalogoInventarioAberto{
     width:45px;
   }
 }
+
+/* ===== v2.3.0 — Carteira e Loja de Itens ===== */
+#inventario .inventarioHub{
+  overflow:visible;
+}
+#inventario .inventarioHubCabecalho{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+#inventario .inventarioHubCabecalho small{
+  display:block;
+  margin-bottom:4px;
+  color:#d98a48;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:1.2px;
+}
+#inventario .inventarioHubCabecalho h2{
+  margin:0;
+}
+#inventario .inventarioAbas{
+  position:sticky;
+  top:8px;
+  z-index:7;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  padding:7px;
+  margin:0 0 15px;
+  border:1px solid rgba(223,149,77,.22);
+  border-radius:16px;
+  background:rgba(6,10,14,.94);
+  box-shadow:0 9px 22px rgba(0,0,0,.32);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+#inventario .inventarioAbas button{
+  min-width:0;
+  min-height:48px;
+  padding:6px 5px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:1px solid transparent;
+  border-radius:12px;
+  background:transparent;
+  color:#b9ad9b;
+  font-size:12px;
+  font-weight:900;
+}
+#inventario .inventarioAbas button span{
+  font-size:18px;
+  line-height:1;
+}
+#inventario .inventarioAbas button.ativo{
+  border-color:rgba(255,184,98,.42);
+  background:linear-gradient(180deg,rgba(211,96,28,.34),rgba(112,41,10,.28));
+  color:#fff0d4;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 5px 12px rgba(0,0,0,.24);
+}
+#inventario .inventarioSubpagina{
+  animation:inventarioSubpaginaEntrada .16s ease-out;
+}
+#inventario .inventarioSubpagina[hidden]{
+  display:none !important;
+}
+@keyframes inventarioSubpaginaEntrada{
+  from{opacity:0;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+#inventario .inventarioBotoesRodape{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);
+  gap:9px;
+  margin-top:12px;
+}
+#inventario .inventarioBotoesRodape .btn{
+  min-height:45px;
+  margin:0;
+  border-radius:13px;
+}
+#inventario .btnAbrirLoja{
+  border:1px solid rgba(255,190,109,.48);
+  background:linear-gradient(180deg,#ce6426,#76290d);
+}
+#inventario .btnInventarioSecundario{
+  border:1px solid rgba(203,165,111,.22);
+  background:rgba(255,255,255,.055);
+  color:#d7c8b2;
+}
+#inventario .inventarioNotas{
+  margin-top:12px;
+}
+#inventario .itemInventarioMetadados{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+  margin:0 0 9px;
+}
+#inventario .itemInventarioMetadados span{
+  min-width:0;
+  padding:6px 7px;
+  border:1px solid rgba(255,197,119,.14);
+  border-radius:9px;
+  background:rgba(255,255,255,.04);
+  color:#d8c8b0;
+  font-size:10px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+#inventario .itemInventarioMetadados b{
+  display:block;
+  margin-bottom:2px;
+  color:#b7753f;
+  font-size:8px;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+
+/* Carteira */
+#inventario .carteiraResumoCard{
+  position:relative;
+  overflow:hidden;
+  min-height:122px;
+  padding:19px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  border:1px solid rgba(226,166,91,.38);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 85% 15%,rgba(255,196,101,.18),transparent 31%),
+    linear-gradient(135deg,rgba(88,43,13,.94),rgba(18,12,8,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 15px 34px rgba(0,0,0,.3);
+}
+#inventario .carteiraResumoCard:after{
+  content:"";
+  position:absolute;
+  right:-28px;
+  bottom:-42px;
+  width:142px;
+  height:142px;
+  border:1px solid rgba(255,211,143,.12);
+  border-radius:50%;
+}
+#inventario .carteiraResumoCard>span{
+  color:#d99652;
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:1.3px;
+}
+#inventario .carteiraResumoCard>strong{
+  position:relative;
+  z-index:1;
+  margin-top:8px;
+  color:#fff0cf;
+  font-size:clamp(21px,5vw,31px);
+  line-height:1.14;
+  overflow-wrap:anywhere;
+}
+#inventario .carteiraResumoCard>small{
+  margin-top:6px;
+  color:#baab95;
+  font-size:12px;
+  font-weight:800;
+}
+#inventario .carteiraMoedasGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+#inventario .carteiraMoedaCard{
+  min-width:0;
+  padding:11px;
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr);
+  gap:9px;
+  align-items:center;
+  border:1px solid rgba(255,207,135,.15);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 8px 18px rgba(0,0,0,.2);
+}
+#inventario .carteiraMoedaImagem{
+  width:52px;
+  height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:13px;
+  background:radial-gradient(circle,rgba(255,225,167,.16),rgba(0,0,0,.05));
+}
+#inventario .carteiraMoedaImagem .itemInventarioImg,
+#inventario .carteiraMoedaImagem .itemInventarioIconeFallback{
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:30px;
+  filter:drop-shadow(0 4px 5px rgba(0,0,0,.42));
+}
+#inventario .carteiraMoedaInfo{
+  min-width:0;
+}
+#inventario .carteiraMoedaInfo strong{
+  display:block;
+  color:#ffebc9;
+  font-size:18px;
+  line-height:1;
+}
+#inventario .carteiraMoedaInfo small{
+  display:block;
+  margin-top:4px;
+  color:#9e9588;
+  font-size:11px;
+  font-weight:800;
+}
+#inventario .carteiraMoedaControle{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) 38px;
+  gap:6px;
+}
+#inventario .carteiraMoedaControle button,
+#inventario .carteiraMoedaControle input{
+  min-height:37px;
+  margin:0;
+  padding:4px;
+  border:1px solid rgba(226,158,81,.22);
+  border-radius:10px;
+  background:rgba(0,0,0,.19);
+  color:#fff0d6;
+  font-size:16px;
+  font-weight:1000;
+  text-align:center;
+}
+#inventario .carteiraMoedaControle input{
+  width:100%;
+  appearance:textfield;
+  -moz-appearance:textfield;
+}
+#inventario .carteiraMoedaControle input::-webkit-inner-spin-button,
+#inventario .carteiraMoedaControle input::-webkit-outer-spin-button{
+  appearance:none;
+  margin:0;
+}
+#inventario .carteiraConversao{
+  margin-top:12px;
+  padding:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border:1px solid rgba(215,145,77,.18);
+  border-radius:14px;
+  background:rgba(131,65,23,.1);
+}
+#inventario .carteiraConversao div{
+  min-width:0;
+}
+#inventario .carteiraConversao strong,
+#inventario .carteiraConversao span{
+  display:block;
+}
+#inventario .carteiraConversao strong{
+  color:#e9c08d;
+  font-size:12px;
+}
+#inventario .carteiraConversao span{
+  margin-top:3px;
+  color:#999084;
+  font-size:10px;
+  line-height:1.35;
+}
+#inventario .carteiraConversao button{
+  flex:0 0 auto;
+  min-height:36px;
+  padding:7px 10px;
+  border:1px solid rgba(255,193,115,.27);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(126,66,28,.85),rgba(45,22,9,.9));
+  color:#f7d2a2;
+  font-size:10px;
+  font-weight:1000;
+}
+#inventario .carteiraHistorico{
+  margin-top:12px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:rgba(0,0,0,.14);
+  overflow:hidden;
+}
+#inventario .carteiraHistorico summary{
+  min-height:48px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  color:#e6d3b7;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+#inventario .carteiraHistorico summary small{
+  color:#8f877c;
+  font-size:10px;
+}
+#inventario .carteiraHistoricoLista{
+  padding:0 10px 10px;
+}
+#inventario .carteiraHistoricoLista article{
+  padding:9px 3px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+#inventario .carteiraHistoricoLista article div{
+  min-width:0;
+}
+#inventario .carteiraHistoricoLista strong,
+#inventario .carteiraHistoricoLista small{
+  display:block;
+}
+#inventario .carteiraHistoricoLista strong{
+  color:#e6d8c2;
+  font-size:11px;
+}
+#inventario .carteiraHistoricoLista small{
+  margin-top:2px;
+  color:#79736b;
+  font-size:8px;
+}
+#inventario .carteiraHistoricoLista article>span{
+  max-width:52%;
+  color:#d99a57;
+  font-size:10px;
+  font-weight:900;
+  text-align:right;
+}
+
+/* Loja */
+#inventario .lojaTopo{
+  position:sticky;
+  top:75px;
+  z-index:6;
+  padding:10px;
+  margin-bottom:12px;
+  border:1px solid rgba(223,149,77,.19);
+  border-radius:15px;
+  background:rgba(7,11,15,.96);
+  box-shadow:0 8px 18px rgba(0,0,0,.25);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+#inventario .lojaBusca{
+  min-height:44px;
+  margin:0;
+  padding:0 11px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(224,153,81,.22);
+  border-radius:12px;
+  background:rgba(255,255,255,.05);
+}
+#inventario .lojaBusca>span{
+  color:#d58b4e;
+  font-size:21px;
+  transform:rotate(-18deg);
+}
+#inventario .lojaBusca input{
+  min-width:0;
+  height:42px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+#inventario .lojaBusca input:focus{
+  border:0;
+  box-shadow:none;
+}
+#inventario .lojaResumoLinha{
+  margin-top:7px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+}
+#inventario .lojaResumoLinha>span{
+  color:#8f877c;
+  font-size:10px;
+  font-weight:800;
+}
+#inventario .lojaResumoLinha button{
+  min-height:30px;
+  padding:5px 9px;
+  border:1px solid rgba(216,150,79,.2);
+  border-radius:9px;
+  background:rgba(120,61,22,.14);
+  color:#c7b49c;
+  font-size:9px;
+  font-weight:800;
+}
+#inventario .lojaResumoLinha button strong{
+  color:#efb66e;
+}
+#inventario .lojaCategoria{
+  margin-bottom:17px;
+}
+#inventario .lojaCategoria>h3{
+  margin:0 0 8px;
+  padding:7px 2px;
+  color:#d79554;
+  font-size:11px;
+  font-weight:1000;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+#inventario .lojaGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+#inventario .lojaItemCard{
+  min-width:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  border:1px solid rgba(255,198,122,.16);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.022));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 9px 20px rgba(0,0,0,.23);
+}
+#inventario .lojaItemImagem{
+  position:relative;
+  min-height:105px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 50% 43%,rgba(255,221,151,.14),rgba(64,30,10,.13) 59%,transparent 75%);
+}
+#inventario .lojaItemImagem .itemInventarioImg,
+#inventario .lojaItemImagem .itemInventarioIconeFallback{
+  width:98px;
+  height:98px;
+  object-fit:contain;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:48px;
+  filter:drop-shadow(0 6px 8px rgba(0,0,0,.43));
+}
+#inventario .lojaItemPossui{
+  position:absolute;
+  right:7px;
+  bottom:6px;
+  padding:4px 7px;
+  border:1px solid rgba(255,216,157,.34);
+  border-radius:999px;
+  background:rgba(87,30,13,.9);
+  color:#ffe9c6;
+  font-size:8px;
+  font-weight:1000;
+}
+#inventario .lojaItemConteudo{
+  flex:1 1 auto;
+  padding:9px 10px 7px;
+}
+#inventario .lojaItemConteudo>small{
+  display:block;
+  color:#a66a38;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.55px;
+  text-transform:uppercase;
+}
+#inventario .lojaItemConteudo>strong{
+  display:block;
+  margin-top:3px;
+  color:#ffeac8;
+  font-size:13px;
+  line-height:1.16;
+}
+#inventario .lojaItemConteudo>span{
+  display:block;
+  margin-top:5px;
+  color:#a69b8d;
+  font-size:10px;
+  line-height:1.32;
+}
+#inventario .lojaItemRodape{
+  padding:8px 9px 9px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  border-top:1px solid rgba(255,255,255,.055);
+  background:rgba(0,0,0,.12);
+}
+#inventario .lojaItemRodape b{
+  min-width:0;
+  color:#efb66e;
+  font-size:11px;
+  line-height:1.15;
+}
+#inventario .lojaItemRodape button{
+  flex:0 0 auto;
+  min-height:34px;
+  padding:6px 10px;
+  border:1px solid rgba(255,191,111,.4);
+  border-radius:10px;
+  background:linear-gradient(180deg,#c25d22,#6e250c);
+  color:#fff0da;
+  font-size:10px;
+  font-weight:1000;
+}
+#inventario .lojaItemRodape button:disabled{
+  border-color:rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  color:#77716a;
+}
+#inventario .lojaItemIndisponivel{
+  opacity:.68;
+}
+#inventario .lojaSemResultado{
+  min-height:150px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px dashed rgba(215,145,77,.2);
+  border-radius:14px;
+  color:#a99d8d;
+  font-size:13px;
+  font-weight:900;
+}
+#inventario .lojaAvisoTabela{
+  margin:4px 0 0;
+  padding:10px;
+  border-left:3px solid rgba(218,132,59,.55);
+  background:rgba(126,62,20,.09);
+  color:#8f877d;
+  font-size:10px;
+  line-height:1.45;
+}
+
+/* Modal de compra */
+body.compraLojaAberta{
+  overflow:hidden !important;
+}
+.compraLojaOverlay{
+  position:fixed;
+  inset:0;
+  z-index:10070;
+  padding:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(2,5,8,.87);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  animation:catalogoInventarioEntrada .16s ease-out;
+}
+.compraLojaBox{
+  width:min(520px,100%);
+  max-height:calc(100dvh - 28px);
+  overflow:auto;
+  border:1px solid rgba(222,145,69,.47);
+  border-radius:21px;
+  background:linear-gradient(180deg,#111820,#080c11);
+  color:#f4e5cf;
+  box-shadow:0 28px 75px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.compraLojaBox>header{
+  min-height:69px;
+  padding:13px 15px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px solid rgba(222,145,69,.2);
+}
+.compraLojaBox>header small{
+  display:block;
+  color:#d58947;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:1.1px;
+}
+.compraLojaBox>header h3{
+  margin:4px 0 0;
+  color:#fff0d4;
+  font-size:21px;
+  line-height:1.12;
+  text-transform:none;
+}
+.compraLojaBox>header button{
+  flex:0 0 40px;
+  width:40px;
+  height:40px;
+  padding:0 0 4px;
+  border:1px solid rgba(255,191,113,.23);
+  border-radius:12px;
+  background:rgba(255,255,255,.055);
+  color:#ffe9c4;
+  font-size:28px;
+}
+.compraLojaCorpo{
+  padding:14px;
+}
+.compraLojaItemImagem{
+  height:142px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,207,136,.1);
+  border-radius:16px;
+  background:radial-gradient(circle,rgba(255,221,151,.15),rgba(67,31,10,.09) 62%,transparent 76%);
+}
+.compraLojaItemImagem .itemInventarioImg,
+.compraLojaItemImagem .itemInventarioIconeFallback{
+  width:138px;
+  height:138px;
+  object-fit:contain;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:66px;
+  filter:drop-shadow(0 8px 10px rgba(0,0,0,.5));
+}
+.compraLojaDetalhes{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:10px;
+}
+.compraLojaDetalhes span{
+  min-width:0;
+  padding:8px;
+  border:1px solid rgba(255,203,132,.12);
+  border-radius:11px;
+  background:rgba(255,255,255,.035);
+  color:#d5c6b0;
+  font-size:10px;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+.compraLojaDetalhes b{
+  display:block;
+  margin-bottom:3px;
+  color:#ad713e;
+  font-size:8px;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+}
+.compraLojaQuantidade{
+  margin:11px 0 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.compraLojaQuantidade>span{
+  color:#c9b79d;
+  font-size:11px;
+  font-weight:900;
+}
+.compraLojaQuantidade>div{
+  display:grid;
+  grid-template-columns:38px 62px 38px;
+  gap:5px;
+}
+.compraLojaQuantidade button,
+.compraLojaQuantidade input{
+  height:38px;
+  min-height:38px;
+  margin:0;
+  padding:0;
+  border:1px solid rgba(224,152,82,.24);
+  border-radius:10px;
+  background:rgba(255,255,255,.05);
+  color:#fff0d8;
+  font-size:16px;
+  font-weight:1000;
+  text-align:center;
+}
+.compraLojaQuantidade input{
+  width:62px;
+  appearance:textfield;
+  -moz-appearance:textfield;
+}
+.compraLojaResumo{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:11px;
+}
+.compraLojaResumo span{
+  min-width:0;
+  padding:9px;
+  border:1px solid rgba(255,202,128,.13);
+  border-radius:11px;
+  background:rgba(0,0,0,.16);
+}
+.compraLojaResumo small,
+.compraLojaResumo strong{
+  display:block;
+}
+.compraLojaResumo small{
+  color:#8e877e;
+  font-size:8px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.compraLojaResumo strong{
+  margin-top:4px;
+  color:#f0c184;
+  font-size:11px;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+.compraLojaResumo strong.insuficiente{
+  color:#ef7569;
+}
+.compraLojaBox>footer{
+  padding:11px 14px calc(11px + env(safe-area-inset-bottom));
+  display:grid;
+  grid-template-columns:1fr 1.4fr;
+  gap:9px;
+  border-top:1px solid rgba(222,145,69,.2);
+  background:rgba(4,7,10,.66);
+}
+.compraLojaBox>footer button{
+  min-height:44px;
+  border-radius:12px;
+  font-size:11px;
+  font-weight:1000;
+}
+.compraLojaCancelar{
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);
+  color:#c8bcaa;
+}
+.compraLojaConfirmar{
+  border:1px solid rgba(255,188,105,.48);
+  background:linear-gradient(180deg,#d06424,#792a0d);
+  color:#fff3df;
+}
+.compraLojaConfirmar:disabled{
+  opacity:.4;
+  filter:grayscale(.35);
+}
+
+@media (min-width:760px){
+  #inventario .lojaGrid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+@media (max-width:560px){
+  #inventario .inventarioBotoesRodape{
+    grid-template-columns:1fr;
+  }
+  #inventario .carteiraMoedasGrid{
+    grid-template-columns:1fr;
+  }
+  #inventario .carteiraMoedaCard{
+    grid-template-columns:48px minmax(0,1fr) minmax(126px,auto);
+  }
+  #inventario .carteiraMoedaImagem{
+    width:48px;
+    height:48px;
+  }
+  #inventario .carteiraMoedaImagem .itemInventarioImg,
+  #inventario .carteiraMoedaImagem .itemInventarioIconeFallback{
+    width:44px;
+    height:44px;
+  }
+  #inventario .carteiraMoedaControle{
+    grid-column:auto;
+    grid-template-columns:34px minmax(54px,1fr) 34px;
+  }
+  #inventario .lojaGrid{
+    grid-template-columns:1fr;
+  }
+  #inventario .lojaItemCard{
+    display:grid;
+    grid-template-columns:102px minmax(0,1fr);
+  }
+  #inventario .lojaItemImagem{
+    min-height:126px;
+    grid-row:1 / span 2;
+  }
+  #inventario .lojaItemImagem .itemInventarioImg,
+  #inventario .lojaItemImagem .itemInventarioIconeFallback{
+    width:92px;
+    height:92px;
+  }
+  #inventario .lojaItemRodape{
+    grid-column:2;
+  }
+  .compraLojaDetalhes,
+  .compraLojaResumo{
+    grid-template-columns:1fr;
+  }
+}
+@media (max-width:410px){
+  #inventario .inventarioAbas button{
+    flex-direction:column;
+    gap:3px;
+    font-size:10px;
+  }
+  #inventario .inventarioAbas button span{
+    font-size:17px;
+  }
+  #inventario .carteiraMoedaCard{
+    grid-template-columns:44px minmax(0,1fr);
+  }
+  #inventario .carteiraMoedaControle{
+    grid-column:1/-1;
+  }
+  #inventario .carteiraConversao{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  #inventario .carteiraConversao button{
+    width:100%;
+  }
+  #inventario .lojaItemCard{
+    grid-template-columns:88px minmax(0,1fr);
+  }
+  #inventario .lojaItemImagem{
+    min-height:116px;
+  }
+  #inventario .lojaItemImagem .itemInventarioImg,
+  #inventario .lojaItemImagem .itemInventarioIconeFallback{
+    width:80px;
+    height:80px;
+  }
+}
