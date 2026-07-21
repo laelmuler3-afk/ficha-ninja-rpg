@@ -2584,3 +2584,118 @@ body.compraLojaAberta{
     height:80px;
   }
 }
+
+/* =========================================================
+   v2.3.1 — Contraste visual da Loja
+   Mantém o pergaminho de fundo, mas separa os cards com
+   superfícies escuras opacas e textos de alto contraste.
+   ========================================================= */
+#inventario .lojaTopo{
+  border-color:rgba(230,139,52,.48);
+  background:linear-gradient(180deg,rgba(12,14,16,.985),rgba(6,8,10,.985));
+  box-shadow:0 10px 24px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,190,102,.08);
+}
+#inventario .lojaBusca{
+  border-color:rgba(221,127,39,.38);
+  background:linear-gradient(180deg,#17191c,#0d0f12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+#inventario .lojaBusca input,
+#inventario .lojaBusca input::placeholder{
+  color:#d7d1c8;
+  opacity:1;
+}
+#inventario .lojaResumoLinha>span{
+  color:#cbc1b5;
+}
+#inventario .lojaResumoLinha button{
+  border-color:rgba(224,132,45,.45);
+  background:linear-gradient(180deg,#241a13,#15100c);
+  color:#ead9c2;
+}
+#inventario .lojaCategoria>h3{
+  color:#bf551f;
+  text-shadow:0 1px 0 rgba(255,220,170,.2);
+}
+#inventario .lojaItemCard{
+  border-color:rgba(224,101,25,.72);
+  background:linear-gradient(145deg,#21170f 0%,#15110d 52%,#0c0d0f 100%);
+  box-shadow:0 9px 18px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,193,109,.08);
+}
+#inventario .lojaItemImagem{
+  border-right:1px solid rgba(221,105,28,.34);
+  background:radial-gradient(circle at 50% 42%,rgba(143,72,28,.42),rgba(45,27,17,.92) 58%,#18110c 100%);
+}
+#inventario .lojaItemConteudo{
+  background:transparent;
+}
+#inventario .lojaItemConteudo>small{
+  color:#f08331;
+}
+#inventario .lojaItemConteudo>strong{
+  color:#fff7ea;
+  text-shadow:0 1px 2px rgba(0,0,0,.7);
+}
+#inventario .lojaItemConteudo>span{
+  color:#d8b991;
+}
+#inventario .lojaItemRodape{
+  border-top-color:rgba(221,120,44,.23);
+  background:rgba(0,0,0,.2);
+}
+#inventario .lojaItemRodape b{
+  color:#ff9b42;
+  text-shadow:0 1px 1px rgba(0,0,0,.7);
+}
+#inventario .lojaItemRodape button{
+  border-color:#f0792b;
+  background:linear-gradient(180deg,#df651e,#9c310d);
+  color:#fff8ef;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 8px rgba(0,0,0,.3);
+}
+#inventario .lojaItemRodape button:active{
+  transform:translateY(1px);
+  filter:brightness(.92);
+}
+#inventario .lojaItemPossui{
+  border-color:rgba(255,145,65,.7);
+  background:rgba(88,27,11,.96);
+  color:#fff2df;
+  box-shadow:0 2px 5px rgba(0,0,0,.38);
+}
+#inventario .lojaItemIndisponivel{
+  opacity:.78;
+}
+#inventario .lojaItemIndisponivel .lojaItemConteudo>strong,
+#inventario .lojaItemIndisponivel .lojaItemConteudo>span{
+  color:#b8afa4;
+}
+
+@media (max-width:560px){
+  #inventario .lojaItemCard{
+    grid-template-columns:112px minmax(0,1fr);
+  }
+  #inventario .lojaItemImagem{
+    min-height:138px;
+  }
+  #inventario .lojaItemConteudo{
+    padding:13px 13px 9px;
+  }
+  #inventario .lojaItemConteudo>strong{
+    font-size:16px;
+  }
+  #inventario .lojaItemConteudo>span{
+    font-size:12px;
+  }
+  #inventario .lojaItemRodape{
+    padding:10px 12px 11px;
+  }
+  #inventario .lojaItemRodape b{
+    font-size:16px;
+  }
+  #inventario .lojaItemRodape button{
+    min-height:42px;
+    padding:8px 14px;
+    font-size:13px;
+  }
+}
