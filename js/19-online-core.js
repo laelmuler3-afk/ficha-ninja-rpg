@@ -31,6 +31,8 @@
     unsubscribeConnected:null,
     syncTimer:null,
     processandoXp:false,
+    deduplicandoEfeitos:false,
+    lastDedupAt:0,
     ultimoErro:null
   };
 
@@ -257,7 +259,13 @@
         estadoOnline.conectado=true;
         emitir("auth",snapshot());
         if(sessao?.role==="player"&&sessao.code&&sessao.localSheetName){
-          await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName});
+          try{
+            await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName});
+          }catch(erroSala){
+            /* O login continua válido mesmo que a sala tenha sido encerrada ou
+               a reconexão falhe. Antes, esse erro aparecia como falha no e-mail. */
+            emitir("erro",{mensagem:`Conta conectada, mas não foi possível voltar à sala: ${erroAmigavel(erroSala)}`,erro:erroSala});
+          }
         }
         return snapshot();
       }
@@ -472,12 +480,22 @@
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) throw new Error("Escolha uma ficha para entrar na sala.");
     const api=estadoOnline.api;
+    const participantId=estadoOnline.user.uid;
+
     await api.set(api.ref(estadoOnline.db,`roomMemberships/${encontrada.roomId}/${estadoOnline.user.uid}`),{
       role:"player",joinedAt:agora(),sheetId:ficha.sheetId
     });
+
+    /* O mesmo e-mail em celular e tablet representa um único participante.
+       Antes de atualizar a ficha da sala, preservamos os campos controlados
+       pelo mestre (principalmente iniciativa). A versão anterior sobrescrevia
+       initiative com null e o Firebase recusava o segundo aparelho. */
+    const refParticipante=api.ref(estadoOnline.db,`rooms/${encontrada.roomId}/participants/${participantId}`);
+    const snapExistente=await api.get(refParticipante);
+    const existente=snapExistente.exists()?snapExistente.val():null;
     const resumo=resumoBatalhaDaFicha(ficha);
-    await api.set(api.ref(estadoOnline.db,`rooms/${encontrada.roomId}/participants/${estadoOnline.user.uid}`),{
-      id:estadoOnline.user.uid,
+    await api.set(refParticipante,{
+      id:participantId,
       ownerUid:estadoOnline.user.uid,
       type:"player",
       connected:true,
@@ -485,12 +503,12 @@
       localSheetName:ficha.name,
       displayName:resumo.displayName,
       initiativeBonus:resumo.initiativeBonus,
-      initiative:null,
+      initiative:existente?.initiative??null,
       battle:resumo,
-      joinedAt:agora(),
+      joinedAt:existente?.joinedAt||agora(),
       updatedAt:agora()
     });
-    salvarJson(CHAVE_SESSAO,{roomId:encontrada.roomId,participantId:estadoOnline.user.uid,role:"player",sheetId:ficha.sheetId,localSheetName:ficha.name,code:encontrada.code});
+    salvarJson(CHAVE_SESSAO,{roomId:encontrada.roomId,participantId,role:"player",sheetId:ficha.sheetId,localSheetName:ficha.name,code:encontrada.code});
     await observarSala(encontrada.roomId);
     return encontrada;
   }
@@ -512,6 +530,7 @@
       }
       estadoOnline.sala={id:roomId,...snap.val()};
       emitir("sala",snapshot());
+      deduplicarEfeitosDaSala().catch(()=>{});
       processarEventosXp().catch(()=>{});
     },erro=>emitir("erro",{mensagem:erroAmigavel(erro),erro}));
     estadoOnline.unsubscribePresenca=api.onValue(api.ref(estadoOnline.db,`presence/${roomId}`),snap=>{
@@ -531,12 +550,20 @@
     exigirUsuario();
     const api=estadoOnline.api;
     const connectedRef=api.ref(estadoOnline.db,".info/connected");
-    const myPresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}`);
+    const deviceId=obterDeviceId();
+    const myUserPresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}`);
+    const myDevicePresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}/devices/${deviceId}`);
     estadoOnline.unsubscribeConnected=api.onValue(connectedRef,async snap=>{
       if(snap.val()!==true) return;
       try{
-        await api.onDisconnect(myPresence).set({connected:false,lastSeen:api.serverTimestamp(),deviceId:obterDeviceId()});
-        await api.set(myPresence,{connected:true,lastSeen:api.serverTimestamp(),deviceId:obterDeviceId(),participantId:lerJson(CHAVE_SESSAO,{})?.participantId||""});
+        /* Cada aparelho mantém a própria presença. Fechar o celular não deixa
+           o personagem offline se o tablet com o mesmo e-mail continuar aberto. */
+        await api.update(myUserPresence,{connected:null,lastSeen:null,deviceId:null,participantId:null});
+        await api.onDisconnect(myDevicePresence).remove();
+        await api.set(myDevicePresence,{
+          connected:true,lastSeen:api.serverTimestamp(),deviceId,
+          participantId:lerJson(CHAVE_SESSAO,{})?.participantId||""
+        });
       }catch(_erro){}
     });
   }
@@ -766,7 +793,49 @@
     });
   }
 
-  async function adicionarEfeito({participantId,name,duration,source="manual",ownerUid,summary="",details=[],localEffectId=""}){
+  function chaveDeduplicacaoEfeito(efeito){
+    const local=texto(efeito?.localEffectId);
+    if(local) return `${texto(efeito?.participantId)}|${texto(efeito?.ownerUid)}|local:${local}`;
+    return `${texto(efeito?.participantId)}|${texto(efeito?.ownerUid)}|${texto(efeito?.source)}|${texto(efeito?.name).toLowerCase()}`;
+  }
+
+  async function deduplicarEfeitosDaSala({forcar=false}={}){
+    if(!estadoOnline.salaId||!estadoOnline.user||estadoOnline.deduplicandoEfeitos) return {skipped:true};
+    if(!forcar&&agora()-Number(estadoOnline.lastDedupAt||0)<1200) return {skipped:true};
+    estadoOnline.deduplicandoEfeitos=true;
+    estadoOnline.lastDedupAt=agora();
+    try{
+      const api=estadoOnline.api;
+      const snap=await api.get(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects`));
+      const efeitos=snap.val()||{};
+      const ehMestre=estadoOnline.sala?.masterUid===estadoOnline.user.uid;
+      const grupos=new Map();
+      Object.entries(efeitos).forEach(([id,efeito])=>{
+        if(!efeito||efeito.status!=="active") return;
+        if(!ehMestre&&efeito.ownerUid!==estadoOnline.user.uid) return;
+        const chave=chaveDeduplicacaoEfeito(efeito);
+        const lista=grupos.get(chave)||[];
+        lista.push({id,efeito});
+        grupos.set(chave,lista);
+      });
+      const updates={};
+      grupos.forEach(lista=>{
+        if(lista.length<2) return;
+        lista.sort((a,b)=>Number(b.efeito.createdAt||0)-Number(a.efeito.createdAt||0));
+        lista.slice(1).forEach(({id})=>{
+          updates[`rooms/${estadoOnline.salaId}/effects/${id}/status`]="ended";
+          updates[`rooms/${estadoOnline.salaId}/effects/${id}/endedAt`]=agora();
+          updates[`rooms/${estadoOnline.salaId}/effects/${id}/endedReason`]="duplicate-repair";
+        });
+      });
+      if(Object.keys(updates).length) await api.update(api.ref(estadoOnline.db),updates);
+      return {ok:true,removed:Object.keys(updates).filter(k=>k.endsWith('/status')).length};
+    }finally{
+      estadoOnline.deduplicandoEfeitos=false;
+    }
+  }
+
+  async function adicionarEfeito({participantId,name,duration,source="manual",ownerUid,summary="",details=[],localEffectId="",activationKey=""}){
     exigirUsuario();
     const participante=participantes()[participantId];
     if(!participante) throw new Error("Participante não encontrado.");
@@ -780,19 +849,30 @@
     const turnIndex=combat.started&&ordem.length
       ?Math.min(Math.max(0,Number(combat.turnIndex||0)),ordem.length-1)
       :0;
-    const id=idAleatorio("effect");
+    const localId=texto(localEffectId).slice(0,160);
+    const ativacao=texto(activationKey).slice(0,80);
+    /* A chave inclui a ativação. A mesma ativação reenviada após reiniciar o app
+       encontra o mesmo registro; usar o jutsu novamente cria uma nova chave. */
+    const id=localId&&ativacao
+      ?`effect_${hashLeve(`${estadoOnline.salaId}|${participantId}|${localId}|${ativacao}`)}`
+      :idAleatorio("effect");
+    const refEfeito=estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects/${id}`);
+    const existenteSnap=await estadoOnline.api.get(refEfeito);
+    if(existenteSnap.exists()) return {id,...existenteSnap.val()};
+
     const detalhes=normalizarDetalhesEfeito(details);
     const efeito={
       id,participantId,ownerUid:ownerUid||participante.ownerUid||estadoOnline.user.uid,
       name:(texto(name)||"Efeito").slice(0,120),source:texto(source).slice(0,140),
       summary:texto(summary).slice(0,500),details:detalhes,
-      localEffectId:texto(localEffectId).slice(0,160),
+      localEffectId:localId,activationKey:ativacao,
       durationOriginal:regra.original,totalRounds:regra.rounds,
       startRound:round,startTurnIndex:turnIndex,
       expiresAtRound:round+regra.rounds,expiresAtTurnIndex:turnIndex,
       status:"active",createdAt:agora()
     };
-    await estadoOnline.api.set(estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/effects/${id}`),efeito);
+    await estadoOnline.api.set(refEfeito,efeito);
+    deduplicarEfeitosDaSala().catch(()=>{});
     return efeito;
   }
 
@@ -873,10 +953,37 @@
     estadoOnline.unsubscribeEventos=api.onValue(consulta,()=>processarEventosXp().catch(()=>{}));
   }
 
+  async function reivindicarEventoXp(roomId,eventId,userUid){
+    const api=estadoOnline.api;
+    const deviceId=obterDeviceId();
+    const refAck=api.ref(estadoOnline.db,`rooms/${roomId}/eventAcks/${eventId}/${userUid}`);
+    const instante=agora();
+    const resultado=await api.runTransaction(refAck,atual=>{
+      if(atual?.status==="done") return;
+      const processando=atual?.status==="processing";
+      const expirou=processando&&instante-Number(atual.claimedAt||0)>45000;
+      if(atual&&!expirou) return;
+      return {status:"processing",deviceId,claimedAt:instante};
+    },{applyLocally:false});
+    const valor=resultado.snapshot.val();
+    return {
+      claimed:Boolean(resultado.committed&&valor?.status==="processing"&&valor?.deviceId===deviceId),
+      refAck,deviceId,value:valor
+    };
+  }
+
+  async function liberarReivindicacaoXp(refAck,deviceId){
+    const api=estadoOnline.api;
+    await api.runTransaction(refAck,atual=>{
+      if(atual?.status==="processing"&&atual?.deviceId===deviceId) return null;
+      return;
+    },{applyLocally:false}).catch(()=>{});
+  }
+
   async function processarEventosXp(){
     if(estadoOnline.processandoXp) return;
-    const room=estadoOnline.sala,user=estadoOnline.user;
-    if(!room||!user) return;
+    const room=estadoOnline.sala,user=estadoOnline.user,api=estadoOnline.api;
+    if(!room||!user||user.anonymous) return;
     estadoOnline.processandoXp=true;
     try{
       const processados=lerJson(CHAVE_XP_PROCESSADO,{})||{};
@@ -887,55 +994,69 @@
       for(const evento of eventos){
         const sheetId=texto(evento.payload?.sheetId);
         const nome=texto(evento.payload?.localSheetName);
-        const fichasLocais=listarFichasLocais();
-        /* Eventos novos sempre apontam para o ID estável da ficha. O nome só é
-           usado como compatibilidade com eventos antigos, evitando aplicar XP
-           numa ficha diferente que por acaso tenha o mesmo nome. */
-        const ficha=sheetId
+        let fichasLocais=listarFichasLocais();
+        let ficha=sheetId
           ?fichasLocais.find(f=>f.sheetId===sheetId)
           :fichasLocais.find(f=>f.name===nome);
         if(!ficha) continue;
 
-        const dados=clonar(ficha.data);
-        dados.__online=dados.__online&&typeof dados.__online==="object"?dados.__online:{};
-        const aplicados=dados.__online.appliedXpEvents&&typeof dados.__online.appliedXpEvents==="object"
-          ?dados.__online.appliedXpEvents:{};
-        const confirmadoNaSala=Boolean(room.eventAcks?.[evento.id]?.[user.uid]);
-        if(confirmadoNaSala&&(aplicados[evento.id]||processados[evento.id])) continue;
-
-        if(!aplicados[evento.id]&&!processados[evento.id]){
-          const xp=parseXpAtual(dados.xp),antes=xp.current;
-          dados.xp=formatarXp(Math.max(0,xp.current+Number(evento.payload.amount||0)),xp.max);
-          aplicados[evento.id]=agora();
-          /* Mantém somente os eventos mais recentes para a ficha não crescer
-             indefinidamente. A identificação fica na própria ficha e viaja no
-             backup, impedindo XP duplicado ao abrir em outro aparelho. */
-          const recentes=Object.entries(aplicados).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,80);
-          dados.__online.appliedXpEvents=Object.fromEntries(recentes);
-          dados.__online.lastXpEvent=evento.id;
-          localStorage.setItem(ficha.key,JSON.stringify(dados));
-
-          if(ficha.name===fichaAtualLocal()?.name){
-            try{estado=dados;CHAVE=ficha.key;carregar();atualizarPerfil();}catch(_erro){}
-          }
-          emitir("xp-recebido",{
-            amount:Number(evento.payload.amount||0),before:antes,after:parseXpAtual(dados.xp).current,
-            reason:evento.payload.reason,character:texto(dados.nome)||ficha.characterName
-          });
+        const ackAtual=room.eventAcks?.[evento.id]?.[user.uid];
+        if(ackAtual?.status==="done"||ackAtual===true||typeof ackAtual==="number"){
+          processados[evento.id]=processados[evento.id]||agora();
+          continue;
         }
 
-        /* Primeiro confirma a ficha na nuvem e só depois registra o ACK da sala.
-           Assim, outro aparelho não considera o evento concluído antes de o novo
-           total de XP estar protegido no backup. */
-        const sincronizada=await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"xp"});
-        if(sincronizada?.conflict) continue;
-        processados[evento.id]=agora();
-        salvarJson(CHAVE_XP_PROCESSADO,processados);
-        if(!confirmadoNaSala){
-          await estadoOnline.api.set(
-            estadoOnline.api.ref(estadoOnline.db,`rooms/${room.id}/eventAcks/${evento.id}/${user.uid}`),
-            agora()
-          ).catch(()=>{});
+        /* Celular e tablet compartilham o mesmo UID. Somente um aparelho pode
+           reivindicar o evento; assim o XP é somado uma única vez. */
+        const claim=await reivindicarEventoXp(room.id,evento.id,user.uid);
+        if(!claim.claimed) continue;
+
+        try{
+          /* Recarrega a ficha depois da reivindicação, pois outro snapshot pode
+             ter chegado enquanto o Firebase concluía a transação. */
+          fichasLocais=listarFichasLocais();
+          ficha=sheetId
+            ?fichasLocais.find(f=>f.sheetId===sheetId)
+            :fichasLocais.find(f=>f.name===nome);
+          if(!ficha){
+            await liberarReivindicacaoXp(claim.refAck,claim.deviceId);
+            continue;
+          }
+
+          const dados=clonar(ficha.data);
+          dados.__online=dados.__online&&typeof dados.__online==="object"?dados.__online:{};
+          const aplicados=dados.__online.appliedXpEvents&&typeof dados.__online.appliedXpEvents==="object"
+            ?dados.__online.appliedXpEvents:{};
+
+          if(!aplicados[evento.id]&&!processados[evento.id]){
+            const xp=parseXpAtual(dados.xp),antes=xp.current;
+            dados.xp=formatarXp(Math.max(0,xp.current+Number(evento.payload.amount||0)),xp.max);
+            aplicados[evento.id]=agora();
+            const recentes=Object.entries(aplicados).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,80);
+            dados.__online.appliedXpEvents=Object.fromEntries(recentes);
+            dados.__online.lastXpEvent=evento.id;
+            localStorage.setItem(ficha.key,JSON.stringify(dados));
+
+            if(ficha.name===fichaAtualLocal()?.name){
+              try{estado=dados;CHAVE=ficha.key;carregar();atualizarPerfil();}catch(_erro){}
+            }
+            emitir("xp-recebido",{
+              amount:Number(evento.payload.amount||0),before:antes,after:parseXpAtual(dados.xp).current,
+              reason:evento.payload.reason,character:texto(dados.nome)||ficha.characterName
+            });
+          }
+
+          const sincronizada=await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"xp"});
+          if(sincronizada?.conflict){
+            await liberarReivindicacaoXp(claim.refAck,claim.deviceId);
+            continue;
+          }
+          processados[evento.id]=agora();
+          salvarJson(CHAVE_XP_PROCESSADO,processados);
+          await api.set(claim.refAck,{status:"done",deviceId:claim.deviceId,completedAt:agora()});
+        }catch(erro){
+          await liberarReivindicacaoXp(claim.refAck,claim.deviceId);
+          emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});
         }
       }
     }finally{
@@ -1165,7 +1286,7 @@
     sairDaSala,encerrarSala,listarFichasLocais,fichaAtualLocal,resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
-    adicionarEfeito,encerrarEfeito,concederXp,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
+    adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };
