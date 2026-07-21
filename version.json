@@ -1,6 +1,6 @@
 {
-  "version": "2.2.7",
-  "releasedAt": "2026-07-21T10:25:45Z",
-  "notes": "Gerenciamento de campanhas pelo painel do mestre.",
-  "message": "Cada campanha agora possui um menu de três pontos no canto superior esquerdo para editar o nome ou excluir. Ao excluir uma campanha, salas vinculadas ainda abertas são encerradas com segurança antes da remoção."
+  "version": "2.3.0",
+  "releasedAt": "2026-07-21T19:42:50Z",
+  "notes": "Carteira separada e Loja de Itens com compra e troco automático.",
+  "message": "As moedas foram removidas do inventário e migradas para a nova Carteira. O catálogo virou uma Loja: itens com preço podem ser comprados, o valor é descontado automaticamente e moedas maiores são quebradas para devolver o troco. A conversão usa 1 PD = 100 PO, 1 PO = 100 PP e 1 PP = 100 PC."
 }
