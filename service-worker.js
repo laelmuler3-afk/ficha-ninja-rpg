@@ -1,5 +1,5 @@
-/* Shinobi 2.2.5 — conta Google e sincronização para mestre e jogador. */
-const APP_VERSION = "2.2.5";
+/* Shinobi 2.2.6 — deduplicação de buffs, login multiaparelho e XP atômico. */
+const APP_VERSION = "2.2.6";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
