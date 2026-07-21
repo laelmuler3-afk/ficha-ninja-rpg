@@ -1,5 +1,5 @@
-/* Shinobi 2.3.1 — Carteira e Loja de Itens. */
-const APP_VERSION = "2.3.1";
+/* Shinobi 2.3.2 — Contraste visual da Carteira. */
+const APP_VERSION = "2.3.2";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
