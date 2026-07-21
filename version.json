@@ -1,6 +1,6 @@
 {
-  "version": "2.2.4",
-  "releasedAt": "2026-07-20T21:45:00Z",
-  "notes": "Revisão geral da versão online, com correção definitiva da publicação e expiração de buffs, sincronização entre aparelhos e estabilidade de sala.",
-  "message": "Durações abreviadas como 30 seg e 1 min agora são convertidas corretamente em rodadas. Buffs usados com a sala ativa entram em uma fila persistente, são reenviados em falhas temporárias, aparecem para o mestre e terminam automaticamente no mesmo ponto da iniciativa. A revisão também corrige ficha ativa, presença em celular e tablet, iniciativa, saída de jogadores, XP e conflitos de sincronização."
+  "version": "2.2.5",
+  "releasedAt": "2026-07-21T00:20:00Z",
+  "notes": "Conta Google e sincronização em nuvem disponíveis para mestre e jogador.",
+  "message": "O jogador pode entrar com Google, salvar fichas na própria conta, baixar no celular ou tablet e manter os aparelhos sincronizados. A entrada sem conta continua disponível apenas para participação temporária na sala, sem backup entre dispositivos."
 }
