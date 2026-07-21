@@ -1,6 +1,6 @@
 {
-  "version": "2.2.5",
-  "releasedAt": "2026-07-21T00:20:00Z",
-  "notes": "Conta Google e sincronização em nuvem disponíveis para mestre e jogador.",
-  "message": "O jogador pode entrar com Google, salvar fichas na própria conta, baixar no celular ou tablet e manter os aparelhos sincronizados. A entrada sem conta continua disponível apenas para participação temporária na sala, sem backup entre dispositivos."
+  "version": "2.2.6",
+  "releasedAt": "2026-07-21T00:55:00Z",
+  "notes": "Correção de buffs duplicados, login Google e uso da mesma conta em celular e tablet.",
+  "message": "Buffs de jutsu agora usam identificadores estáveis e não se repetem ao reabrir o app. Cópias antigas na sala são encerradas automaticamente. Celular e tablet com o mesmo e-mail atualizam o mesmo participante, preservam a iniciativa do mestre, mantêm presença por aparelho e recebem XP uma única vez."
 }
