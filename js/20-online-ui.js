@@ -24,7 +24,11 @@
   function participantes(st){return listaDeObjeto(st?.sala?.participants).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"pt-BR"));}
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
   function participanteAtual(st){const o=ordem(st);return st?.sala?.participants?.[o[num(st?.sala?.combat?.turnIndex)]]||null;}
-  function conectado(st,p){return p.type==="player"&&Boolean(st?.presencas?.[p.ownerUid]?.connected);}
+  function presencaConectada(registro){
+    if(registro?.connected===true) return true; // compatibilidade com versões antigas
+    return Object.values(registro?.devices||{}).some(device=>device?.connected===true);
+  }
+  function conectado(st,p){return p.type==="player"&&presencaConectada(st?.presencas?.[p.ownerUid]);}
   function rodadasRestantes(efeito,combat){
     const rodadaAtual=Math.max(1,num(combat?.round,1));
     const indiceAtual=Math.max(0,num(combat?.turnIndex));
@@ -97,7 +101,7 @@
   function conexaoPainel(st){
     if(navigator.onLine===false)return "offline";
     const presenca=st?.presencas?.[st?.user?.uid];
-    if(presenca?.connected===true)return "online";
+    if(presencaConectada(presenca))return "online";
     if(st?.conectado)return "conectando";
     return "offline";
   }
