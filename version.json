@@ -1,6 +1,6 @@
 {
-  "version": "2.3.4",
-  "name": "Atualizador estável e revisão geral",
-  "notes": "Corrige o aviso de recarregar que reaparecia após a atualização, sincroniza todas as referências de versão e evita alertas falsos do service worker.",
+  "version": "2.3.5",
+  "name": "Sincronização integral da ficha",
+  "notes": "Sincroniza e restaura o estado completo da ficha, incluindo notas, inventário, carteira, jutsus e imagens armazenadas na ficha. Também força a captura dos campos em edição antes do envio e abre a ficha baixada imediatamente.",
   "date": "2026-07-21"
 }
