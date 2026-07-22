@@ -1,5 +1,5 @@
-/* Shinobi 2.3.4 — Atualização estável e auditoria geral. */
-const APP_VERSION = "2.3.4";
+/* Shinobi 2.3.5 — Sincronização integral da ficha e atualização estável. */
+const APP_VERSION = "2.3.5";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
