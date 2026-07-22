@@ -772,7 +772,11 @@
     }
     if(acao==="copy-code")return copiar(obterEstado().sala?.code,"Código copiado.");
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
-    if(acao==="sync-current")return executar(async()=>{await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:true,motivo:"manual"});await avisar("Ficha sincronizada","A ficha atual foi enviada para a nuvem.");});
+    if(acao==="sync-current")return executar(async()=>{
+      try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
+      await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:true,motivo:"manual"});
+      await avisar("Ficha completa sincronizada","Notas, inventário, carteira, jutsus e demais dados da ficha foram enviados para a nuvem.");
+    });
     if(acao==="sync-all")return executar(async()=>{await window.ShinobiOnline.sincronizarTodasFichas();await avisar("Sincronização concluída","Todas as fichas deste aparelho foram verificadas.");});
     if(acao==="restore-cloud")return executar(async()=>{
       const vinculada=el.dataset.linked==="true";
@@ -781,7 +785,7 @@
         : "A ficha será baixada e ficará vinculada à mesma versão da nuvem neste aparelho.";
       if(await confirmar(vinculada?"Baixar novamente":"Baixar ficha",mensagem)){
         await window.ShinobiOnline.restaurarFichaDaNuvem(el.dataset.sheetId,{asCopy:false});
-        await avisar("Ficha disponível","A ficha foi salva neste aparelho.");
+        await avisar("Ficha completa baixada","A ficha foi aberta neste aparelho com notas, inventário, carteira, jutsus e demais dados da nuvem.");
       }
     });
     if(acao==="resolve-conflict")return executar(async()=>{await window.ShinobiOnline.resolverConflito(el.dataset.sheetId,el.dataset.choice);conflitoAtual=null;});

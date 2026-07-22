@@ -16,7 +16,7 @@
 
   /* O HTML é a fonte canônica da versão da tela carregada. Usar primeiro a
      versão do próprio script causava o ciclo 2.3.2 → 2.3.3 da versão anterior. */
-  const APP_VERSION=String(versaoDocumento||versaoScript||"2.3.4");
+  const APP_VERSION=String(versaoDocumento||versaoScript||"2.3.5");
   document.documentElement.dataset.appVersion=APP_VERSION;
   window.APP_VERSION=APP_VERSION;
 

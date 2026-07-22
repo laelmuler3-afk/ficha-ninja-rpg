@@ -449,6 +449,40 @@
     return copia;
   }
 
+
+  function fichaAtivaNomeSeguro(){
+    try{return texto(window.fichaAtual||localStorage.getItem("ficha_ninja_ativa_v1")||"Principal")||"Principal";}catch(_erro){return "Principal";}
+  }
+
+  function capturarEstadoAtualAntesDaSincronizacao(nomeFicha){
+    const nome=texto(nomeFicha)||fichaAtivaNomeSeguro();
+    if(nome!==fichaAtivaNomeSeguro()) return;
+    try{
+      /* Garante que campos ainda em edição (inclusive textarea de notas)
+         sejam copiados para o objeto da ficha antes de ler o localStorage. */
+      if(typeof window.salvar==="function") window.salvar();
+      else{
+        if(typeof window.sincronizarEstadoDosCampos==="function") window.sincronizarEstadoDosCampos();
+        if(typeof window.persistirEstadoLocal==="function") window.persistirEstadoLocal();
+      }
+    }catch(_erro){
+      try{if(typeof window.persistirEstadoLocal==="function") window.persistirEstadoLocal();}catch(_erro2){}
+    }
+  }
+
+  function aplicarEstadoGlobalDaFicha(nome,chave,data){
+    try{
+      localStorage.setItem("ficha_ninja_ativa_v1",nome);
+      if(typeof window.fichaAtual!=="undefined") window.fichaAtual=nome;
+      if(typeof window.CHAVE!=="undefined") window.CHAVE=chave;
+      if(typeof window.estado!=="undefined") window.estado=clonar(data);
+      if(typeof window.carregar==="function") window.carregar();
+      if(typeof window.atualizarPerfil==="function") window.atualizarPerfil();
+      if(typeof window.renderizarTopicosNotas==="function") window.renderizarTopicosNotas();
+      return true;
+    }catch(_erro){return false;}
+  }
+
   function listarFichasLocais(){
     let nomes=[];
     try{
@@ -463,6 +497,11 @@
       const chave=nomeLimpo==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${nomeLimpo}`;
       let dados={};
       try{dados=JSON.parse(localStorage.getItem(chave)||"{}");}catch(_erro){dados={};}
+      try{
+        if(nomeLimpo===fichaAtivaNomeSeguro()&&typeof window.estado!=="undefined"&&window.estado&&typeof window.estado==="object"){
+          dados=clonar(window.estado);
+        }
+      }catch(_erro){}
       dados=garantirMetadadosFichaLocal(nomeLimpo,dados);
       while(vistos.has(dados.__online.sheetId)) dados.__online.sheetId=idAleatorio("sheet");
       vistos.add(dados.__online.sheetId);
@@ -1149,6 +1188,7 @@
     const hash=texto(cloud.hash)||hashFicha(data);
     atualizarMetaSync(sheetId,cloud,hash);
     const ativa=fichaAtualLocal()?.sheetId===sheetId;
+    if(ativa) aplicarEstadoGlobalDaFicha(local.name,local.key,data);
     emitir("ficha-atualizada-nuvem",{
       sheetId,
       name:local.name,
@@ -1216,6 +1256,7 @@
 
   async function sincronizarFicha(localSheetName,{force=false,backup=false,motivo="autosave"}={}){
     exigirContaGoogle();
+    capturarEstadoAtualAntesDaSincronizacao(localSheetName);
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) throw new Error("Ficha local não encontrada.");
     const api=estadoOnline.api,uid=estadoOnline.user.uid,sheetId=ficha.sheetId;
@@ -1243,6 +1284,9 @@
       throw new Error("A sincronização da ficha não foi concluída.");
     }
     const salvo=resultado.snapshot.val();
+    if(!salvo?.data||texto(salvo.hash)!==conteudoHash){
+      throw new Error("A nuvem não confirmou o conteúdo completo da ficha. Tente sincronizar novamente.");
+    }
     sync[sheetId]={revision:salvo.revision,lastHash:salvo.hash,lastSyncedAt:salvo.updatedAt,deviceId:salvo.deviceId};
     gravarEstadoSync(sync);
     if(backup) await criarBackupFicha(ficha,{reason:motivo,revision:salvo.revision});
@@ -1296,6 +1340,8 @@
     localStorage.setItem(chave,JSON.stringify(data));
     const lista=Array.from(new Set([...locais.map(f=>f.name),nome]));
     localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(lista));
+    localStorage.setItem("ficha_ninja_ativa_v1",nome);
+    aplicarEstadoGlobalDaFicha(nome,chave,data);
     const sync=estadoSync();
     sync[idFinal]={
       revision:Number(cloud.revision||0),lastHash:texto(cloud.hash)||hashFicha(data),
