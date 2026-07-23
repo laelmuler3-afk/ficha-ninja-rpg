@@ -885,7 +885,11 @@
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
     ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
-    window.ShinobiOnline.on("erro",e=>avisar("Erro online",e.detail.mensagem));
+    window.ShinobiOnline.on("erro",e=>{
+      document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");
+      console.warn("Modo online indisponível:",e.detail.mensagem);
+      agendarRender();
+    });
     window.ShinobiOnline.on("erro-sync",e=>{document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");console.warn(e.detail.mensagem);});
     window.ShinobiOnline.on("conflito-ficha",e=>{conflitoAtual=e.detail;abrir();agendarRender();});
     window.ShinobiOnline.on("xp-recebido",e=>{

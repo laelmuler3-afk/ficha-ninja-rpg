@@ -97,20 +97,134 @@
       "PERMISSION_DENIED":"O Firebase recusou esta operação. Revise as regras do banco.",
       "permission-denied":"O Firebase recusou esta operação. Revise as regras do banco."
     };
-    return mapa[codigo]||texto(erro?.message)||"Ocorreu um erro na conexão online.";
+    const mensagem=texto(erro?.message);
+    if(/failed to fetch dynamically imported module|não foi possível carregar o módulo online|tempo esgotado ao carregar o módulo online/i.test(mensagem)){
+      return "O modo online não pôde ser carregado agora. A ficha continua disponível offline. Verifique a internet e tente novamente.";
+    }
+    return mapa[codigo]||mensagem||"Ocorreu um erro na conexão online.";
+  }
+
+  const scriptsFirebaseEmCarga = new Map();
+  let retryOnlineInstalado = false;
+
+  function carregarScriptFirebase(url, timeoutMs=18000){
+    if(scriptsFirebaseEmCarga.has(url)) return scriptsFirebaseEmCarga.get(url);
+    const promessa=new Promise((resolve,reject)=>{
+      const existente=[...document.scripts].find(script=>script.src===url);
+      if(existente?.dataset?.shinobiLoaded==="true") return resolve(url);
+      const script=existente||document.createElement("script");
+      const timer=setTimeout(()=>{
+        if(!existente) script.remove();
+        reject(new Error("Tempo esgotado ao carregar o módulo online."));
+      },Math.max(5000,Number(timeoutMs)||18000));
+      script.async=true;
+      script.src=url;
+      script.dataset.shinobiFirebase="true";
+      script.onload=()=>{
+        clearTimeout(timer);
+        script.dataset.shinobiLoaded="true";
+        resolve(url);
+      };
+      script.onerror=()=>{
+        clearTimeout(timer);
+        if(!existente) script.remove();
+        reject(new Error("Não foi possível carregar o módulo online."));
+      };
+      if(!existente) document.head.appendChild(script);
+    }).finally(()=>scriptsFirebaseEmCarga.delete(url));
+    scriptsFirebaseEmCarga.set(url,promessa);
+    return promessa;
+  }
+
+  function firebaseCompatCompleto(){
+    return Boolean(window.firebase?.initializeApp&&window.firebase?.auth&&window.firebase?.database);
+  }
+
+  async function carregarFirebaseCompat(){
+    if(firebaseCompatCompleto()) return window.firebase;
+    const opcoes=window.SHINOBI_FIREBASE_OPTIONS||{};
+    const versao=opcoes.sdkVersion||"12.16.0";
+    const fontes=Array.isArray(opcoes.sdkSources)&&opcoes.sdkSources.length
+      ? opcoes.sdkSources
+      : [`https://www.gstatic.com/firebasejs/${versao}`,`https://cdn.jsdelivr.net/npm/firebase@${versao}`];
+    const timeout=opcoes.sdkTimeoutMs||18000;
+    let ultimoErro=null;
+
+    for(const baseBruta of fontes){
+      const base=String(baseBruta||"").replace(/\/$/,"");
+      try{
+        if(!window.firebase?.initializeApp) await carregarScriptFirebase(`${base}/firebase-app-compat.js`,timeout);
+        if(!window.firebase?.auth) await carregarScriptFirebase(`${base}/firebase-auth-compat.js`,timeout);
+        if(!window.firebase?.database) await carregarScriptFirebase(`${base}/firebase-database-compat.js`,timeout);
+        if(firebaseCompatCompleto()) return window.firebase;
+      }catch(erro){
+        ultimoErro=erro;
+        console.warn("Fonte Firebase indisponível:",base,erro?.message||erro);
+      }
+    }
+    throw ultimoErro||new Error("Não foi possível carregar o modo online.");
+  }
+
+  function criarAdaptadorCompat(firebase){
+    const marcador=(tipo,valor)=>({__shinobiQueryConstraint:true,tipo,valor});
+    return {
+      initializeApp(config){return firebase.apps?.length?firebase.app():firebase.initializeApp(config);},
+      getAuth(app){return app.auth();},
+      getDatabase(app){return app.database();},
+      browserLocalPersistence:"local",
+      setPersistence(auth){return auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);},
+      onAuthStateChanged(auth,callback){return auth.onAuthStateChanged(callback);},
+      GoogleAuthProvider:firebase.auth.GoogleAuthProvider,
+      signInAnonymously(auth){return auth.signInAnonymously();},
+      signInWithPopup(auth,provider){return auth.signInWithPopup(provider);},
+      signInWithRedirect(auth,provider){return auth.signInWithRedirect(provider);},
+      signInWithCredential(auth,credential){return auth.signInWithCredential(credential);},
+      linkWithPopup(user,provider){return user.linkWithPopup(provider);},
+      linkWithRedirect(user,provider){return user.linkWithRedirect(provider);},
+      signOut(auth){return auth.signOut();},
+      ref(db,path){return db.ref(path);},
+      set(referencia,valor){return referencia.set(valor);},
+      update(referencia,valor){return referencia.update(valor);},
+      remove(referencia){return referencia.remove();},
+      get(referencia){return referencia.once("value");},
+      onValue(referencia,callback,errorCallback){
+        referencia.on("value",callback,errorCallback);
+        return ()=>referencia.off("value",callback);
+      },
+      onDisconnect(referencia){return referencia.onDisconnect();},
+      push(referencia,valor){return arguments.length>1?referencia.push(valor):referencia.push();},
+      runTransaction(referencia,atualizador){return referencia.transaction(atualizador);},
+      serverTimestamp(){return firebase.database.ServerValue.TIMESTAMP;},
+      orderByChild(chave){return marcador("orderByChild",chave);},
+      equalTo(valor){return marcador("equalTo",valor);},
+      limitToLast(valor){return marcador("limitToLast",valor);},
+      query(referencia,...restricoes){
+        return restricoes.reduce((consulta,item)=>{
+          if(!item?.__shinobiQueryConstraint) return consulta;
+          if(item.tipo==="orderByChild") return consulta.orderByChild(item.valor);
+          if(item.tipo==="equalTo") return consulta.equalTo(item.valor);
+          if(item.tipo==="limitToLast") return consulta.limitToLast(item.valor);
+          return consulta;
+        },referencia);
+      }
+    };
   }
 
   async function carregarFirebase(){
     if(estadoOnline.api) return estadoOnline.api;
-    const versao=window.SHINOBI_FIREBASE_OPTIONS?.sdkVersion||"12.16.0";
-    const base=`https://www.gstatic.com/firebasejs/${versao}`;
-    const [appApi,authApi,dbApi]=await Promise.all([
-      import(`${base}/firebase-app.js`),
-      import(`${base}/firebase-auth.js`),
-      import(`${base}/firebase-database.js`)
-    ]);
-    estadoOnline.api={...appApi,...authApi,...dbApi};
+    const firebase=await carregarFirebaseCompat();
+    estadoOnline.api=criarAdaptadorCompat(firebase);
     return estadoOnline.api;
+  }
+
+  function instalarRetryOnline(){
+    if(retryOnlineInstalado) return;
+    retryOnlineInstalado=true;
+    window.addEventListener("online",()=>{
+      if(!estadoOnline.api&&!estadoOnline.carregando){
+        setTimeout(()=>iniciar().catch(()=>{}),700);
+      }
+    },{passive:true});
   }
 
   function normalizarUsuarioFirebase(user){
@@ -124,6 +238,7 @@
   }
 
   async function iniciar(){
+    instalarRetryOnline();
     if(estadoOnline.carregando) return snapshot();
     if(estadoOnline.iniciado&&estadoOnline.api) return snapshot();
     estadoOnline.ultimoErro=null;
