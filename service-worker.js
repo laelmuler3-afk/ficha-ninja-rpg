@@ -1,9 +1,23 @@
-/* Shinobi 2.3.5 — Sincronização integral da ficha e atualização estável. */
-const APP_VERSION = "2.3.5";
+/* Shinobi 2.3.6 — Firebase resiliente, cache externo e atualização estável. */
+const APP_VERSION = "2.3.6";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
+const FIREBASE_CACHE = `${CACHE_PREFIX}-firebase-${APP_VERSION}`;
 const LIMITE_DOWNLOADS_SIMULTANEOS = 5;
+
+const FIREBASE_VERSION = "12.16.0";
+const FIREBASE_GSTATIC_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
+const FIREBASE_JSDELIVR_BASE = `https://cdn.jsdelivr.net/npm/firebase@${FIREBASE_VERSION}`;
+const FIREBASE_FILES = [
+  "firebase-app-compat.js",
+  "firebase-auth-compat.js",
+  "firebase-database-compat.js"
+];
+const FIREBASE_URLS = FIREBASE_FILES.flatMap(nome=>[
+  `${FIREBASE_GSTATIC_BASE}/${nome}`,
+  `${FIREBASE_JSDELIVR_BASE}/${nome}`
+]);
 
 const APP_SHELL = [
   `./index.html?v=${APP_VERSION}`,
@@ -183,7 +197,7 @@ async function instalarAppShell(){
 
 async function limparCachesAntigos(){
   const nomes=await caches.keys();
-  const atuais=new Set([SHELL_CACHE,RUNTIME_CACHE]);
+  const atuais=new Set([SHELL_CACHE,RUNTIME_CACHE,FIREBASE_CACHE]);
   await Promise.all(
     nomes
       .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-`)&&!atuais.has(nome))
@@ -243,8 +257,84 @@ async function limitarCache(nome,limite){
   }
 }
 
+
+function respostaFirebasePodeSerSalva(response){
+  return Boolean(response&&(response.ok||response.type==="opaque"));
+}
+
+function alternativoFirebase(url){
+  if(url.startsWith(FIREBASE_GSTATIC_BASE)) return url.replace(FIREBASE_GSTATIC_BASE,FIREBASE_JSDELIVR_BASE);
+  if(url.startsWith(FIREBASE_JSDELIVR_BASE)) return url.replace(FIREBASE_JSDELIVR_BASE,FIREBASE_GSTATIC_BASE);
+  return null;
+}
+
+async function baixarFirebase(url){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),12000);
+  try{
+    const requisicao=new Request(url,{mode:"no-cors",cache:"reload",credentials:"omit",signal:controller.signal});
+    const response=await fetch(requisicao);
+    if(!respostaFirebasePodeSerSalva(response)) throw new Error(`Firebase SDK indisponível: ${url}`);
+    return response;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+async function prepararCacheFirebase(){
+  const cache=await caches.open(FIREBASE_CACHE);
+  for(const nome of FIREBASE_FILES){
+    const principal=`${FIREBASE_GSTATIC_BASE}/${nome}`;
+    const secundario=`${FIREBASE_JSDELIVR_BASE}/${nome}`;
+    try{
+      const response=await baixarFirebase(principal);
+      await cache.put(principal,response.clone());
+      await cache.put(secundario,response.clone());
+    }catch(_erroPrincipal){
+      try{
+        const response=await baixarFirebase(secundario);
+        await cache.put(secundario,response.clone());
+        await cache.put(principal,response.clone());
+      }catch(erroSecundario){
+        console.warn("Firebase SDK não foi pré-carregado:",nome,erroSecundario);
+      }
+    }
+  }
+}
+
+async function responderFirebase(request){
+  const cache=await caches.open(FIREBASE_CACHE);
+  const salva=await cache.match(request,{ignoreSearch:true});
+  if(salva) return salva;
+
+  try{
+    const response=await fetch(request);
+    if(respostaFirebasePodeSerSalva(response)) await cache.put(request,response.clone());
+    return response;
+  }catch(erroPrincipal){
+    const alternativa=alternativoFirebase(request.url);
+    if(alternativa){
+      const salvaAlternativa=await cache.match(alternativa,{ignoreSearch:true});
+      if(salvaAlternativa){
+        await cache.put(request,salvaAlternativa.clone());
+        return salvaAlternativa;
+      }
+      try{
+        const response=await baixarFirebase(alternativa);
+        await cache.put(alternativa,response.clone());
+        await cache.put(request,response.clone());
+        return response;
+      }catch(_erroAlternativa){}
+    }
+    throw erroPrincipal;
+  }
+}
+
 self.addEventListener("install",event=>{
-  event.waitUntil(instalarAppShell());
+  event.waitUntil(Promise.all([
+    instalarAppShell(),
+    prepararCacheFirebase().catch(()=>{})
+  ]));
 });
 
 self.addEventListener("activate",event=>{
@@ -256,6 +346,14 @@ self.addEventListener("fetch",event=>{
   if(request.method!=="GET"||request.headers.has("range")) return;
 
   const url=new URL(request.url);
+  const firebaseExterno=(url.hostname==="www.gstatic.com"&&url.pathname.includes(`/firebasejs/${FIREBASE_VERSION}/`))
+    ||(url.hostname==="cdn.jsdelivr.net"&&url.pathname.includes(`/npm/firebase@${FIREBASE_VERSION}/`));
+
+  if(firebaseExterno){
+    event.respondWith(responderFirebase(request));
+    return;
+  }
+
   if(url.origin!==self.location.origin) return;
 
   // version.json precisa sempre vir da rede para anunciar a versão publicada.
