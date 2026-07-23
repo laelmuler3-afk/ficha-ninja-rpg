@@ -1,6 +1,6 @@
 {
-  "version": "2.3.5",
-  "name": "Sincronização integral da ficha",
-  "notes": "Sincroniza e restaura o estado completo da ficha, incluindo notas, inventário, carteira, jutsus e imagens armazenadas na ficha. Também força a captura dos campos em edição antes do envio e abre a ficha baixada imediatamente.",
-  "date": "2026-07-21"
+  "version": "2.3.6",
+  "name": "Firebase resiliente no Android",
+  "notes": "Substitui os imports dinâmicos que falhavam em alguns tablets por um carregador compatível, com duas fontes, cache do PWA, reconexão automática e mensagens amigáveis sem bloquear o uso offline.",
+  "date": "2026-07-23"
 }
