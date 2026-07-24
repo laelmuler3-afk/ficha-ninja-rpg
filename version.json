@@ -1,6 +1,6 @@
 {
-  "version": "2.4.0",
-  "name": "Jutsus e Loja retráteis",
-  "notes": "Organiza os jutsus por elemento em grupos retráteis com busca e atalhos, e transforma as categorias da Loja em seções retráteis para reduzir a rolagem.",
+  "version": "2.5.0",
+  "name": "Interface Shinobi unificada",
+  "notes": "Redesenha o aplicativo inteiro com um sistema visual mais limpo, ícones SVG próprios, navegação consistente e responsividade aprimorada para celular e tablet.",
   "date": "2026-07-24"
 }
