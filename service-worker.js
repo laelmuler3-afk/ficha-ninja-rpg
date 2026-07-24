@@ -1,5 +1,5 @@
-/* Shinobi 2.3.6 — Firebase resiliente, cache externo e atualização estável. */
-const APP_VERSION = "2.3.6";
+/* Shinobi 2.4.0 — Jutsus e Loja em seções retráteis. */
+const APP_VERSION = "2.4.0";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -31,6 +31,7 @@ const APP_SHELL = [
   `./css/level-up.css?v=${APP_VERSION}`,
   `./css/pericias.css?v=${APP_VERSION}`,
   `./css/online.css?v=${APP_VERSION}`,
+  `./css/organizacao-retratil.css?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
@@ -53,6 +54,7 @@ const APP_SHELL = [
   `./vendor/qrcode-local.js?v=${APP_VERSION}`,
   `./js/20-online-ui.js?v=${APP_VERSION}`,
   `./js/21-online-hooks.js?v=${APP_VERSION}`,
+  `./js/22-organizacao-retratil.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
