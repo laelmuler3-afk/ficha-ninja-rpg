@@ -1,4 +1,4 @@
-/* Ficha Ninja 2.3.4 — atualizador PWA sem avisos repetidos. */
+/* Ficha Ninja 2.4.0 — atualizador PWA sem avisos repetidos. */
 (function(){
   "use strict";
 
@@ -16,7 +16,7 @@
 
   /* O HTML é a fonte canônica da versão da tela carregada. Usar primeiro a
      versão do próprio script causava o ciclo 2.3.2 → 2.3.3 da versão anterior. */
-  const APP_VERSION=String(versaoDocumento||versaoScript||"2.3.6");
+  const APP_VERSION=String(versaoDocumento||versaoScript||"2.4.0");
   document.documentElement.dataset.appVersion=APP_VERSION;
   window.APP_VERSION=APP_VERSION;
 

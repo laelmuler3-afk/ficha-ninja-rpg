@@ -671,6 +671,8 @@
       nome: String(jutsu.nome || ""),
       rank: String(jutsu.rank || ""),
       elemento: elementoDoJutsu(jutsu),
+      categoria: String(jutsu.categoria || ""),
+      tipoNome: String(jutsu.tipoNome || ""),
       bonusAcerto: String(jutsu.bonusAcerto || ""),
       dano: String(jutsu.dano || ""),
       bonusDano: String(jutsu.bonusDano || ""),
