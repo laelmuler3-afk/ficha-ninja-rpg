@@ -1,6 +1,6 @@
 {
-  "version": "2.3.6",
-  "name": "Firebase resiliente no Android",
-  "notes": "Substitui os imports dinâmicos que falhavam em alguns tablets por um carregador compatível, com duas fontes, cache do PWA, reconexão automática e mensagens amigáveis sem bloquear o uso offline.",
-  "date": "2026-07-23"
+  "version": "2.4.0",
+  "name": "Jutsus e Loja retráteis",
+  "notes": "Organiza os jutsus por elemento em grupos retráteis com busca e atalhos, e transforma as categorias da Loja em seções retráteis para reduzir a rolagem.",
+  "date": "2026-07-24"
 }
