@@ -1,4 +1,4 @@
-/* Ficha Ninja RPG 2.4.0 — Jutsus e Loja organizados em seções retráteis. */
+/* Ficha Ninja RPG 2.5.0 — Jutsus e Loja organizados em seções retráteis. */
 (function(){
   "use strict";
 
@@ -121,7 +121,7 @@
 
   async function carregarClassificacoesCatalogo(){
     try{
-      const versao = encodeURIComponent(String(window.APP_VERSION || "2.4.0"));
+      const versao = encodeURIComponent(String(window.APP_VERSION || "2.5.0"));
       const resposta = await fetch(`data/catalogo-jutsus.json?v=${versao}`,{cache:"force-cache"});
       if(!resposta.ok) return;
       const dados = await resposta.json();
@@ -535,7 +535,7 @@
   },0));
 
   window.ShinobiOrganizacaoRetratil = Object.freeze({
-    versao:"2.4.0",
+    versao:"2.5.0",
     organizarJutsus:organizarJutsusAgora,
     organizarLoja:organizarLojaAgora,
     abrirGrupoJutsu:abrirSomenteGrupoJutsu,

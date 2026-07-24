@@ -1194,12 +1194,13 @@
   async function iniciar(){
     const campoNivel=document.getElementById("nivelDisplayMini");
     const xpLinha=document.querySelector("#identidade .xpLinhaNova");
+    const statusLinha=document.querySelector("#identidade .miniStatusNovo");
     if(!campoNivel||!xpLinha) return;
     let host=document.getElementById("levelUpResumoHost");
     if(!host){
       host=document.createElement("div");
       host.id="levelUpResumoHost";
-      xpLinha.insertAdjacentElement("afterend",host);
+      (statusLinha||xpLinha).insertAdjacentElement("afterend",host);
     }
     renderizarResumo();
 
