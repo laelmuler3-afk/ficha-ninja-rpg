@@ -1,4 +1,4 @@
-/* Ficha Ninja RPG 2.5.0 — Seções retráteis de Jutsus e Loja. */
+/* Ficha Ninja RPG 2.5.2 — Grupos fechados por padrão e cartas de jutsu em grade. */
 
 /* ===== Ferramentas e grupos de Jutsus ===== */
 #jutsus .jutsuFerramentasRetrateis{
@@ -202,6 +202,66 @@
 
 /* A lista retrátil substitui o gesto antigo de arrastar, que ficava ambíguo entre grupos. */
 #listaJutsus .jutsuGrupoConteudo{touch-action:pan-y;}
+
+
+/* ===== Grade responsiva dos elementos e das cartas ===== */
+#jutsus #listaJutsus{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-items:start!important;
+  justify-content:stretch!important;
+  gap:12px!important;
+}
+#listaJutsus .jutsuGrupoRetratil{
+  min-width:0;
+  width:100%;
+  margin:0;
+}
+#listaJutsus .jutsuGrupoRetratil.aberto{
+  grid-column:1 / -1;
+}
+#listaJutsus .jutsuGrupoConteudo{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  align-items:start;
+  gap:12px;
+  padding:12px;
+}
+#listaJutsus .jutsuGrupoConteudo>.jutsuListaCard{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+}
+#listaJutsus .jutsuGrupoConteudo>.jutsuListaCard.jutsuAberto{
+  grid-column:1 / -1;
+}
+#listaJutsus .jutsuBuscaSemResultado{
+  grid-column:1 / -1;
+}
+
+@media (min-width:1200px){
+  #jutsus #listaJutsus{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  #listaJutsus .jutsuGrupoConteudo{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+}
+
+@media (max-width:620px){
+  #jutsus #listaJutsus{gap:9px!important;}
+  #listaJutsus .jutsuGrupoConteudo{
+    grid-template-columns:repeat(auto-fit,minmax(158px,1fr));
+    gap:9px;
+    padding:9px;
+  }
+}
+
+@media (max-width:430px){
+  #jutsus #listaJutsus{grid-template-columns:1fr!important;}
+  #listaJutsus .jutsuGrupoRetratil.aberto{grid-column:auto;}
+  #listaJutsus .jutsuGrupoConteudo{grid-template-columns:1fr;}
+}
 
 /* ===== Categorias retráteis da Loja ===== */
 #inventario .lojaCategoria{
