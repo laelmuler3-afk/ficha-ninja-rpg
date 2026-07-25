@@ -1,5 +1,5 @@
-/* Shinobi 2.5.0 — Sistema visual unificado e ícones SVG. */
-const APP_VERSION = "2.5.0";
+/* Shinobi 2.5.1 — Sistema visual unificado e ícones SVG. */
+const APP_VERSION = "2.5.1";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
