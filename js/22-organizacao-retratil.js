@@ -1,9 +1,9 @@
-/* Ficha Ninja RPG 2.5.0 — Jutsus e Loja organizados em seções retráteis. */
+/* Ficha Ninja RPG 2.5.2 — Jutsus em grade com grupos fechados por padrão. */
 (function(){
   "use strict";
 
-  if(window.__shinobiOrganizacaoRetratilV240) return;
-  window.__shinobiOrganizacaoRetratilV240 = true;
+  if(window.__shinobiOrganizacaoRetratilV252) return;
+  window.__shinobiOrganizacaoRetratilV252 = true;
 
   const GRUPOS_JUTSU = Object.freeze([
     {id:"katon",  nome:"Katon",             icone:"🔥"},
@@ -30,6 +30,7 @@
   });
 
   let buscaJutsus = "";
+  let grupoJutsuAberto = "";
   let frameJutsus = 0;
   let frameLoja = 0;
   let organizandoJutsus = false;
@@ -64,7 +65,7 @@
   }
 
   function chavePreferencia(tipo){
-    return `shinobi_${tipo}_aberto_v240__${normalizar(nomeFichaAtual()).replace(/[^a-z0-9_-]+/g,"_") || "principal"}`;
+    return `shinobi_${tipo}_aberto_v252__${normalizar(nomeFichaAtual()).replace(/[^a-z0-9_-]+/g,"_") || "principal"}`;
   }
 
   function lerPreferencia(tipo){
@@ -121,7 +122,7 @@
 
   async function carregarClassificacoesCatalogo(){
     try{
-      const versao = encodeURIComponent(String(window.APP_VERSION || "2.5.0"));
+      const versao = encodeURIComponent(String(window.APP_VERSION || "2.5.2"));
       const resposta = await fetch(`data/catalogo-jutsus.json?v=${versao}`,{cache:"force-cache"});
       if(!resposta.ok) return;
       const dados = await resposta.json();
@@ -199,7 +200,7 @@
         input?.focus();
       });
       ferramentas.querySelector("#jutsuFecharGrupos")?.addEventListener("click",()=>{
-        salvarPreferencia("jutsus","");
+        grupoJutsuAberto = "";
         lista.querySelectorAll(".jutsuGrupoRetratil").forEach(secao=>definirGrupoJutsuAberto(secao,false));
       });
     }
@@ -231,7 +232,7 @@
     lista.querySelectorAll(".jutsuGrupoRetratil").forEach(secao=>{
       definirGrupoJutsuAberto(secao,secao.dataset.grupoJutsu === id);
     });
-    salvarPreferencia("jutsus",id);
+    grupoJutsuAberto = id;
     aplicarFiltroJutsus();
 
     if(rolar){
@@ -283,9 +284,8 @@
     });
 
     if(!termo){
-      const preferido = lerPreferencia("jutsus");
       lista.querySelectorAll(".jutsuGrupoRetratil").forEach(secao=>{
-        definirGrupoJutsuAberto(secao,Boolean(preferido) && secao.dataset.grupoJutsu === preferido);
+        definirGrupoJutsuAberto(secao,Boolean(grupoJutsuAberto) && secao.dataset.grupoJutsu === grupoJutsuAberto);
       });
     }
 
@@ -332,10 +332,10 @@
       });
 
       lista.replaceChildren();
-      const preferido = lerPreferencia("jutsus");
-      const primeiroDisponivel = GRUPOS_JUTSU.find(grupo=>(porGrupo.get(grupo.id) || []).length)?.id || "";
-      const grupoInicial = porGrupo.get(preferido)?.length ? preferido : primeiroDisponivel;
-      if(grupoInicial && grupoInicial !== preferido) salvarPreferencia("jutsus",grupoInicial);
+      const grupoInicial = grupoJutsuAberto && porGrupo.get(grupoJutsuAberto)?.length
+        ? grupoJutsuAberto
+        : "";
+      if(!grupoInicial) grupoJutsuAberto = "";
       const contagens = new Map();
 
       GRUPOS_JUTSU.forEach(grupo=>{
@@ -370,7 +370,7 @@
           const vaiAbrir = !secao.classList.contains("aberto");
           lista.querySelectorAll(".jutsuGrupoRetratil").forEach(outro=>definirGrupoJutsuAberto(outro,false));
           definirGrupoJutsuAberto(secao,vaiAbrir);
-          salvarPreferencia("jutsus",vaiAbrir ? grupo.id : "");
+          grupoJutsuAberto = vaiAbrir ? grupo.id : "";
         });
 
         definirGrupoJutsuAberto(secao,!buscaJutsus && grupo.id === grupoInicial);
@@ -535,7 +535,7 @@
   },0));
 
   window.ShinobiOrganizacaoRetratil = Object.freeze({
-    versao:"2.5.0",
+    versao:"2.5.2",
     organizarJutsus:organizarJutsusAgora,
     organizarLoja:organizarLojaAgora,
     abrirGrupoJutsu:abrirSomenteGrupoJutsu,
