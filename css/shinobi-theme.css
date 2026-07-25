@@ -1,5 +1,5 @@
 /* ==========================================================
-   SHINOBI UI 2.5 — sistema visual unificado do aplicativo
+   SHINOBI UI 2.5.1 — sistema visual unificado do aplicativo
    Carregado por último para manter a lógica existente intacta.
    ========================================================== */
 :root{
@@ -412,6 +412,23 @@ input:focus,textarea:focus,select:focus{
 #naturezasUI .naturezaInfo{display:flex!important;align-items:center!important;gap:13px!important;padding:0!important;background:transparent!important}
 #naturezasUI .naturezaIcone{--icon-size:30px!important;width:30px!important;height:30px!important;font-size:0!important;filter:none!important}
 #naturezasUI .naturezaIcone .shinobiIcon{--icon-size:30px}
+#naturezasUI .naturezaIcone .icon-fire,
+#naturezasUI .naturezaIcone .icon-earth{
+  background-color:transparent!important;
+  -webkit-mask-image:none!important;
+  mask-image:none!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:contain!important;
+}
+#naturezasUI .naturezaIcone .icon-fire{
+  background-image:url("../assets/icons/fire.svg?v=2.5.1")!important;
+  filter:drop-shadow(0 0 7px rgba(255,105,32,.52));
+}
+#naturezasUI .naturezaIcone .icon-earth{
+  background-image:url("../assets/icons/earth.svg?v=2.5.1")!important;
+  filter:drop-shadow(0 0 5px rgba(181,112,53,.34));
+}
 #naturezasUI .naturezaNome{font-size:17px!important;color:var(--element-color)!important;text-shadow:none!important}
 #naturezasUI .naturezaNivelTexto{display:inline-block!important;margin:0 0 0 15px!important;color:#d5c7b3!important;font-size:13px!important}
 #naturezasUI .naturezaLinha{display:grid!important;grid-template-columns:repeat(6,17px)!important;gap:7px!important;padding:0!important;background:transparent!important}
