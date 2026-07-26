@@ -92,8 +92,8 @@ main{
 .icon-settings{-webkit-mask-image:url("../assets/icons/settings.svg");mask-image:url("../assets/icons/settings.svg")}
 .icon-sync{-webkit-mask-image:url("../assets/icons/sync.svg");mask-image:url("../assets/icons/sync.svg")}
 .icon-profile{-webkit-mask-image:url("../assets/icons/profile.svg");mask-image:url("../assets/icons/profile.svg")}
-.icon-attributes{-webkit-mask-image:url("../assets/icons/attributes.svg");mask-image:url("../assets/icons/attributes.svg")}
-.icon-jutsu{-webkit-mask-image:url("../assets/icons/jutsu.svg");mask-image:url("../assets/icons/jutsu.svg")}
+.icon-attributes{-webkit-mask-image:url("../assets/icons/attributes-reference.png?v=2.5.8");mask-image:url("../assets/icons/attributes-reference.png?v=2.5.8")}
+.icon-jutsu{-webkit-mask-image:url("../assets/icons/jutsu-reference.png?v=2.5.8");mask-image:url("../assets/icons/jutsu-reference.png?v=2.5.8")}
 .icon-battle{-webkit-mask-image:url("../assets/icons/battle.svg");mask-image:url("../assets/icons/battle.svg")}
 .icon-inventory{-webkit-mask-image:url("../assets/icons/inventory.svg");mask-image:url("../assets/icons/inventory.svg")}
 .icon-notes{-webkit-mask-image:url("../assets/icons/notes.svg");mask-image:url("../assets/icons/notes.svg")}
@@ -103,10 +103,11 @@ main{
 .icon-bonus{-webkit-mask-image:url("../assets/icons/bonus.svg");mask-image:url("../assets/icons/bonus.svg")}
 .icon-target{-webkit-mask-image:url("../assets/icons/target.svg");mask-image:url("../assets/icons/target.svg")}
 .icon-book{-webkit-mask-image:url("../assets/icons/book.svg");mask-image:url("../assets/icons/book.svg")}
-.icon-wing{-webkit-mask-image:url("../assets/icons/wing.svg");mask-image:url("../assets/icons/wing.svg")}
+.icon-wing{-webkit-mask-image:url("../assets/icons/speed-reference.png?v=2.5.8");mask-image:url("../assets/icons/speed-reference.png?v=2.5.8")}
 .icon-initiative{-webkit-mask-image:url("../assets/icons/initiative.svg");mask-image:url("../assets/icons/initiative.svg")}
 .icon-shuriken{-webkit-mask-image:url("../assets/icons/shuriken.svg");mask-image:url("../assets/icons/shuriken.svg")}
 .icon-leaf{-webkit-mask-image:url("../assets/icons/leaf.svg");mask-image:url("../assets/icons/leaf.svg")}
+.icon-fire{-webkit-mask-image:none!important;mask-image:none!important;background-color:transparent!important;display:inline-grid!important;place-items:center!important}.icon-fire::before{content:"🔥";font-size:calc(var(--icon-size) * .9);line-height:1}
 .icon-lightning{-webkit-mask-image:url("../assets/icons/lightning.svg");mask-image:url("../assets/icons/lightning.svg")}
 .icon-wind{-webkit-mask-image:url("../assets/icons/wind.svg");mask-image:url("../assets/icons/wind.svg")}
 .icon-water{-webkit-mask-image:url("../assets/icons/water.svg");mask-image:url("../assets/icons/water.svg")}
@@ -723,59 +724,40 @@ body::before{
   }
 }
 
-/* ===== v2.5.9 — Inventário mais clean (sem linhas de caderno) ===== */
-#inventario .inventarioPainel,
-#inventario .inventarioHub{
-  background:#d7bb87 !important;
-  background-image:none !important;
+/* Referências visuais enviadas pelo usuário: preservar proporção e leitura em tamanhos pequenos. */
+.icon-attributes,.icon-jutsu,.icon-wing{
+  -webkit-mask-size:contain!important;
+  mask-size:contain!important;
 }
+.bottomNav .icon-jutsu{--icon-size:24px}
+.statsMini .icon-wing,.statIcon.icon-wing{--icon-size:22px}
 
-#inventario .inventarioPainel::before,
-#inventario .inventarioPainel::after,
-#inventario .inventarioHub::before,
-#inventario .inventarioHub::after{
-  background-image:none !important;
-}
-
-#inventario .inventarioNotas{
-  background:#dcc28f !important;
-  background-image:none !important;
-  color:#3a2410 !important;
-  border:1px solid rgba(109,67,31,.28) !important;
-  box-shadow:inset 0 1px 0 rgba(255,245,220,.35) !important;
-}
-
-#inventario .inventarioNotas::placeholder{
-  color:rgba(58,36,16,.55) !important;
-}
 
 /* ==========================================================
-   SHINOBI UI 2.6.0 — Inventário inteiro padronizado
-   visual mais clean, consistente e sem textura de caderno
+   SHINOBI UI 2.5.8.1 — inventário clean com contraste completo
+   Base preservada: 2.5.8 (ícones de referência mantidos)
    ========================================================== */
 #inventario{
-  --inv-paper:#d9bd89;
-  --inv-paper-2:#d3b27a;
-  --inv-ink:#2f1b0d;
-  --inv-muted:#7a5a3b;
-  --inv-dark:#071018;
-  --inv-dark-2:#0d1720;
-  --inv-line:rgba(110,69,33,.26);
-  --inv-accent:#d86b23;
-  --inv-accent-2:#8d3d12;
-  --inv-soft:#f4e4c3;
+  --inv-bg:#d9bd87;
+  --inv-bg-2:#d1ae73;
+  --inv-ink:#2f1b0c;
+  --inv-sub:#765334;
+  --inv-dark:#100a06;
+  --inv-dark-2:#321b0d;
+  --inv-card-line:#855025;
+  --inv-text:#fff0d0;
+  --inv-muted:#d6b995;
+  --inv-accent:#dc7629;
+  --inv-danger:#a6382e;
 }
-
 #inventario .inventarioPainel,
 #inventario .inventarioHub{
   color:var(--inv-ink)!important;
-  background:linear-gradient(180deg,var(--inv-paper) 0%, var(--inv-paper-2) 100%)!important;
+  background:linear-gradient(180deg,var(--inv-bg) 0%,var(--inv-bg-2) 100%)!important;
   background-image:none!important;
-  border:1px solid rgba(117,72,33,.34)!important;
-  border-radius:24px!important;
-  box-shadow:0 16px 36px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,245,220,.40)!important;
+  border-color:rgba(101,58,25,.34)!important;
+  box-shadow:0 16px 34px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,247,226,.38)!important;
 }
-
 #inventario .inventarioPainel::before,
 #inventario .inventarioPainel::after,
 #inventario .inventarioHub::before,
@@ -785,798 +767,110 @@ body::before{
   background:none!important;
   background-image:none!important;
 }
-
-#inventario .inventarioHubCabecalho{
-  margin-bottom:14px!important;
-  padding-bottom:10px!important;
-  border-bottom:1px solid rgba(112,70,35,.18)!important;
-}
-
-#inventario .inventarioHubCabecalho small{
-  color:#c07a3d!important;
-  letter-spacing:1.3px!important;
-}
-
-#inventario .inventarioHubCabecalho h2{
-  color:var(--inv-ink)!important;
-  font-size:clamp(28px,3.2vw,38px)!important;
-  letter-spacing:.5px!important;
-  text-shadow:none!important;
-}
-
-#inventario .inventarioHubCabecalho .shinobiIcon{
-  color:#d07a33!important;
-}
-
-/* abas */
-#inventario .inventarioAbas{
-  position:sticky!important;
-  top:8px!important;
-  z-index:7!important;
-  padding:8px!important;
-  gap:8px!important;
-  border:1px solid rgba(224,170,104,.16)!important;
-  border-radius:18px!important;
-  background:linear-gradient(180deg,var(--inv-dark-2),var(--inv-dark))!important;
-  box-shadow:0 10px 22px rgba(0,0,0,.18)!important;
-}
-
-#inventario .inventarioAbas button{
-  min-height:50px!important;
-  border-radius:13px!important;
-  border:1px solid transparent!important;
-  background:transparent!important;
-  color:#d7ccbf!important;
-  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important;
-}
-
-#inventario .inventarioAbas button strong{
-  font-size:13px!important;
-  font-weight:900!important;
-}
-
-#inventario .inventarioAbas button span,
-#inventario .inventarioAbas button .shinobiIcon{
-  color:#cdb79d!important;
-}
-
-#inventario .inventarioAbas button.ativo{
-  border-color:rgba(255,197,118,.34)!important;
-  background:linear-gradient(180deg,rgba(128,56,17,.88),rgba(76,30,8,.92))!important;
-  color:#fff1dc!important;
-  box-shadow:inset 0 1px 0 rgba(255,242,220,.12), 0 6px 16px rgba(0,0,0,.24)!important;
-}
-
-#inventario .inventarioAbas button.ativo span,
-#inventario .inventarioAbas button.ativo .shinobiIcon{
-  color:#ffd089!important;
-}
-
-/* blocos internos */
-#inventario .inventarioSubpagina{
-  padding-top:2px!important;
-}
-
-/* carteira */
-#inventario .carteiraResumoCard,
-#inventario .carteiraMoedaCard,
-#inventario .carteiraHistorico,
-#inventario .lojaTopo,
-#inventario .lojaItemCard,
-#inventario .itemInventarioDetalhe{
-  border:1px solid rgba(106,60,28,.92)!important;
-  background:linear-gradient(180deg,rgba(37,22,12,.98),rgba(14,10,8,.99))!important;
-  color:#f4e8d3!important;
-  box-shadow:0 10px 22px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,232,191,.08)!important;
-}
-
-#inventario .carteiraResumoCard *,
-#inventario .carteiraMoedaCard *,
-#inventario .carteiraHistorico *,
-#inventario .lojaTopo *,
-#inventario .lojaItemCard *,
-#inventario .itemInventarioDetalhe *{
-  text-shadow:none!important;
-}
-
-#inventario .carteiraResumoCard h3,
-#inventario .carteiraMoedaCard strong,
-#inventario .lojaCategoria>h3,
-#inventario .itemInventarioDetalheNome{
-  color:#fff0d2!important;
-}
-
-#inventario .carteiraResumoCard small,
-#inventario .carteiraMoedaCard small,
-#inventario .lojaResumoLinha>span,
-#inventario .itemInventarioMetadados span{
-  color:#d7c1a3!important;
-}
-
-/* grid de itens */
-#inventario .listaInventario{
-  margin-top:16px!important;
-  margin-bottom:20px!important;
-}
-
-#inventario .itemInventario.itemInventarioVisualCard{
-  background:linear-gradient(180deg,rgba(57,31,12,.98),rgba(22,12,5,.99))!important;
-  border:1px solid rgba(116,63,22,.92)!important;
-  border-radius:16px!important;
-  box-shadow:0 8px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,226,172,.12)!important;
-}
-
-#inventario .itemInventario.itemInventarioVisualCard:hover,
-#inventario .itemInventario.itemInventarioAberto{
-  border-color:rgba(231,140,53,.86)!important;
-  box-shadow:0 0 0 3px rgba(231,140,53,.14), 0 10px 20px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,233,189,.16)!important;
-}
-
-#inventario .itemInventarioImagemWrap,
-#inventario .itemInventarioDetalheImagem,
-#inventario .lojaItemImagem{
-  background:radial-gradient(circle at 50% 35%,rgba(255,219,152,.18),rgba(86,44,15,.22) 58%,rgba(22,12,5,.10) 100%)!important;
-}
-
-#inventario .itemInventarioNomeMini,
-#inventario .lojaItemConteudo>strong{
-  color:#ffe9c0!important;
-}
-
-#inventario .itemInventarioQuantidadeBadge{
-  background:linear-gradient(180deg,#dc5537,#7d2013)!important;
-  border:1px solid rgba(255,219,163,.62)!important;
-  color:#fff7ea!important;
-}
-
-/* botões */
-#inventario .inventarioBotoesRodape .btn,
-#inventario .lojaResumoLinha button,
-#inventario .itemInventarioQtdControle button,
-#inventario .itemInventarioAcoes button{
-  border-radius:12px!important;
-  font-weight:1000!important;
-}
-
-#inventario .btnAbrirLoja,
-#inventario .lojaResumoLinha button,
-#inventario .itemInventarioQtdControle button{
-  border:1px solid rgba(255,194,120,.44)!important;
-  background:linear-gradient(180deg,#c86126,#7a2e0d)!important;
-  color:#fff3e0!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important;
-}
-
-#inventario .btnInventarioSecundario,
-#inventario .itemInventarioAcoes button{
-  border:1px solid rgba(255,208,138,.24)!important;
-  background:linear-gradient(180deg,#332116,#1a120d)!important;
-  color:#ead7b6!important;
-}
-
-#inventario .itemInventarioAcoes .btnExcluirItemVisual{
-  background:linear-gradient(180deg,#7d2a23,#320b08)!important;
-  border-color:rgba(255,158,145,.28)!important;
-}
-
-/* busca da loja */
-#inventario .lojaBusca{
-  border:1px solid rgba(224,132,45,.34)!important;
-  background:linear-gradient(180deg,#181b1f,#0e1013)!important;
-}
-
-#inventario .lojaBusca input,
-#inventario .lojaBusca input::placeholder{
-  color:#dfd3c4!important;
-  opacity:1!important;
-}
-
-/* notas / observações */
-#inventario .inventarioNotas{
-  width:100%!important;
-  min-height:160px!important;
-  margin-top:14px!important;
-  padding:14px 16px!important;
-  border-radius:16px!important;
-  border:1px solid rgba(118,77,39,.28)!important;
-  background:#dfc692!important;
-  background-image:none!important;
-  color:#3e2815!important;
-  box-shadow:inset 0 1px 0 rgba(255,245,220,.36)!important;
-  line-height:1.5!important;
-}
-
-#inventario .inventarioNotas::placeholder{
-  color:rgba(62,40,21,.55)!important;
-}
-
-#inventario .inventarioNotas:focus{
-  border-color:rgba(214,111,34,.62)!important;
-  box-shadow:0 0 0 3px rgba(214,111,34,.12), inset 0 1px 0 rgba(255,245,220,.36)!important;
-}
-
-/* elementos vazios e textos auxiliares */
-#inventario .itemInventarioVazio{
-  background:rgba(26,15,8,.90)!important;
-  border:1px dashed rgba(124,70,29,.78)!important;
-  color:#f2dfbf!important;
-}
-
-@media (max-width:430px){
-  #inventario .inventarioPainel,
-  #inventario .inventarioHub{
-    border-radius:20px!important;
-  }
-
-  #inventario .inventarioHubCabecalho h2{
-    font-size:clamp(22px,7vw,30px)!important;
-  }
-
-  #inventario .inventarioAbas button strong{
-    font-size:11px!important;
-  }
-
-  #inventario .inventarioNotas{
-    min-height:140px!important;
-    padding:12px 13px!important;
-  }
-}
-
-
-/* ==========================================================
-   SHINOBI UI 2.6.3 — inventário com contraste corrigido
-   ========================================================== */
-#inventario{
-  --inv-paper:#dfc590;
-  --inv-paper-2:#d4b57c;
-  --inv-ink:#2f1b0d;
-  --inv-soft-ink:#6a4a2c;
-  --inv-card-dark-1:#2f1b10;
-  --inv-card-dark-2:#120b07;
-  --inv-card-line:#8e5526;
-  --inv-card-text:#fff1d5;
-  --inv-card-muted:#d7bea0;
-  --inv-accent:#d87026;
-}
-
-/* painel externo claro e limpo */
-#inventario .inventarioPainel,
-#inventario .inventarioHub{
-  color:var(--inv-ink)!important;
-  background:linear-gradient(180deg,var(--inv-paper),var(--inv-paper-2))!important;
-  background-image:none!important;
-}
-
-#inventario .inventarioHubCabecalho h2,
+#inventario .inventarioHubCabecalho{border-bottom:1px solid rgba(91,50,21,.18)!important}
+#inventario .inventarioHubCabecalho h2{color:var(--inv-ink)!important;text-shadow:none!important}
 #inventario .inventarioHubCabecalho small,
-#inventario .inventarioHubCabecalho .shinobiIcon{
-  text-shadow:none!important;
-}
-#inventario .inventarioHubCabecalho h2{color:var(--inv-ink)!important;}
-#inventario .inventarioHubCabecalho small,
-#inventario .inventarioHubCabecalho .shinobiIcon{color:var(--inv-accent)!important;}
-
-/* abas escuras com texto claro */
+#inventario .inventarioHubCabecalho .shinobiIcon{color:var(--inv-accent)!important;text-shadow:none!important}
 #inventario .inventarioAbas{
-  background:linear-gradient(180deg,#091119,#050a10)!important;
+  background:linear-gradient(180deg,#0d151c,#05090d)!important;
+  border-color:rgba(255,201,132,.17)!important;
+  box-shadow:0 9px 20px rgba(0,0,0,.24)!important;
 }
-#inventario .inventarioAbas button{
-  color:#dbcdb8!important;
-}
-#inventario .inventarioAbas button strong,
-#inventario .inventarioAbas button span,
-#inventario .inventarioAbas button .shinobiIcon{
-  color:inherit!important;
-}
-#inventario .inventarioAbas button.ativo{
-  color:#fff1d7!important;
-  background:linear-gradient(180deg,rgba(137,59,18,.92),rgba(80,31,8,.95))!important;
-  border-color:rgba(255,194,120,.36)!important;
-}
-
-/* cards escuros: sempre texto claro */
-#inventario .itemInventario.itemInventarioVisualCard,
-#inventario .itemInventarioDetalhe,
-#inventario .carteiraResumoCard,
-#inventario .carteiraMoedaCard,
-#inventario .carteiraHistorico,
-#inventario .lojaTopo,
-#inventario .lojaItemCard{
-  color:var(--inv-card-text)!important;
-  background:linear-gradient(180deg,var(--inv-card-dark-1),var(--inv-card-dark-2))!important;
-  border-color:rgba(142,85,38,.92)!important;
-}
-
-#inventario .itemInventario.itemInventarioVisualCard *,
-#inventario .itemInventarioDetalhe *,
-#inventario .carteiraResumoCard *,
-#inventario .carteiraMoedaCard *,
-#inventario .carteiraHistorico *,
-#inventario .lojaTopo *,
-#inventario .lojaItemCard *{
-  text-shadow:none!important;
-}
-
-#inventario .itemInventarioNomeMini,
-#inventario .itemInventarioDetalheNome,
-#inventario .lojaItemConteudo>strong,
-#inventario .carteiraResumoCard>strong,
-#inventario .carteiraMoedaCard strong,
-#inventario .carteiraHistorico h3,
-#inventario .lojaCategoria>h3,
-#inventario .lojaResumoLinha strong{
-  color:var(--inv-card-text)!important;
-}
-
-#inventario .itemInventarioMetadados span,
-#inventario .lojaItemConteudo>span,
-#inventario .carteiraResumoCard>small,
-#inventario .carteiraMoedaCard small,
-#inventario .carteiraHistorico small,
-#inventario .lojaResumoLinha>span{
-  color:var(--inv-card-muted)!important;
-}
-
-#inventario .itemInventarioMetadados b,
-#inventario .lojaItemConteudo>small,
-#inventario .carteiraResumoCard>span{
-  color:#ef9d4f!important;
-}
-
-#inventario .btnInventarioSecundario,
-#inventario .itemInventarioAcoes button{
-  color:#f3e1c3!important;
-}
-
-/* área de observações clara com texto escuro */
-#inventario .inventarioNotas{
-  background:#e0c894!important;
-  color:#3d2714!important;
-}
-#inventario .inventarioNotas::placeholder{
-  color:rgba(61,39,20,.58)!important;
-}
-
-
-/* ==========================================================
-   SHINOBI UI 2.6.4 — revisão integral do módulo Inventário
-   Regra central: fundo claro = texto escuro; card escuro = texto claro.
-   ========================================================== */
-#inventario{
-  --inv-bg-top:#dfc792;
-  --inv-bg-bottom:#d1ae73;
-  --inv-ink:#2e1a0c;
-  --inv-ink-muted:#735235;
-  --inv-dark-top:#331d10;
-  --inv-dark-bottom:#120b07;
-  --inv-dark-blue-top:#101923;
-  --inv-dark-blue-bottom:#060b10;
-  --inv-text:#fff1d5;
-  --inv-text-muted:#dbc2a3;
-  --inv-orange:#dc762d;
-  --inv-orange-bright:#f29c4d;
-  --inv-border:rgba(132,77,33,.78);
-  --inv-focus:rgba(238,139,55,.34);
-}
-
-/* ---------- Painel externo claro ---------- */
-#inventario .inventarioPainel,
-#inventario .inventarioHub{
-  color:var(--inv-ink)!important;
-  background:linear-gradient(180deg,var(--inv-bg-top),var(--inv-bg-bottom))!important;
-  background-image:none!important;
-  border-color:rgba(102,59,25,.42)!important;
-}
-
-#inventario .inventarioPainel::before,
-#inventario .inventarioPainel::after,
-#inventario .inventarioHub::before,
-#inventario .inventarioHub::after{
-  content:none!important;
-  display:none!important;
-}
-
-#inventario .inventarioHubCabecalho{
-  border-bottom-color:rgba(83,47,19,.20)!important;
-}
-
-#inventario .inventarioHubCabecalho h2{
-  color:var(--inv-ink)!important;
-  text-shadow:none!important;
-}
-
-#inventario .inventarioHubCabecalho small,
-#inventario .inventarioHubCabecalho .shinobiIcon{
-  color:#c56927!important;
-  text-shadow:none!important;
-}
-
-/* ---------- Abas escuras ---------- */
-#inventario .inventarioAbas{
-  background:linear-gradient(180deg,var(--inv-dark-blue-top),var(--inv-dark-blue-bottom))!important;
-  border-color:rgba(219,157,91,.18)!important;
-}
-
 #inventario .inventarioAbas button,
 #inventario .inventarioAbas button strong,
 #inventario .inventarioAbas button span,
-#inventario .inventarioAbas button .shinobiIcon{
-  color:#d8c9b5!important;
-  text-shadow:none!important;
-}
-
+#inventario .inventarioAbas button .shinobiIcon{color:#d8cab7!important;text-shadow:none!important}
 #inventario .inventarioAbas button.ativo,
 #inventario .inventarioAbas button[aria-selected="true"]{
-  color:#fff2dc!important;
-  background:linear-gradient(180deg,#874019,#4d200c)!important;
-  border-color:rgba(255,195,118,.42)!important;
+  color:#fff1d8!important;
+  background:linear-gradient(180deg,rgba(139,60,19,.94),rgba(75,27,7,.96))!important;
+  border-color:rgba(255,190,108,.42)!important;
 }
-
 #inventario .inventarioAbas button.ativo strong,
 #inventario .inventarioAbas button.ativo span,
 #inventario .inventarioAbas button.ativo .shinobiIcon,
 #inventario .inventarioAbas button[aria-selected="true"] strong,
 #inventario .inventarioAbas button[aria-selected="true"] span,
-#inventario .inventarioAbas button[aria-selected="true"] .shinobiIcon{
-  color:#ffd18b!important;
-}
-
-#inventario .inventarioAbas button:disabled{
-  color:#756d63!important;
-  opacity:.72!important;
-}
-
-/* ---------- Cards de itens ---------- */
+#inventario .inventarioAbas button[aria-selected="true"] .shinobiIcon{color:#ffd28e!important}
 #inventario .itemInventario.itemInventarioVisualCard,
-#inventario .itemInventarioDetalhe{
-  color:var(--inv-text)!important;
-  background:linear-gradient(180deg,var(--inv-dark-top),var(--inv-dark-bottom))!important;
-  border-color:var(--inv-border)!important;
-}
-
-#inventario .itemInventarioNomeMini,
-#inventario .itemInventarioDetalheNome{
-  color:var(--inv-text)!important;
-  text-shadow:0 1px 2px rgba(0,0,0,.62)!important;
-}
-
-#inventario .itemInventarioMetadados span{
-  color:var(--inv-text-muted)!important;
-  background:rgba(255,255,255,.045)!important;
-  border-color:rgba(255,203,135,.16)!important;
-}
-
-#inventario .itemInventarioMetadados b{
-  color:var(--inv-orange-bright)!important;
-}
-
-#inventario .itemInventarioQuantidadeBadge{
-  color:#fff9ed!important;
-  background:linear-gradient(180deg,#df593a,#7b2014)!important;
-  border-color:rgba(255,221,170,.62)!important;
-}
-
-#inventario .itemInventarioQtdControle input{
-  color:#fff4de!important;
-  background:linear-gradient(180deg,#482710,#180c05)!important;
-  border-color:rgba(113,59,20,.94)!important;
-}
-
-#inventario .itemInventarioQtdControle button,
-#inventario .itemInventarioAcoes button{
-  color:#fff0d3!important;
-  background:linear-gradient(180deg,#653514,#241006)!important;
-  border-color:rgba(255,205,135,.30)!important;
-}
-
-#inventario .itemInventarioAcoes .itemInventarioBtnUsar{
-  color:#fff7e7!important;
-  background:linear-gradient(180deg,#bd5a23,#6f290c)!important;
-}
-
-#inventario .itemInventarioAcoes .itemInventarioBtnEditar{
-  color:#f0dec1!important;
-  background:linear-gradient(180deg,#3a271a,#1c120c)!important;
-}
-
-#inventario .itemInventarioMenuBtn{
-  color:#ffe6bd!important;
-  background:rgba(17,9,4,.82)!important;
-  border-color:rgba(255,194,113,.28)!important;
-}
-
-#inventario .itemInventarioMenuBalao{
-  color:#f7e8cf!important;
-  background:#130d09!important;
-  border-color:rgba(231,153,81,.34)!important;
-}
-
-#inventario .itemInventarioMenuBalao .itemInventarioExcluirMenu{
-  color:#ffd6d0!important;
-  background:#4a1713!important;
-  border-color:rgba(255,134,120,.32)!important;
-}
-
-#inventario .itemInventarioVazio{
-  color:#f4e1c0!important;
-  background:linear-gradient(180deg,#2e1b10,#140c07)!important;
-  border-color:rgba(135,76,29,.78)!important;
-}
-
-/* ---------- Botões inferiores ---------- */
-#inventario .btnAbrirLoja,
-#inventario .btnInventarioSecundario{
-  color:#fff1da!important;
-  text-shadow:none!important;
-}
-
-#inventario .btnAbrirLoja{
-  background:linear-gradient(180deg,#bb5821,#6f280b)!important;
-  border-color:rgba(255,194,119,.46)!important;
-}
-
-#inventario .btnInventarioSecundario{
-  background:linear-gradient(180deg,#452818,#25150d)!important;
-  border-color:rgba(255,205,140,.22)!important;
-}
-
-/* ---------- Carteira ---------- */
+#inventario .itemInventarioDetalhe,
 #inventario .carteiraResumoCard,
 #inventario .carteiraMoedaCard,
 #inventario .carteiraConversao,
-#inventario .carteiraHistorico{
+#inventario .carteiraHistorico,
+#inventario .lojaTopo,
+#inventario .lojaItemCard,
+#inventario .itemInventarioMenuBalao{
   color:var(--inv-text)!important;
-  background:linear-gradient(180deg,var(--inv-dark-top),var(--inv-dark-bottom))!important;
-  border-color:var(--inv-border)!important;
+  background:linear-gradient(180deg,var(--inv-dark-2),var(--inv-dark))!important;
+  border-color:rgba(133,80,37,.94)!important;
+  box-shadow:0 9px 19px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,234,194,.09)!important;
 }
-
+#inventario .itemInventarioNomeMini,
+#inventario .itemInventarioDetalheNome,
+#inventario .itemInventarioMetadados strong,
 #inventario .carteiraResumoCard>strong,
 #inventario .carteiraMoedaInfo strong,
 #inventario .carteiraConversao strong,
 #inventario .carteiraHistorico summary,
-#inventario .carteiraHistoricoLista strong{
-  color:var(--inv-text)!important;
-  text-shadow:none!important;
-}
-
-#inventario .carteiraResumoCard>span,
+#inventario .carteiraHistoricoLista strong,
+#inventario .lojaItemConteudo>strong,
+#inventario .lojaItemRodape b,
+#inventario .lojaResumoLinha strong{color:var(--inv-text)!important;text-shadow:none!important}
+#inventario .itemInventarioMetadados span,
+#inventario .carteiraResumoCard>small,
 #inventario .carteiraMoedaInfo small,
 #inventario .carteiraConversao span,
 #inventario .carteiraHistorico summary small,
 #inventario .carteiraHistoricoLista small,
-#inventario .carteiraHistoricoLista p{
-  color:var(--inv-text-muted)!important;
-}
-
-#inventario .carteiraResumoCard>span{
-  color:var(--inv-orange-bright)!important;
-}
-
-#inventario .carteiraMoedaControle input{
-  color:#fff2d9!important;
-  background:#170e09!important;
-  border-color:rgba(255,203,133,.23)!important;
-}
-
-#inventario .carteiraMoedaControle button,
-#inventario .carteiraConversao button{
-  color:#fff0d3!important;
-  background:linear-gradient(180deg,#683716,#271107)!important;
-  border-color:rgba(255,202,132,.30)!important;
-}
-
-#inventario .carteiraHistoricoLista article{
-  color:var(--inv-text)!important;
-  background:rgba(255,255,255,.035)!important;
-  border-color:rgba(255,206,139,.12)!important;
-}
-
-#inventario .carteiraHistoricoLista article>span{
-  color:#ef9a48!important;
-}
-
-#inventario .carteiraHistorico[disabled],
-#inventario .carteiraHistorico:has(summary[disabled]){
-  opacity:.68!important;
-}
-
-/* ---------- Loja ---------- */
-#inventario .lojaTopo,
-#inventario .lojaItemCard,
-#inventario .lojaCategoriaCabecalho{
-  color:var(--inv-text)!important;
-  background:linear-gradient(180deg,var(--inv-dark-blue-top),var(--inv-dark-blue-bottom))!important;
-  border-color:rgba(151,91,39,.78)!important;
-}
-
-#inventario .lojaBusca{
-  background:#0e1217!important;
-  border-color:rgba(225,139,54,.34)!important;
-}
-
-#inventario .lojaBusca,
-#inventario .lojaBusca>span,
-#inventario .lojaBusca input,
-#inventario .lojaBusca input::placeholder{
-  color:#ddd1c2!important;
-}
-
-#inventario .lojaResumoLinha>span,
-#inventario .lojaCategoriaContador{
-  color:var(--inv-text-muted)!important;
-}
-
-#inventario .lojaResumoLinha button,
-#inventario .lojaResumoLinha button strong{
-  color:#ffe5bd!important;
-  background:linear-gradient(180deg,#352116,#18100b)!important;
-  border-color:rgba(226,139,55,.35)!important;
-}
-
+#inventario .carteiraHistoricoLista p,
+#inventario .lojaItemConteudo>span,
+#inventario .lojaResumoLinha>span{color:var(--inv-muted)!important;text-shadow:none!important}
+#inventario .itemInventarioMetadados b,
+#inventario .carteiraResumoCard>span,
+#inventario .lojaItemConteudo>small,
 #inventario .lojaCategoria>h3,
-#inventario .lojaCategoriaTitulo{
-  color:#f4a154!important;
-  text-shadow:none!important;
-}
-
-#inventario .lojaCategoriaIcone,
-#inventario .lojaCategoriaSeta{
-  color:#e7aa68!important;
-}
-
-#inventario .lojaItemConteudo>small{
-  color:#ed9142!important;
-}
-
-#inventario .lojaItemConteudo>strong{
-  color:#fff3dd!important;
-  text-shadow:none!important;
-}
-
-#inventario .lojaItemConteudo>span{
-  color:#dcc3a3!important;
-}
-
-#inventario .lojaItemPossui{
-  color:#fff0d8!important;
-  background:#57210f!important;
-  border-color:rgba(255,151,69,.68)!important;
-}
-
-#inventario .lojaItemRodape{
-  background:rgba(0,0,0,.21)!important;
-  border-top-color:rgba(231,139,59,.18)!important;
-}
-
-#inventario .lojaItemRodape b{
-  color:#ff9f4b!important;
-}
-
-#inventario .lojaItemRodape button{
-  color:#fff9ef!important;
-  background:linear-gradient(180deg,#dc681f,#932f0d)!important;
-  border-color:#ef7c2f!important;
-}
-
-#inventario .lojaItemRodape button:disabled,
-#inventario .lojaItemIndisponivel .lojaItemRodape button{
-  color:#9d958a!important;
-  background:#24211e!important;
-  border-color:#4b4742!important;
-  opacity:.76!important;
-}
-
-#inventario .lojaItemIndisponivel .lojaItemConteudo>strong,
-#inventario .lojaItemIndisponivel .lojaItemConteudo>span{
-  color:#aaa197!important;
-}
-
+#inventario .lojaCategoriaTitulo{color:#ee984b!important;text-shadow:none!important}
+#inventario .itemInventario.itemInventarioVisualCard{background:linear-gradient(180deg,#3a200e,#150c06)!important}
+#inventario .itemInventarioImagemWrap,
+#inventario .itemInventarioDetalheImagem,
+#inventario .lojaItemImagem{background:radial-gradient(circle at 50% 38%,rgba(255,222,157,.18),rgba(86,43,14,.24) 58%,rgba(18,10,5,.12) 100%)!important}
+#inventario .itemInventarioQuantidadeBadge,
+#inventario .lojaItemPossui{color:#fff8ea!important;background:linear-gradient(180deg,#d95739,#7c2013)!important;border-color:rgba(255,216,157,.60)!important}
+#inventario .itemInventarioQtdControle input,
+#inventario .carteiraMoedaControle input{color:#fff2d8!important;background:#21140b!important;border-color:rgba(221,156,82,.34)!important}
+#inventario .itemInventarioQtdControle button,
+#inventario .itemInventarioAcoes button,
+#inventario .carteiraMoedaControle button,
+#inventario .carteiraConversao button,
+#inventario .lojaResumoLinha button,
+#inventario .lojaItemRodape button{color:#fff1d7!important;background:linear-gradient(180deg,#7b3e18,#2a1308)!important;border-color:rgba(255,197,122,.34)!important}
+#inventario .itemInventarioAcoes .btnExcluirItemVisual,
+#inventario .itemInventarioMenuBalao button:last-child{color:#ffe1dc!important;background:linear-gradient(180deg,#7c2822,#2c0806)!important;border-color:rgba(255,148,134,.30)!important}
+#inventario .btnAbrirLoja{color:#fff5e6!important;background:linear-gradient(180deg,#d16c2a,#7c2d0c)!important;border-color:rgba(255,198,125,.46)!important}
+#inventario .btnInventarioSecundario{color:#f1dfc1!important;background:linear-gradient(180deg,#392317,#1b110b)!important;border-color:rgba(255,207,137,.24)!important}
+#inventario .lojaBusca{background:#11171c!important;border-color:rgba(222,132,48,.34)!important}
+#inventario .lojaBusca input,
+#inventario .lojaBusca input::placeholder{color:#ddd1c1!important;opacity:1!important}
+#inventario .lojaItemIndisponivel{opacity:.72!important}
+#inventario .lojaItemIndisponivel .lojaItemConteudo>strong{color:#d2c5b4!important}
+#inventario .lojaItemIndisponivel .lojaItemConteudo>span{color:#aa9d8d!important}
 #inventario .lojaSemResultado,
-#inventario .lojaAvisoTabela{
-  color:#f2dfc3!important;
-  background:linear-gradient(180deg,#2f1d11,#150d08)!important;
-  border-color:rgba(140,79,30,.74)!important;
-}
-
-/* ---------- Modal de compra ---------- */
-.compraLojaOverlay{
-  background:rgba(0,0,0,.72)!important;
-}
-
-.compraLojaBox{
-  color:#fff1d7!important;
-  background:linear-gradient(180deg,#151d26,#080d12)!important;
-  border-color:rgba(229,145,66,.48)!important;
-}
-
-.compraLojaBox>header,
-.compraLojaBox>footer{
-  background:#0a1016!important;
-  border-color:rgba(229,145,66,.18)!important;
-}
-
-.compraLojaBox>header h3,
-.compraLojaDetalhes span,
-.compraLojaResumo strong,
-.compraLojaQuantidade>span{
-  color:#fff1d7!important;
-}
-
-.compraLojaBox>header small,
-.compraLojaDetalhes b,
-.compraLojaResumo small{
-  color:#e6954c!important;
-}
-
-.compraLojaBox>header button,
-.compraLojaQuantidade button,
-.compraLojaQuantidade input{
-  color:#ffe7c4!important;
-  background:#22150d!important;
-  border-color:rgba(255,193,115,.28)!important;
-}
-
-.compraLojaDetalhes span,
-.compraLojaResumo span{
-  background:rgba(255,255,255,.045)!important;
-  border-color:rgba(255,206,139,.14)!important;
-}
-
-.compraLojaResumo strong.insuficiente{
-  color:#ff8f83!important;
-}
-
-.compraLojaCancelar{
-  color:#e9d8bd!important;
-  background:#28211b!important;
-  border-color:#51463c!important;
-}
-
-.compraLojaConfirmar{
-  color:#fff8ec!important;
-  background:linear-gradient(180deg,#db681f,#8d2a0b)!important;
-  border-color:#ee7b2e!important;
-}
-
-.compraLojaConfirmar:disabled{
-  color:#9f978d!important;
-  background:#292723!important;
-  border-color:#48443f!important;
-  opacity:.78!important;
-}
-
-/* ---------- Observações claras ---------- */
+#inventario .itemInventarioVazio{color:#f0dec0!important;background:rgba(29,17,9,.92)!important;border-color:rgba(130,76,31,.78)!important}
 #inventario .inventarioNotas{
+  min-height:150px!important;
   color:#3b2512!important;
-  background:#e1c994!important;
+  background:#e0c793!important;
   background-image:none!important;
-  border-color:rgba(98,59,28,.32)!important;
+  border-color:rgba(102,61,28,.28)!important;
+  box-shadow:inset 0 1px 0 rgba(255,248,228,.42)!important;
 }
-
-#inventario .inventarioNotas::placeholder{
-  color:rgba(59,37,18,.58)!important;
-}
-
-/* ---------- Foco, toque e responsividade ---------- */
-#inventario button:focus-visible,
-#inventario input:focus-visible,
-#inventario textarea:focus-visible,
-.compraLojaBox button:focus-visible,
-.compraLojaBox input:focus-visible{
-  outline:2px solid #f19a49!important;
-  outline-offset:2px!important;
-  box-shadow:0 0 0 4px var(--inv-focus)!important;
-}
-
-@media (max-width:620px){
-  #inventario .inventarioHubCabecalho h2{font-size:26px!important;}
-  #inventario .inventarioAbas button strong{font-size:10px!important;}
-  #inventario .itemInventarioNomeMini{color:#fff3dc!important;}
-  #inventario .lojaItemConteudo>strong{font-size:14px!important;}
-}
-
-@media (min-width:621px) and (max-width:1024px){
-  #inventario .itemInventarioNomeMini{font-size:10px!important;}
-  #inventario .lojaItemConteudo>strong{font-size:15px!important;}
-  #inventario .carteiraMoedaInfo strong{font-size:17px!important;}
+#inventario .inventarioNotas::placeholder{color:rgba(59,37,18,.56)!important}
+#inventario .inventarioNotas:focus{border-color:rgba(213,109,32,.62)!important;box-shadow:0 0 0 3px rgba(213,109,32,.12),inset 0 1px 0 rgba(255,248,228,.42)!important}
+#inventario button:disabled,
+#inventario input:disabled{opacity:.55!important;cursor:not-allowed!important}
+@media (max-width:430px){
+  #inventario .inventarioHubCabecalho h2{font-size:clamp(23px,7vw,30px)!important}
+  #inventario .inventarioAbas button strong{font-size:11px!important}
+  #inventario .inventarioNotas{min-height:135px!important}
 }
