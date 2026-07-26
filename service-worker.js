@@ -1,5 +1,5 @@
-/* Shinobi 2.5.2 — Sistema visual unificado e ícones SVG. */
-const APP_VERSION = "2.5.2";
+/* Shinobi 2.5.3 — contraste e fluidez em Android/tablet. */
+const APP_VERSION = "2.5.3";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
