@@ -1,6 +1,6 @@
 {
-  "version": "2.6.4",
-  "name": "Inventário revisado por completo",
-  "notes": "Revisa de forma abrangente o contraste e a consistência visual do Inventário, Carteira, Loja, menus, estados vazios e desabilitados e modal de compra em celular e tablet.",
+  "version": "2.5.8.1",
+  "name": "Inventário corrigido sobre a base 2.5.8",
+  "notes": "Mantém os ícones personalizados da versão 2.5.8 e corrige todo o Inventário, Carteira e Loja: remove linhas do fundo e garante contraste em títulos, nomes, descrições, botões, campos e estados especiais.",
   "date": "2026-07-26"
 }
