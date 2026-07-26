@@ -1,4 +1,4 @@
-/* Ficha Ninja 2.1.3 — testes de resistência integrados à progressão. */
+/* Ficha Ninja 2.5.3 — testes de resistência com atualização sem loop de DOM. */
 (function(){
   "use strict";
 
@@ -37,7 +37,6 @@
   ];
 
   let frame = null;
-  let observador = null;
 
   function numero(valor, padrao=0){
     const convertido = Number(String(valor ?? "").replace(",","."));
@@ -275,19 +274,10 @@
     }
   }
 
-  function instalarObservador(){
-    const host = document.getElementById("resistenciasBatalhaHost");
-    if(!host || observador) return;
-    observador = new MutationObserver(agendar);
-    observador.observe(host,{childList:true,subtree:true,characterData:true});
-  }
-
   function iniciar(){
     persistirLimpezaMarcadoresAntigos();
-    instalarObservador();
     agendar();
     setTimeout(agendar,250);
-    setTimeout(agendar,900);
   }
 
   const seletor = [
@@ -302,7 +292,12 @@
   document.addEventListener("change",evento=>{
     if(evento.target?.matches(seletor)) agendar();
   },true);
-  document.addEventListener("click",()=>setTimeout(agendar,0),true);
+  document.addEventListener("click",evento=>{
+    if(evento.target?.closest?.("#batalha,#atributos,#jutsus,.levelUpModal")) setTimeout(agendar,0);
+  },true);
+  document.addEventListener("shinobi:pagechange",evento=>{
+    if(evento.detail?.id==="batalha") agendar();
+  });
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",iniciar,{once:true});
   else iniciar();

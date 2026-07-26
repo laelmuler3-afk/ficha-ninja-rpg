@@ -1,4 +1,4 @@
-/* Shinobi 1.10.0 — camada universal de efeitos de batalha. */
+/* Shinobi 2.5.3 — camada universal de efeitos de batalha com atualização localizada. */
 (function(){
   "use strict";
   if(window.__motorUniversalEfeitosV110) return;
@@ -73,7 +73,13 @@
   }
 
   function agendar(){if(frame)cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{frame=null;render();});}
-  document.addEventListener("input",agendar,true);document.addEventListener("change",agendar,true);document.addEventListener("click",()=>setTimeout(agendar,0),true);
+  function eventoRelevante(evento){
+    return Boolean(evento.target?.closest?.("#batalha,#jutsus,.levelUpModal,.acaoBatalhaPainel"));
+  }
+  document.addEventListener("input",evento=>{if(eventoRelevante(evento))agendar();},true);
+  document.addEventListener("change",evento=>{if(eventoRelevante(evento))agendar();},true);
+  document.addEventListener("click",evento=>{if(eventoRelevante(evento))setTimeout(agendar,0);},true);
+  document.addEventListener("shinobi:pagechange",evento=>{if(evento.detail?.id==="batalha")agendar();});
   document.addEventListener("DOMContentLoaded",()=>setTimeout(agendar,250));window.addEventListener("pageshow",()=>setTimeout(agendar,100));
   const original=window.aplicarEfeitosJutsuBatalha;
   if(typeof original==="function") window.aplicarEfeitosJutsuBatalha=async function(...args){const r=await original.apply(this,args);agendar();return r;};

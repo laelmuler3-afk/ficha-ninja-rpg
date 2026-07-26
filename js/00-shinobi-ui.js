@@ -91,7 +91,15 @@
     instalarDrawer();
     const original=window.abrirPagina;
     if(typeof original==="function"&&!original.__shinobiWrapped){
-      const wrapped=function(id,botao){const r=original.apply(this,arguments);document.body.dataset.pagina=id;setTimeout(()=>aplicarIcones(document),0);return r;};
+      const wrapped=function(id,botao){
+        const r=original.apply(this,arguments);
+        document.body.dataset.pagina=id;
+        requestAnimationFrame(()=>{
+          aplicarIcones(document);
+          document.dispatchEvent(new CustomEvent("shinobi:pagechange",{detail:{id}}));
+        });
+        return r;
+      };
       wrapped.__shinobiWrapped=true;window.abrirPagina=wrapped;
     }
     const ativa=document.querySelector(".pagina.ativa");
@@ -100,8 +108,26 @@
 
   document.addEventListener("DOMContentLoaded",()=>{
     instalarMelhorias();
+    const pendentes=new Set();
+    let frameIcones=0;
+    const agendarIcones=()=>{
+      if(frameIcones) return;
+      frameIcones=requestAnimationFrame(()=>{
+        frameIcones=0;
+        const raizes=[...pendentes];
+        pendentes.clear();
+        raizes.forEach(raiz=>{
+          if(raiz?.isConnected) aplicarIcones(raiz);
+        });
+      });
+    };
     const obs=new MutationObserver(muts=>{
-      for(const mut of muts)for(const node of mut.addedNodes)if(node.nodeType===1)aplicarIcones(node);
+      for(const mut of muts){
+        for(const node of mut.addedNodes){
+          if(node.nodeType===1) pendentes.add(node);
+        }
+      }
+      if(pendentes.size) agendarIcones();
     });
     obs.observe(document.body,{childList:true,subtree:true});
   });

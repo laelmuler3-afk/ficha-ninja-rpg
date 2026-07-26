@@ -1,4 +1,4 @@
-/* Ficha Ninja 2.1.4 — bônus automáticos das perícias. */
+/* Ficha Ninja 2.5.3 — bônus automáticos das perícias com atualização localizada. */
 (function(){
   "use strict";
 
@@ -138,7 +138,6 @@
   function iniciar(){
     atualizar();
     agendar(180);
-    agendar(700);
   }
 
   const atributos = ["forca","destreza","constituicao","inteligencia","sabedoria","carisma","proficiencia"];
@@ -155,11 +154,13 @@
     if(evento.target?.matches(seletorAtualizacao)) agendar();
   },true);
 
-  document.addEventListener("click",()=>{
-    agendar(0);
-    agendar(250);
-    agendar(900);
+  document.addEventListener("click",evento=>{
+    if(evento.target?.closest?.("#atributos .periciaItem")) agendar();
   },true);
+
+  document.addEventListener("shinobi:pagechange",evento=>{
+    if(evento.detail?.id==="atributos") agendar();
+  });
 
   window.addEventListener("pageshow",()=>agendar(80));
 

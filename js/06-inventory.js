@@ -679,9 +679,14 @@
     `).join("");
   }
 
+  let timerFiltroLoja=0;
   window.filtrarLoja=function(valor){
     lojaBusca=String(valor||"");
-    renderizarLoja();
+    clearTimeout(timerFiltroLoja);
+    timerFiltroLoja=setTimeout(()=>{
+      timerFiltroLoja=0;
+      renderizarLoja();
+    },90);
   };
 
   function atualizarCompraOverlay(){
@@ -851,7 +856,7 @@
     abrirAbaInventario("loja");
   };
 
-  window.abrirAbaInventario=function(aba){
+  window.abrirAbaInventario=function(aba,{renderizar=true}={}){
     const permitidas=["carteira","itens","loja"];
     const escolhida=permitidas.includes(aba)?aba:"itens";
     try{localStorage.setItem("shinobi_inventario_aba_v1",escolhida);}catch(_erro){}
@@ -865,22 +870,18 @@
       painel.classList.toggle("ativo",ativo);
       painel.hidden=!ativo;
     });
-    if(escolhida==="carteira") renderizarCarteira();
-    if(escolhida==="itens") renderizarListaInventario();
-    if(escolhida==="loja"){
-      renderizarLoja();
-      requestAnimationFrame(()=>document.getElementById("lojaBusca")?.focus());
+    if(renderizar){
+      if(escolhida==="carteira") renderizarCarteira();
+      if(escolhida==="itens") renderizarListaInventario();
+      if(escolhida==="loja") renderizarLoja();
     }
   };
 
   window.renderizarInventario=function(){
     migrarMoedasDoInventario();
-    renderizarListaInventario();
-    renderizarCarteira();
-    renderizarLoja();
     let aba="itens";
     try{aba=localStorage.getItem("shinobi_inventario_aba_v1")||"itens";}catch(_erro){}
-    abrirAbaInventario(aba);
+    abrirAbaInventario(aba,{renderizar:true});
   };
 
   document.addEventListener("click",event=>{
