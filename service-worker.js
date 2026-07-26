@@ -1,5 +1,5 @@
-/* Shinobi 2.5.5 — ícones refeitos conforme referências do usuário. */
-const APP_VERSION = "2.5.5";
+/* Shinobi 2.5.7 — ícones aplicados diretamente a partir das referências enviadas pelo usuário. */
+const APP_VERSION = "2.5.7";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -63,6 +63,7 @@ const APP_SHELL = [
   `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
   `./assets/ui-notes-parchment.jpg?v=${APP_VERSION}`,
   `./assets/icons/attributes.svg?v=${APP_VERSION}`,
+  `./assets/icons/attributes-reference.png?v=${APP_VERSION}`,
   `./assets/icons/battle.svg?v=${APP_VERSION}`,
   `./assets/icons/bonus.svg?v=${APP_VERSION}`,
   `./assets/icons/book.svg?v=${APP_VERSION}`,
@@ -85,6 +86,7 @@ const APP_SHELL = [
   `./assets/icons/initiative.svg?v=${APP_VERSION}`,
   `./assets/icons/inventory.svg?v=${APP_VERSION}`,
   `./assets/icons/jutsu.svg?v=${APP_VERSION}`,
+  `./assets/icons/jutsu-reference.png?v=${APP_VERSION}`,
   `./assets/icons/leaf.svg?v=${APP_VERSION}`,
   `./assets/icons/lightning.svg?v=${APP_VERSION}`,
   `./assets/icons/menu.svg?v=${APP_VERSION}`,
@@ -106,6 +108,7 @@ const APP_SHELL = [
   `./assets/icons/water.svg?v=${APP_VERSION}`,
   `./assets/icons/wind.svg?v=${APP_VERSION}`,
   `./assets/icons/wing.svg?v=${APP_VERSION}`,
+  `./assets/icons/speed-reference.png?v=${APP_VERSION}`,
   `./assets/inventory-agulhas.webp?v=${APP_VERSION}`,
   `./assets/inventory-comida.webp?v=${APP_VERSION}`,
   `./assets/inventory-esfera.webp?v=${APP_VERSION}`,
