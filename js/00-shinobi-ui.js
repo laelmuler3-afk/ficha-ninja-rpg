@@ -16,6 +16,7 @@
   function iconHTML(nome,extra="",label=""){
     const seguro=nomeSeguro(nome);
     const aria=label?` role="img" aria-label="${String(label).replace(/"/g,"&quot;")}"`:' aria-hidden="true"';
+    if(seguro==="fire") return `<span class="shinobiEmojiIcon icon-fire-emoji${extra?` ${extra}`:""}"${aria}>🔥</span>`;
     return `<span class="shinobiIcon icon-${seguro}${extra?` ${extra}`:""}"${aria}></span>`;
   }
   window.iconeShinobi=iconHTML;
