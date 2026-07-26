@@ -1,6 +1,6 @@
 {
-  "version": "2.6.1",
-  "name": "Inventário padronizado",
-  "notes": "Remove as linhas do fundo e padroniza Carteira, Inventário, Loja, cards, botões e observações. Atualiza o cache do PWA.",
+  "version": "2.6.2",
+  "name": "Inventário padronizado — correção do cache",
+  "notes": "Remove a referência ao fire.svg inexistente que bloqueava a instalação da atualização. Mantém o inventário padronizado e sem linhas horizontais.",
   "date": "2026-07-26"
 }
