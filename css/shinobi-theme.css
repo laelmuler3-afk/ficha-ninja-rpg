@@ -92,8 +92,8 @@ main{
 .icon-settings{-webkit-mask-image:url("../assets/icons/settings.svg");mask-image:url("../assets/icons/settings.svg")}
 .icon-sync{-webkit-mask-image:url("../assets/icons/sync.svg");mask-image:url("../assets/icons/sync.svg")}
 .icon-profile{-webkit-mask-image:url("../assets/icons/profile.svg");mask-image:url("../assets/icons/profile.svg")}
-.icon-attributes{-webkit-mask-image:url("../assets/icons/attributes.svg");mask-image:url("../assets/icons/attributes.svg")}
-.icon-jutsu{-webkit-mask-image:url("../assets/icons/jutsu.svg");mask-image:url("../assets/icons/jutsu.svg")}
+.icon-attributes{-webkit-mask-image:url("../assets/icons/attributes-reference.png");mask-image:url("../assets/icons/attributes-reference.png")}
+.icon-jutsu{-webkit-mask-image:url("../assets/icons/jutsu-reference.png");mask-image:url("../assets/icons/jutsu-reference.png")}
 .icon-battle{-webkit-mask-image:url("../assets/icons/battle.svg");mask-image:url("../assets/icons/battle.svg")}
 .icon-inventory{-webkit-mask-image:url("../assets/icons/inventory.svg");mask-image:url("../assets/icons/inventory.svg")}
 .icon-notes{-webkit-mask-image:url("../assets/icons/notes.svg");mask-image:url("../assets/icons/notes.svg")}
@@ -103,7 +103,7 @@ main{
 .icon-bonus{-webkit-mask-image:url("../assets/icons/bonus.svg");mask-image:url("../assets/icons/bonus.svg")}
 .icon-target{-webkit-mask-image:url("../assets/icons/target.svg");mask-image:url("../assets/icons/target.svg")}
 .icon-book{-webkit-mask-image:url("../assets/icons/book.svg");mask-image:url("../assets/icons/book.svg")}
-.icon-wing{-webkit-mask-image:url("../assets/icons/wing.svg");mask-image:url("../assets/icons/wing.svg")}
+.icon-wing{-webkit-mask-image:url("../assets/icons/speed-reference.png");mask-image:url("../assets/icons/speed-reference.png")}
 .icon-initiative{-webkit-mask-image:url("../assets/icons/initiative.svg");mask-image:url("../assets/icons/initiative.svg")}
 .icon-shuriken{-webkit-mask-image:url("../assets/icons/shuriken.svg");mask-image:url("../assets/icons/shuriken.svg")}
 .icon-leaf{-webkit-mask-image:url("../assets/icons/leaf.svg");mask-image:url("../assets/icons/leaf.svg")}
