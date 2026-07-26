@@ -92,8 +92,8 @@ main{
 .icon-settings{-webkit-mask-image:url("../assets/icons/settings.svg");mask-image:url("../assets/icons/settings.svg")}
 .icon-sync{-webkit-mask-image:url("../assets/icons/sync.svg");mask-image:url("../assets/icons/sync.svg")}
 .icon-profile{-webkit-mask-image:url("../assets/icons/profile.svg");mask-image:url("../assets/icons/profile.svg")}
-.icon-attributes{-webkit-mask-image:url("../assets/icons/attributes-reference.png");mask-image:url("../assets/icons/attributes-reference.png")}
-.icon-jutsu{-webkit-mask-image:url("../assets/icons/jutsu-reference.png");mask-image:url("../assets/icons/jutsu-reference.png")}
+.icon-attributes{-webkit-mask-image:url("../assets/icons/attributes-reference.png?v=2.5.8");mask-image:url("../assets/icons/attributes-reference.png?v=2.5.8")}
+.icon-jutsu{-webkit-mask-image:url("../assets/icons/jutsu-reference.png?v=2.5.8");mask-image:url("../assets/icons/jutsu-reference.png?v=2.5.8")}
 .icon-battle{-webkit-mask-image:url("../assets/icons/battle.svg");mask-image:url("../assets/icons/battle.svg")}
 .icon-inventory{-webkit-mask-image:url("../assets/icons/inventory.svg");mask-image:url("../assets/icons/inventory.svg")}
 .icon-notes{-webkit-mask-image:url("../assets/icons/notes.svg");mask-image:url("../assets/icons/notes.svg")}
@@ -103,11 +103,11 @@ main{
 .icon-bonus{-webkit-mask-image:url("../assets/icons/bonus.svg");mask-image:url("../assets/icons/bonus.svg")}
 .icon-target{-webkit-mask-image:url("../assets/icons/target.svg");mask-image:url("../assets/icons/target.svg")}
 .icon-book{-webkit-mask-image:url("../assets/icons/book.svg");mask-image:url("../assets/icons/book.svg")}
-.icon-wing{-webkit-mask-image:url("../assets/icons/speed-reference.png");mask-image:url("../assets/icons/speed-reference.png")}
+.icon-wing{-webkit-mask-image:url("../assets/icons/speed-reference.png?v=2.5.8");mask-image:url("../assets/icons/speed-reference.png?v=2.5.8")}
 .icon-initiative{-webkit-mask-image:url("../assets/icons/initiative.svg");mask-image:url("../assets/icons/initiative.svg")}
 .icon-shuriken{-webkit-mask-image:url("../assets/icons/shuriken.svg");mask-image:url("../assets/icons/shuriken.svg")}
 .icon-leaf{-webkit-mask-image:url("../assets/icons/leaf.svg");mask-image:url("../assets/icons/leaf.svg")}
-.icon-fire{-webkit-mask-image:url("../assets/icons/fire.svg");mask-image:url("../assets/icons/fire.svg")}
+.icon-fire{-webkit-mask-image:none!important;mask-image:none!important;background-color:transparent!important;display:inline-grid!important;place-items:center!important}.icon-fire::before{content:"🔥";font-size:calc(var(--icon-size) * .9);line-height:1}
 .icon-lightning{-webkit-mask-image:url("../assets/icons/lightning.svg");mask-image:url("../assets/icons/lightning.svg")}
 .icon-wind{-webkit-mask-image:url("../assets/icons/wind.svg");mask-image:url("../assets/icons/wind.svg")}
 .icon-water{-webkit-mask-image:url("../assets/icons/water.svg");mask-image:url("../assets/icons/water.svg")}
@@ -723,3 +723,11 @@ body::before{
     filter:none!important;
   }
 }
+
+/* Referências visuais enviadas pelo usuário: preservar proporção e leitura em tamanhos pequenos. */
+.icon-attributes,.icon-jutsu,.icon-wing{
+  -webkit-mask-size:contain!important;
+  mask-size:contain!important;
+}
+.bottomNav .icon-jutsu{--icon-size:24px}
+.statsMini .icon-wing,.statIcon.icon-wing{--icon-size:22px}
