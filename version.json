@@ -1,6 +1,6 @@
 {
-  "version": "2.5.3",
-  "name": "Contraste e fluidez",
-  "notes": "Corrige o contraste das Perícias, remove o fundo quadriculado, reduz efeitos pesados no Android e evita renderizações globais desnecessárias nas áreas de Carteira, Loja e Inventário.",
-  "date": "2026-07-25"
+  "version": "2.5.4",
+  "name": "Ícones revisados",
+  "notes": "Substitui os ícones de velocidade, fogo, atributos e jutsus por versões mais legíveis e compatíveis com o tema do app.",
+  "date": "2026-07-26"
 }
