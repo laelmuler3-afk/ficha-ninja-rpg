@@ -1,6 +1,6 @@
 {
-  "version": "2.5.2",
-  "name": "Grade de jutsus retrátil",
-  "notes": "Mantém todos os elementos fechados ao abrir a tela e organiza os grupos e as cartas de jutsu em uma grade responsiva.",
+  "version": "2.5.3",
+  "name": "Contraste e fluidez",
+  "notes": "Corrige o contraste das Perícias, remove o fundo quadriculado, reduz efeitos pesados no Android e evita renderizações globais desnecessárias nas áreas de Carteira, Loja e Inventário.",
   "date": "2026-07-25"
 }
