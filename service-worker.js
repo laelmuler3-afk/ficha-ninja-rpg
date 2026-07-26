@@ -1,5 +1,5 @@
-/* Shinobi 2.6.1 — inventário padronizado e cache atualizado. */
-const APP_VERSION = "2.6.2";
+/* Shinobi 2.6.4 — revisão completa de contraste do Inventário, Carteira e Loja. */
+const APP_VERSION = "2.6.4";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
