@@ -658,3 +658,58 @@ body.shinobiDrawerAberto .shinobiDrawerPainel{transform:none}
   .navText{font-size:8px!important}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+
+/* ==========================================================
+   SHINOBI UI 2.5.3 — correções de contraste e fluidez
+   ========================================================== */
+/* O grid fixo com máscara causava quadriculado/repaint em alguns WebViews Android. */
+body::before{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  mask-image:none!important;
+  -webkit-mask-image:none!important;
+}
+
+/* Superfícies já são opacas: retirar blur evita camadas GPU caras e falhas de composição. */
+.topo.topoCompacto,
+.configMenu,
+.menu.bottomNav,
+#inventario .inventarioAbas,
+#inventario .lojaTopo{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+#inventario .inventarioAbas{
+  background:#070c10!important;
+}
+#inventario .lojaTopo{
+  background:#070c10!important;
+}
+#inventario .inventarioSubpagina{
+  transform:none!important;
+  will-change:auto!important;
+}
+#inventario .itemInventarioVisualCard,
+#inventario .itemInventarioDetalhe,
+#inventario .carteiraMoedaCard,
+#inventario .lojaItemCard{
+  contain:layout paint style;
+}
+
+@media (hover:none),(pointer:coarse){
+  .pagina.ativa,
+  #inventario .inventarioSubpagina{
+    animation:none!important;
+  }
+  .miniChakra .miniBarra span::after,
+  .recursoBatalhaChakra .recursoBatalhaBarra span::after{
+    content:none!important;
+    animation:none!important;
+  }
+  .btn:hover,.levelUpBtn:hover,.onlineBtn:hover,.acaoRecurso:hover{
+    filter:none!important;
+  }
+}
