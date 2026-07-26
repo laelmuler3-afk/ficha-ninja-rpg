@@ -1,6 +1,6 @@
 {
-  "version": "2.5.7",
-  "name": "Ícones pelas imagens de referência",
-  "notes": "Usa diretamente as imagens enviadas como base dos ícones de Atributos, Jutsus e Velocidade. Katon permanece com o emoji 🔥.",
+  "version": "2.5.8",
+  "name": "Ícones das referências originais",
+  "notes": "Aplica diretamente as imagens enviadas para Atributos, Jutsus e Velocidade; mantém Katon como 🔥 e corrige a instalação do cache removendo a referência ausente a fire.svg.",
   "date": "2026-07-26"
 }
