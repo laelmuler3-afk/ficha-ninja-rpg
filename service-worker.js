@@ -1,5 +1,5 @@
 /* Shinobi 2.6.1 — inventário padronizado e cache atualizado. */
-const APP_VERSION = "2.6.1";
+const APP_VERSION = "2.6.2";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -77,7 +77,6 @@ const APP_SHELL = [
   `./assets/icons/earth.svg?v=${APP_VERSION}`,
   `./assets/icons/edit.svg?v=${APP_VERSION}`,
   `./assets/icons/eye.svg?v=${APP_VERSION}`,
-  `./assets/icons/fire.svg?v=${APP_VERSION}`,
   `./assets/icons/fist.svg?v=${APP_VERSION}`,
   `./assets/icons/heal.svg?v=${APP_VERSION}`,
   `./assets/icons/heart.svg?v=${APP_VERSION}`,
