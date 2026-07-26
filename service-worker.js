@@ -1,5 +1,5 @@
-/* Shinobi 2.5.3 — contraste e fluidez em Android/tablet. */
-const APP_VERSION = "2.5.3";
+/* Shinobi 2.5.4 — ícones revisados para velocidade, fogo, atributos e jutsus. */
+const APP_VERSION = "2.5.4";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
