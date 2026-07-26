@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8",
-  "name": "Ícones das referências originais",
-  "notes": "Aplica diretamente as imagens enviadas para Atributos, Jutsus e Velocidade; mantém Katon como 🔥 e corrige a instalação do cache removendo a referência ausente a fire.svg.",
+  "version": "2.6.1",
+  "name": "Inventário padronizado",
+  "notes": "Remove as linhas do fundo e padroniza Carteira, Inventário, Loja, cards, botões e observações. Atualiza o cache do PWA.",
   "date": "2026-07-26"
 }
