@@ -1,5 +1,5 @@
-/* Shinobi 2.5.4 — ícones revisados para velocidade, fogo, atributos e jutsus. */
-const APP_VERSION = "2.5.4";
+/* Shinobi 2.5.5 — ícones refeitos conforme referências do usuário. */
+const APP_VERSION = "2.5.5";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
