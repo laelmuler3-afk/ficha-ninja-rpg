@@ -1,5 +1,5 @@
-/* Shinobi 2.6.4 — revisão completa de contraste do Inventário, Carteira e Loja. */
-const APP_VERSION = "2.6.4";
+/* Shinobi 2.5.8.1 — base 2.5.8 preservada; inventário limpo e com contraste corrigido. */
+const APP_VERSION = "2.5.8.1";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -63,6 +63,9 @@ const APP_SHELL = [
   `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
   `./assets/ui-notes-parchment.jpg?v=${APP_VERSION}`,
   `./assets/icons/attributes.svg?v=${APP_VERSION}`,
+  `./assets/icons/attributes-reference.png?v=${APP_VERSION}`,
+  `./assets/icons/jutsu-reference.png?v=${APP_VERSION}`,
+  `./assets/icons/speed-reference.png?v=${APP_VERSION}`,
   `./assets/icons/battle.svg?v=${APP_VERSION}`,
   `./assets/icons/bonus.svg?v=${APP_VERSION}`,
   `./assets/icons/book.svg?v=${APP_VERSION}`,
