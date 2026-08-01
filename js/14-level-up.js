@@ -358,10 +358,11 @@
 
     if(campoNivel){
       campoNivel.value=String(fixos.nivel);
-      campoNivel.readOnly=true;
+      campoNivel.readOnly=false;
       campoNivel.min="1";
       campoNivel.max=String(regras?.maxLevel||20);
-      campoNivel.setAttribute("aria-label","Nível atual. Use o botão Subir de nível para evoluir.");
+      campoNivel.inputMode="numeric";
+      campoNivel.setAttribute("aria-label","Nível atual. Pode ser ajustado manualmente enquanto a progressão por XP não estiver ativa.");
     }
     if(campoProf){
       campoProf.value=String(fixos.proficiencia);
@@ -370,6 +371,63 @@
     }
     estado.nivel=String(fixos.nivel);
     estado.proficiencia=String(fixos.proficiencia);
+  }
+
+  function aplicarNivelManual(valor,{origem="manual",notificar=false}={}){
+    if(!regras) return false;
+    const progressoAnterior=inteiro(estado?.progressaoFixa?.level,inteiro(estado?.nivel,1));
+    const alvo=limitarNivel(valor);
+    const fixos=valoresFixos(alvo);
+    const alterou=progressoAnterior!==alvo||inteiro(estado?.nivel,1)!==alvo;
+
+    estado.nivel=String(alvo);
+    estado.proficiencia=String(fixos.proficiencia);
+    garantirEstruturaProgressao();
+
+    const progresso=estado.progressaoFixa;
+    progresso.level=alvo;
+    progresso.proficiency=fixos.proficiencia;
+    progresso.jutsuRankMax=fixos.rankJutsu;
+    progresso.keyPointsTotal=fixos.pontosChave;
+    progresso.clanPointsEarned=fixos.pontosCla;
+    progresso.attacksPerAction=fixos.ataquesPorAcao;
+    progresso.chakraBase=fixos.chakraBase;
+    progresso.activeFeatures=fixos.caracteristicas;
+
+    if(alterou){
+      progresso.history.push({
+        type:"manual-level-adjustment",
+        fromLevel:progressoAnterior,
+        toLevel:alvo,
+        source:String(origem||"manual"),
+        appliedAt:new Date().toISOString(),
+        fixedAfter:fixos,
+        resources:{status:"preserved-existing"}
+      });
+      progresso.history=progresso.history.slice(-160);
+    }
+
+    sincronizarCamposFixos();
+    persistirSeguro();
+    atualizarIntegracoes();
+
+    if(notificar&&alterou){
+      const mensagem=`O nível da ficha foi ajustado para ${alvo}. PV e Chakra foram preservados.`;
+      if(typeof avisoShinobi==="function") avisoShinobi("Nível atualizado",mensagem);
+      else alert(mensagem);
+    }
+    return true;
+  }
+
+  function ligarEdicaoManualNivel(){
+    const campo=document.getElementById("nivelDisplayMini");
+    if(!campo||campo.dataset.manualLevelListener==="1") return;
+    campo.dataset.manualLevelListener="1";
+    campo.addEventListener("change",()=>aplicarNivelManual(campo.value,{origem:"ficha",notificar:false}));
+    campo.addEventListener("blur",()=>{
+      const alvo=limitarNivel(campo.value);
+      if(String(campo.value)!==String(alvo)) campo.value=String(alvo);
+    });
   }
 
   function persistirSeguro(){
@@ -1213,6 +1271,7 @@
       }
       garantirEstruturaProgressao();
       sincronizarCamposFixos();
+      ligarEdicaoManualNivel();
       persistirSeguro();
       observarCatalogo();
       atualizarIntegracoes();
@@ -1238,6 +1297,7 @@
     getFixedValues:()=>regras?valoresFixos(nivelAtual()):null,
     getMaxJutsuRank:()=>regras?valoresFixos(nivelAtual()).rankJutsu:null,
     getClanRule:()=>regras?detectarCla():null,
+    setManualLevel:(nivel,opcoes={})=>aplicarNivelManual(nivel,opcoes),
     refresh:atualizarIntegracoes
   };
 

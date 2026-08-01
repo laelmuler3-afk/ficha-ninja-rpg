@@ -1159,6 +1159,29 @@
     await api.update(api.ref(estadoOnline.db),updates);
   }
 
+  async function definirNivelJogador({participantId,nivel,reason=""}){
+    exigirMestre();
+    const p=participantes()[participantId];
+    if(!p||p.type!=="player") throw new Error("Jogador não encontrado na sala.");
+    const valor=Math.max(1,Math.min(20,Math.trunc(Number(nivel))));
+    if(!Number.isFinite(valor)) throw new Error("Informe um nível entre 1 e 20.");
+
+    const api=estadoOnline.api;
+    const eventRef=api.push(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/events`));
+    const updates={};
+    updates[`rooms/${estadoOnline.salaId}/participants/${participantId}/battle/level`]=valor;
+    updates[`rooms/${estadoOnline.salaId}/participants/${participantId}/updatedAt`]=agora();
+    updates[`rooms/${estadoOnline.salaId}/events/${eventRef.key}`]={
+      id:eventRef.key,type:"LEVEL_SET",createdBy:estadoOnline.user.uid,createdAt:agora(),
+      payload:{
+        participantId,targetUid:p.ownerUid,sheetId:p.sheetId,localSheetName:p.localSheetName,
+        level:valor,reason:texto(reason).slice(0,160)
+      }
+    };
+    await api.update(api.ref(estadoOnline.db),updates);
+    return {participantId,level:valor,eventId:eventRef.key};
+  }
+
   function observarEventos(roomId){
     const api=estadoOnline.api;
     estadoOnline.unsubscribeEventos?.();
@@ -1196,12 +1219,12 @@
   async function processarEventosXp(){
     if(estadoOnline.processandoXp) return;
     const room=estadoOnline.sala,user=estadoOnline.user,api=estadoOnline.api;
-    if(!room||!user||user.anonymous) return;
+    if(!room||!user) return;
     estadoOnline.processandoXp=true;
     try{
       const processados=lerJson(CHAVE_XP_PROCESSADO,{})||{};
       const eventos=Object.values(room.events||{})
-        .filter(e=>e.type==="XP_GRANTED"&&e.payload?.targetUid===user.uid)
+        .filter(e=>["XP_GRANTED","LEVEL_SET"].includes(e.type)&&e.payload?.targetUid===user.uid)
         .sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
 
       for(const evento of eventos){
@@ -1238,28 +1261,53 @@
 
           const dados=clonar(ficha.data);
           dados.__online=dados.__online&&typeof dados.__online==="object"?dados.__online:{};
-          const aplicados=dados.__online.appliedXpEvents&&typeof dados.__online.appliedXpEvents==="object"
-            ?dados.__online.appliedXpEvents:{};
+          const aplicados=dados.__online.appliedOnlineEvents&&typeof dados.__online.appliedOnlineEvents==="object"
+            ?dados.__online.appliedOnlineEvents
+            :(dados.__online.appliedXpEvents&&typeof dados.__online.appliedXpEvents==="object"?dados.__online.appliedXpEvents:{});
 
           if(!aplicados[evento.id]&&!processados[evento.id]){
-            const xp=parseXpAtual(dados.xp),antes=xp.current;
-            dados.xp=formatarXp(Math.max(0,xp.current+Number(evento.payload.amount||0)),xp.max);
+            let notificacao=null;
+            if(evento.type==="XP_GRANTED"){
+              const xp=parseXpAtual(dados.xp),antes=xp.current;
+              dados.xp=formatarXp(Math.max(0,xp.current+Number(evento.payload.amount||0)),xp.max);
+              notificacao={tipo:"xp-recebido",detalhe:{
+                amount:Number(evento.payload.amount||0),before:antes,after:parseXpAtual(dados.xp).current,
+                reason:evento.payload.reason,character:texto(dados.nome)||ficha.characterName
+              }};
+            }else if(evento.type==="LEVEL_SET"){
+              const antes=Math.max(1,Math.min(20,Math.trunc(Number(dados.nivel||1))||1));
+              const depois=Math.max(1,Math.min(20,Math.trunc(Number(evento.payload.level||1))||1));
+              dados.nivel=String(depois);
+              dados.proficiencia=String(2+Math.floor((depois-1)/4));
+              notificacao={tipo:"nivel-recebido",detalhe:{
+                before:antes,after:depois,reason:evento.payload.reason,
+                character:texto(dados.nome)||ficha.characterName
+              }};
+            }
+
             aplicados[evento.id]=agora();
-            const recentes=Object.entries(aplicados).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,80);
-            dados.__online.appliedXpEvents=Object.fromEntries(recentes);
-            dados.__online.lastXpEvent=evento.id;
+            const recentes=Object.entries(aplicados).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,100);
+            dados.__online.appliedOnlineEvents=Object.fromEntries(recentes);
+            dados.__online.appliedXpEvents=Object.fromEntries(recentes.filter(([id])=>room.events?.[id]?.type==="XP_GRANTED"));
+            dados.__online.lastOnlineEvent=evento.id;
+            if(evento.type==="XP_GRANTED") dados.__online.lastXpEvent=evento.id;
             localStorage.setItem(ficha.key,JSON.stringify(dados));
 
-            if(ficha.name===fichaAtualLocal()?.name){
-              try{estado=dados;CHAVE=ficha.key;carregar();atualizarPerfil();}catch(_erro){}
+            if(ficha.name===fichaAtivaNomeSeguro()){
+              try{
+                estado=dados;CHAVE=ficha.key;carregar();atualizarPerfil();
+                if(evento.type==="LEVEL_SET"&&window.shinobiLevelUp?.setManualLevel){
+                  window.shinobiLevelUp.setManualLevel(dados.nivel,{origem:"mestre",notificar:false});
+                }
+              }catch(_erro){}
             }
-            emitir("xp-recebido",{
-              amount:Number(evento.payload.amount||0),before:antes,after:parseXpAtual(dados.xp).current,
-              reason:evento.payload.reason,character:texto(dados.nome)||ficha.characterName
-            });
+            if(notificacao) emitir(notificacao.tipo,notificacao.detalhe);
           }
 
-          const sincronizada=await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"xp"});
+          let sincronizada={ok:true,localOnly:Boolean(user.anonymous)};
+          if(!user.anonymous){
+            sincronizada=await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:evento.type==="LEVEL_SET"?"nivel-mestre":"xp"});
+          }
           if(sincronizada?.conflict){
             await liberarReivindicacaoXp(claim.refAck,claim.deviceId);
             continue;
@@ -1506,7 +1554,7 @@
     sairDaSala,encerrarSala,listarFichasLocais,fichaAtualLocal,resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
-    adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
+    adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };

@@ -646,13 +646,24 @@
   function renderXp(st){
     const jogadores=participantes(st).filter(p=>p.type==="player");
     return `<details class="onlineCard onlineDetails">
-      <summary><span><b>Distribuir XP</b><small>Somente o mestre altera</small></span></summary>
-      <div class="onlineDetailsConteudo">
-        <form data-form="grant-xp" class="onlineForm">
-          <div class="onlineXpJogadores">${jogadores.length?jogadores.map(p=>`<label><input type="checkbox" name="participantIds" value="${esc(p.id)}" checked><span class="presencaDot ${conectado(st,p)?"conectado":""}"></span>${esc(p.displayName)}</label>`).join(""):`<p class="onlineVazio">Aguarde jogadores entrarem na sala.</p>`}</div>
-          <div class="onlineFormGrid"><label>Quantidade<input name="amount" type="number" value="500" required></label><label>Motivo<input name="reason" maxlength="160" placeholder="Fim da missão"></label></div>
-          <button class="onlineBtn primario" type="submit" ${jogadores.length?"":"disabled"}>Conceder XP</button>
-        </form>
+      <summary><span><b>Progressão dos jogadores</b><small>Nível individual e distribuição de XP</small></span></summary>
+      <div class="onlineDetailsConteudo onlineProgressaoConteudo">
+        <section class="onlineProgressaoSecao">
+          <div class="onlineProgressaoTitulo"><h4>Alterar nível individual</h4><small>O nível é enviado diretamente para a ficha do jogador. PV e Chakra não são recalculados.</small></div>
+          <div class="onlineNivelJogadores">${jogadores.length?jogadores.map(p=>`<form data-form="set-player-level" data-participant-id="${esc(p.id)}" class="onlineNivelJogador">
+            <div class="onlineNivelJogadorNome"><span class="presencaDot ${conectado(st,p)?"conectado":""}"></span><div><strong>${esc(p.displayName)}</strong><small>Nível atual na sala: ${Math.max(1,num(p.battle?.level,1))}</small></div></div>
+            <label>Nível<input name="level" type="number" min="1" max="20" value="${Math.max(1,num(p.battle?.level,1))}" required></label>
+            <button class="onlineBtn secundario" type="submit">Salvar nível</button>
+          </form>`).join(""):`<p class="onlineVazio">Aguarde jogadores entrarem na sala.</p>`}</div>
+        </section>
+        <section class="onlineProgressaoSecao">
+          <div class="onlineProgressaoTitulo"><h4>Distribuir XP</h4><small>Funciona também para jogadores que entraram como convidados.</small></div>
+          <form data-form="grant-xp" class="onlineForm">
+            <div class="onlineXpJogadores">${jogadores.length?jogadores.map(p=>`<label><input type="checkbox" name="participantIds" value="${esc(p.id)}" checked><span class="presencaDot ${conectado(st,p)?"conectado":""}"></span>${esc(p.displayName)}</label>`).join(""):`<p class="onlineVazio">Aguarde jogadores entrarem na sala.</p>`}</div>
+            <div class="onlineFormGrid"><label>Quantidade<input name="amount" type="number" value="500" required></label><label>Motivo<input name="reason" maxlength="160" placeholder="Fim da missão"></label></div>
+            <button class="onlineBtn primario" type="submit" ${jogadores.length?"":"disabled"}>Conceder XP</button>
+          </form>
+        </section>
       </div>
     </details>`;
   }
@@ -809,6 +820,12 @@
     if(tipo==="import-npc")return executar(async()=>{await window.ShinobiOnline.importarFichaComoNpc(dados.get("localSheetName"),{displayName:dados.get("displayName")});form.reset();});
     if(tipo==="quick-npc")return executar(async()=>{await window.ShinobiOnline.criarNpcRapido(Object.fromEntries(dados.entries()));form.reset();});
     if(tipo==="add-effect")return executar(async()=>{await window.ShinobiOnline.adicionarEfeito({participantId:dados.get("participantId"),name:dados.get("name"),duration:num(dados.get("duration"),1)});form.reset();});
+    if(tipo==="set-player-level")return executar(async()=>{
+      const participantId=form.dataset.participantId;
+      const resultado=await window.ShinobiOnline.definirNivelJogador({participantId,nivel:dados.get("level")});
+      const jogador=obterEstado().sala?.participants?.[participantId];
+      await avisar("Nível atualizado",`${jogador?.displayName||"Jogador"} foi definido como nível ${resultado.level}.`);
+    });
     if(tipo==="grant-xp")return executar(async()=>{
       const ids=dados.getAll("participantIds");
       await window.ShinobiOnline.concederXp({participantIds:ids,amount:dados.get("amount"),reason:dados.get("reason")});
@@ -894,6 +911,9 @@
     window.ShinobiOnline.on("conflito-ficha",e=>{conflitoAtual=e.detail;abrir();agendarRender();});
     window.ShinobiOnline.on("xp-recebido",e=>{
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);
+    });
+    window.ShinobiOnline.on("nivel-recebido",e=>{
+      const d=e.detail;avisar("Nível atualizado pelo mestre",`${d.character||"Sua ficha"}: nível ${d.before} → ${d.after}.${d.reason?`\n${d.reason}`:""}`);
     });
     window.ShinobiOnline.on("convite-url",()=>{if(obterEstado().user)abrir();});
     window.addEventListener("online",agendarRender,{passive:true});
