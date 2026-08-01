@@ -1,5 +1,5 @@
-/* Shinobi 2.5.8.1 — base 2.5.8 preservada; inventário limpo e com contraste corrigido. */
-const APP_VERSION = "2.5.8.1";
+/* Shinobi 2.5.8.2 — base 2.5.8 preservada; inventário limpo e com contraste corrigido. */
+const APP_VERSION = "2.5.8.2";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

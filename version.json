@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.1",
-  "name": "Inventário corrigido sobre a base 2.5.8",
-  "notes": "Mantém os ícones personalizados da versão 2.5.8 e corrige todo o Inventário, Carteira e Loja: remove linhas do fundo e garante contraste em títulos, nomes, descrições, botões, campos e estados especiais.",
-  "date": "2026-07-26"
+  "version": "2.5.8.2",
+  "name": "Nível individual e distribuição de XP corrigidos",
+  "notes": "Permite ao mestre alterar o nível de cada jogador individualmente, libera a edição manual temporária do nível e corrige o recebimento e a persistência de XP para jogadores convidados.",
+  "date": "2026-08-01"
 }
