@@ -177,3 +177,15 @@ body.onlineAberto{overflow:hidden}
 .onlineCampanhaMenu button:active,.onlineCampanhaMenu button:hover{background:rgba(225,168,92,.1)}
 .onlineCampanhaMenu button.perigo{color:#ef918a}.onlineCampanhaMenu button.perigo:active,.onlineCampanhaMenu button.perigo:hover{background:rgba(215,90,82,.12)}
 .onlineCriarSalaForm{padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
+
+
+/* v2.5.8.2 — progressão manual do mestre e XP para convidados */
+.onlineProgressaoConteudo{display:grid;gap:16px}
+.onlineProgressaoSecao{display:grid;gap:10px}
+.onlineProgressaoSecao+.onlineProgressaoSecao{border-top:1px solid rgba(255,255,255,.08);padding-top:15px}
+.onlineProgressaoTitulo{display:grid;gap:3px}.onlineProgressaoTitulo h4{margin:0}.onlineProgressaoTitulo small{color:#9f8d75;font-size:11px;line-height:1.4}
+.onlineNivelJogadores{display:grid;gap:8px}
+.onlineNivelJogador{display:grid;grid-template-columns:minmax(0,1fr) 86px auto;align-items:end;gap:9px;background:#0c1014;border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:10px}
+.onlineNivelJogadorNome{display:flex;align-items:center;gap:8px;min-width:0;align-self:center}.onlineNivelJogadorNome>div{min-width:0}.onlineNivelJogadorNome strong,.onlineNivelJogadorNome small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.onlineNivelJogadorNome strong{color:#f8e8ce;font-size:13px}.onlineNivelJogadorNome small{color:#918270;font-size:10px;margin-top:2px}
+.onlineNivelJogador label{display:grid;gap:5px;color:#cbb89e;font-size:11px;font-weight:700}.onlineNivelJogador input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.11);border-radius:11px;background:#0b0e12;color:#f8ead5;min-height:41px;padding:8px 9px;font:700 14px system-ui;outline:none}.onlineNivelJogador input:focus{border-color:rgba(225,168,92,.7);box-shadow:0 0 0 3px rgba(225,168,92,.09)}
+@media(max-width:560px){.onlineNivelJogador{grid-template-columns:minmax(0,1fr) 78px}.onlineNivelJogador .onlineBtn{grid-column:1/-1}.onlineProgressaoTitulo small{font-size:10px}}
