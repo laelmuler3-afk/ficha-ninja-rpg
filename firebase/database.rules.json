@@ -97,7 +97,8 @@
         "eventAcks": {
           "$eventId": {
             "$uid": {
-              ".write": "auth != null && auth.uid === $uid"
+              ".write": "auth != null && auth.uid === $uid && (root.child('rooms').child($roomId).child('events').child($eventId).child('type').val() === 'XP_GRANTED' || root.child('rooms').child($roomId).child('events').child($eventId).child('type').val() === 'LEVEL_SET') && root.child('rooms').child($roomId).child('events').child($eventId).child('payload').child('targetUid').val() === auth.uid",
+              ".validate": "!newData.exists() || (newData.hasChildren(['status','deviceId']) && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && ((newData.child('status').val() === 'processing' && newData.child('claimedAt').isNumber() && !newData.child('completedAt').exists()) || (newData.child('status').val() === 'done' && data.child('status').val() === 'processing' && newData.child('deviceId').val() === data.child('deviceId').val() && newData.child('completedAt').isNumber())))"
             }
           }
         },
@@ -110,7 +111,12 @@
       "$roomId": {
         ".read": "auth != null && (root.child('roomPublic').child($roomId).child('masterUid').val() === auth.uid || root.child('roomMemberships').child($roomId).child(auth.uid).exists())",
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid"
+          ".write": "auth != null && auth.uid === $uid && (!newData.exists() || root.child('roomPublic').child($roomId).child('masterUid').val() === auth.uid || root.child('roomMemberships').child($roomId).child(auth.uid).exists())",
+          "devices": {
+            "$deviceId": {
+              ".validate": "!newData.exists() || (newData.hasChildren(['connected','lastSeen','deviceId','participantId']) && newData.child('connected').val() === true && newData.child('lastSeen').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val() === $deviceId && newData.child('deviceId').val().length <= 100 && newData.child('participantId').isString() && newData.child('participantId').val().length <= 100 && (newData.child('participantId').val() === '' || root.child('rooms').child($roomId).child('participants').child(newData.child('participantId').val()).child('ownerUid').val() === auth.uid))"
+            }
+          }
         }
       }
     }
