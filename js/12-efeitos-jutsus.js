@@ -807,13 +807,20 @@
               <strong>${escaparHtml(item.nome)}</strong>
               ${item.duracao?`<small>Duração: ${escaparHtml(item.duracao)}</small>`:""}
             </div>
-            <button type="button" onclick="removerEfeitoJutsuBatalha('${escaparHtml(item.id)}')" aria-label="Encerrar ${escaparHtml(item.nome)}">×</button>
+            <button type="button" data-remover-efeito-id="${escaparHtml(item.id)}" aria-label="Encerrar ${escaparHtml(item.nome)}">×</button>
           </div>
           <div class="efeitoJutsuBatalhaBonus">
             ${persistentes.map(efeito=>`<span class="efeitoChip-${escaparHtml(efeito.polaridade)}">${escaparHtml(efeitoParaTexto(efeito))}</span>`).join("")}
           </div>
         </article>`;
     }).join("");
+
+    host.querySelectorAll("[data-remover-efeito-id]").forEach(botao=>{
+      botao.addEventListener("click",()=>{
+        const id=botao.dataset.removerEfeitoId||"";
+        if(id) removerEfeitoJutsuBatalha(id);
+      });
+    });
   }
 
   function atualizarTudo(){

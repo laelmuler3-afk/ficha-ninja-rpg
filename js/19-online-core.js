@@ -1144,7 +1144,8 @@
   async function concederXp({participantIds,amount,reason=""}){
     exigirMestre();
     const valor=Math.trunc(Number(amount));
-    if(!Number.isFinite(valor)||valor===0) throw new Error("Informe uma quantidade de XP diferente de zero.");
+    if(!Number.isSafeInteger(valor)||valor===0) throw new Error("Informe uma quantidade inteira de XP diferente de zero.");
+    if(Math.abs(valor)>1000000) throw new Error("A alteração máxima por operação é de 1.000.000 de XP.");
     const ids=Array.from(new Set((participantIds||[]).filter(id=>participantes()[id]?.type==="player")));
     if(!ids.length) throw new Error("Selecione ao menos um jogador.");
     const api=estadoOnline.api,updates={};

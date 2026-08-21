@@ -1084,9 +1084,10 @@
     const corpo=`
       <header class="levelUpModalCabecalho"><div><span class="levelUpModalSelo">Escolha pendente — nível ${inteiro(pendente.level,0)}</span><h2>${escaparHTML(pendente.label)}</h2></div><button type="button" class="levelUpFechar" onclick="fecharLevelUp()" aria-label="Fechar">×</button></header>
       <div class="levelUpModalCorpo"><div class="levelUpAvisoFase">A ficha já alcançou este nível. Complete a escolha para liberar o próximo Level Up.</div>${htmlEscolha(pendente)}</div>`;
-    const acoes=`<footer class="levelUpModalAcoes"><button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Cancelar</button><button type="button" id="salvarEscolhaPendenteBtn" class="levelUpConfirmar" onclick="salvarEscolhaPendente('${escaparHTML(pendente.id)}')" disabled>Salvar escolhas</button></footer>`;
+    const acoes=`<footer class="levelUpModalAcoes"><button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Cancelar</button><button type="button" id="salvarEscolhaPendenteBtn" class="levelUpConfirmar" disabled>Salvar escolhas</button></footer>`;
     const modal=criarModal(corpo,acoes);
     const botao=modal.querySelector("#salvarEscolhaPendenteBtn");
+    botao?.addEventListener("click",()=>salvarEscolhaPendente(pendente.id));
     configurarControleEscolha(modal,pendente,()=>{if(botao) botao.disabled=!escolhaCompleta(pendente,lerSelecaoModal(pendente));});
   }
 

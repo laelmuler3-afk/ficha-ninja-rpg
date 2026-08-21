@@ -495,7 +495,7 @@
     const nuvem=st.fichasNuvem||[];
 
     if(st.user?.anonymous){
-      return `<details class="onlineCard onlineDetails" open>
+      return `<details class="onlineCard onlineDetails" data-online-detail="cloud" open>
         <summary><span><b>Conta e sincronização</b><small>Nuvem desativada</small></span></summary>
         <div class="onlineDetailsConteudo">
           <p class="onlineAviso">Você entrou sem conta. Nesse modo, o Firebase cria apenas uma identificação temporária deste navegador. Ela não é um e-mail e não permite encontrar a ficha no celular, tablet ou depois de limpar os dados do aplicativo.</p>
@@ -505,7 +505,7 @@
       </details>`;
     }
 
-    return `<details class="onlineCard onlineDetails" open>
+    return `<details class="onlineCard onlineDetails" data-online-detail="cloud" open>
       <summary><span><b>Conta e sincronização</b><small>${nuvem.length} ficha(s) na nuvem</small></span></summary>
       <div class="onlineDetailsConteudo">
         <p class="onlineContaNuvem"><strong>${esc(st.user?.email||"Conta Google")}</strong><small>As fichas ficam vinculadas a esta conta.</small></p>
@@ -583,7 +583,7 @@
   }
 
   function renderAdicionarNpc(st){
-    return `<details class="onlineCard onlineDetails">
+    return `<details class="onlineCard onlineDetails" data-online-detail="npc">
       <summary><span><b>Adicionar NPC ou inimigo</b><small>Importe uma ficha ou crie rapidamente</small></span></summary>
       <div class="onlineDetailsConteudo onlineGridDois">
         <form data-form="import-npc" class="onlineForm onlineSubCard">
@@ -645,7 +645,7 @@
 
   function renderXp(st){
     const jogadores=participantes(st).filter(p=>p.type==="player");
-    return `<details class="onlineCard onlineDetails">
+    return `<details class="onlineCard onlineDetails" data-online-detail="progression">
       <summary><span><b>Progressão dos jogadores</b><small>Nível individual e distribuição de XP</small></span></summary>
       <div class="onlineDetailsConteudo onlineProgressaoConteudo">
         <section class="onlineProgressaoSecao">
@@ -690,15 +690,76 @@
     return `${cabecalhoConta(st)}${renderConflito()}<div class="onlineGridDois">${!st.user.anonymous?renderMestreHome(st):""}${renderEntradaSala(st)}</div>${renderNuvem(st)}`;
   }
 
+  function chaveFormulario(form,indice){
+    return [form?.dataset?.form||"form",form?.dataset?.participantId||"",indice].join("::");
+  }
+
+  function capturarInteracao(conteudo){
+    const estado={details:{},campos:[],foco:null,scrollTop:conteudo?.scrollTop||0};
+    if(!conteudo)return estado;
+    conteudo.querySelectorAll("details[data-online-detail]").forEach(el=>{estado.details[el.dataset.onlineDetail]=el.open;});
+    conteudo.querySelectorAll("form[data-form]").forEach((form,indiceForm)=>{
+      const chave=chaveFormulario(form,indiceForm);
+      form.querySelectorAll("input[name],select[name],textarea[name]").forEach((campo,indiceCampo)=>{
+        estado.campos.push({
+          chave,nome:campo.name,indice:indiceCampo,tipo:campo.type||campo.tagName,
+          value:campo.value,checked:Boolean(campo.checked)
+        });
+      });
+    });
+    const ativo=document.activeElement;
+    if(ativo&&conteudo.contains(ativo)&&ativo.name){
+      const form=ativo.closest("form[data-form]");
+      if(form){
+        const forms=[...conteudo.querySelectorAll("form[data-form]")];
+        estado.foco={
+          chave:chaveFormulario(form,forms.indexOf(form)),nome:ativo.name,
+          inicio:Number.isInteger(ativo.selectionStart)?ativo.selectionStart:null,
+          fim:Number.isInteger(ativo.selectionEnd)?ativo.selectionEnd:null
+        };
+      }
+    }
+    return estado;
+  }
+
+  function restaurarInteracao(conteudo,estado){
+    if(!conteudo||!estado)return;
+    conteudo.querySelectorAll("details[data-online-detail]").forEach(el=>{
+      if(Object.prototype.hasOwnProperty.call(estado.details||{},el.dataset.onlineDetail))el.open=Boolean(estado.details[el.dataset.onlineDetail]);
+    });
+    const forms=[...conteudo.querySelectorAll("form[data-form]")];
+    const mapa=new Map(forms.map((form,indice)=>[chaveFormulario(form,indice),form]));
+    (estado.campos||[]).forEach(item=>{
+      const form=mapa.get(item.chave);if(!form)return;
+      const candidatos=[...form.querySelectorAll(`[name="${CSS.escape(item.nome)}"]`)];
+      const campo=candidatos[item.indice]||candidatos[0];if(!campo)return;
+      if(campo.type==="checkbox"||campo.type==="radio")campo.checked=item.checked;
+      else campo.value=item.value;
+    });
+    if(estado.foco){
+      const form=mapa.get(estado.foco.chave);
+      const campo=form?.querySelector(`[name="${CSS.escape(estado.foco.nome)}"]`);
+      if(campo){
+        campo.focus({preventScroll:true});
+        if(estado.foco.inicio!==null&&typeof campo.setSelectionRange==="function"){
+          try{campo.setSelectionRange(estado.foco.inicio,estado.foco.fim??estado.foco.inicio);}catch(_erro){}
+        }
+      }
+    }
+    conteudo.scrollTop=estado.scrollTop||0;
+  }
+
   function renderizar(){
     criarRoot();
     const conteudo=document.getElementById("shinobiOnlineConteudo"),st=obterEstado();
     if(!conteudo)return;
+    const interacao=capturarInteracao(conteudo);
     if(st.carregando){conteudo.innerHTML='<div class="onlineLoading"><span></span><p>Conectando ao sistema online...</p></div>';return;}
     if(!st.configurado){conteudo.innerHTML=renderConfiguracao();return;}
     if(st.ultimoErro&&!st.iniciado){conteudo.innerHTML=`<section class="onlineCard"><h3>Falha ao iniciar</h3><p>${esc(st.ultimoErro)}</p><button type="button" class="onlineBtn primario" data-action="retry-online">Tentar novamente</button></section>`;return;}
     if(!st.user){conteudo.innerHTML=renderLogin();return;}
     conteudo.innerHTML=st.sala?renderSala(st):renderHome(st);
+    restaurarInteracao(conteudo,interacao);
     requestAnimationFrame(renderQr);
   }
 
