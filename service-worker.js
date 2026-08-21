@@ -1,5 +1,7 @@
-/* Shinobi 2.5.8.2 — base 2.5.8 preservada; inventário limpo e com contraste corrigido. */
-const APP_VERSION = "2.5.8.2";
+/* Shinobi 2.5.8.4 — estabilidade do painel do mestre e segurança.
+ * Corrige validação de importações, eventos dinâmicos e regras de acesso online.
+ */
+const APP_VERSION = "2.5.8.4";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -57,6 +59,7 @@ const APP_SHELL = [
   `./js/20-online-ui.js?v=${APP_VERSION}`,
   `./js/21-online-hooks.js?v=${APP_VERSION}`,
   `./js/22-organizacao-retratil.js?v=${APP_VERSION}`,
+  `./js/23-security-hardening.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
@@ -153,6 +156,11 @@ function respostaPodeSerSalva(response){
   return Boolean(response&&response.ok&&(response.type==="basic"||response.type==="default"));
 }
 
+function recursoShellOpcional(url){
+  try{return new URL(url).pathname.includes("/assets/inventory-");}
+  catch(_erro){return false;}
+}
+
 async function avisarClientes(mensagem){
   try{
     const clientes=await self.clients.matchAll({includeUncontrolled:true,type:"window"});
@@ -233,12 +241,21 @@ async function instalarAppShell(){
           total
         });
       }catch(erro){
+        const opcional=recursoShellOpcional(url);
+        carregados+=opcional?1:0;
         await avisarClientes({
-          type:"SW_INSTALL_ERROR",
+          type:opcional?"SW_INSTALL_PROGRESS":"SW_INSTALL_ERROR",
           version:APP_VERSION,
           url,
+          loaded:carregados,
+          total,
+          skipped:opcional,
           message:String(erro?.message||erro)
         });
+        if(opcional){
+          console.warn("Recurso visual opcional não foi pré-carregado:",url,erro);
+          return;
+        }
         throw erro;
       }
     }
