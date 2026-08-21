@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.2",
-  "name": "Nível individual e distribuição de XP corrigidos",
-  "notes": "Permite ao mestre alterar o nível de cada jogador individualmente, libera a edição manual temporária do nível e corrige o recebimento e a persistência de XP para jogadores convidados.",
-  "date": "2026-08-01"
+  "version": "2.5.8.4",
+  "name": "Estabilidade do painel do mestre",
+  "notes": "Impede atualizações em tempo real da sala de fecharem painéis ou apagarem campos em uso pelo mestre. Preserva painéis abertos, valores de formulários, foco e rolagem durante rerenders do Firebase, mantendo também as correções de segurança da versão anterior.",
+  "date": "2026-08-21"
 }
