@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.4 — estabilidade do painel do mestre e segurança.
- * Corrige validação de importações, eventos dinâmicos e regras de acesso online.
+/* Shinobi 2.5.8.5 — correções visuais mobile e Safari iOS.
+ * Corrige HUD de PV/Chakra, safe areas e estabilidade visual em telas estreitas.
  */
-const APP_VERSION = "2.5.8.4";
+const APP_VERSION = "2.5.8.5";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
