@@ -874,3 +874,113 @@ body::before{
   #inventario .inventarioAbas button strong{font-size:11px!important}
   #inventario .inventarioNotas{min-height:135px!important}
 }
+
+/* ==========================================================
+   2.5.8.5 — correções mobile / Safari iOS
+   Mantém HUD legível em telas estreitas e respeita safe areas.
+   ========================================================== */
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body{
+  min-height:100dvh;
+  padding-left:env(safe-area-inset-left,0px);
+  padding-right:env(safe-area-inset-right,0px);
+}
+.topo.topoCompacto{
+  padding-top:max(12px,env(safe-area-inset-top,0px))!important;
+  padding-left:max(14px,env(safe-area-inset-left,0px))!important;
+  padding-right:max(14px,env(safe-area-inset-right,0px))!important;
+}
+.menu.bottomNav{
+  padding-left:max(5px,env(safe-area-inset-left,0px))!important;
+  padding-right:max(5px,env(safe-area-inset-right,0px))!important;
+}
+
+/* PV/Chakra: evita que valores como 83/100 estourem o card. */
+#identidade .perfilHud .miniHud{
+  min-width:0!important;
+  overflow:hidden!important;
+}
+#identidade .recursoEditavelNovo .recursoInputs{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+  align-items:center!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  gap:2px!important;
+  justify-content:stretch!important;
+}
+#identidade .recursoEditavelNovo .recursoInputs > span{
+  min-width:10px!important;
+  text-align:center!important;
+  line-height:1!important;
+}
+#identidade .recursoEditavelNovo .recursoInputs input{
+  width:100%!important;
+  max-width:72px!important;
+  min-width:0!important;
+  justify-self:center!important;
+  font-size:clamp(22px,7vw,30px)!important;
+  letter-spacing:-.04em!important;
+  overflow:hidden!important;
+}
+
+@media (max-width:520px){
+  #identidade .perfilHud{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  #identidade .perfilHud .miniHud{
+    padding:13px 8px 11px!important;
+  }
+  #identidade .perfilHud .recursoRotulo{
+    gap:6px!important;
+    font-size:clamp(14px,4.2vw,18px)!important;
+    white-space:nowrap!important;
+  }
+  #identidade .perfilHud .recursoRotulo .shinobiIcon{
+    --icon-size:clamp(20px,5.5vw,25px)!important;
+  }
+  #identidade .recursoEditavelNovo .recursoInputs input{
+    max-width:58px!important;
+    font-size:clamp(21px,6.8vw,28px)!important;
+  }
+  #identidade .perfilHud .miniBarra{
+    margin-top:15px!important;
+  }
+}
+
+@media (max-width:360px){
+  #identidade .perfilHud{
+    grid-template-columns:1fr!important;
+  }
+  #identidade .perfilHud .miniHud{
+    min-height:104px!important;
+  }
+  #identidade .recursoEditavelNovo .recursoInputs input{
+    max-width:86px!important;
+    font-size:28px!important;
+  }
+}
+
+/* Safari/iOS: evita zoom automático em controles comuns menores que 16 px. */
+@supports (-webkit-touch-callout:none){
+  select,
+  textarea,
+  .configMenu input,
+  .configMenu select,
+  .shinobiOnlineConteudo input,
+  .shinobiOnlineConteudo select,
+  .shinobiOnlineConteudo textarea,
+  dialog input,
+  dialog select,
+  dialog textarea{
+    font-size:16px!important;
+  }
+  input,textarea,select,button{
+    -webkit-border-radius:inherit;
+  }
+}
