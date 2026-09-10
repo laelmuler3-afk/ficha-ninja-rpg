@@ -984,3 +984,230 @@ body{
     -webkit-border-radius:inherit;
   }
 }
+
+
+/* ==========================================================
+   v2.5.8.10 — HUD responsivo por largura real do card
+   Evita corte de PV/Chakra com 3+ dígitos em celulares.
+   O container query reage ao espaço disponível de cada card,
+   independentemente do modelo, proporção ou orientação da tela.
+   ========================================================== */
+#identidade .perfilHud .recursoEditavelNovo{
+  container-type:inline-size;
+}
+#identidade .perfilHud .recursoEditavelNovo > div:first-child{
+  min-width:0!important;
+}
+#identidade .perfilHud .recursoEditavelNovo .recursoRotulo,
+#identidade .perfilHud .recursoEditavelNovo .recursoInputs{
+  min-width:0!important;
+}
+
+/* Quando o card individual fica estreito, rótulo e valores deixam
+   de disputar a mesma linha. Isso mantém 110/110, 112/112 etc. inteiros. */
+@container (max-width:260px){
+  #identidade .perfilHud .recursoEditavelNovo > div:first-child{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    gap:4px!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoRotulo{
+    width:100%!important;
+    justify-content:flex-start!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs{
+    width:100%!important;
+    margin-top:1px!important;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+    width:100%!important;
+    max-width:68px!important;
+    font-size:clamp(21px,14cqw,30px)!important;
+    letter-spacing:-.045em!important;
+  }
+}
+
+/* Fallback para navegadores sem Container Queries e ajuste geral mobile. */
+@media (max-width:620px){
+  #identidade .perfilHud .recursoEditavelNovo > div:first-child{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    gap:4px!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoRotulo{
+    width:100%!important;
+    justify-content:flex-start!important;
+    font-size:clamp(14px,4vw,17px)!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs{
+    width:100%!important;
+    margin-top:1px!important;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+    width:100%!important;
+    max-width:68px!important;
+    font-size:clamp(21px,6.5vw,29px)!important;
+    letter-spacing:-.045em!important;
+  }
+  #identidade .perfilHud .miniBarra{
+    margin-top:10px!important;
+  }
+}
+
+/* Mesmo em aparelhos muito estreitos, PV e Chakra continuam lado a lado.
+   Como o conteúdo interno agora empilha, os números deixam de estourar. */
+@media (max-width:360px){
+  #identidade .perfilHud{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  #identidade .perfilHud .miniHud{
+    min-height:110px!important;
+    padding-left:7px!important;
+    padding-right:7px!important;
+  }
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+    max-width:62px!important;
+    font-size:clamp(20px,6.8vw,25px)!important;
+  }
+}
+
+/* =========================================================
+   v2.5.8.10 — HUD responsivo por largura real do componente
+   Corrige PV/Chakra com 3+ dígitos em celulares e iOS.
+   ========================================================= */
+#identidade .perfilHud .miniHud{
+  container-type:inline-size;
+  min-width:0!important;
+}
+
+#identidade .perfilHud .miniHud > div:first-child{
+  min-width:0!important;
+}
+
+#identidade .perfilHud .recursoEditavelNovo .recursoInputs{
+  min-width:0!important;
+  max-width:100%!important;
+}
+
+#identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  font-variant-numeric:tabular-nums!important;
+  -moz-appearance:textfield;
+  appearance:textfield;
+}
+
+#identidade .perfilHud .recursoEditavelNovo .recursoInputs input::-webkit-outer-spin-button,
+#identidade .perfilHud .recursoEditavelNovo .recursoInputs input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+
+/* Em cards estreitos, rótulo e valores passam a ocupar linhas próprias.
+   A decisão é feita pela largura do CARD, não pela marca/modelo do aparelho. */
+@container (max-width:300px){
+  #identidade .perfilHud .miniHud > div:first-child{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    align-items:start!important;
+    gap:7px!important;
+  }
+
+  #identidade .perfilHud .recursoRotulo{
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs{
+    justify-self:stretch!important;
+    width:100%!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+    gap:4px!important;
+  }
+
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+    width:100%!important;
+    max-width:none!important;
+    height:38px!important;
+    padding:0 2px!important;
+    font-size:clamp(22px,12cqi,32px)!important;
+    line-height:1!important;
+    letter-spacing:-.035em!important;
+  }
+
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs > span{
+    align-self:center!important;
+    min-width:.55em!important;
+    font-size:clamp(18px,8cqi,24px)!important;
+  }
+
+  #identidade .perfilHud .miniBarra{
+    margin-top:11px!important;
+  }
+}
+
+/* Fallback para navegadores sem Container Queries. */
+@supports not (container-type:inline-size){
+  @media (max-width:620px){
+    #identidade .perfilHud .miniHud > div:first-child{
+      grid-template-columns:minmax(0,1fr)!important;
+      grid-template-rows:auto auto!important;
+      gap:7px!important;
+    }
+
+    #identidade .perfilHud .recursoEditavelNovo .recursoInputs{
+      justify-self:stretch!important;
+      width:100%!important;
+      display:grid!important;
+      grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+      gap:4px!important;
+    }
+
+    #identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+      width:100%!important;
+      max-width:none!important;
+      font-size:clamp(22px,7vw,30px)!important;
+    }
+  }
+}
+
+/* Em telas extremamente estreitas, os dois cards podem empilhar.
+   Isso evita reduzir os números até ficarem ilegíveis. */
+@media (max-width:340px){
+  #identidade .perfilHud.hudNovo{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+
+  #identidade .perfilHud .recursoEditavelNovo .recursoInputs input{
+    font-size:clamp(24px,9vw,32px)!important;
+  }
+}
+
+/* Mantém os cards de recursos da tela de batalha seguros com 3+ dígitos. */
+.recursosBatalhaVivos .recursoBatalhaCard{
+  min-width:0;
+}
+.recursosBatalhaVivos .recursoBatalhaTopo{
+  min-width:0;
+  gap:8px;
+}
+.recursosBatalhaVivos .recursoBatalhaTopo strong{
+  min-width:0;
+  white-space:nowrap;
+  font-size:clamp(20px,5vw,32px);
+  font-variant-numeric:tabular-nums;
+}
+@media (max-width:380px){
+  .recursosBatalhaVivos{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
+
