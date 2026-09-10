@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.12 — Passo 1 do redesign: AMOLED + EKO.
+/* Shinobi 2.5.8.13 — Passo 1 do redesign: AMOLED + EKO.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.12";
+const APP_VERSION = "2.5.8.13";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -37,6 +37,7 @@ const APP_SHELL = [
   `./css/shinobi-theme.css?v=${APP_VERSION}`,
   `./css/design-system-eko.css?v=${APP_VERSION}`,
   `./css/perfil-home-passo2.css?v=${APP_VERSION}`,
+  `./css/perfil-home-passo2-ajuste.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
