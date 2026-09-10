@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.14 — Passo 2.2 do redesign: fechamento visual da Home.
+/* Shinobi 2.5.8.15 — Passo 3 do redesign: cabeçalho e navegação responsiva.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.14";
+const APP_VERSION = "2.5.8.15";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -38,6 +38,7 @@ const APP_SHELL = [
   `./css/design-system-eko.css?v=${APP_VERSION}`,
   `./css/perfil-home-passo2.css?v=${APP_VERSION}`,
   `./css/perfil-home-passo2-ajuste.css?v=${APP_VERSION}`,
+  `./css/cabecalho-navegacao-passo3.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,

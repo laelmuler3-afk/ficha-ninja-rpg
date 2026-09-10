@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.14",
-  "name": "Passo 2.2 — Fechamento Perfil / Home",
-  "notes": "Ajuste visual final da Home: rank e idade compactos, hero mais eficiente, botão de bônus de iniciativa menos dominante e melhor respiro para o CTA de Combate. Nenhum cálculo, evento ou regra de bônus foi alterado.",
+  "version": "2.5.8.15",
+  "name": "Passo 3 — Cabeçalho e navegação",
+  "notes": "Refinamento estrutural e visual do cabeçalho e da navegação inferior, com responsividade, safe areas e estados ativos. Mantidas as seis rotas e toda a lógica existente; nenhum símbolo de propriedade de terceiros foi adicionado.",
   "date": "2026-09-10"
 }
