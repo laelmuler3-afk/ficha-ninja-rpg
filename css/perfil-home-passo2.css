@@ -1,0 +1,386 @@
+/* ==========================================================
+   SHINOBI UI 2.5.8.12 — PASSO 2: PERFIL / HOME
+   Refinamento exclusivamente visual e estrutural da Home.
+   Não altera regras, chaves data-save, cálculos ou persistência.
+   ========================================================== */
+
+#identidade{
+  --home-gap:12px;
+}
+
+/* A Home passa a funcionar como painel rápido do personagem. */
+#identidade .perfilGameCard.perfilNovoLayout{
+  overflow:hidden!important;
+  padding:0 0 16px!important;
+  border:1px solid rgba(var(--ui-depth-rgb),.42)!important;
+  background:#000!important;
+  box-shadow:0 18px 42px rgba(var(--ui-depth-rgb),.18)!important;
+}
+
+/* Hero mais cinematográfico sem substituir a imagem escolhida pelo jogador. */
+#identidade .perfilGameCard.perfilNovoLayout::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:min(52vw,390px);
+  pointer-events:none;
+  z-index:1;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.16) 58%,#000 100%),
+    radial-gradient(circle at 82% 16%,rgba(255,62,22,.12),transparent 36%);
+}
+#identidade .perfilFundoImagem{
+  min-height:280px!important;
+  opacity:.88!important;
+  filter:saturate(.90) contrast(1.07)!important;
+}
+#identidade .perfilGlow{
+  background:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.38) 68%,#000 100%)!important;
+}
+
+#identidade .perfilTopoNovo{
+  position:relative!important;
+  z-index:2!important;
+  min-height:280px!important;
+  display:grid!important;
+  grid-template-columns:minmax(112px,30%) 1fr!important;
+  align-items:end!important;
+  gap:18px!important;
+  padding:92px 22px 26px!important;
+}
+
+#identidade .avatarAreaNovo{
+  align-self:end!important;
+}
+#identidade .avatarNovo{
+  width:clamp(104px,24vw,154px)!important;
+  height:clamp(104px,24vw,154px)!important;
+  border:2px solid rgba(255,138,31,.74)!important;
+  background:#020304!important;
+  box-shadow:0 0 0 4px rgba(0,0,0,.56),0 0 24px rgba(255,138,31,.11)!important;
+}
+
+#identidade .perfilDadosNovo{
+  min-width:0!important;
+  padding-bottom:3px!important;
+}
+#identidade .nomeClaBloco{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:1px!important;
+}
+#identidade .campoClaTopo,
+#identidade .campoNomeFull,
+#identidade .campoRankTopo,
+#identidade .campoIdadeTopo{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+#identidade .campoClaTopo label,
+#identidade .campoNomeFull label,
+#identidade .campoRankTopo label,
+#identidade .campoIdadeTopo label{
+  display:none!important;
+}
+#identidade .campoClaTopo input{
+  height:auto!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:#e6ded3!important;
+  font-size:clamp(12px,2.8vw,16px)!important;
+  font-weight:750!important;
+  text-transform:uppercase!important;
+  letter-spacing:.08em!important;
+}
+#identidade .campoNomeFull input{
+  width:100%!important;
+  height:auto!important;
+  padding:1px 0 4px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#f3dfc2!important;
+  font-family:Impact,"Arial Narrow Bold","Trebuchet MS",sans-serif!important;
+  font-size:clamp(31px,7.8vw,54px)!important;
+  font-style:italic!important;
+  font-weight:900!important;
+  line-height:.96!important;
+  letter-spacing:.015em!important;
+  text-transform:uppercase!important;
+  text-shadow:0 2px 16px rgba(0,0,0,.75)!important;
+}
+#identidade .rankIdadeLinha{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin-top:7px!important;
+}
+#identidade .campoRankTopo input,
+#identidade .campoIdadeTopo input{
+  width:auto!important;
+  min-width:0!important;
+  max-width:150px!important;
+  height:30px!important;
+  padding:4px 10px!important;
+  border:1px solid rgba(255,138,31,.38)!important;
+  border-radius:6px!important;
+  background:rgba(0,0,0,.68)!important;
+  color:#e9ddcc!important;
+  font-size:12px!important;
+  text-align:center!important;
+}
+#identidade .campoIdadeTopo input{max-width:72px!important}
+
+/* XP compacto e integrado ao fluxo. */
+#identidade .xpLinhaNova{
+  position:relative!important;
+  z-index:3!important;
+  width:calc(100% - 32px)!important;
+  margin:-2px auto 0!important;
+}
+#identidade .xpNovo{
+  min-height:70px!important;
+  padding:10px 12px!important;
+  border:1px solid rgba(var(--ui-depth-rgb),.54)!important;
+  background:linear-gradient(110deg,#030607,#000)!important;
+  box-shadow:0 8px 24px rgba(var(--ui-depth-rgb),.12)!important;
+}
+#identidade .xpNivelLinha{
+  align-items:center!important;
+}
+#identidade .xpTitulo{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-width:0!important;
+}
+#identidade .xpTitulo .recursoRotulo{
+  color:var(--ui-orange)!important;
+  font-size:15px!important;
+  font-weight:900!important;
+}
+#identidade #xpPerfilInput{
+  min-width:0!important;
+  margin-left:auto!important;
+  color:#ece5dc!important;
+  text-align:right!important;
+  font-size:13px!important;
+}
+#identidade .nivelCompacto{
+  order:-1!important;
+  display:flex!important;
+  align-items:baseline!important;
+  gap:6px!important;
+  min-width:72px!important;
+}
+#identidade .nivelCompacto small{
+  color:#d9b477!important;
+  text-transform:uppercase!important;
+  font-size:9px!important;
+  font-weight:850!important;
+  letter-spacing:.08em!important;
+}
+#identidade #nivelDisplayMini{
+  width:34px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  font-size:22px!important;
+  font-weight:900!important;
+  text-align:left!important;
+}
+#identidade .xpNovo>.miniBarra{
+  height:7px!important;
+  margin-top:8px!important;
+}
+
+/* Recursos centrais: leitura imediata em sessão. */
+#identidade .perfilHud{
+  width:calc(100% - 32px)!important;
+  margin:12px auto 0!important;
+  gap:10px!important;
+}
+#identidade .perfilHud .miniHud{
+  min-height:118px!important;
+  padding:14px 13px 12px!important;
+  border-radius:9px!important;
+}
+#identidade .perfilHud .miniHud>div:first-child{
+  grid-template-columns:1fr!important;
+  gap:7px!important;
+}
+#identidade .perfilHud .recursoRotulo{
+  font-size:15px!important;
+  letter-spacing:.04em!important;
+}
+#identidade .perfilHud .recursoInputs{
+  justify-content:center!important;
+  width:100%!important;
+}
+#identidade .perfilHud .recursoInputs input{
+  font-size:clamp(25px,7vw,38px)!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+#identidade .perfilHud .recursoInputs>span{
+  font-size:18px!important;
+}
+#identidade .perfilHud .miniBarra{
+  height:8px!important;
+  margin-top:10px!important;
+}
+
+/* Atributos rápidos: os dados continuam os mesmos; apenas o ruído visual sai. */
+#identidade .miniStatusNovo{
+  width:calc(100% - 32px)!important;
+  margin:10px auto 0!important;
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+#identidade .miniStatusNovo>div{
+  min-width:0!important;
+  min-height:59px!important;
+  padding:8px 3px!important;
+  border:1px solid rgba(var(--ui-depth-rgb),.52)!important;
+  border-radius:8px!important;
+  background:#010304!important;
+  box-shadow:0 7px 16px rgba(var(--ui-depth-rgb),.10)!important;
+}
+#identidade .miniStatusNovo .statIcon{
+  display:none!important;
+}
+#identidade .miniStatusNovo label{
+  display:block!important;
+  margin:0 0 3px!important;
+  color:#8fa7b0!important;
+  font-size:8px!important;
+  font-weight:850!important;
+  letter-spacing:.06em!important;
+  text-transform:uppercase!important;
+  text-align:center!important;
+}
+#identidade .miniStatusNovo input{
+  width:100%!important;
+  height:auto!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#f4eee6!important;
+  font-size:18px!important;
+  font-weight:900!important;
+  text-align:center!important;
+}
+
+/* CTA principal da Home. */
+#identidade .homeCombateCta{
+  width:calc(100% - 32px);
+  min-height:76px;
+  margin:13px auto 2px;
+  display:grid;
+  grid-template-columns:42px 1fr 20px;
+  align-items:center;
+  gap:11px;
+  padding:11px 14px;
+  border:1px solid rgba(255,138,31,.68);
+  border-radius:9px;
+  background:
+    linear-gradient(90deg,rgba(110,38,3,.50),rgba(21,9,2,.82) 56%,#020100),
+    #000;
+  color:#f7e8d1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 21px rgba(255,138,31,.08),0 10px 22px rgba(var(--ui-depth-rgb),.12);
+  text-align:left;
+  cursor:pointer;
+}
+#identidade .homeCombateCta:active{transform:translateY(1px)}
+#identidade .homeCombateCtaIcon{
+  --icon-size:34px;
+  color:var(--ui-orange);
+  filter:drop-shadow(0 0 9px rgba(255,138,31,.24));
+}
+#identidade .homeCombateCtaTexto{display:flex;flex-direction:column;gap:2px;min-width:0}
+#identidade .homeCombateCtaTexto strong{
+  color:#f1d3a8;
+  font-size:20px;
+  font-weight:900;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+#identidade .homeCombateCtaTexto small{color:#9ca4a8;font-size:11px}
+#identidade .homeCombateCtaSeta{color:var(--ui-orange);font-size:31px;line-height:1;text-align:right}
+
+/* Naturezas e progressão deixam a Home, mas continuam disponíveis em Atributos. */
+#atributos .naturezasNoStatus,
+#atributos .levelUpResumoNoStatus{
+  margin-top:12px!important;
+}
+#atributos .naturezasNoStatus{
+  width:100%!important;
+}
+#atributos .naturezasNoStatus>h2{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+
+@media (max-width:620px){
+  #identidade{--home-gap:9px}
+  #identidade .perfilGameCard.perfilNovoLayout{padding-bottom:12px!important}
+  #identidade .perfilFundoImagem{min-height:228px!important}
+  #identidade .perfilTopoNovo{
+    min-height:228px!important;
+    grid-template-columns:104px minmax(0,1fr)!important;
+    gap:12px!important;
+    padding:72px 12px 17px!important;
+  }
+  #identidade .avatarNovo{width:102px!important;height:102px!important}
+  #identidade .campoNomeFull input{font-size:clamp(27px,8.3vw,38px)!important}
+  #identidade .campoClaTopo input{font-size:11px!important}
+  #identidade .rankIdadeLinha{gap:5px!important;margin-top:5px!important}
+  #identidade .campoRankTopo input,#identidade .campoIdadeTopo input{height:27px!important;padding:3px 7px!important;font-size:10px!important}
+  #identidade .campoRankTopo input{max-width:112px!important}
+  #identidade .campoIdadeTopo input{max-width:58px!important}
+
+  #identidade .xpLinhaNova,
+  #identidade .perfilHud,
+  #identidade .miniStatusNovo,
+  #identidade .homeCombateCta{width:calc(100% - 20px)!important}
+  #identidade .xpNovo{min-height:62px!important;padding:8px 9px!important}
+  #identidade #nivelDisplayMini{font-size:19px!important}
+  #identidade #xpPerfilInput{font-size:11px!important}
+
+  #identidade .perfilHud{gap:7px!important;margin-top:9px!important}
+  #identidade .perfilHud .miniHud{min-height:104px!important;padding:11px 9px 10px!important}
+  #identidade .perfilHud .recursoRotulo{font-size:13px!important}
+  #identidade .perfilHud .recursoRotulo .shinobiIcon{--icon-size:18px!important}
+  #identidade .perfilHud .recursoInputs input{font-size:clamp(22px,7.3vw,31px)!important}
+  #identidade .perfilHud .recursoInputs>span{font-size:15px!important}
+  #identidade .perfilHud .miniBarra{height:7px!important;margin-top:9px!important}
+
+  #identidade .miniStatusNovo{gap:4px!important;margin-top:8px!important}
+  #identidade .miniStatusNovo>div{min-height:52px!important;padding:7px 2px!important}
+  #identidade .miniStatusNovo label{font-size:7px!important}
+  #identidade .miniStatusNovo input{font-size:15px!important}
+
+  #identidade .homeCombateCta{min-height:66px!important;margin-top:10px!important;grid-template-columns:34px 1fr 16px!important;gap:8px!important;padding:9px 11px!important}
+  #identidade .homeCombateCtaIcon{--icon-size:28px!important}
+  #identidade .homeCombateCtaTexto strong{font-size:17px!important}
+  #identidade .homeCombateCtaTexto small{font-size:9px!important}
+  #identidade .homeCombateCtaSeta{font-size:27px!important}
+}
+
+@media (max-width:370px){
+  #identidade .perfilTopoNovo{grid-template-columns:86px minmax(0,1fr)!important;padding-left:9px!important;padding-right:9px!important;gap:8px!important}
+  #identidade .avatarNovo{width:84px!important;height:84px!important}
+  #identidade .campoNomeFull input{font-size:25px!important}
+  #identidade .campoRankTopo input{max-width:96px!important}
+  #identidade .campoIdadeTopo input{max-width:52px!important}
+  #identidade .perfilHud .miniHud{padding-left:7px!important;padding-right:7px!important}
+  #identidade .miniStatusNovo{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #identidade .miniStatusNovo label{font-size:8px!important}
+}
