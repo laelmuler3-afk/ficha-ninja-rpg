@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.10",
-  "name": "Sarutobi D10 + HUD responsivo",
-  "notes": "Mantém o Chakra do clã Sarutobi em 1d10 no Level Up e corrige o HUD de PV/Chakra para se adaptar automaticamente à largura real do card, incluindo valores de 3 ou mais dígitos em Android e iOS.",
+  "version": "2.5.8.11",
+  "name": "Passo 1 — Design System AMOLED + EKO",
+  "notes": "Adiciona uma camada visual isolada com fundo AMOLED preto, PV vermelho neon, EKO lilás neon, profundidade azul-petróleo e padronização inicial de superfícies, bordas e botões. A lógica e as chaves internas de Chakra permanecem intactas para preservar compatibilidade.",
   "date": "2026-09-10"
 }

@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.10 — Sarutobi D10 + HUD responsivo adaptativo.
- * Mantém a sincronização transacional e reforça o layout mobile/iOS.
+/* Shinobi 2.5.8.11 — Passo 1 do redesign: AMOLED + EKO.
+ * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.10";
+const APP_VERSION = "2.5.8.11";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -35,6 +35,7 @@ const APP_SHELL = [
   `./css/online.css?v=${APP_VERSION}`,
   `./css/organizacao-retratil.css?v=${APP_VERSION}`,
   `./css/shinobi-theme.css?v=${APP_VERSION}`,
+  `./css/design-system-eko.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
@@ -60,6 +61,7 @@ const APP_SHELL = [
   `./js/21-online-hooks.js?v=${APP_VERSION}`,
   `./js/22-organizacao-retratil.js?v=${APP_VERSION}`,
   `./js/23-security-hardening.js?v=${APP_VERSION}`,
+  `./js/24-terminologia-eko.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
