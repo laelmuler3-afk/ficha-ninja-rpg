@@ -1,0 +1,279 @@
+/* ==========================================================
+   SHINOBI UI 2.5.8.11 — PASSO 1: DESIGN SYSTEM AMOLED + EKO
+   Camada visual isolada e carregada por último.
+   Não altera IDs, data-save, chaves de estado ou regras de jogo.
+   ========================================================== */
+
+:root{
+  /* Base AMOLED */
+  --ui-bg:#000000;
+  --ui-bg-deep:#000000;
+  --ui-surface:#010304;
+  --ui-surface-2:#020608;
+  --ui-surface-soft:rgba(2,8,10,.88);
+
+  /* Profundidade em azul-petróleo */
+  --ui-depth:#022b36;
+  --ui-depth-rgb:2,43,54;
+  --ui-line:rgba(24,92,108,.42);
+  --ui-line-soft:rgba(24,92,108,.24);
+
+  /* Identidade */
+  --ui-gold:#d4a35a;
+  --ui-gold-light:#efc27c;
+  --ui-orange:#ff8a1f;
+  --ui-orange-light:#ffad58;
+  --ui-text:#f1e6d6;
+  --ui-muted:#94a3b8;
+  --ui-muted-2:#64748b;
+
+  /* Recursos neon */
+  --ui-red:#ff002e;
+  --ui-red-light:#ff536b;
+  --ui-eko:#b84dff;
+  --ui-eko-light:#d38aff;
+  /* Compatibilidade: seletores antigos de Chakra continuam funcionando. */
+  --ui-blue:var(--ui-eko);
+  --ui-green:#39ff7a;
+
+  /* Geometria e profundidade */
+  --ui-radius:11px;
+  --ui-radius-small:7px;
+  --ui-shadow:0 14px 34px rgba(var(--ui-depth-rgb),.24),0 0 20px rgba(var(--ui-depth-rgb),.10);
+}
+
+html,
+body{
+  background:#000000!important;
+}
+
+/* O fundo principal fica realmente preto para telas AMOLED. */
+body{
+  background:#000000!important;
+}
+body::before{
+  display:none!important;
+  content:none!important;
+}
+
+/* ---------- SUPERFÍCIES ---------- */
+.painel,
+.pergaminho{
+  border-color:var(--ui-line-soft)!important;
+  border-radius:var(--ui-radius)!important;
+  background:linear-gradient(145deg,#020607 0%,#000000 76%)!important;
+  box-shadow:var(--ui-shadow)!important;
+}
+
+.jutsuCard,
+.jutsuListaCard,
+.ataqueCard,
+.item,
+.itemInventario,
+.lojaItemCard,
+.carteiraPainel,
+.carteiraResumo,
+.jutsuGrupo,
+.lojaGrupo,
+.batalhaSecao,
+.onlineCard,
+.levelUpSecao,
+.levelUpCaracteristica,
+.levelUpComparacaoItem{
+  border-color:var(--ui-line-soft)!important;
+  border-radius:var(--ui-radius)!important;
+  background:linear-gradient(145deg,#020607,#000)!important;
+  box-shadow:0 10px 26px rgba(var(--ui-depth-rgb),.18)!important;
+}
+
+/* ---------- CABEÇALHO ---------- */
+.topo.topoCompacto{
+  background:#000000!important;
+  border-bottom-color:rgba(24,92,108,.46)!important;
+  box-shadow:0 12px 30px rgba(var(--ui-depth-rgb),.22)!important;
+}
+.topo h1{
+  color:var(--ui-orange)!important;
+  text-shadow:0 0 18px rgba(255,138,31,.16)!important;
+}
+.topoMenuBtn,
+.configBtn{
+  border-color:rgba(24,92,108,.42)!important;
+  background:#000!important;
+  box-shadow:0 7px 20px rgba(var(--ui-depth-rgb),.20)!important;
+}
+.topoMenuBtn{
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+
+/* ---------- TIPOGRAFIA BASE ---------- */
+h2{
+  color:#f0d8b4!important;
+  letter-spacing:.55px!important;
+}
+h3{color:#dfc49e!important}
+label{color:#c9b89e!important}
+
+/* ---------- CAMPOS ---------- */
+input,
+textarea,
+select{
+  border-color:rgba(24,92,108,.45)!important;
+  border-radius:var(--ui-radius-small)!important;
+  background:#010304!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.02),0 0 14px rgba(var(--ui-depth-rgb),.06)!important;
+}
+input:focus,
+textarea:focus,
+select:focus{
+  border-color:rgba(255,138,31,.82)!important;
+  box-shadow:0 0 0 2px rgba(255,138,31,.13),0 0 16px rgba(255,138,31,.08)!important;
+}
+
+/* ---------- BOTÕES ---------- */
+.btn,
+.levelUpBtn,
+.onlineBtn,
+.acaoRecurso{
+  border-color:rgba(255,138,31,.48)!important;
+  border-radius:var(--ui-radius-small)!important;
+  color:#fff3e5!important;
+  background:linear-gradient(180deg,rgba(171,67,10,.88),rgba(91,28,2,.96))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 8px 20px rgba(var(--ui-depth-rgb),.16)!important;
+}
+.btn:hover,
+.levelUpBtn:hover,
+.onlineBtn:hover,
+.acaoRecurso:hover{
+  border-color:rgba(255,173,88,.72)!important;
+}
+.perigo{
+  border-color:rgba(255,0,46,.60)!important;
+  background:linear-gradient(180deg,rgba(118,0,20,.88),rgba(49,0,8,.98))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 16px rgba(255,0,46,.10)!important;
+}
+
+/* ---------- PV NEON ---------- */
+#identidade .perfilHud .miniPv{
+  border-color:rgba(255,0,46,.72)!important;
+  background:radial-gradient(circle at 8% 0,rgba(255,0,46,.17),transparent 48%),#030001!important;
+  box-shadow:inset 0 0 22px rgba(255,0,46,.07),0 0 18px rgba(255,0,46,.12)!important;
+}
+#identidade .perfilHud .miniPv .recursoRotulo,
+#identidade .perfilHud .miniPv .recursoRotulo .shinobiIcon{
+  color:var(--ui-red)!important;
+}
+#identidade .miniPv .miniBarra{
+  background:#180006!important;
+}
+#identidade .miniPv .miniBarra span{
+  background:linear-gradient(90deg,var(--ui-red),var(--ui-red-light))!important;
+  box-shadow:0 0 13px rgba(255,0,46,.58)!important;
+}
+
+/* ---------- EKO NEON ----------
+   Mantém os nomes de classes/IDs antigos para não tocar na lógica. */
+#identidade .perfilHud .miniChakra{
+  border-color:rgba(184,77,255,.76)!important;
+  background:radial-gradient(circle at 8% 0,rgba(184,77,255,.19),transparent 48%),#030005!important;
+  box-shadow:inset 0 0 22px rgba(184,77,255,.08),0 0 19px rgba(184,77,255,.14)!important;
+}
+#identidade .perfilHud .miniChakra .recursoRotulo,
+#identidade .perfilHud .miniChakra .recursoRotulo .shinobiIcon{
+  color:var(--ui-eko)!important;
+}
+#identidade .miniChakra .miniBarra{
+  background:#100018!important;
+}
+#identidade .miniChakra .miniBarra span{
+  background:linear-gradient(90deg,#9826ee,var(--ui-eko-light))!important;
+  box-shadow:0 0 14px rgba(184,77,255,.62)!important;
+}
+
+/* ---------- XP ---------- */
+#identidade .xpNovo{
+  border-color:rgba(24,92,108,.36)!important;
+  border-radius:var(--ui-radius)!important;
+  background:linear-gradient(110deg,#020607,#000)!important;
+  box-shadow:0 12px 28px rgba(var(--ui-depth-rgb),.16)!important;
+}
+#identidade .xpNovo>.miniBarra{
+  background:#16120d!important;
+}
+#identidade .xpNovo>.miniBarra span{
+  background:linear-gradient(90deg,var(--ui-orange),var(--ui-gold-light))!important;
+  box-shadow:0 0 12px rgba(255,138,31,.30)!important;
+}
+
+/* ---------- BATALHA: PV / EKO ---------- */
+#batalha .recursoBatalhaCard{
+  border-radius:var(--ui-radius)!important;
+  background:#010304!important;
+  box-shadow:0 10px 26px rgba(var(--ui-depth-rgb),.16)!important;
+}
+#batalha .recursoBatalhaPv{
+  --recurso-cor:var(--ui-red)!important;
+  border-color:rgba(255,0,46,.60)!important;
+  box-shadow:inset 0 0 18px rgba(255,0,46,.045),0 0 14px rgba(255,0,46,.08)!important;
+}
+#batalha .recursoBatalhaChakra{
+  --recurso-cor:var(--ui-eko)!important;
+  border-color:rgba(184,77,255,.64)!important;
+  box-shadow:inset 0 0 18px rgba(184,77,255,.05),0 0 14px rgba(184,77,255,.09)!important;
+}
+#batalha .recursoBatalhaBarra{
+  background:#050708!important;
+  border-color:rgba(24,92,108,.36)!important;
+}
+
+/* Level Up: o painel interno continua chamado Chakra no código,
+   mas recebe a identidade visual do EKO. */
+.levelUpChakraPainel>header b{
+  border-color:rgba(184,77,255,.56)!important;
+  background:rgba(87,20,130,.20)!important;
+  color:#d89aff!important;
+  box-shadow:0 0 14px rgba(184,77,255,.10)!important;
+}
+
+/* ---------- NAVEGAÇÃO INFERIOR: somente estilo, sem reorganizar itens ---------- */
+.menu.bottomNav{
+  border-color:rgba(24,92,108,.48)!important;
+  border-radius:13px!important;
+  background:#000000!important;
+  box-shadow:0 16px 36px rgba(var(--ui-depth-rgb),.26),inset 0 1px 0 rgba(255,255,255,.025)!important;
+}
+.menu.bottomNav button{
+  border-radius:9px!important;
+  color:#7f8c98!important;
+}
+.menu.bottomNav button.ativo{
+  color:var(--ui-orange)!important;
+  border-color:rgba(255,138,31,.48)!important;
+  background:linear-gradient(180deg,rgba(255,138,31,.13),rgba(255,138,31,.035))!important;
+  box-shadow:0 0 15px rgba(255,138,31,.08)!important;
+}
+
+/* ---------- MENU / MODAIS ---------- */
+.configMenu,
+.shinobiOnlineShell,
+.levelUpModal,
+.ajusteFundoPainel,
+.acaoBatalhaPainel{
+  border-color:rgba(24,92,108,.48)!important;
+  background:#010304!important;
+  box-shadow:0 24px 70px rgba(var(--ui-depth-rgb),.28)!important;
+}
+.shinobiDrawerPainel{
+  background:linear-gradient(160deg,#020708,#000)!important;
+  border-right-color:rgba(24,92,108,.46)!important;
+  box-shadow:20px 0 60px rgba(var(--ui-depth-rgb),.24)!important;
+}
+
+/* ---------- ACESSIBILIDADE / MOVIMENTO ---------- */
+@media (prefers-reduced-motion:reduce){
+  .miniChakra .miniBarra span::after,
+  .recursoBatalhaChakra .recursoBatalhaBarra span::after{
+    animation:none!important;
+  }
+}
