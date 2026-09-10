@@ -389,9 +389,21 @@
     const subtitulo=st.user.anonymous
       ? "Sem conta • dados somente neste aparelho"
       : `${st.user.email||"Conta Google"} • nuvem ativa`;
+    const sync=st.syncAtual||{};
+    const fase=String(sync.phase||"");
+    const classeSync=st.user.anonymous?"local":sync.syncStatus===1?"ok":fase==="syncing"?"syncing":"pending";
+    const textoSync=st.user.anonymous
+      ?"Somente local"
+      :sync.syncStatus===1
+        ?"✓ Sincronizado"
+        :fase==="syncing"
+          ?"↻ Sincronizando..."
+          :sync.pendingMode==="turno"
+            ?"⚠ Pendente do turno"
+            :"⚠ Pendente";
     return `<div class="onlineConta">
       <div class="onlineAvatar">${st.user.photoURL?`<img src="${esc(st.user.photoURL)}" alt="">`:st.user.anonymous?"🥷":"👤"}</div>
-      <div><strong>${esc(st.user.displayName||"Jogador")}</strong><small>${esc(subtitulo)}</small></div>
+      <div class="onlineContaIdentidade"><strong>${esc(st.user.displayName||"Jogador")}</strong><small>${esc(subtitulo)}</small><span class="onlineSyncEstado ${classeSync}">${esc(textoSync)}</span></div>
       <div class="onlineContaAcoes">
         ${st.user.anonymous?`<button type="button" class="onlineBtn primario compacto" data-action="login-google">Entrar com Google</button>`:""}
         <button type="button" class="onlineBtn texto" data-action="logout">Sair</button>
@@ -519,7 +531,7 @@
             return `<article><div><strong>${esc(f.characterName||f.name)}</strong><small>${esc(f.name)} • revisão ${num(f.revision,1)}${vinculada?" • vinculada a este aparelho":""}</small></div><div class="onlineNuvemAcoes">${vinculada?`<span class="onlineStatusVinculo">Sincronização automática</span><button type="button" class="onlineBtn texto" data-action="restore-cloud" data-sheet-id="${esc(f.id)}" data-linked="true">Baixar novamente</button>`:`<button type="button" class="onlineBtn primario compacto" data-action="restore-cloud" data-sheet-id="${esc(f.id)}">Baixar neste aparelho</button>`}</div></article>`;
           }).join(""):`<p class="onlineVazio">Nenhuma ficha foi enviada para esta Conta Google ainda. Toque em “Sincronizar ficha atual” no aparelho que já possui a ficha.</p>`}
         </div>
-        <small class="onlineRodape">No segundo aparelho, entre com esta mesma Conta Google. A ficha aparecerá acima com o botão “Baixar neste aparelho”. Depois do primeiro download, a sincronização passa a ser automática.</small>
+        <small class="onlineRodape">Entre com a mesma Conta Google nos seus aparelhos. As fichas da nuvem são vinculadas automaticamente e passam a receber alterações em tempo real. Se já existir uma ficha local diferente com o mesmo nome, ela é preservada e a versão da nuvem é criada separadamente para evitar perda de dados.</small>
       </div>
     </details>`;
   }
@@ -607,6 +619,10 @@
   function renderCombate(st,master){
     const combat=st.sala?.combat||{},atual=participanteAtual(st),ord=ordem(st);
     const rodada=Math.max(1,num(combat.round,1)),segundosInicio=(rodada-1)*6,segundosFim=rodada*6;
+    const sessao=sessaoLocal();
+    const minhaVez=Boolean(combat.started&&atual?.id&&atual.id===sessao?.participantId);
+    const turnKey=window.ShinobiOnline?.chaveTurnoAtual?.(combat)||`${rodada}:${Math.max(0,num(combat.turnIndex))}:${atual?.id||""}`;
+    const turnoConfirmado=Boolean(minhaVez&&atual?.turnReadyKey===turnKey);
     return `<section class="onlineCard onlineCombate ${combat.started?"iniciado":""}">
       <span class="onlineCardSelo">INICIATIVA E RODADAS</span>
       <div class="onlineTurnoHero">
@@ -616,7 +632,10 @@
       ${master?`<div class="onlineAcoesLinha onlineControlesTurno">
         <button class="onlineBtn secundario" data-action="sort-initiative">Ordenar iniciativa</button>
         ${combat.started?`<button class="onlineBtn secundario" data-action="prev-turn">Turno anterior</button><button class="onlineBtn primario" data-action="next-turn">Próximo turno</button>`:`<button class="onlineBtn primario" data-action="start-combat">Iniciar combate</button>`}
-      </div>`:`<p class="onlineAvisoTurno">${atual?.id===sessaoLocal()?.participantId?"É o seu turno.":atual?`Turno de ${esc(atual.displayName)}.`:"O mestre ainda não iniciou o combate."}</p>`}
+      </div>`:`<div class="onlineTurnoJogador">
+        <p class="onlineAvisoTurno">${minhaVez?"É o seu turno.":atual?`Turno de ${esc(atual.displayName)}.`:"O mestre ainda não iniciou o combate."}</p>
+        ${minhaVez?`<button type="button" class="onlineBtn ${turnoConfirmado?"secundario":"primario"} onlineEncerrarTurno" data-action="finish-my-turn" ${turnoConfirmado?"disabled":""}>${turnoConfirmado?"✓ Turno sincronizado":"Encerrar meu turno"}</button><small>${turnoConfirmado?"O mestre já pode avançar a iniciativa.":"Ao confirmar, todas as alterações deste turno serão enviadas em um único pacote."}</small>`:""}
+      </div>`}
     </section>`;
   }
 
@@ -863,8 +882,46 @@
     if(acao==="resolve-conflict")return executar(async()=>{await window.ShinobiOnline.resolverConflito(el.dataset.sheetId,el.dataset.choice);conflitoAtual=null;});
     if(acao==="sort-initiative")return executar(()=>window.ShinobiOnline.ordenarIniciativa());
     if(acao==="start-combat")return executar(()=>window.ShinobiOnline.iniciarCombate());
-    if(acao==="next-turn")return executar(()=>window.ShinobiOnline.avancarTurno());
+    if(acao==="next-turn")return executar(async()=>{
+      const st=obterEstado();
+      const atual=participanteAtual(st);
+      const combat=st.sala?.combat||{};
+      const chave=window.ShinobiOnline?.chaveTurnoAtual?.(combat)||`${Math.max(1,num(combat.round,1))}:${Math.max(0,num(combat.turnIndex))}:${atual?.id||""}`;
+      if(atual?.type==="player"&&atual.turnReadyKey!==chave){
+        const ok=await confirmar(
+          "Turno ainda não sincronizado",
+          `${atual.displayName||"O jogador"} ainda não confirmou o encerramento deste turno. Se você avançar agora, o aplicativo tentará sincronizar automaticamente no aparelho dele para evitar perda de dados.\n\nAvançar mesmo assim?`
+        );
+        if(!ok)return;
+      }
+      return window.ShinobiOnline.avancarTurno();
+    });
     if(acao==="prev-turn")return executar(()=>window.ShinobiOnline.voltarTurno());
+    if(acao==="finish-my-turn"){
+      const resumo=window.ShinobiOnline?.resumoMudancasMeuTurno?.()||{lines:["Alterações do turno serão sincronizadas."]};
+      const linhas=(resumo.lines||[]).join("\n");
+      const stAtual=obterEstado();
+      const mensagemDestino=stAtual?.user?.anonymous
+        ? "Ao confirmar, o estado consolidado será enviado para a sala. Para sincronizar a ficha entre aparelhos, entre com Google."
+        : "Ao confirmar, a ficha será salva na nuvem e os outros dispositivos receberão esta versão.";
+      const ok=await confirmar(
+        "Encerrar e sincronizar turno?",
+        `${linhas}\n\n${mensagemDestino}`
+      );
+      if(!ok)return;
+      return executar(async()=>{
+        const resultado=await window.ShinobiOnline.finalizarMeuTurno();
+        if(resultado?.conflict){
+          await avisar("Conflito de sincronização","Outro dispositivo possui uma versão mais recente desta ficha. Resolva o conflito antes de encerrar o turno.");
+          return;
+        }
+        if(resultado?.anonymous){
+          await avisar("Turno atualizado","As alterações foram enviadas para a sala. Para sincronizar a ficha entre aparelhos, entre com Google.");
+        }else{
+          await avisar("Turno sincronizado","As alterações deste turno foram confirmadas pelo Firebase. O mestre já pode avançar.");
+        }
+      });
+    }
     if(acao==="end-effect")return executar(()=>window.ShinobiOnline.encerrarEfeito(el.dataset.effectId));
     if(acao==="remove-participant")return executar(async()=>{const p=obterEstado().sala?.participants?.[el.dataset.participantId];if(await confirmar("Remover participante",`Remover ${p?.displayName||"este participante"} da sala?`))await window.ShinobiOnline.removerParticipante(el.dataset.participantId);});
     if(acao==="edit-npc")return editarNpc(el.dataset.participantId);
@@ -962,7 +1019,7 @@
   function instalarEventos(){
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
-    ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
+    ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
     window.ShinobiOnline.on("erro",e=>{
       document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");
       console.warn("Modo online indisponível:",e.detail.mensagem);
@@ -973,6 +1030,7 @@
     window.ShinobiOnline.on("xp-recebido",e=>{
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);
     });
+    window.addEventListener("shinobi:turno-auto-sincronizado",()=>{avisar("Turno sincronizado automaticamente","O mestre avançou a iniciativa antes da confirmação. As alterações locais foram enviadas para evitar perda de dados.");});
     window.ShinobiOnline.on("nivel-recebido",e=>{
       const d=e.detail;avisar("Nível atualizado pelo mestre",`${d.character||"Sua ficha"}: nível ${d.before} → ${d.after}.${d.reason?`\n${d.reason}`:""}`);
     });

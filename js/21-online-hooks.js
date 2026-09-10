@@ -5,6 +5,8 @@
   let timerResumo=null;
   let aplicandoRodada=false;
   let sincronizandoPendentes=false;
+  let ultimoTurnoObservado="";
+  let ultimoParticipanteObservado="";
   const publicacoesEmCurso=new Set();
 
   function sessaoAtual(){
@@ -13,6 +15,29 @@
 
   function fichaAtualNome(){
     try{return localStorage.getItem("ficha_ninja_ativa_v1")||"Principal";}catch(_erro){return "Principal";}
+  }
+
+  const CHAVE_TURNO_PENDENTE="shinobi_turn_pending_v1";
+  function marcarTurnoLocalPendente(){
+    const sessao=sessaoAtual();
+    try{
+      localStorage.setItem(CHAVE_TURNO_PENDENTE,JSON.stringify({
+        roomId:sessao?.roomId||"",
+        sheetName:fichaAtualNome(),
+        pending:true,
+        updatedAt:Date.now()
+      }));
+    }catch(_erro){}
+  }
+  function turnoLocalPendente(){
+    try{
+      const dado=JSON.parse(localStorage.getItem(CHAVE_TURNO_PENDENTE)||"null");
+      const sessao=sessaoAtual();
+      return Boolean(dado?.pending&&(!dado.roomId||dado.roomId===sessao?.roomId));
+    }catch(_erro){return false;}
+  }
+  function limparTurnoLocalPendente(){
+    try{localStorage.removeItem(CHAVE_TURNO_PENDENTE);}catch(_erro){}
   }
 
   function texto(valor){return String(valor==null?"":valor).trim();}
@@ -45,33 +70,142 @@
     }catch(_erro){return false;}
   }
 
-  function instalarAutoSync(){
-    if(typeof persistirEstadoLocal!=="function"||persistirEstadoLocal.__onlineHook) return;
-    const original=persistirEstadoLocal;
-    const wrapper=function(){
-      const ok=original.apply(this,arguments);
-      if(ok!==false&&window.ShinobiOnline){
-        window.ShinobiOnline.agendarSincronizacaoFicha(fichaAtualNome());
-        clearTimeout(timerResumo);
-        timerResumo=setTimeout(()=>window.ShinobiOnline.atualizarMeuParticipante?.().catch(()=>{}),900);
+  let resumoSincronizando=false;
+  let resumoPendente=false;
+
+  async function sincronizarResumoParticipante(){
+    if(!window.ShinobiOnline?.atualizarMeuParticipante) return;
+    if(resumoSincronizando){
+      resumoPendente=true;
+      return;
+    }
+    resumoSincronizando=true;
+    try{
+      await window.ShinobiOnline.atualizarMeuParticipante();
+    }catch(erro){
+      window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}}));
+    }finally{
+      resumoSincronizando=false;
+      if(resumoPendente){
+        resumoPendente=false;
+        setTimeout(()=>sincronizarResumoParticipante(),40);
       }
-      return ok;
-    };
-    wrapper.__onlineHook=true;
-    wrapper.__original=original;
-    try{persistirEstadoLocal=wrapper;}catch(_erro){window.persistirEstadoLocal=wrapper;}
+    }
+  }
+
+  function agendarResumoParticipante(atraso=140){
+    clearTimeout(timerResumo);
+    timerResumo=setTimeout(()=>sincronizarResumoParticipante(),atraso);
+  }
+
+  function syncPorTurnoAtiva(){
+    const sessao=sessaoAtual();
+    const st=window.ShinobiOnline?.snapshot?.();
+    return Boolean(
+      sessao?.role==="player" &&
+      st?.sala?.combat?.started
+    );
+  }
+
+  function contaGoogleAtiva(){
+    const st=window.ShinobiOnline?.snapshot?.();
+    return Boolean(st?.user&&!st.user.anonymous);
+  }
+
+  async function enviarAlteracaoConfirmada(detalhe={}){
+    if(!window.ShinobiOnline) return;
+    const nome=texto(detalhe.sheetName)||fichaAtualNome();
+
+    if(syncPorTurnoAtiva()){
+      marcarTurnoLocalPendente();
+      if(contaGoogleAtiva()){
+        window.ShinobiOnline.marcarFichaPendente?.(nome,{
+          motivo:texto(detalhe.motivo)||"alteracao-turno",
+          modo:"turno"
+        });
+      }
+      return;
+    }
+
+    if(!contaGoogleAtiva()){
+      await sincronizarResumoParticipante();
+      return;
+    }
+
+    window.ShinobiOnline.marcarFichaPendente?.(nome,{
+      motivo:texto(detalhe.motivo)||"alteracao-confirmada",
+      modo:"imediato"
+    });
+    try{
+      await window.ShinobiOnline.sincronizarFicha(nome,{
+        force:false,
+        backup:texto(detalhe.motivo)==="salvamento-manual",
+        motivo:texto(detalhe.motivo)||"alteracao-confirmada",
+        modo:"imediato"
+      });
+      await sincronizarResumoParticipante();
+    }catch(erro){
+      window.ShinobiOnline.marcarFichaPendente?.(nome,{
+        motivo:"falha-envio-confirmado",
+        modo:"imediato"
+      });
+      window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
+        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
+      }));
+    }
+  }
+
+  function instalarAutoSync(){
+    if(window.__shinobiOnlinePersistListener) return;
+    window.__shinobiOnlinePersistListener=true;
+
+    /* 2.5.8.8: a confirmação do usuário é o ponto de commit.
+       Fora do turno, persistir = enviar imediatamente. Durante o próprio
+       turno, a cópia local fica segura e a nuvem recebe um único pacote ao
+       confirmar o encerramento do turno. */
+    window.addEventListener("shinobi:ficha-persistida",evento=>{
+      if(evento?.detail?.confirmada===false) return;
+      enviarAlteracaoConfirmada(evento?.detail||{}).catch(()=>{});
+    });
+
+    document.addEventListener("visibilitychange",()=>{
+      if(document.visibilityState==="hidden"){
+        clearTimeout(timerResumo);
+        if(!syncPorTurnoAtiva()){
+          sincronizarResumoParticipante();
+          window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"app-em-segundo-plano"}).catch(()=>{});
+        }
+      }else{
+        window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
+          motivo:"app-visivel",
+          somenteReceber:syncPorTurnoAtiva()
+        }).catch(()=>{});
+      }
+    });
+    window.addEventListener("pagehide",()=>{
+      clearTimeout(timerResumo);
+      if(!syncPorTurnoAtiva()){
+        sincronizarResumoParticipante();
+        window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"pagehide"}).catch(()=>{});
+      }
+    });
+    window.addEventListener("focus",()=>{
+      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
+        motivo:"foco",
+        somenteReceber:syncPorTurnoAtiva()
+      }).catch(()=>{});
+    });
+    window.addEventListener("online",()=>{
+      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
+        motivo:"rede-restaurada",
+        somenteReceber:syncPorTurnoAtiva()
+      }).catch(()=>{});
+    });
   }
 
   function instalarBackupManual(){
-    if(typeof salvarManual!=="function"||salvarManual.__onlineHook) return;
-    const original=salvarManual;
-    const wrapper=function(){
-      const retorno=original.apply(this,arguments);
-      setTimeout(()=>window.ShinobiOnline?.sincronizarFicha(fichaAtualNome(),{force:false,backup:true,motivo:"salvamento-manual"}).catch(()=>{}),60);
-      return retorno;
-    };
-    wrapper.__onlineHook=true;
-    try{salvarManual=wrapper;}catch(_erro){window.salvarManual=wrapper;}
+    /* O evento shinobi:ficha-persistida já trata o salvamento manual e cria
+       backup após a confirmação do Firebase. Mantido como ponto de extensão. */
   }
 
   function participanteVinculado(sessao,online){
@@ -333,13 +467,60 @@
     }finally{aplicandoRodada=false;}
   }
 
+  async function observarTransicaoDeTurno(snapshot){
+    const sessao=sessaoAtual();
+    const room=snapshot?.sala;
+    if(!sessao?.roomId||!room||room.id!==sessao.roomId||sessao.role!=="player") return;
+
+    const combat=room.combat||{};
+    const ordem=Array.isArray(combat.order)?combat.order:Object.values(combat.order||{});
+    const indice=Math.max(0,Number(combat.turnIndex||0));
+    const participanteAtual=ordem[indice]||"";
+    const chaveAtual=combat.started
+      ?`${Math.max(1,Number(combat.round||1))}:${indice}:${participanteAtual}`
+      :"";
+
+    const turnoAnterior=ultimoTurnoObservado;
+    const participanteAnterior=ultimoParticipanteObservado;
+    ultimoTurnoObservado=chaveAtual;
+    ultimoParticipanteObservado=participanteAtual;
+
+    if(!turnoAnterior||turnoAnterior===chaveAtual) return;
+
+    const sync=window.ShinobiOnline?.statusSincronizacaoAtual?.();
+    const haPendente=turnoLocalPendente()||(sync?.syncStatus===0&&sync?.pendingMode==="turno");
+    if(haPendente){
+      /* Qualquer alteração feita durante o turno é consolidada quando a
+         iniciativa avança. Se era o turno deste jogador, também marcamos o
+         turno como pronto; caso contrário, apenas atualizamos ficha e sala. */
+      try{
+        await window.ShinobiOnline.finalizarMeuTurno({
+          permitirForaDoTurno:true,
+          marcarPronto:participanteAnterior===sessao.participantId,
+          turnKey:turnoAnterior
+        });
+        limparTurnoLocalPendente();
+        window.dispatchEvent(new CustomEvent("shinobi:turno-auto-sincronizado",{
+          detail:{turnKey:turnoAnterior}
+        }));
+      }catch(erro){
+        window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
+          detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
+        }));
+      }
+    }
+  }
+
   function instalarEventosOnline(){
     if(!window.ShinobiOnline||window.__shinobiOnlineHooksEventos) return;
     window.__shinobiOnlineHooksEventos=true;
     window.ShinobiOnline.on("sala",evento=>{
       aplicarRodadaSala(evento.detail);
+      observarTransicaoDeTurno(evento.detail).catch(()=>{});
       setTimeout(()=>sincronizarEfeitosPendentes().catch(()=>{}),120);
     });
+    window.ShinobiOnline.on("turno-finalizado",()=>limparTurnoLocalPendente());
+    window.ShinobiOnline.on("turno-sincronizado",()=>limparTurnoLocalPendente());
     window.ShinobiOnline.on("ficha-restaurada",()=>setTimeout(()=>location.reload(),250));
     window.ShinobiOnline.on("ficha-atualizada-nuvem",evento=>{
       if(evento?.detail?.active) setTimeout(()=>location.reload(),250);
@@ -365,5 +546,13 @@
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",iniciar,{once:true});
   else iniciar();
-  window.addEventListener("pageshow",()=>setTimeout(iniciar,120));
+  window.addEventListener("pageshow",()=>{
+    setTimeout(()=>{
+      iniciar();
+      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
+        motivo:"pageshow",
+        somenteReceber:syncPorTurnoAtiva()
+      }).catch(()=>{});
+    },120);
+  });
 })();
