@@ -1,0 +1,114 @@
+/* ==========================================================
+   SHINOBI UI 2.5.8.13 — PASSO 2.1: AJUSTE FINO PERFIL / HOME
+   Somente layout visual. Nenhuma regra de ficha é alterada.
+   ========================================================== */
+
+/* Cabeçalho: preserva o nome completo sem estourar em mobile. */
+.topo.topoCompacto .topoTitulo{min-width:0;flex:1;text-align:center}
+.topo.topoCompacto .topoTitulo h1{
+  white-space:nowrap!important;
+  font-size:clamp(20px,5.5vw,32px)!important;
+  letter-spacing:.025em!important;
+}
+
+/* Hero: avatar maior, dados mais compactos e melhor uso do fundo. */
+#identidade .perfilFundoImagem{min-height:250px!important}
+#identidade .perfilTopoNovo{
+  min-height:250px!important;
+  grid-template-columns:minmax(132px,36%) minmax(0,1fr)!important;
+  gap:12px!important;
+  padding:68px 14px 16px!important;
+}
+#identidade .avatarNovo{
+  width:clamp(128px,31vw,176px)!important;
+  height:clamp(128px,31vw,176px)!important;
+}
+#identidade .rankIdadeLinha{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 64px!important;
+  gap:6px!important;
+  margin-top:6px!important;
+}
+#identidade .campoRankTopo input,
+#identidade .campoIdadeTopo input{
+  width:100%!important;
+  max-width:none!important;
+  height:28px!important;
+  padding:3px 7px!important;
+  font-size:10px!important;
+}
+
+/* Atributos: apenas os cinco indicadores de leitura rápida. */
+#identidade .miniStatusNovo{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+#identidade .miniStatusNovo>div{min-height:58px!important}
+#identidade .miniStatusNovo label{font-size:8px!important}
+#identidade .miniStatusNovo input{font-size:18px!important}
+
+/* Bônus continua sendo uma ação funcional, mas deixa de competir com os atributos. */
+#identidade .bonusIniciativaAcao{
+  width:calc(100% - 32px)!important;
+  min-height:46px!important;
+  margin:8px auto 0!important;
+  padding:7px 11px!important;
+  display:grid!important;
+  grid-template-columns:24px 1fr!important;
+  align-items:center!important;
+  gap:9px!important;
+  border:1px solid rgba(80,200,106,.38)!important;
+  border-radius:8px!important;
+  background:linear-gradient(90deg,rgba(15,62,31,.35),rgba(0,0,0,.92) 58%)!important;
+  color:#eaffea!important;
+  box-shadow:0 7px 18px rgba(0,64,55,.14)!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+#identidade .bonusIniciativaAcao .bonusIniciativaIcon{--icon-size:20px;color:#75e884!important}
+#identidade .bonusIniciativaAcao .bonusIniciativaTexto{
+  min-width:0!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important
+}
+#identidade .bonusIniciativaAcao label{
+  margin:0!important;color:#b7ffb8!important;font-size:10px!important;font-weight:900!important;text-transform:uppercase!important;letter-spacing:.05em!important
+}
+#identidade .bonusIniciativaAcao .bonusGeralResumo{
+  min-height:0!important;display:block!important;color:#efffe8!important;font-size:11px!important;text-align:right!important
+}
+#identidade .bonusIniciativaAcao .bonusGeralResumo small{display:inline!important;margin-left:4px!important}
+#identidade .bonusIniciativaAcao.ativo{border-color:rgba(105,255,66,.60)!important}
+
+/* O CTA precisa terminar antes da navegação fixa, inclusive com safe-area. */
+#identidade .perfilGameCard.perfilNovoLayout{
+  padding-bottom:calc(104px + env(safe-area-inset-bottom))!important;
+}
+#identidade .homeCombateCta{margin-bottom:0!important}
+
+@media (max-width:620px){
+  #identidade .perfilFundoImagem{min-height:238px!important}
+  #identidade .perfilTopoNovo{
+    min-height:238px!important;
+    grid-template-columns:124px minmax(0,1fr)!important;
+    gap:10px!important;
+    padding:64px 10px 14px!important;
+  }
+  #identidade .avatarNovo{width:122px!important;height:122px!important}
+  #identidade .campoNomeFull input{font-size:clamp(27px,8vw,36px)!important}
+  #identidade .rankIdadeLinha{grid-template-columns:minmax(0,1fr) 54px!important}
+  #identidade .campoRankTopo input,#identidade .campoIdadeTopo input{height:26px!important;font-size:9px!important;padding:2px 5px!important}
+  #identidade .miniStatusNovo{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important}
+  #identidade .miniStatusNovo>div{min-height:54px!important;padding:7px 2px!important}
+  #identidade .miniStatusNovo label{font-size:7px!important}
+  #identidade .miniStatusNovo input{font-size:16px!important}
+  #identidade .bonusIniciativaAcao{width:calc(100% - 20px)!important;min-height:42px!important;margin-top:7px!important}
+  #identidade .perfilGameCard.perfilNovoLayout{padding-bottom:calc(98px + env(safe-area-inset-bottom))!important}
+}
+
+@media (max-width:370px){
+  .topo.topoCompacto .topoTitulo h1{font-size:19px!important}
+  #identidade .perfilTopoNovo{grid-template-columns:108px minmax(0,1fr)!important;gap:8px!important}
+  #identidade .avatarNovo{width:106px!important;height:106px!important}
+  #identidade .miniStatusNovo{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important}
+  #identidade .miniStatusNovo label{font-size:6.5px!important}
+  #identidade .miniStatusNovo input{font-size:14px!important}
+}
