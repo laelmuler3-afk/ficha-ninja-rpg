@@ -603,7 +603,7 @@
         "flat": 1
       },
       "chakra": {
-        "die": 8,
+        "die": 10,
         "adjustments": [
           {
             "ability": "constituicao",
