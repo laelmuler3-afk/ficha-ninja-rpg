@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.5 — correções visuais mobile e Safari iOS.
- * Corrige HUD de PV/Chakra, safe areas e estabilidade visual em telas estreitas.
+/* Shinobi 2.5.8.9 — sincronização transacional por confirmação e por turno.
+ * Mantém as correções mobile/iOS e reforça o fluxo bidirecional de fichas na nuvem.
  */
-const APP_VERSION = "2.5.8.5";
+const APP_VERSION = "2.5.8.9";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

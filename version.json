@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.5",
-  "name": "Correções visuais mobile e iPhone",
-  "notes": "Corrige estouro dos valores de PV/Chakra em telas estreitas, melhora a responsividade do HUD e adiciona compatibilidade com safe areas e comportamento de formulários no Safari/iPhone.",
-  "date": "2026-08-21"
+  "version": "2.5.8.9",
+  "name": "Correção de Chakra do clã Sarutobi",
+  "notes": "Corrige o dado de Chakra usado no Level Up do clã Sarutobi de 1d8 para 1d10. Mantém todas as melhorias de sincronização transacional da versão 2.5.8.8.",
+  "date": "2026-09-10"
 }
