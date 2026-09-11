@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.37",
-  "name": "Passo 6.4 — Jutsus e Ataques final clean",
-  "notes": "Neutraliza as últimas superfícies marrons de Jutsus e Ataques, reforçando preto AMOLED e azul-petróleo; mantém laranja apenas como acento e ação. Sem alterações de lógica.",
+  "version": "2.5.8.38",
+  "name": "Passo 6.5 — limpeza definitiva Jutsus + Ataques",
+  "notes": "Remove resíduos marrons, fades, gradientes quentes, pseudo-elementos e sombras herdadas da área de Jutsus e Ataques, mantendo AMOLED/petróleo e neon de categoria.",
   "date": "2026-09-11"
 }
