@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.31",
-  "name": "Passo 6 — Jutsus: identidade visual",
-  "notes": "Redesenha a tela de Jutsus para seguir a referência aprovada: hero próprio, busca limpa, abas de grupos com contadores, grupos em cards horizontais e Ninjutsu/Outras Técnicas na cor lilás do EKO. Mantém toda a lógica, dados e uso dos jutsus.",
+  "version": "2.5.8.32",
+  "name": "Passo 6 — Jutsus final + Ataques clean",
+  "notes": "Corrige a responsividade dos filtros de Jutsus no celular e redesenha a seção Ataques em formato compacto e clean, preservando integralmente a lógica, edição, inventário e uso dos ataques.",
   "date": "2026-09-11"
 }
