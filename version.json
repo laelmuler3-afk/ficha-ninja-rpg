@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.35",
-  "name": "Passo 6.2 — Jutsus e Ataques Neon",
-  "notes": "Aplica o visual AMOLED/neon aprovado em Jutsus e Ataques: superfícies preto e azul-petróleo, acentos neon por natureza, ataques sem tonalidade marrom pesada e punho desarmado com tom de pele natural. Mantém toda a lógica existente.",
+  "version": "2.5.8.36",
+  "name": "Passo 6.3 — Jutsus e Ataques final",
+  "notes": "Fecha o visual de Jutsus e Ataques no padrão AMOLED/neon aprovado: remove resíduos marrons, reduz superfícies preenchidas, usa azul-petróleo nas estruturas e laranja apenas como acento e ação. Sem alterações de lógica.",
   "date": "2026-09-11"
 }
