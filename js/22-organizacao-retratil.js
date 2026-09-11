@@ -1,21 +1,21 @@
-/* Ficha Ninja RPG 2.5.2 — Jutsus em grade com grupos fechados por padrão. */
+/* Ficha Ninja RPG 2.5.8.31 — Passo 6: Jutsus com navegação visual por grupos. */
 (function(){
   "use strict";
 
-  if(window.__shinobiOrganizacaoRetratilV252) return;
-  window.__shinobiOrganizacaoRetratilV252 = true;
+  if(window.__shinobiOrganizacaoRetratilV25831) return;
+  window.__shinobiOrganizacaoRetratilV25831 = true;
 
   const GRUPOS_JUTSU = Object.freeze([
-    {id:"katon",  nome:"Katon",             icone:"🔥"},
-    {id:"suiton", nome:"Suiton",            icone:"💧"},
-    {id:"raiton", nome:"Raiton",            icone:"⚡"},
-    {id:"fuuton", nome:"Fuuton",            icone:"🌪️"},
-    {id:"doton",  nome:"Doton",             icone:"🪨"},
-    {id:"yin",    nome:"Yinton / Genjutsu", icone:"🌑"},
-    {id:"yang",     nome:"Youton / Iryō",     icone:"☀️"},
-    {id:"taijutsu", nome:"Taijutsu",           icone:"🥋"},
-    {id:"ninjutsu", nome:"Ninjutsu / Técnicas", icone:"🌀"},
-    {id:"neutro",   nome:"Outros",              icone:"✨"}
+    {id:"katon",    nome:"Katon",                atalho:"Katon",     descricao:"Técnicas de Fogo",              icone:"🔥"},
+    {id:"suiton",   nome:"Suiton",               atalho:"Suiton",    descricao:"Técnicas de Água",              icone:"💧"},
+    {id:"raiton",   nome:"Raiton",               atalho:"Raiton",    descricao:"Técnicas de Relâmpago",         icone:"⚡"},
+    {id:"fuuton",   nome:"Fuuton",               atalho:"Fuuton",    descricao:"Técnicas de Vento",             icone:"🌪️"},
+    {id:"doton",    nome:"Doton",                atalho:"Doton",     descricao:"Técnicas de Terra",             icone:"🪨"},
+    {id:"yin",      nome:"Yinton / Genjutsu",    atalho:"Yinton",    descricao:"Genjutsu e técnicas Yin",        icone:"🌑"},
+    {id:"yang",     nome:"Youton / Iryō",        atalho:"Youton",    descricao:"Técnicas médicas e Yang",        icone:"☀️"},
+    {id:"taijutsu", nome:"Taijutsu",             atalho:"Taijutsu",  descricao:"Técnicas corporais",             icone:"🥋"},
+    {id:"ninjutsu", nome:"Ninjutsu / Técnicas",  atalho:"Ninjutsu",  descricao:"Técnicas variadas",              icone:"🌀"},
+    {id:"neutro",   nome:"Outras Técnicas",      atalho:"Outros",    descricao:"Outras técnicas variadas",       icone:"✨"}
   ]);
 
   const GRUPO_POR_ID = new Map(GRUPOS_JUTSU.map(grupo=>[grupo.id,grupo]));
@@ -202,6 +202,7 @@
       ferramentas.querySelector("#jutsuFecharGrupos")?.addEventListener("click",()=>{
         grupoJutsuAberto = "";
         lista.querySelectorAll(".jutsuGrupoRetratil").forEach(secao=>definirGrupoJutsuAberto(secao,false));
+        atualizarEstadoAtalhosJutsus();
       });
     }
 
@@ -234,6 +235,7 @@
     });
     grupoJutsuAberto = id;
     aplicarFiltroJutsus();
+    atualizarEstadoAtalhosJutsus();
 
     if(rolar){
       const alvo = lista.querySelector(`.jutsuGrupoRetratil[data-grupo-jutsu="${id}"]`);
@@ -241,19 +243,55 @@
     }
   }
 
+  function atualizarEstadoAtalhosJutsus(){
+    const host = document.getElementById("jutsuElementosAtalhos");
+    if(!host) return;
+    host.querySelectorAll("[data-atalho-jutsu]").forEach(botao=>{
+      const id = botao.dataset.atalhoJutsu || "";
+      const ativo = id === "todos" ? !grupoJutsuAberto : id === grupoJutsuAberto;
+      botao.classList.toggle("ativo",ativo);
+      botao.setAttribute("aria-pressed",String(ativo));
+    });
+  }
+
   function atualizarAtalhosJutsus(contagens){
     const host = document.getElementById("jutsuElementosAtalhos");
     if(!host) return;
-    host.innerHTML = GRUPOS_JUTSU
+    const total = Array.from(contagens.values()).reduce((soma,valor)=>soma + Number(valor || 0),0);
+    const todos = `
+      <button type="button" class="jutsuElementoAtalho grupo-todos" data-atalho-jutsu="todos" title="Mostrar todos os grupos" aria-pressed="false">
+        <span class="jutsuAtalhoIcone" aria-hidden="true">▦</span>
+        <span class="jutsuAtalhoTexto"><strong>Todos</strong><b>${total}</b></span>
+      </button>
+    `;
+    const grupos = GRUPOS_JUTSU
       .filter(grupo=>(contagens.get(grupo.id) || 0) > 0)
       .map(grupo=>`
-        <button type="button" class="jutsuElementoAtalho grupo-${grupo.id}" data-atalho-jutsu="${grupo.id}" title="Abrir ${escaparHtml(grupo.nome)}">
-          <span>${grupo.icone}</span><b>${contagens.get(grupo.id)}</b>
+        <button type="button" class="jutsuElementoAtalho grupo-${grupo.id}" data-atalho-jutsu="${grupo.id}" title="Abrir ${escaparHtml(grupo.nome)}" aria-pressed="false">
+          <span class="jutsuAtalhoIcone" aria-hidden="true">${grupo.icone}</span>
+          <span class="jutsuAtalhoTexto"><strong>${escaparHtml(grupo.atalho || grupo.nome)}</strong><b>${contagens.get(grupo.id)}</b></span>
         </button>
       `).join("");
+    host.innerHTML = todos + grupos;
     host.querySelectorAll("[data-atalho-jutsu]").forEach(botao=>{
-      botao.addEventListener("click",()=>abrirSomenteGrupoJutsu(botao.dataset.atalhoJutsu,{rolar:true}));
+      botao.addEventListener("click",()=>{
+        const id = botao.dataset.atalhoJutsu;
+        if(id === "todos"){
+          grupoJutsuAberto = "";
+          buscaJutsus = "";
+          const input = document.getElementById("jutsuBuscaFicha");
+          const limpar = document.getElementById("jutsuBuscaLimpar");
+          if(input) input.value = "";
+          if(limpar) limpar.hidden = true;
+          document.querySelectorAll("#listaJutsus .jutsuGrupoRetratil").forEach(secao=>definirGrupoJutsuAberto(secao,false));
+          aplicarFiltroJutsus();
+          atualizarEstadoAtalhosJutsus();
+          return;
+        }
+        abrirSomenteGrupoJutsu(id,{rolar:true});
+      });
     });
+    atualizarEstadoAtalhosJutsus();
   }
 
   function aplicarFiltroJutsus(){
@@ -298,6 +336,7 @@
         ? `${totalVisivel} ${totalVisivel===1?"resultado":"resultados"}`
         : `${totalVisivel} ${totalVisivel===1?"jutsu":"jutsus"} em ${gruposVisiveis} ${gruposVisiveis===1?"grupo":"grupos"}`;
     }
+    atualizarEstadoAtalhosJutsus();
   }
 
   function organizarJutsusAgora(){
@@ -353,9 +392,12 @@
         cabecalho.className = "jutsuGrupoCabecalho";
         cabecalho.innerHTML = `
           <span class="jutsuGrupoIcone" aria-hidden="true">${grupo.icone}</span>
-          <span class="jutsuGrupoTitulo">${escaparHtml(grupo.nome)}</span>
+          <span class="jutsuGrupoTexto">
+            <span class="jutsuGrupoTitulo">${escaparHtml(grupo.nome)}</span>
+            <span class="jutsuGrupoSubtitulo">${escaparHtml(grupo.descricao || "Técnicas e habilidades")}</span>
+          </span>
           <span class="jutsuGrupoContador" data-jutsu-grupo-contador>${cardsGrupo.length}</span>
-          <span class="jutsuGrupoSeta" aria-hidden="true">⌄</span>
+          <span class="jutsuGrupoSeta" aria-hidden="true">›</span>
         `;
 
         const conteudo = document.createElement("div");
@@ -371,6 +413,7 @@
           lista.querySelectorAll(".jutsuGrupoRetratil").forEach(outro=>definirGrupoJutsuAberto(outro,false));
           definirGrupoJutsuAberto(secao,vaiAbrir);
           grupoJutsuAberto = vaiAbrir ? grupo.id : "";
+          atualizarEstadoAtalhosJutsus();
         });
 
         definirGrupoJutsuAberto(secao,!buscaJutsus && grupo.id === grupoInicial);
