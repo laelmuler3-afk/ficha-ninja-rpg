@@ -1,9 +1,9 @@
-/* Shinobi 1.8.4 — painel de combate com modificadores e efeitos acumulados. */
+/* Shinobi 1.8.5 — painel de combate com modificadores e efeitos acumulados. */
 
 /* ===== MODIFICADORES VISÍVEIS E BÔNUS TEMPORÁRIOS ===== */
 (function(){
-  if(window.__modificadoresCombateVisiveisV184) return;
-  window.__modificadoresCombateVisiveisV184=true;
+  if(window.__modificadoresCombateVisiveisV185) return;
+  window.__modificadoresCombateVisiveisV185=true;
 
   let frame=null;
 
@@ -113,6 +113,8 @@
 
     const grupos=window.obterResumoBonusCombate();
 
+    painel.classList.toggle("semBonusTemporario", !grupos.length);
+    resumo.hidden=!grupos.length;
     resumo.innerHTML=grupos.length
       ? `
         <div class="bonusResumoTitulo">Bônus ativos acumulados</div>
@@ -135,7 +137,7 @@
           }).join("")}
         </div>
       `
-      : `<div class="bonusResumoVazio">Nenhum bônus temporário ativo.</div>`;
+      : "";
   };
 
   /*
