@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.32 — Progressão por toque e robustez do Firebase Authentication.
+/* Shinobi 2.5.8.34 — Progressão por toque e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.32";
+const APP_VERSION = "2.5.8.34";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
