@@ -1,0 +1,201 @@
+/* Ficha Ninja RPG 2.5.8.28 — Passo 5.1: refinamento visual do Combate
+   Somente CSS. Nenhum cálculo, evento, resistência, efeito ou dado salvo é alterado. */
+
+#batalha .batalhaViva{
+  --battle-line:rgba(18,73,88,.34);
+  --battle-line-soft:rgba(18,73,88,.20);
+  --battle-surface:#020607;
+  --battle-surface-2:#04090b;
+}
+
+/* Cabeçalho interno mais enxuto */
+#batalha .batalhaCabecalhoVivo{
+  margin-bottom:9px!important;
+  padding-bottom:8px!important;
+}
+#batalha .batalhaTituloPrincipal{padding-left:35px!important}
+#batalha .batalhaTituloPrincipal::before{
+  width:28px!important;height:28px!important;font-size:20px!important;top:3px!important;
+}
+#batalha .batalhaCabecalhoVivo h2{font-size:21px!important}
+#batalha .batalhaTituloPrincipal > small{font-size:7px!important;letter-spacing:1px!important}
+#batalha .batalhaMenuOpcoes > summary{width:34px!important;height:34px!important;font-size:20px!important}
+
+/* Recursos: mais compactos e com menos vazio interno */
+#batalha .recursoBatalhaCard{
+  min-height:128px!important;
+  padding:9px 9px 8px!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,rgba(8,7,9,.98),rgba(0,0,0,.99))!important;
+  box-shadow:none!important;
+}
+#batalha .recursoBatalhaTopo{margin-bottom:7px!important}
+#batalha .recursoBatalhaTopo strong{font-size:23px!important}
+#batalha .recursoBatalhaTopo strong small{font-size:9px!important}
+#batalha .recursoBatalhaBarra{height:6px!important;margin-bottom:8px!important}
+#batalha .recursoBatalhaIcone{width:23px!important;height:23px!important;font-size:16px!important;border-radius:7px!important}
+#batalha .acaoRecurso{
+  min-height:34px!important;
+  padding:5px 4px!important;
+  border-radius:6px!important;
+  background:linear-gradient(180deg,rgba(74,28,6,.88),rgba(36,13,2,.96))!important;
+  border-color:rgba(255,127,34,.42)!important;
+  font-size:8.7px!important;
+  box-shadow:none!important;
+}
+
+/* Seções: menos peso e menos sensação de card dentro de card */
+#batalha .batalhaSecao{
+  padding:9px!important;
+  border-color:var(--battle-line)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(3,8,10,.98),rgba(0,2,3,.99))!important;
+  box-shadow:none!important;
+}
+#batalha .batalhaSecaoCabecalho{
+  margin-bottom:6px!important;
+  padding-bottom:6px!important;
+  border-bottom-color:var(--battle-line-soft)!important;
+}
+#batalha .batalhaSecaoCabecalho h3,
+#batalha .batalhaSecao h3{font-size:12px!important}
+#batalha .batalhaSecaoAjuda{
+  max-width:42%!important;
+  text-align:right!important;
+  font-size:7px!important;
+  line-height:1.25!important;
+  opacity:.72!important;
+}
+
+/* Efeitos e modificadores mais limpos */
+#batalha .efeitosJutsuAtivos{gap:5px!important;margin-bottom:6px!important}
+#batalha .efeitoJutsuBatalhaCard{
+  padding:7px 8px!important;
+  border-radius:6px!important;
+  border-color:rgba(19,79,94,.34)!important;
+  background:transparent!important;
+}
+#batalha .modificadoresCombatePainel{
+  margin-top:5px!important;
+  padding-top:7px!important;
+  border-top-color:var(--battle-line-soft)!important;
+}
+#batalha .modificadoresCombateCabecalho{margin-bottom:5px!important}
+#batalha .modificadoresCombateCabecalho h3{font-size:10.5px!important}
+#batalha .modificadoresCombateCabecalho small{font-size:7px!important;opacity:.72!important}
+#batalha .modsGrid.modsGridVisivel{gap:4px!important}
+#batalha .modsGrid.modsGridVisivel > div{
+  min-height:46px!important;
+  padding:5px 4px!important;
+  border-radius:6px!important;
+  border-color:rgba(18,73,88,.34)!important;
+  background:transparent!important;
+}
+#batalha .modsGrid.modsGridVisivel span{font-size:7px!important}
+#batalha .modsGrid.modsGridVisivel strong{font-size:15px!important}
+#batalha .bonusResumoVazio{
+  min-height:26px!important;
+  margin-top:5px!important;
+  padding:4px 6px!important;
+  border-style:dashed!important;
+  background:transparent!important;
+  font-size:7.5px!important;
+  opacity:.72!important;
+}
+#batalha .ajustesBonusAtributos > summary{padding-top:7px!important;font-size:9px!important}
+
+/* Salvaguardas: linha simples */
+#batalha .testesResistenciaRetratil{border-radius:8px!important}
+#batalha .testesResistenciaResumo{min-height:48px!important;padding:8px 9px!important}
+#batalha .testesResistenciaResumo small{font-size:6.5px!important}
+#batalha .testesResistenciaResumo strong{font-size:11px!important}
+#batalha .testesResistenciaResumo em{font-size:8px!important}
+
+/* Defesas: consulta realmente rápida */
+#batalha .defesasGrid,
+#batalha .defesasGrid.defesasGridComExtras,
+#batalha .defesasGrid.defesasGridComFurtividade,
+#batalha .defesasGrid.defesasGridComExtras.defesasGridComFurtividade{
+  gap:4px!important;
+}
+#batalha .defesasGrid > div,
+#batalha .defesasGrid .extraBatalhaBox,
+#batalha .defesasGrid .levelUpBattleCard{
+  min-height:50px!important;
+  padding:5px 4px!important;
+  border-radius:6px!important;
+  border-color:rgba(18,73,88,.34)!important;
+  background:transparent!important;
+}
+#batalha .defesasGrid span,
+#batalha .defesasGrid .extraBatalhaBox span,
+#batalha .defesasGrid .levelUpBattleCard span{font-size:7px!important}
+#batalha .defesasGrid strong,
+#batalha .defesasGrid .extraBatalhaBox strong,
+#batalha .defesasGrid .levelUpBattleCard strong{font-size:15px!important}
+#batalha .ajustesDefesasBatalha > summary{font-size:8.5px!important;padding-top:6px!important}
+
+/* Resistências: substitui os blocos verdes por chips escuros e discretos */
+#batalha .resistenciasBatalhaHost{padding:9px!important}
+#batalha .resistenciasBatalhaPainel h3{margin-bottom:6px!important;font-size:11px!important}
+#batalha .resistenciasAtivasGrid{gap:5px!important;margin-bottom:6px!important}
+#batalha .resistenciaChipResumo{
+  min-height:32px!important;
+  padding:5px 8px!important;
+  border-radius:6px!important;
+  border:1px solid rgba(46,177,104,.36)!important;
+  background:linear-gradient(180deg,rgba(8,25,17,.92),rgba(2,10,7,.96))!important;
+  color:#bdf4cf!important;
+  font-size:8.5px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+#batalha .resistenciaChipResumo.resistenciaNaturezaAuto{
+  border-color:rgba(255,115,66,.42)!important;
+  background:linear-gradient(180deg,rgba(38,14,8,.92),rgba(15,5,3,.97))!important;
+  color:#ffc2a6!important;
+}
+#batalha .resistenciaChipResumo.imunidadeNaturezaAuto{
+  border-color:rgba(194,108,255,.44)!important;
+  background:linear-gradient(180deg,rgba(28,12,40,.93),rgba(10,4,14,.97))!important;
+  color:#e1b7ff!important;
+}
+#batalha .btnGerenciarResistencias{
+  min-height:32px!important;
+  margin-top:5px!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  border-color:rgba(255,127,34,.28)!important;
+  color:#dba36d!important;
+  font-size:8.7px!important;
+  box-shadow:none!important;
+}
+
+/* Final da tela: acessos mais finos */
+#batalha .historicoBatalhaDetalhes{margin-top:7px!important;border-radius:7px!important}
+#batalha .detalhesBatalha > summary{min-height:44px!important;padding:7px 9px!important}
+#batalha .detalhesBatalha > summary span{font-size:10px!important}
+#batalha .detalhesBatalha > summary small{font-size:7px!important}
+#batalha .batalhaAcessoRapido{
+  min-height:44px!important;
+  margin-top:6px!important;
+  padding:7px 9px!important;
+  border-radius:7px!important;
+  grid-template-columns:26px minmax(0,1fr) 16px!important;
+  background:linear-gradient(180deg,rgba(3,8,10,.98),rgba(0,2,3,.99))!important;
+  box-shadow:none!important;
+}
+#batalha .batalhaAcessoRapido .shinobiIcon{width:20px!important;height:20px!important}
+#batalha .batalhaAcessoRapido strong{font-size:10px!important}
+#batalha .batalhaAcessoRapido small{font-size:7px!important}
+#batalha .batalhaAcessoRapido b{font-size:18px!important}
+
+@media (max-width:430px){
+  #batalha .batalhaViva{padding-left:8px!important;padding-right:8px!important}
+  #batalha .recursoBatalhaCard{min-height:122px!important;padding:8px!important}
+  #batalha .recursoBatalhaTopo strong{font-size:21px!important}
+  #batalha .acaoRecurso{min-height:32px!important;font-size:8px!important}
+  #batalha .batalhaSecao{padding:8px!important}
+  #batalha .resistenciaChipResumo{font-size:8px!important;padding-inline:6px!important}
+}
