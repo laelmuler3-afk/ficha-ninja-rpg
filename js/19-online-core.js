@@ -103,6 +103,11 @@
       "auth/popup-blocked":"O navegador bloqueou a janela de login. Tente novamente.",
       "auth/unauthorized-domain":"Este domínio ainda não foi autorizado no Firebase Authentication.",
       "auth/network-request-failed":"Não foi possível conectar ao Firebase. Verifique a internet.",
+      "auth/internal-error":"O Firebase Authentication não conseguiu concluir o login neste navegador. O aplicativo tentou recuperar a sessão; se o erro persistir, desative bloqueadores de conteúdo para este site e tente novamente no navegador normal.",
+      "auth/web-storage-unsupported":"O navegador bloqueou o armazenamento necessário para manter o login. Permita cookies/dados do site ou use o navegador normal.",
+      "auth/user-disabled":"Esta Conta Google está desativada no Firebase Authentication.",
+      "auth/operation-not-allowed":"O login com Google não está habilitado no Firebase Authentication.",
+      "auth/cancelled-popup-request":"Uma tentativa de login anterior ainda estava aberta. Tente novamente.",
       "auth/credential-already-in-use":"Esta Conta Google já possui fichas na nuvem. Entre nela para acessar os dados.",
       "auth/email-already-in-use":"Este e-mail já possui uma conta no aplicativo.",
       "PERMISSION_DENIED":"O Firebase recusou esta operação. Revise as regras do banco.",
@@ -182,8 +187,10 @@
       initializeApp(config){return firebase.apps?.length?firebase.app():firebase.initializeApp(config);},
       getAuth(app){return app.auth();},
       getDatabase(app){return app.database();},
-      browserLocalPersistence:"local",
-      setPersistence(auth){return auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);},
+      browserLocalPersistence:firebase.auth.Auth.Persistence.LOCAL,
+      browserSessionPersistence:firebase.auth.Auth.Persistence.SESSION,
+      inMemoryPersistence:firebase.auth.Auth.Persistence.NONE,
+      setPersistence(auth,persistence){return auth.setPersistence(persistence);},
       onAuthStateChanged(auth,callback){return auth.onAuthStateChanged(callback);},
       GoogleAuthProvider:firebase.auth.GoogleAuthProvider,
       signInAnonymously(auth){return auth.signInAnonymously();},
@@ -270,7 +277,19 @@
       estadoOnline.auth=api.getAuth(app);
       estadoOnline.db=api.getDatabase(app);
       if(api.setPersistence&&api.browserLocalPersistence){
-        await api.setPersistence(estadoOnline.auth,api.browserLocalPersistence).catch(()=>{});
+        try{
+          await api.setPersistence(estadoOnline.auth,api.browserLocalPersistence);
+        }catch(erroLocal){
+          /* Safari/iOS, modo privado e alguns WebViews podem recusar a
+             persistência LOCAL. Cair para SESSION/NONE evita transformar
+             uma limitação de armazenamento em auth/internal-error. */
+          console.warn("Persistência local do Firebase indisponível; tentando alternativa.",erroLocal?.code||erroLocal);
+          try{
+            await api.setPersistence(estadoOnline.auth,api.browserSessionPersistence);
+          }catch(erroSessao){
+            await api.setPersistence(estadoOnline.auth,api.inMemoryPersistence).catch(()=>{});
+          }
+        }
       }
 
       api.onAuthStateChanged(estadoOnline.auth,async user=>{
@@ -341,62 +360,99 @@
     return snapshot();
   }
 
+  function criarProviderGoogle(){
+    const provider=new estadoOnline.api.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:"select_account"});
+    return provider;
+  }
+
+  function erroInternoAuth(erro){
+    return ["auth/internal-error","auth/cancelled-popup-request"].includes(texto(erro?.code));
+  }
+
+  async function autenticarGooglePopup({tentativas=2}={}){
+    let ultimoErro=null;
+    for(let tentativa=1;tentativa<=Math.max(1,tentativas);tentativa+=1){
+      try{
+        return await estadoOnline.api.signInWithPopup(estadoOnline.auth,criarProviderGoogle());
+      }catch(erro){
+        ultimoErro=erro;
+        if(!erroInternoAuth(erro)||tentativa>=tentativas) throw erro;
+        /* auth/internal-error também pode aparecer quando o estado interno do
+           iframe/popup ficou preso após suspensão do PWA. Uma nova tentativa
+           com provider novo costuma recuperar sem apagar a ficha local. */
+        await new Promise(resolve=>setTimeout(resolve,220));
+      }
+    }
+    throw ultimoErro||new Error("Não foi possível entrar com Google.");
+  }
+
+  async function restaurarSalaDepoisDoLogin(sessao){
+    if(sessao?.role!=="player"||!sessao.code||!sessao.localSheetName) return;
+    try{
+      await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName});
+    }catch(erroSala){
+      emitir("erro",{
+        mensagem:`Conta conectada, mas não foi possível voltar à sala: ${erroAmigavel(erroSala)}`,
+        erro:erroSala
+      });
+    }
+  }
+
   async function entrarGoogle(){
     await iniciar();exigirFirebase();
-    const api=estadoOnline.api;
-    const provider=new api.GoogleAuthProvider();
-    provider.setCustomParameters({prompt:"select_account"});
-    const atual=estadoOnline.auth.currentUser;
+    if(navigator.onLine===false){
+      const erro=new Error("Sem conexão com a internet para entrar com Google.");
+      erro.code="auth/network-request-failed";
+      throw erro;
+    }
 
+    const api=estadoOnline.api;
+    const atual=estadoOnline.auth.currentUser;
     if(atual&&!atual.isAnonymous) return snapshot();
+    const sessao=lerJson(CHAVE_SESSAO,null);
+
+    /* Jogadores entram primeiro como anônimos para acessar uma sala sem conta.
+       Vincular esse usuário temporário com linkWithPopup adicionava uma segunda
+       camada de estado OAuth e era o ponto mais frágil em PWA/mobile. Como as
+       fichas são locais e a sala pode ser reentrada, trocamos a identidade de
+       forma explícita: sai do usuário temporário, entra no Google e reconecta. */
+    if(atual?.isAnonymous){
+      if(sessao?.role==="player") await sairDaSala({silencioso:true}).catch(()=>{});
+      await api.signOut(estadoOnline.auth).catch(()=>{});
+      try{
+        const resultado=await autenticarGooglePopup({tentativas:2});
+        estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
+        estadoOnline.conectado=true;
+        emitir("auth",snapshot());
+        await restaurarSalaDepoisDoLogin(sessao);
+        return snapshot();
+      }catch(erro){
+        /* Se o popup falhar, recupera a sessão anônima para o jogador não ser
+           expulso da mesa por causa de um erro de autenticação. */
+        try{
+          const anon=await api.signInAnonymously(estadoOnline.auth);
+          estadoOnline.user=normalizarUsuarioFirebase(anon.user);
+          estadoOnline.conectado=true;
+          emitir("auth",snapshot());
+          await restaurarSalaDepoisDoLogin(sessao);
+        }catch(_erroRecuperacao){}
+        throw erro;
+      }
+    }
 
     try{
-      const resultado=atual?.isAnonymous
-        ? await api.linkWithPopup(atual,provider)
-        : await api.signInWithPopup(estadoOnline.auth,provider);
+      const resultado=await autenticarGooglePopup({tentativas:2});
       estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
       estadoOnline.conectado=true;
       emitir("auth",snapshot());
       return snapshot();
     }catch(erro){
-      if(["auth/popup-blocked","auth/operation-not-supported-in-this-environment"].includes(erro?.code)){
-        if(atual?.isAnonymous&&api.linkWithRedirect){
-          await api.linkWithRedirect(atual,provider);
-        }else{
-          await api.signInWithRedirect(estadoOnline.auth,provider);
-        }
-        return snapshot();
-      }
-
-      /* Uma conta Google já usada em outro aparelho não pode ser vinculada a
-         um usuário anônimo novo. Nesse caso, removemos com segurança a
-         presença anônima, entramos na conta existente e reconectamos a ficha
-         à mesma sala. */
-      if(atual?.isAnonymous&&["auth/credential-already-in-use","auth/email-already-in-use"].includes(erro?.code)){
-        const sessao=lerJson(CHAVE_SESSAO,null);
-        const credencial=api.GoogleAuthProvider.credentialFromError?.(erro)||erro?.credential||null;
-        if(sessao?.role==="player") await sairDaSala({silencioso:true}).catch(()=>{});
-        let resultado;
-        if(credencial){
-          resultado=await api.signInWithCredential(estadoOnline.auth,credencial);
-        }else{
-          await api.signOut(estadoOnline.auth);
-          resultado=await api.signInWithPopup(estadoOnline.auth,provider);
-        }
-        estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
-        estadoOnline.conectado=true;
-        emitir("auth",snapshot());
-        if(sessao?.role==="player"&&sessao.code&&sessao.localSheetName){
-          try{
-            await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName});
-          }catch(erroSala){
-            /* O login continua válido mesmo que a sala tenha sido encerrada ou
-               a reconexão falhe. Antes, esse erro aparecia como falha no e-mail. */
-            emitir("erro",{mensagem:`Conta conectada, mas não foi possível voltar à sala: ${erroAmigavel(erroSala)}`,erro:erroSala});
-          }
-        }
-        return snapshot();
-      }
+      /* Em GitHub Pages o redirect do Firebase usa um authDomain de outra
+         origem e é afetado pelo bloqueio moderno de armazenamento de terceiros.
+         Não fazemos fallback automático para redirect, pois ele pode voltar sem
+         credencial no Safari/Chrome atuais. Mantemos a ficha offline intacta e
+         devolvemos um erro útil ao usuário. */
       throw erro;
     }
   }

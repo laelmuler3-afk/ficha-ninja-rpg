@@ -743,7 +743,9 @@
     }
 
     const chakraBase=inteiro(regraNivel(nivel)?.chakraBase,0);
-    const ganhoChakra=rolagemChakra+chakraAjustes.total+chakraBase;
+    /* Chakra-base é referência da progressão do nível. Não é um bônus
+       acumulado no Level Up. O ganho real é somente dado do clã + ajustes. */
+    const ganhoChakra=rolagemChakra+chakraAjustes.total;
     if(ganhoVida<=0) return {valido:false,erro:"O ganho total de Vida ficou igual ou abaixo de zero. Revise os atributos e a regra de clã."};
     if(ganhoChakra<=0) return {valido:false,erro:"O ganho total de Chakra ficou igual ou abaixo de zero. Revise os atributos e a regra de clã."};
 
@@ -805,7 +807,7 @@
     if(calculo.cla){
       const metodoTexto=inicial?`máximo ${calculo.dadoVida}`:(calculo.metodoVida==="media"?`média ${calculo.baseVida}`:`rolagem ${calculo.baseVida||"—"}`);
       if(vidaFormula) vidaFormula.innerHTML=`${escaparHTML(metodoTexto)} <b>${escaparHTML(textoAjustes(calculo.vidaAjustes))}</b>`;
-      if(chakraFormula) chakraFormula.innerHTML=`rolagem ${calculo.rolagemChakra||"—"} <b>${escaparHTML(textoAjustes(calculo.chakraAjustes))}</b> <b>+${inteiro(regraNivel(nivel)?.chakraBase,0)} base do nível</b>`;
+      if(chakraFormula) chakraFormula.innerHTML=`rolagem ${calculo.rolagemChakra||"—"} <b>${escaparHTML(textoAjustes(calculo.chakraAjustes))}</b> <span>· Chakra-base ${inteiro(regraNivel(nivel)?.chakraBase,0)} (referência, não somado)</span>`;
     }else{
       if(vidaFormula) vidaFormula.textContent="Selecione um clã.";
       if(chakraFormula) chakraFormula.textContent="Selecione um clã.";
@@ -962,7 +964,7 @@
           clan:{id:calculo.cla.id,label:calculo.cla.label},
           resources:{
             life:{die:`1d${calculo.dadoVida}`,method:"maximum",roll:calculo.baseVida,adjustment:calculo.vidaAjustes.total,gain:calculo.ganhoVida},
-            chakra:{die:`1d${calculo.dadoChakra}`,roll:calculo.rolagemChakra,adjustment:calculo.chakraAjustes.total,base:calculo.chakraBase,gain:calculo.ganhoChakra},
+            chakra:{die:`1d${calculo.dadoChakra}`,roll:calculo.rolagemChakra,adjustment:calculo.chakraAjustes.total,base:calculo.chakraBase,baseIsReference:true,gain:calculo.ganhoChakra},
             before:recursos.antes,
             after:recursos.depois,
             attributes:calculo.atributos
@@ -988,7 +990,7 @@
           clan:{id:calculo.cla.id,label:calculo.cla.label},
           resources:{
             life:{die:`1d${calculo.dadoVida}`,method:calculo.metodoVida,roll:calculo.baseVida,adjustment:calculo.vidaAjustes.total,gain:calculo.ganhoVida},
-            chakra:{die:`1d${calculo.dadoChakra}`,roll:calculo.rolagemChakra,adjustment:calculo.chakraAjustes.total,base:calculo.chakraBase,gain:calculo.ganhoChakra},
+            chakra:{die:`1d${calculo.dadoChakra}`,roll:calculo.rolagemChakra,adjustment:calculo.chakraAjustes.total,base:calculo.chakraBase,baseIsReference:true,gain:calculo.ganhoChakra},
             before:recursos.antes,
             after:recursos.depois,
             attributes:calculo.atributos
