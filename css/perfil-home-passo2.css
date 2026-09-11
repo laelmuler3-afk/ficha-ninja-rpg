@@ -384,3 +384,21 @@
   #identidade .miniStatusNovo{grid-template-columns:repeat(3,minmax(0,1fr))!important}
   #identidade .miniStatusNovo label{font-size:8px!important}
 }
+
+
+/* v2.5.8.18 — número do nível como gatilho da progressão */
+#identidade #nivelDisplayMini[role="button"]{
+  cursor:pointer;
+  caret-color:transparent;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+}
+#identidade .nivelCompacto:has(#nivelDisplayMini[role="button"]){
+  cursor:pointer;
+}
+#identidade #nivelDisplayMini[role="button"]:focus-visible{
+  outline:2px solid rgba(255,177,90,.9) !important;
+  outline-offset:3px;
+  border-radius:8px !important;
+}
