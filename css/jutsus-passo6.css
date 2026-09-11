@@ -1,4 +1,4 @@
-/* Ficha Ninja RPG 2.5.8.31 — Passo 6: Jutsus
+/* Ficha Ninja RPG 2.5.8.32 — Passo 6: Jutsus
    Redesign visual da tela de Jutsus baseado na referência aprovada.
    Não altera dados, cálculos, uso de EKO ou lógica de abertura dos jutsus. */
 
@@ -478,4 +478,43 @@
   #jutsus .jutsusPainelPrincipal{max-width:900px;margin-left:auto!important;margin-right:auto!important;}
   #jutsus #listaJutsus{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;}
   #listaJutsus .jutsuGrupoRetratil.aberto{grid-column:1/-1!important;}
+}
+\n\n/* ===== 2.5.8.32 — fechamento responsivo dos Jutsus + Ataques clean ===== */
+#jutsus .jutsuElementosAtalhos{
+  width:100%!important; max-width:100%!important; min-width:0!important;
+  padding:0 2px 5px!important; scrollbar-width:none!important;
+  -webkit-overflow-scrolling:touch!important; overscroll-behavior-x:contain!important;
+}
+#jutsus .jutsuElementosAtalhos::-webkit-scrollbar{display:none!important}
+#jutsus .jutsuElementoAtalho{min-width:80px!important;min-height:50px!important;padding:6px 9px!important}
+#jutsus .jutsuElementoAtalho.grupo-todos{min-width:84px!important}
+
+#jutsus .jutsusAtaquesPainel{padding:16px!important;border:1px solid rgba(196,135,70,.20)!important;border-radius:14px!important;background:linear-gradient(180deg,rgba(7,10,11,.98),rgba(1,3,4,.995))!important}
+#jutsus .ataquesCabecalho{display:flex!important;align-items:center!important;gap:12px!important;margin:0 0 14px!important;padding:0 0 12px!important;border-bottom:1px solid rgba(196,135,70,.16)!important}
+#jutsus .ataquesCabecalhoIcone{--icon-size:27px;color:#e99a4c!important;flex:0 0 auto!important}
+#jutsus .ataquesCabecalho>div{min-width:0!important}
+#jutsus .ataquesEyebrow{display:block!important;margin:0 0 2px!important;color:#73a9b4!important;font-size:8px!important;font-weight:900!important;letter-spacing:1.6px!important}
+#jutsus .ataquesCabecalho h2{margin:0!important;color:#f1e5d5!important;font-size:23px!important;line-height:1!important;letter-spacing:.4px!important}
+#jutsus .ataquesCabecalho p{margin:4px 0 0!important;color:#797d7e!important;font-size:9px!important;letter-spacing:.35px!important}
+#jutsus #listaArmados{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
+#jutsus .armadoCardCompacto.ataqueListaCard{margin:0!important;min-height:0!important;border:1px solid rgba(29,74,83,.48)!important;border-radius:10px!important;background:linear-gradient(180deg,rgba(5,12,14,.96),rgba(2,6,8,.99))!important;box-shadow:none!important;overflow:hidden!important}
+#jutsus .ataqueLinhaResumo{width:100%!important;min-height:58px!important;height:auto!important;padding:7px 10px!important;display:grid!important;grid-template-columns:38px minmax(0,1fr)!important;align-items:center!important;gap:10px!important;text-align:left!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important}
+#jutsus .ataqueLinhaIcone{width:36px!important;height:36px!important;display:grid!important;place-items:center!important;border:1px solid rgba(211,143,70,.28)!important;border-radius:9px!important;background:rgba(92,46,17,.18)!important;overflow:hidden!important}
+#jutsus .ataqueArmaImagemResumo{width:28px!important;height:28px!important;object-fit:contain!important}
+#jutsus .ataqueIconeFallback{font-size:20px!important;line-height:1!important}
+#jutsus .ataqueLinhaTexto{width:100%!important;min-width:0!important;padding:0!important;display:grid!important;gap:2px!important;background:transparent!important;border:0!important}
+#jutsus .ataqueLinhaTexto strong{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#f1e7d9!important;font-size:13px!important;font-weight:900!important;line-height:1.15!important;text-shadow:none!important}
+#jutsus .ataqueLinhaTexto small{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;color:#a68d73!important;font-size:8.5px!important;font-weight:800!important;line-height:1.2!important;text-transform:uppercase!important;letter-spacing:.25px!important;text-shadow:none!important}
+#jutsus .ataqueDetalhesCompactos{border-top:1px solid rgba(196,135,70,.14)!important;background:rgba(2,6,8,.96)!important}
+#jutsus .jutsusAtaquesPainel>.btn{width:100%!important;min-height:46px!important;margin:11px 0 0!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;border:1px solid rgba(205,132,59,.44)!important;border-radius:10px!important;background:linear-gradient(180deg,rgba(91,42,13,.68),rgba(48,20,6,.72))!important;color:#f4d8b5!important;font-size:13px!important;box-shadow:none!important}
+
+@media(max-width:520px){
+ #jutsus .jutsuElementoAtalho{min-width:76px!important;min-height:48px!important;padding:5px 8px!important;gap:5px!important}
+ #jutsus .jutsuElementoAtalho.grupo-todos{min-width:80px!important}
+ #jutsus .jutsuAtalhoIcone{width:22px!important;height:22px!important;font-size:16px!important}
+ #jutsus .jutsuAtalhoTexto strong,#jutsus .jutsuAtalhoTexto b{font-size:9px!important}
+ #jutsus .jutsusAtaquesPainel{padding:12px!important}
+ #jutsus .ataquesCabecalho h2{font-size:21px!important}
+ #jutsus .ataqueLinhaResumo{min-height:56px!important;padding:7px 8px!important;grid-template-columns:36px minmax(0,1fr)!important;gap:9px!important}
+ #jutsus .ataqueLinhaIcone{width:34px!important;height:34px!important}
 }
