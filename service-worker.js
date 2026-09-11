@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.38 — Progressão por toque e robustez do Firebase Authentication.
+/* Shinobi 2.5.8.39 — Progressão por toque e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.38";
+const APP_VERSION = "2.5.8.39";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -36,21 +36,11 @@ const APP_SHELL = [
   `./css/organizacao-retratil.css?v=${APP_VERSION}`,
   `./css/shinobi-theme.css?v=${APP_VERSION}`,
   `./css/design-system-eko.css?v=${APP_VERSION}`,
-  `./css/perfil-home-passo2.css?v=${APP_VERSION}`,
-  `./css/perfil-home-passo2-ajuste.css?v=${APP_VERSION}`,
+  `./css/perfil-home.css?v=${APP_VERSION}`,
   `./css/cabecalho-navegacao-passo3.css?v=${APP_VERSION}`,
-  `./css/status-passo4.css?v=${APP_VERSION}`,
-  `./css/status-passo4-ajuste.css?v=${APP_VERSION}`,
-  `./css/status-passo4-conjuracao-compacta.css?v=${APP_VERSION}`,
-  `./css/status-passo4-beneficios-retrateis.css?v=${APP_VERSION}`,
-  `./css/combate-passo5.css?v=${APP_VERSION}`,
-  `./css/combate-passo5-refino.css?v=${APP_VERSION}`,
-  `./css/combate-passo5-polimento.css?v=${APP_VERSION}`,
-  `./css/combate-passo5-fechamento.css?v=${APP_VERSION}`,
-  `./css/jutsus-passo6.css?v=${APP_VERSION}`,
-  `./css/jutsus-passo6-neon.css?v=${APP_VERSION}`,
-  `./css/jutsus-passo6-fechamento.css?v=${APP_VERSION}`,
-  `./css/jutsus-passo6-final-clean.css?v=${APP_VERSION}`,
+  `./css/status.css?v=${APP_VERSION}`,
+  `./css/combate.css?v=${APP_VERSION}`,
+  `./css/jutsus.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
@@ -291,12 +281,30 @@ async function limparCachesAntigos(){
 
 async function buscarShellNoCache(request){
   const cache=await caches.open(SHELL_CACHE);
-  const resposta=await cache.match(request,{ignoreSearch:true});
+  const resposta=await cache.match(request);
   if(resposta) return resposta;
 
   const rede=await fetch(request);
   if(respostaPodeSerSalva(rede)) await cache.put(request,rede.clone());
   return rede;
+}
+
+// CSS, JavaScript e JSON mudam com frequência durante o desenvolvimento.
+// Busca a rede primeiro para evitar que um Service Worker antigo esconda alterações
+// recém-publicadas; o cache continua sendo usado quando o dispositivo está offline.
+async function buscarCodigoAtualizado(request){
+  const cache=await caches.open(SHELL_CACHE);
+  try{
+    const rede=await fetch(new Request(request,{cache:"no-cache"}));
+    if(respostaPodeSerSalva(rede)) await cache.put(request,rede.clone());
+    return rede;
+  }catch(erro){
+    const salva=await cache.match(request);
+    if(salva) return salva;
+    const compat=await cache.match(request,{ignoreSearch:true});
+    if(compat) return compat;
+    throw erro;
+  }
 }
 
 async function abrirPaginaPrincipal(request){
@@ -450,7 +458,8 @@ self.addEventListener("fetch",event=>{
   }
 
   if(SHELL_PATHS.has(url.pathname)){
-    event.respondWith(buscarShellNoCache(request));
+    const mutavel=/\.(?:css|js|json)$/i.test(url.pathname);
+    event.respondWith(mutavel?buscarCodigoAtualizado(request):buscarShellNoCache(request));
     return;
   }
 

@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.38",
-  "name": "Passo 6.5 — limpeza definitiva Jutsus + Ataques",
-  "notes": "Remove resíduos marrons, fades, gradientes quentes, pseudo-elementos e sombras herdadas da área de Jutsus e Ataques, mantendo AMOLED/petróleo e neon de categoria.",
+  "version": "2.5.8.39",
+  "name": "Consolidação CSS + atualização confiável",
+  "notes": "Consolida camadas CSS incrementais sem alterar a ordem visual, remove duplicatas mortas da raiz e usa network-first para CSS/JS/JSON com fallback offline.",
   "date": "2026-09-11"
 }
