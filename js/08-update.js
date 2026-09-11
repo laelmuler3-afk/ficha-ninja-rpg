@@ -20,7 +20,8 @@
   document.documentElement.dataset.appVersion=APP_VERSION;
   window.APP_VERSION=APP_VERSION;
 
-  const SW_URL="./service-worker.js";
+  const SW_URL_BASE="./service-worker.js";
+  const swUrl=(versao=APP_VERSION)=>`${SW_URL_BASE}?v=${encodeURIComponent(String(versao||APP_VERSION))}`;
   const VERSION_URL="./version.json";
   const INTERVALO_PERIODICO=5*60*1000;
   const INTERVALO_MINIMO=15*1000;
@@ -340,7 +341,26 @@
     });
   }
 
-  async function solicitarAtualizacaoDoRegistro(){
+  async function garantirWorkerDaVersao(versao){
+    const alvo=String(versao||"").trim();
+    if(!alvo) return registroAtual;
+    try{
+      const registro=await navigator.serviceWorker.register(swUrl(alvo),{
+        scope:"./",
+        updateViaCache:"none"
+      });
+      registroAtual=registro;
+      acompanharRegistro(registroAtual);
+      if(registroAtual.installing) acompanharWorker(registroAtual.installing);
+      return registroAtual;
+    }catch(erro){
+      console.warn(`Não foi possível registrar o Service Worker v${alvo}.`,erro);
+      throw erro;
+    }
+  }
+
+  async function solicitarAtualizacaoDoRegistro(versao=versaoRemotaConhecida||APP_VERSION){
+    await garantirWorkerDaVersao(versao);
     if(!registroAtual) return;
     await registroAtual.update();
     if(registroAtual.installing) acompanharWorker(registroAtual.installing);
@@ -399,7 +419,7 @@
           pronto:false,
           botaoTexto:"Preparando..."
         });
-        await solicitarAtualizacaoDoRegistro();
+        await solicitarAtualizacaoDoRegistro(remota);
         if(await anunciarWorkerEsperando()) return;
 
         const versaoAtiva=await obterVersaoWorker(navigator.serviceWorker.controller);
@@ -419,7 +439,7 @@
         return;
       }
 
-      await solicitarAtualizacaoDoRegistro();
+      await solicitarAtualizacaoDoRegistro(APP_VERSION);
       const waiting=registroAtual?.waiting;
       if(waiting){
         const versaoWaiting=await obterVersaoWorker(waiting);
@@ -459,7 +479,7 @@
       return;
     }
     try{
-      registroAtual=await navigator.serviceWorker.register(SW_URL,{
+      registroAtual=await navigator.serviceWorker.register(swUrl(APP_VERSION),{
         scope:"./",
         updateViaCache:"none"
       });
@@ -525,10 +545,11 @@
   });
 
   document.addEventListener("visibilitychange",()=>{
-    if(document.visibilityState==="visible") verificarAtualizacao();
+    if(document.visibilityState==="visible") verificarAtualizacao({forcar:true});
   });
+  window.addEventListener("focus",()=>verificarAtualizacao({forcar:true}));
   window.addEventListener("online",()=>verificarAtualizacao({forcar:true}));
-  window.addEventListener("pageshow",()=>verificarAtualizacao());
+  window.addEventListener("pageshow",()=>verificarAtualizacao({forcar:true}));
 
   window.ShinobiAtualizacao={
     verificar:()=>verificarAtualizacao({manual:true,forcar:true}),
