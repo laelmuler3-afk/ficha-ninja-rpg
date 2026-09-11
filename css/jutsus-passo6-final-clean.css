@@ -1,0 +1,91 @@
+/* Ficha Ninja RPG 2.5.8.37 — Passo 6.4
+   Neutralização final de superfícies marrons em Jutsus + Ataques.
+   Visual apenas: preto AMOLED, azul-petróleo e laranja como acento.
+*/
+
+#jutsus .jutsusPainelPrincipal,
+#jutsus .jutsusAtaquesPainel,
+#jutsus .painelPergaminhoLista{
+  background:#000!important;
+  background-image:none!important;
+  border:1px solid rgba(25,91,105,.50)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.012)!important;
+}
+
+#jutsus .jutsusPainelPrincipal::before,
+#jutsus .jutsusPainelPrincipal::after,
+#jutsus .jutsusAtaquesPainel::before,
+#jutsus .jutsusAtaquesPainel::after,
+#jutsus .painelPergaminhoLista::before,
+#jutsus .painelPergaminhoLista::after{
+  display:none!important;
+  content:none!important;
+}
+
+#jutsus .jutsusHero{
+  background:#020a0d!important;
+  background-image:
+    radial-gradient(circle at 90% 10%,rgba(19,76,91,.13),transparent 30%)!important;
+  border-color:rgba(25,91,105,.62)!important;
+}
+
+#jutsus .jutsuBuscaRetratil,
+#jutsus .jutsuElementoAtalho,
+#listaJutsus .jutsuGrupoRetratil,
+#jutsus .armadoCardCompacto.ataqueListaCard{
+  background:#010609!important;
+  background-image:none!important;
+}
+
+#listaJutsus .jutsuGrupoRetratil{
+  box-shadow:inset 3px 0 0 var(--grupo-cor)!important;
+}
+
+#jutsus .jutsuAdicionarBtn,
+#jutsus .jutsusAtaquesPainel>.btn{
+  background:#020607!important;
+  background-image:none!important;
+  border:1px solid rgba(255,122,24,.78)!important;
+  color:#f5e7d6!important;
+  box-shadow:inset 0 0 0 1px rgba(255,122,24,.035),0 0 12px rgba(255,122,24,.045)!important;
+}
+#jutsus .jutsuAdicionarBtn:active,
+#jutsus .jutsusAtaquesPainel>.btn:active{
+  background:rgba(255,122,24,.055)!important;
+}
+
+#jutsus .jutsusAtaquesPainel{
+  background:#000!important;
+}
+#jutsus .ataquesCabecalho{
+  background:transparent!important;
+}
+
+#jutsus .armadoCardCompacto.ataqueListaCard::before{
+  width:3px!important;
+  background:#ff8a2a!important;
+  box-shadow:0 0 7px rgba(255,122,24,.16)!important;
+}
+
+#jutsus #listaArmados .ataqueLinhaDano{
+  background:#000!important;
+  border-color:rgba(255,137,32,.72)!important;
+  color:#f0e6da!important;
+}
+
+#jutsus .ataqueDetalhesCompactos,
+#jutsus .armadoResumoEditavel button{
+  background:#010608!important;
+  background-image:none!important;
+}
+
+#jutsus .jutsusFrase{
+  color:#5f7e89!important;
+}
+
+@media (max-width:520px){
+  #jutsus .jutsusPainelPrincipal,
+  #jutsus .jutsusAtaquesPainel{
+    border-radius:10px!important;
+  }
+}
