@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.28",
-  "name": "Passo 5.1 — Combate refinado",
-  "notes": "Refina visualmente a tela de Combate: recursos mais compactos, seções mais leves, defesas mais densas, resistências redesenhadas e acessos finais mais discretos. Nenhuma lógica ou cálculo foi alterado.",
+  "version": "2.5.8.29",
+  "name": "Passo 5.2 — Combate polido",
+  "notes": "Polimento visual do Combate: PV/EKO mais densos, modificadores e defesas com divisórias internas em vez de mini-cards, resistências em chips discretos e atalhos finais mais leves. Nenhuma lógica ou cálculo foi alterado.",
   "date": "2026-09-11"
 }
