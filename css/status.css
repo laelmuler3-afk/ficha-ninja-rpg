@@ -1,0 +1,800 @@
+/* Status
+ * Consolidado na v2.5.8.39 preservando a ordem original da cascata.
+ */
+
+/* ===== origem: status-passo4.css ===== */
+/* Ficha Ninja RPG 2.5.8.19 — Passo 4: Status
+   Camada exclusivamente visual. Não altera cálculos, chaves data-save ou regras. */
+
+#atributos.statusPagina{
+  --status-cyan:#0b7f99;
+  --status-cyan-soft:rgba(11,127,153,.22);
+  --status-orange:#ff8a1f;
+  --status-paper:#d6a25f;
+  --status-muted:#93a3ad;
+  --status-surface:#03070a;
+  --status-surface-2:#071015;
+  width:min(100%,980px);
+  margin:0 auto;
+  gap:14px!important;
+}
+
+#atributos.statusPagina.ativa{
+  display:block!important;
+}
+
+/* Cabeçalho exclusivo da página Status */
+#atributos .statusHero{
+  position:relative;
+  isolation:isolate;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:13px;
+  min-height:126px;
+  margin:0 0 14px;
+  padding:18px 17px;
+  overflow:hidden;
+  border:1px solid rgba(22,108,129,.38);
+  border-radius:10px;
+  background:
+    radial-gradient(circle at 82% 36%,rgba(255,138,31,.13),transparent 30%),
+    radial-gradient(circle at 12% 78%,rgba(8,105,128,.18),transparent 38%),
+    linear-gradient(115deg,#020405 0%,#061015 58%,#0a0805 100%);
+  box-shadow:0 12px 32px rgba(0,33,43,.22),inset 0 1px 0 rgba(255,255,255,.025);
+}
+#atributos .statusHero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  opacity:.16;
+  background:
+    repeating-linear-gradient(135deg,transparent 0 17px,rgba(110,196,215,.08) 17px 18px),
+    radial-gradient(circle at 74% 44%,rgba(255,255,255,.07) 0 1px,transparent 1.5px);
+  background-size:auto,12px 12px;
+}
+#atributos .statusHeroMarca{
+  display:grid;
+  place-items:center;
+  width:48px;
+  height:48px;
+  border:1px solid rgba(255,138,31,.52);
+  border-radius:9px;
+  color:var(--status-orange);
+  font-size:26px;
+  text-shadow:0 0 12px rgba(255,138,31,.26);
+  background:rgba(255,138,31,.045);
+}
+#atributos .statusHeroTexto{min-width:0}
+#atributos .statusEyebrow,
+#atributos .statusSecaoEyebrow{
+  display:block;
+  color:#6fb7c8;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.7px;
+  line-height:1.15;
+}
+#atributos .statusHero h2{
+  margin:3px 0 2px!important;
+  color:#f5eee5!important;
+  font-size:34px!important;
+  line-height:1!important;
+  letter-spacing:.4px!important;
+  text-shadow:0 0 16px rgba(255,138,31,.12)!important;
+}
+#atributos .statusHero p{
+  margin:0;
+  color:#9fb0b8;
+  font-size:12px;
+  line-height:1.3;
+}
+#atributos .statusHeroSelo{
+  align-self:stretch;
+  display:grid;
+  place-items:center;
+  min-width:64px;
+  padding:0 6px;
+  color:rgba(214,162,95,.30);
+  font-size:52px;
+  font-family:serif;
+  border-left:1px solid rgba(214,162,95,.13);
+}
+
+/* Painéis: AMOLED com profundidade azul-petróleo, sem cards inchados. */
+#atributos.statusPagina>.painel{
+  margin:0 0 14px!important;
+  padding:16px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(8,91,111,.38)!important;
+  border-radius:10px!important;
+  background:
+    linear-gradient(180deg,rgba(4,10,13,.98),rgba(0,0,0,.99))!important;
+  box-shadow:0 12px 28px rgba(0,43,55,.15),inset 0 1px 0 rgba(255,255,255,.018)!important;
+}
+#atributos.statusPagina>.painel::before,
+#atributos.statusPagina>.painel::after{display:none!important}
+
+#atributos .statusSecaoTitulo{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 0 14px;
+  padding-bottom:11px;
+  border-bottom:1px solid rgba(20,105,126,.26);
+}
+#atributos .statusSecaoTitulo h2{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:3px 0 0!important;
+  color:#f3e5d5!important;
+  font-size:20px!important;
+  letter-spacing:.3px!important;
+}
+#atributos .statusSecaoTitulo h2 .shinobiIcon{
+  width:20px!important;
+  height:20px!important;
+  color:var(--status-orange)!important;
+  filter:none!important;
+}
+#atributos .statusSecaoTitulo>small{
+  max-width:44%;
+  color:#6f858f;
+  font-size:10px;
+  line-height:1.2;
+  text-align:right;
+}
+
+/* 6 atributos = grade visual de status. Os inputs e data-save permanecem intactos. */
+#atributos .statusAtributosPainel .atributosLista{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:9px!important;
+}
+#atributos .statusAtributosPainel .atributosLista>div{
+  --attr-accent:#0f91ad;
+  position:relative;
+  display:flex!important;
+  flex-direction:column;
+  align-items:center!important;
+  justify-content:center;
+  min-width:0;
+  min-height:116px;
+  padding:13px 7px 10px!important;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--attr-accent) 68%,transparent)!important;
+  border-radius:9px!important;
+  background:
+    radial-gradient(circle at 50% 0,color-mix(in srgb,var(--attr-accent) 16%,transparent),transparent 58%),
+    linear-gradient(180deg,#05090c,#010203)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 0 16px color-mix(in srgb,var(--attr-accent) 6%,transparent)!important;
+}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(1){--attr-accent:#ff3d38}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(2){--attr-accent:#e4ae2f}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(3){--attr-accent:#39dc70}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(4){--attr-accent:#2ba7ec}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(5){--attr-accent:#b544ff}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(6){--attr-accent:#ff8426}
+#atributos .statusAtributosPainel .atributosLista>div::before{
+  content:"✦";
+  display:grid;
+  place-items:center;
+  width:28px;
+  height:28px;
+  margin-bottom:4px;
+  color:var(--attr-accent);
+  font-size:20px;
+  font-weight:900;
+  line-height:1;
+  text-shadow:0 0 10px color-mix(in srgb,var(--attr-accent) 42%,transparent);
+}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(1)::before{content:"✊"}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(2)::before{content:"◆"}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(3)::before{content:"✚"}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(4)::before{content:"◈"}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(5)::before{content:"◉"}
+#atributos .statusAtributosPainel .atributosLista>div:nth-child(6)::before{content:"✦"}
+#atributos .statusAtributosPainel .atributosLista span{
+  order:2;
+  min-width:0;
+  color:#b9c3c8!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:.55px!important;
+  line-height:1.1!important;
+  text-align:center;
+  text-transform:uppercase;
+}
+#atributos .statusAtributosPainel .atributosLista input{
+  order:3;
+  width:100%!important;
+  height:auto!important;
+  min-height:36px;
+  margin:2px 0 0!important;
+  padding:0 4px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#fff!important;
+  font-size:28px!important;
+  font-weight:1000!important;
+  line-height:1!important;
+  text-align:center!important;
+  outline:none!important;
+  box-shadow:none!important;
+}
+#atributos .statusAtributosPainel .atributosLista input:focus{
+  color:var(--attr-accent)!important;
+  text-shadow:0 0 12px color-mix(in srgb,var(--attr-accent) 34%,transparent)!important;
+}
+
+/* Perícias: mais densas e coerentes com o novo painel. */
+#atributos .statusPericiasPainel .periciasLista{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+#atributos .statusPericiasPainel .periciasLista label.periciaItem{
+  min-height:48px!important;
+  padding:8px 9px!important;
+  border-color:rgba(12,104,125,.34)!important;
+  background:linear-gradient(180deg,#071015,#020507)!important;
+  box-shadow:none!important;
+}
+#atributos .statusPericiasPainel .periciasLista label.periciaItem.proficiente{
+  border-color:rgba(255,138,31,.62)!important;
+  background:
+    radial-gradient(circle at 8% 50%,rgba(255,138,31,.16),transparent 44%),
+    linear-gradient(180deg,#130b05,#050403)!important;
+  box-shadow:0 0 14px rgba(255,138,31,.06)!important;
+}
+#atributos .statusPericiasPainel .periciaBonus{
+  border-color:rgba(66,154,175,.32)!important;
+  background:#071116!important;
+  color:#cce9ef!important;
+}
+#atributos .statusPericiasPainel .periciaBonus.proficiente{
+  border-color:rgba(255,171,74,.58)!important;
+  background:#7d3d0d!important;
+  color:#fff6e8!important;
+}
+
+/* Naturezas ficam em uma seção própria, sem perder nenhuma ação atual. */
+#atributos .statusNaturezasPainel .naturezas{
+  gap:7px!important;
+}
+#atributos .statusNaturezasPainel .naturezas div{
+  min-height:48px;
+  padding:9px 11px!important;
+  border:1px solid rgba(13,106,127,.30)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,#071015,#020507)!important;
+}
+#atributos .statusNaturezasPainel .btnKekkei{
+  min-height:44px;
+  margin-top:10px;
+  border:1px solid rgba(255,138,31,.48)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(74,35,8,.78),rgba(20,9,3,.92))!important;
+  color:#ffd8ad!important;
+  box-shadow:0 0 14px rgba(255,138,31,.05)!important;
+}
+
+/* Progressão já existente: apenas encaixe visual na página. */
+#atributos .levelUpResumoNoStatus{
+  margin:0 0 14px!important;
+}
+#atributos .levelUpResumoNoStatus>*{
+  border-radius:10px!important;
+}
+
+@media (min-width:760px){
+  #atributos.statusPagina.ativa{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+    align-items:start;
+  }
+  #atributos .statusHero,
+  #atributos .levelUpResumoNoStatus{grid-column:1/-1}
+  #atributos .statusAtributosPainel{grid-column:1}
+  #atributos .statusPericiasPainel{grid-column:2;grid-row:2/span 2}
+  #atributos .statusNaturezasPainel{grid-column:1}
+}
+
+@media (max-width:520px){
+  #atributos.statusPagina{gap:11px!important}
+  #atributos .statusHero{
+    min-height:105px;
+    grid-template-columns:38px minmax(0,1fr) 42px;
+    gap:10px;
+    padding:14px 12px;
+    border-radius:8px;
+  }
+  #atributos .statusHeroMarca{width:38px;height:38px;font-size:21px;border-radius:7px}
+  #atributos .statusHero h2{font-size:28px!important}
+  #atributos .statusHero p{font-size:11px}
+  #atributos .statusHeroSelo{min-width:42px;font-size:38px}
+  #atributos.statusPagina>.painel{padding:13px!important;border-radius:8px!important}
+  #atributos .statusSecaoTitulo{margin-bottom:11px;padding-bottom:9px}
+  #atributos .statusSecaoTitulo h2{font-size:18px!important}
+  #atributos .statusSecaoTitulo>small{display:none}
+  #atributos .statusAtributosPainel .atributosLista{gap:7px!important}
+  #atributos .statusAtributosPainel .atributosLista>div{min-height:104px;padding:10px 4px 8px!important;border-radius:8px!important}
+  #atributos .statusAtributosPainel .atributosLista>div::before{width:24px;height:24px;font-size:17px}
+  #atributos .statusAtributosPainel .atributosLista span{font-size:9px!important;letter-spacing:.2px!important}
+  #atributos .statusAtributosPainel .atributosLista input{font-size:25px!important}
+}
+
+@media (max-width:390px){
+  #atributos .statusHeroSelo{display:none}
+  #atributos .statusHero{grid-template-columns:36px minmax(0,1fr)}
+  #atributos .statusPericiasPainel .periciasLista{grid-template-columns:1fr!important}
+}
+
+@media (max-width:340px){
+  #atributos .statusAtributosPainel .atributosLista{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #atributos *{scroll-behavior:auto!important;transition:none!important}
+}
+
+/* ===== origem: status-passo4-ajuste.css ===== */
+/* Ficha Ninja RPG 2.5.8.20 — Passo 4.1: compactação visual do Status
+   Somente CSS. Não altera cálculos, níveis, eventos ou data-save. */
+
+/* Perícias: leitura confortável e badge sem invadir o nome. */
+#atributos .statusPericiasPainel .periciasLista{
+  gap:7px!important;
+}
+#atributos .statusPericiasPainel .periciasLista label.periciaItem{
+  grid-template-columns:48px minmax(0,1fr)!important;
+  column-gap:10px!important;
+  min-height:50px!important;
+  padding:7px 9px!important;
+  border-radius:8px!important;
+  align-items:center!important;
+}
+#atributos .statusPericiasPainel .periciaBonus{
+  width:46px!important;
+  min-width:46px!important;
+  min-height:30px!important;
+  padding:5px 6px!important;
+  border-radius:8px!important;
+  font-size:14px!important;
+  line-height:1!important;
+  align-self:center!important;
+}
+#atributos .statusPericiasPainel .periciaNome{
+  min-width:0!important;
+  padding-left:1px!important;
+  font-size:12.5px!important;
+  line-height:1.16!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  hyphens:none!important;
+}
+@media (max-width:430px){
+  #atributos .statusPericiasPainel .periciasLista label.periciaItem{
+    grid-template-columns:46px minmax(0,1fr)!important;
+    column-gap:9px!important;
+    min-height:49px!important;
+    padding:7px 8px!important;
+  }
+  #atributos .statusPericiasPainel .periciaBonus{
+    width:44px!important;
+    min-width:44px!important;
+    min-height:29px!important;
+    font-size:13.5px!important;
+  }
+  #atributos .statusPericiasPainel .periciaNome{
+    font-size:12px!important;
+    line-height:1.15!important;
+  }
+}
+
+/* Naturezas: uma única linha limpa por afinidade, sem cards internos. */
+#atributos .statusNaturezasPainel #naturezasUI{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:6px!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+  min-height:54px!important;
+  width:100%!important;
+  margin:0!important;
+  padding:7px 9px!important;
+  display:grid!important;
+  grid-template-columns:minmax(150px,1fr) auto!important;
+  align-items:center!important;
+  gap:9px!important;
+  border:1px solid rgba(12,102,122,.30)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(4,10,13,.98),rgba(1,4,5,.99))!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaCard::after{display:none!important}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:34px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:9px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{
+  width:34px!important;height:34px!important;display:grid!important;place-items:center!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:50%!important;
+  background:rgba(255,255,255,.025)!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaIdentificacao{
+  min-width:0!important;display:flex!important;align-items:baseline!important;gap:8px!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNome{
+  margin:0!important;padding:0!important;border:0!important;background:transparent!important;
+  font-size:14px!important;line-height:1!important;white-space:nowrap!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{
+  flex:0 0 auto!important;margin:0!important;color:#d5c7b3!important;font-size:10.5px!important;white-space:nowrap!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{
+  display:grid!important;grid-template-columns:repeat(7,14px)!important;grid-auto-rows:14px!important;
+  gap:5px!important;align-items:center!important;justify-content:end!important;min-width:max-content!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNivel{
+  width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;
+  margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{
+  display:block!important;width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;
+  margin:0!important;padding:0!important;border-width:1.5px!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha.ativa{
+  box-shadow:0 0 8px color-mix(in srgb,var(--element-color) 48%,transparent)!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNivel small{display:none!important}
+
+@media(max-width:520px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+    min-height:50px!important;padding:6px 7px!important;grid-template-columns:minmax(125px,1fr) auto!important;gap:6px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{grid-template-columns:29px minmax(0,1fr)!important;gap:6px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{width:29px!important;height:29px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{font-size:12.5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{font-size:9.5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,12px)!important;grid-auto-rows:12px!important;gap:4px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:12px!important;min-width:12px!important;height:12px!important;min-height:12px!important}
+}
+@media(max-width:370px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{grid-template-columns:minmax(112px,1fr) auto!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,10px)!important;grid-auto-rows:10px!important;gap:3px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:10px!important;min-width:10px!important;height:10px!important;min-height:10px!important}
+}
+
+/* Kekkei: visual de ação secundária, integrado ao bloco. */
+#atributos .statusNaturezasPainel .btnKekkei{
+  min-height:40px!important;
+  margin-top:8px!important;
+  padding:9px 12px!important;
+  border-style:dashed!important;
+  border-color:rgba(255,138,31,.34)!important;
+  background:rgba(255,138,31,.025)!important;
+  color:#d8b990!important;
+  box-shadow:none!important;
+}
+
+/* Progressão: apenas acabamento, sem tocar na estrutura ou ações. */
+#atributos .levelUpResumoNoStatus{
+  border-color:rgba(12,102,122,.34)!important;
+}
+
+@media (max-width:520px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+    min-height:52px!important;
+    padding:7px 8px!important;
+    gap:7px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{
+    grid-template-columns:30px minmax(0,1fr)!important;
+    gap:7px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{
+    width:30px!important;
+    height:30px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{
+    font-size:14px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{
+    font-size:10px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{
+    grid-template-columns:repeat(7,13px)!important;
+    grid-auto-rows:13px!important;
+    gap:4px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{
+    width:13px!important;
+    min-width:13px!important;
+    height:13px!important;
+    min-height:13px!important;
+  }
+}
+
+@media (max-width:370px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+    grid-template-columns:minmax(0,1fr) auto!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{
+    grid-template-columns:repeat(7,11px)!important;
+    grid-auto-rows:11px!important;
+    gap:3px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{
+    width:11px!important;
+    min-width:11px!important;
+    height:11px!important;
+    min-height:11px!important;
+  }
+}
+
+
+/* 2.5.8.25 — Naturezas clean: uma borda, uma linha, nome centralizado. */
+#atributos .statusNaturezasPainel #naturezasUI{gap:7px!important}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+  min-height:58px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  padding:8px 12px!important;
+  gap:12px!important;
+  border:1px solid rgba(12,102,122,.34)!important;
+  border-radius:10px!important;
+  background:linear-gradient(180deg,rgba(4,10,13,.98),rgba(1,4,5,.99))!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-width:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{
+  width:42px!important;height:42px!important;
+  margin:0!important;padding:0!important;
+  border:0!important;
+  background:rgba(255,255,255,.025)!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaIdentificacao{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNome{
+  display:block!important;
+  width:100%!important;
+  text-align:center!important;
+  margin:0!important;padding:0!important;
+  border:0!important;background:transparent!important;
+  font-size:15px!important;line-height:1!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{display:none!important}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{
+  display:grid!important;
+  grid-template-columns:repeat(7,14px)!important;
+  grid-auto-rows:14px!important;
+  gap:6px!important;
+  align-items:center!important;
+  justify-content:end!important;
+  min-width:max-content!important;
+  margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+@media(max-width:520px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{min-height:54px!important;padding:7px 9px!important;gap:8px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{grid-template-columns:34px minmax(0,1fr)!important;gap:7px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{width:34px!important;height:34px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{font-size:13.5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,12px)!important;grid-auto-rows:12px!important;gap:4px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:12px!important;min-width:12px!important;height:12px!important;min-height:12px!important}
+}
+@media(max-width:370px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{grid-template-columns:minmax(0,1fr) auto!important;padding-inline:7px!important;gap:6px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{grid-template-columns:30px minmax(0,1fr)!important;gap:5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{width:30px!important;height:30px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{font-size:12px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,10px)!important;grid-auto-rows:10px!important;gap:3px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:10px!important;min-width:10px!important;height:10px!important;min-height:10px!important}
+}
+
+/* ===== origem: status-passo4-conjuracao-compacta.css ===== */
+/* Ficha Ninja RPG 2.5.8.24 — Atributo de conjuração compacto
+   Visual apenas: o atributo selecionado e todos os cálculos continuam intactos. */
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza{
+  display:grid!important;
+  grid-template-columns:minmax(125px,.82fr) minmax(150px,1.18fr) 40px!important;
+  gap:8px!important;
+  align-items:center!important;
+  margin:8px 0 10px!important;
+  padding:8px 10px!important;
+  min-height:50px!important;
+  border:1px solid rgba(12,102,122,.28)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(5,12,15,.94),rgba(1,4,5,.98))!important;
+  box-shadow:none!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > label{
+  grid-column:1!important;
+  margin:0!important;
+  color:#d9cab5!important;
+  font-size:11.5px!important;
+  font-weight:900!important;
+  line-height:1.15!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > select{
+  grid-column:2!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:7px 30px 7px 10px!important;
+  border:1px solid rgba(12,102,122,.38)!important;
+  border-radius:7px!important;
+  background:#010405!important;
+  color:#f4eadb!important;
+  font-size:12.5px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > select:focus{
+  border-color:rgba(255,138,31,.62)!important;
+  box-shadow:0 0 0 2px rgba(255,138,31,.10)!important;
+}
+
+/* Compatibilidade com versões anteriores: se o nó existir em cache antigo, nunca ocupa espaço. */
+#atributos .statusNaturezasPainel .conjuracaoNaturezaResumo,
+#atributos .statusNaturezasPainel .naturezaRegrasDetalhes{
+  display:none!important;
+}
+
+@media (max-width:520px){
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza{
+    grid-template-columns:minmax(105px,.78fr) minmax(120px,1.22fr) 38px!important;
+    padding:7px 8px!important;
+    min-height:46px!important;
+    gap:7px!important;
+  }
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > label{
+    font-size:10.5px!important;
+  }
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > select{
+    min-height:34px!important;
+    font-size:11.5px!important;
+  }
+}
+
+@media (max-width:360px){
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza{
+    grid-template-columns:minmax(0,1fr) 38px!important;
+    gap:6px!important;
+  }
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > label{
+    grid-column:1/-1!important;
+  }
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > select{
+    grid-column:1!important;
+  }
+}
+
+/* ===== origem: status-passo4-beneficios-retrateis.css ===== */
+/* Ficha Ninja RPG 2.5.8.24 — Benefícios cumulativos retráteis */
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle{
+  grid-column:3!important;
+  width:40px!important;
+  min-width:40px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  border:1px solid rgba(255,138,31,.42)!important;
+  border-radius:7px!important;
+  background:linear-gradient(180deg,rgba(20,10,5,.96),rgba(9,4,2,.98))!important;
+  box-shadow:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  cursor:pointer!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle:focus-visible{
+  border-color:rgba(255,160,58,.86)!important;
+  box-shadow:0 0 0 2px rgba(255,138,31,.12)!important;
+  outline:none!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza .conjuracaoBeneficiosSeta{
+  width:9px!important;
+  height:9px!important;
+  border-right:2px solid #ff9e42!important;
+  border-bottom:2px solid #ff9e42!important;
+  transform:rotate(45deg) translate(-1px,-1px)!important;
+  transition:transform .18s ease!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle.aberto .conjuracaoBeneficiosSeta{
+  transform:rotate(-135deg) translate(-1px,-1px)!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel{
+  grid-column:1/-1!important;
+  margin:1px 0 0!important;
+  padding:9px 11px!important;
+  border:1px solid rgba(255,138,31,.24)!important;
+  border-radius:7px!important;
+  background:linear-gradient(180deg,rgba(8,11,13,.97),rgba(2,4,5,.99))!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel[hidden]{display:none!important}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosCabecalho{
+  margin:0 0 6px!important;
+  color:#f1d5aa!important;
+  font-size:11.5px!important;
+  font-weight:900!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel ol{
+  margin:0!important;
+  padding-left:18px!important;
+  color:#d8cbb6!important;
+  font-size:11px!important;
+  line-height:1.42!important;
+}
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel li+li{margin-top:3px!important}
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel b{color:#ffbe70!important}
+
+@media(max-width:520px){
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle{
+    width:38px!important;min-width:38px!important;height:34px!important;min-height:34px!important;
+  }
+  #atributos .statusNaturezasPainel .naturezaBeneficiosPainel{padding:8px 9px!important}
+  #atributos .statusNaturezasPainel .naturezaBeneficiosPainel ol{font-size:10.5px!important}
+}
+@media(max-width:360px){
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle{grid-column:2!important;align-self:end!important}
+}

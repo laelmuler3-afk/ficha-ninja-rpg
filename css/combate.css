@@ -1,0 +1,1074 @@
+/* Combate
+ * Consolidado na v2.5.8.39 preservando a ordem original da cascata.
+ */
+
+/* ===== origem: combate-passo5.css ===== */
+/* Ficha Ninja RPG 2.5.8.27 — Passo 5: Combate focado em uso de mesa
+   Camada visual/estrutural. Preserva IDs, cálculos, eventos, resistências, saves e histórico. */
+
+#batalha .batalhaViva{
+  --battle-bg:#000;
+  --battle-surface:#04090b;
+  --battle-surface-2:#071014;
+  --battle-line:rgba(15,77,92,.48);
+  --battle-line-soft:rgba(15,77,92,.28);
+  --battle-orange:#ff7f22;
+  --battle-red:#ff2442;
+  --battle-purple:#b84dff;
+  --battle-green:#38df78;
+  padding:14px 12px 18px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+/* ===== Cabeçalho ===== */
+#batalha .batalhaCabecalhoVivo{
+  align-items:center!important;
+  margin:0 0 12px!important;
+  padding:0 1px 10px!important;
+  border-bottom:1px solid rgba(15,77,92,.38)!important;
+}
+
+#batalha .batalhaTituloPrincipal{
+  position:relative;
+  padding-left:40px;
+}
+
+#batalha .batalhaTituloPrincipal::before{
+  content:"⚔";
+  position:absolute;
+  left:0;
+  top:4px;
+  width:32px;
+  height:32px;
+  display:grid;
+  place-items:center;
+  color:var(--battle-orange);
+  font-size:24px;
+  filter:drop-shadow(0 0 8px rgba(255,127,34,.30));
+}
+
+#batalha .batalhaCabecalhoSelo{
+  color:#78b9c7!important;
+  font-size:8px!important;
+  letter-spacing:1.3px!important;
+  opacity:.92;
+}
+
+#batalha .batalhaCabecalhoVivo h2{
+  margin:2px 0 1px!important;
+  color:#f6efe5!important;
+  font-size:23px!important;
+  line-height:1!important;
+  letter-spacing:.2px!important;
+  text-transform:uppercase!important;
+}
+
+#batalha .batalhaTituloPrincipal > small{
+  display:block;
+  color:#778995;
+  font-size:8px;
+  font-weight:850;
+  letter-spacing:1.15px;
+}
+
+#batalha .batalhaMenuOpcoes > summary{
+  width:38px!important;
+  height:38px!important;
+  border-radius:8px!important;
+  border-color:rgba(255,127,34,.34)!important;
+  background:#07090a!important;
+  color:#ffb46d!important;
+  font-size:23px!important;
+}
+
+/* ===== PV / EKO: o que o jogador usa o tempo inteiro ===== */
+#batalha .recursosBatalhaVivos{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin:0 0 10px!important;
+}
+
+#batalha .recursoBatalhaCard{
+  min-height:150px!important;
+  padding:11px!important;
+  border-radius:10px!important;
+  background:linear-gradient(180deg,rgba(9,8,10,.98),rgba(1,2,3,.99))!important;
+  box-shadow:0 11px 25px rgba(0,0,0,.34)!important;
+}
+
+#batalha .recursoBatalhaCard::before{display:none!important}
+
+#batalha .recursoBatalhaPv{
+  --recurso-cor:var(--battle-red)!important;
+  border:1px solid rgba(255,36,66,.78)!important;
+  box-shadow:inset 0 0 22px rgba(255,36,66,.055),0 0 13px rgba(255,36,66,.08)!important;
+}
+
+#batalha .recursoBatalhaChakra{
+  --recurso-cor:var(--battle-purple)!important;
+  border:1px solid rgba(184,77,255,.78)!important;
+  box-shadow:inset 0 0 22px rgba(184,77,255,.06),0 0 13px rgba(184,77,255,.09)!important;
+}
+
+#batalha .recursoBatalhaTopo{
+  align-items:center!important;
+  margin-bottom:9px!important;
+}
+
+#batalha .recursoBatalhaTopo > .recursoBatalhaNome{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  color:#f5eee5!important;
+  font-size:12px!important;
+  letter-spacing:.2px!important;
+}
+
+#batalha .recursoBatalhaIcone{
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  font-size:18px;
+  line-height:1;
+}
+
+#batalha .recursoBatalhaPv .recursoBatalhaIcone{
+  color:#ff4961;
+  background:rgba(255,36,66,.11);
+  text-shadow:0 0 9px rgba(255,36,66,.42);
+}
+
+#batalha .recursoBatalhaChakra .recursoBatalhaIcone{
+  color:#c46cff;
+  background:rgba(184,77,255,.11);
+  text-shadow:0 0 9px rgba(184,77,255,.42);
+}
+
+#batalha .recursoBatalhaTopo strong{
+  font-size:25px!important;
+  line-height:.95!important;
+}
+
+#batalha .recursoBatalhaTopo strong small{
+  font-size:10px!important;
+  color:#858a91!important;
+}
+
+#batalha .recursoBatalhaBarra{
+  height:7px!important;
+  margin:0 0 10px!important;
+  border:0!important;
+  border-radius:99px!important;
+  background:#101216!important;
+}
+
+#batalha .recursoBatalhaBarra > span{border-radius:99px!important}
+
+#batalha .recursoBatalhaAcoes{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+
+#batalha .acaoRecurso{
+  min-height:38px!important;
+  padding:6px 5px!important;
+  border-radius:7px!important;
+  border:1px solid rgba(255,127,34,.48)!important;
+  background:linear-gradient(180deg,rgba(113,43,7,.88),rgba(55,19,3,.96))!important;
+  color:#ffe4c2!important;
+  font-size:9.5px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+
+#batalha .acaoRecurso:hover,
+#batalha .acaoRecurso:focus-visible{
+  border-color:rgba(255,153,61,.82)!important;
+  outline:none!important;
+}
+
+/* ===== Ação rápida aberta ===== */
+#batalha .acaoBatalhaPainel{
+  margin:0 0 10px!important;
+  padding:12px!important;
+  border-radius:9px!important;
+  border-color:rgba(255,127,34,.42)!important;
+  background:linear-gradient(180deg,rgba(12,9,6,.99),rgba(1,3,4,.99))!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.38)!important;
+}
+
+/* ===== Seções: uma hierarquia única e menos cards dentro de cards ===== */
+#batalha .batalhaSecao{
+  margin-top:9px!important;
+  padding:11px!important;
+  border:1px solid var(--battle-line)!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,#040a0d,#010405)!important;
+  box-shadow:0 7px 18px rgba(0,0,0,.24)!important;
+}
+
+#batalha .batalhaSecaoCabecalho{
+  align-items:center!important;
+  margin-bottom:8px!important;
+  padding-bottom:7px!important;
+  border-bottom:1px solid var(--battle-line-soft)!important;
+}
+
+#batalha .batalhaSecaoSelo{
+  color:#79b6c3!important;
+  font-size:7.5px!important;
+}
+
+#batalha .batalhaSecaoCabecalho h3,
+#batalha .batalhaSecao h3{
+  margin:2px 0 0!important;
+  color:#f0e8de!important;
+  font-size:13px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.35px!important;
+}
+
+#batalha .batalhaSecaoAjuda{
+  color:#6f7e85!important;
+  font-size:8px!important;
+}
+
+/* Efeitos reais dos jutsus */
+#batalha .efeitosJutsuAtivos{
+  display:grid!important;
+  gap:6px!important;
+  margin:0 0 9px!important;
+}
+
+#batalha .efeitoJutsuBatalhaCard{
+  margin:0!important;
+  padding:8px 9px!important;
+  border-radius:7px!important;
+  border-color:rgba(15,77,92,.50)!important;
+  background:#03080a!important;
+  box-shadow:none!important;
+}
+
+#batalha .efeitoJutsuBatalhaTopo strong{font-size:11px!important}
+#batalha .efeitoJutsuBatalhaTopo small{font-size:8px!important}
+#batalha .efeitoJutsuBatalhaBonus{gap:4px!important}
+
+/* Modificadores: mostra primeiro só o que está ativo; preserva grade original no DOM */
+#batalha .modificadoresCombatePainel{
+  margin-top:8px!important;
+  padding-top:9px!important;
+  border-top:1px solid var(--battle-line-soft)!important;
+}
+
+#batalha .modificadoresCombateCabecalho{
+  margin-bottom:7px!important;
+}
+
+#batalha .modificadoresCombateCabecalho h3{
+  font-size:11px!important;
+  color:#dfe7e8!important;
+}
+
+#batalha .modificadoresCombateCabecalho small{
+  color:#687980!important;
+  font-size:8px!important;
+}
+
+#batalha .modsGrid.modsGridVisivel{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;
+}
+
+#batalha .modsGrid.modsGridVisivel > div{
+  min-height:52px!important;
+  padding:7px 5px!important;
+  border:1px solid rgba(15,77,92,.48)!important;
+  border-radius:7px!important;
+  background:#020608!important;
+  box-shadow:none!important;
+}
+
+#batalha .modsGrid.modsGridVisivel span{font-size:8px!important;color:#83969e!important}
+#batalha .modsGrid.modsGridVisivel strong{font-size:17px!important}
+
+#batalha .bonusResumoCompacto{margin-top:6px!important}
+#batalha .bonusResumoVazio{
+  min-height:34px!important;
+  padding:6px!important;
+  border-radius:6px!important;
+  font-size:9px!important;
+  color:#728187!important;
+  border-color:rgba(15,77,92,.34)!important;
+  background:#010405!important;
+}
+
+#batalha .ajustesBonusAtributos{
+  margin-top:6px!important;
+  border-top:1px solid var(--battle-line-soft)!important;
+}
+
+#batalha .ajustesBonusAtributos > summary{
+  padding:9px 2px 1px!important;
+  color:#e9b77e!important;
+  font-size:10px!important;
+}
+
+/* ===== Salvaguardas recolhidas: continuam completas, mas não competem com o turno ===== */
+#batalha .testesResistenciaRetratil{
+  padding:0!important;
+  overflow:hidden!important;
+}
+
+#batalha .testesResistenciaResumo{
+  list-style:none;
+  min-height:54px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 11px;
+  cursor:pointer;
+}
+
+#batalha .testesResistenciaResumo::-webkit-details-marker{display:none}
+
+#batalha .testesResistenciaResumo > span{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+#batalha .testesResistenciaResumo small{
+  color:#78aebb;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+
+#batalha .testesResistenciaResumo strong{
+  color:#eee7de;
+  font-size:12px;
+  text-transform:uppercase;
+}
+
+#batalha .testesResistenciaResumo em{
+  color:#c8874e;
+  font-size:9px;
+  font-style:normal;
+  font-weight:900;
+}
+
+#batalha .testesResistenciaResumo::after{
+  content:"⌄";
+  color:#ff9c4c;
+  font-size:17px;
+  line-height:1;
+}
+
+#batalha .testesResistenciaRetratil[open] .testesResistenciaResumo::after{content:"⌃"}
+
+#batalha .testesResistenciaConteudo{
+  padding:0 10px 10px;
+  border-top:1px solid var(--battle-line-soft);
+}
+
+#batalha .testesResistenciaGrid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;
+  margin-top:9px!important;
+}
+
+#batalha .testeResistenciaCard{
+  min-height:65px!important;
+  padding:7px!important;
+  border-radius:7px!important;
+  background:#020608!important;
+  box-shadow:none!important;
+}
+
+#batalha .testeResistenciaCard strong{font-size:18px!important}
+#batalha .testeResistenciaCard small{font-size:7.5px!important}
+#batalha .testesResistenciaRodape{font-size:8px!important;margin:7px 0 0!important}
+
+/* ===== Consulta rápida ===== */
+#batalha .defesasGrid,
+#batalha .defesasGrid.defesasGridComExtras,
+#batalha .defesasGrid.defesasGridComFurtividade,
+#batalha .defesasGrid.defesasGridComExtras.defesasGridComFurtividade{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+
+#batalha .defesasGrid > div,
+#batalha .defesasGrid .extraBatalhaBox,
+#batalha .defesasGrid .levelUpBattleCard{
+  min-height:58px!important;
+  padding:7px 5px!important;
+  border:1px solid rgba(15,77,92,.48)!important;
+  border-radius:7px!important;
+  background:#020608!important;
+  box-shadow:none!important;
+}
+
+#batalha .defesasGrid span,
+#batalha .defesasGrid .extraBatalhaBox span,
+#batalha .defesasGrid .levelUpBattleCard span{
+  color:#81949c!important;
+  font-size:8px!important;
+}
+
+#batalha .defesasGrid strong,
+#batalha .defesasGrid .extraBatalhaBox strong,
+#batalha .defesasGrid .levelUpBattleCard strong{
+  color:#f4ede4!important;
+  font-size:17px!important;
+}
+
+#batalha .ajustesDefesasBatalha > summary{
+  color:#c88e58!important;
+  font-size:9.5px!important;
+}
+
+/* ===== Resistências: só as ativas aparecem em destaque; gestão fica secundária ===== */
+#batalha .resistenciasBatalhaHost{
+  padding:10px!important;
+}
+
+#batalha .resistenciasBatalhaPainel{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+#batalha .resistenciasBatalhaPainel h3{
+  margin:0 0 8px!important;
+  color:#e8e3db!important;
+  font-size:12px!important;
+  text-align:left!important;
+}
+
+#batalha .resistenciasAtivasGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;
+  margin:0 0 7px!important;
+}
+
+#batalha .resistenciaChipResumo{
+  min-height:35px!important;
+  border-radius:7px!important;
+  font-size:9px!important;
+  box-shadow:none!important;
+}
+
+#batalha .btnGerenciarResistencias{
+  min-height:35px!important;
+  border-radius:7px!important;
+  border-color:rgba(255,127,34,.32)!important;
+  background:#090705!important;
+  color:#e7b277!important;
+  font-size:9.5px!important;
+}
+
+/* ===== Histórico + inventário: acessos de apoio ===== */
+#batalha .historicoBatalhaDetalhes{
+  margin-top:9px!important;
+  border-radius:8px!important;
+}
+
+#batalha .detalhesBatalha > summary{
+  min-height:50px!important;
+  padding:9px 11px!important;
+}
+
+#batalha .detalhesBatalha > summary span{
+  color:#e8e5df!important;
+  font-size:11px!important;
+}
+
+#batalha .detalhesBatalha > summary small{
+  color:#718087!important;
+  font-size:8px!important;
+}
+
+#batalha .batalhaAcessoRapido{
+  width:100%;
+  min-height:50px;
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:8px;
+  padding:9px 11px;
+  border:1px solid var(--battle-line);
+  border-radius:8px;
+  background:linear-gradient(180deg,#040a0d,#010405);
+  color:#e9e4dc;
+  text-align:left;
+}
+
+#batalha .batalhaAcessoRapido .shinobiIcon{
+  width:24px!important;
+  height:24px!important;
+  opacity:.82;
+}
+
+#batalha .batalhaAcessoRapido span:nth-child(2){display:flex;flex-direction:column;gap:2px}
+#batalha .batalhaAcessoRapido strong{font-size:11px;text-transform:uppercase}
+#batalha .batalhaAcessoRapido small{font-size:8px;color:#718087}
+#batalha .batalhaAcessoRapido b{font-size:20px;color:#ff9c4c;text-align:right}
+
+/* ===== Mobile ===== */
+@media (max-width:560px){
+  #batalha .batalhaViva{padding:12px 9px 16px!important}
+  #batalha .recursosBatalhaVivos{gap:7px!important}
+  #batalha .recursoBatalhaCard{padding:9px!important;min-height:142px!important}
+  #batalha .recursoBatalhaTopo strong{font-size:22px!important}
+  #batalha .recursoBatalhaAcoes{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #batalha .acaoRecurso{min-height:36px!important;font-size:8.5px!important}
+  #batalha .batalhaSecao{padding:9px!important}
+}
+
+@media (max-width:380px){
+  #batalha .batalhaTituloPrincipal{padding-left:34px}
+  #batalha .batalhaTituloPrincipal::before{width:27px;height:27px;font-size:20px}
+  #batalha .batalhaCabecalhoVivo h2{font-size:20px!important}
+  #batalha .recursoBatalhaCard{padding:8px!important}
+  #batalha .recursoBatalhaIcone{width:22px;height:22px;font-size:15px}
+  #batalha .recursoBatalhaTopo > .recursoBatalhaNome{font-size:10px!important;gap:4px!important}
+  #batalha .recursoBatalhaTopo strong{font-size:20px!important}
+  #batalha .acaoRecurso{font-size:8px!important;padding:5px 3px!important}
+}
+
+/* ===== origem: combate-passo5-refino.css ===== */
+/* Ficha Ninja RPG 2.5.8.28 — Passo 5.1: refinamento visual do Combate
+   Somente CSS. Nenhum cálculo, evento, resistência, efeito ou dado salvo é alterado. */
+
+#batalha .batalhaViva{
+  --battle-line:rgba(18,73,88,.34);
+  --battle-line-soft:rgba(18,73,88,.20);
+  --battle-surface:#020607;
+  --battle-surface-2:#04090b;
+}
+
+/* Cabeçalho interno mais enxuto */
+#batalha .batalhaCabecalhoVivo{
+  margin-bottom:9px!important;
+  padding-bottom:8px!important;
+}
+#batalha .batalhaTituloPrincipal{padding-left:35px!important}
+#batalha .batalhaTituloPrincipal::before{
+  width:28px!important;height:28px!important;font-size:20px!important;top:3px!important;
+}
+#batalha .batalhaCabecalhoVivo h2{font-size:21px!important}
+#batalha .batalhaTituloPrincipal > small{font-size:7px!important;letter-spacing:1px!important}
+#batalha .batalhaMenuOpcoes > summary{width:34px!important;height:34px!important;font-size:20px!important}
+
+/* Recursos: mais compactos e com menos vazio interno */
+#batalha .recursoBatalhaCard{
+  min-height:128px!important;
+  padding:9px 9px 8px!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,rgba(8,7,9,.98),rgba(0,0,0,.99))!important;
+  box-shadow:none!important;
+}
+#batalha .recursoBatalhaTopo{margin-bottom:7px!important}
+#batalha .recursoBatalhaTopo strong{font-size:23px!important}
+#batalha .recursoBatalhaTopo strong small{font-size:9px!important}
+#batalha .recursoBatalhaBarra{height:6px!important;margin-bottom:8px!important}
+#batalha .recursoBatalhaIcone{width:23px!important;height:23px!important;font-size:16px!important;border-radius:7px!important}
+#batalha .acaoRecurso{
+  min-height:34px!important;
+  padding:5px 4px!important;
+  border-radius:6px!important;
+  background:linear-gradient(180deg,rgba(74,28,6,.88),rgba(36,13,2,.96))!important;
+  border-color:rgba(255,127,34,.42)!important;
+  font-size:8.7px!important;
+  box-shadow:none!important;
+}
+
+/* Seções: menos peso e menos sensação de card dentro de card */
+#batalha .batalhaSecao{
+  padding:9px!important;
+  border-color:var(--battle-line)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(3,8,10,.98),rgba(0,2,3,.99))!important;
+  box-shadow:none!important;
+}
+#batalha .batalhaSecaoCabecalho{
+  margin-bottom:6px!important;
+  padding-bottom:6px!important;
+  border-bottom-color:var(--battle-line-soft)!important;
+}
+#batalha .batalhaSecaoCabecalho h3,
+#batalha .batalhaSecao h3{font-size:12px!important}
+#batalha .batalhaSecaoAjuda{
+  max-width:42%!important;
+  text-align:right!important;
+  font-size:7px!important;
+  line-height:1.25!important;
+  opacity:.72!important;
+}
+
+/* Efeitos e modificadores mais limpos */
+#batalha .efeitosJutsuAtivos{gap:5px!important;margin-bottom:6px!important}
+#batalha .efeitoJutsuBatalhaCard{
+  padding:7px 8px!important;
+  border-radius:6px!important;
+  border-color:rgba(19,79,94,.34)!important;
+  background:transparent!important;
+}
+#batalha .modificadoresCombatePainel{
+  margin-top:5px!important;
+  padding-top:7px!important;
+  border-top-color:var(--battle-line-soft)!important;
+}
+#batalha .modificadoresCombateCabecalho{margin-bottom:5px!important}
+#batalha .modificadoresCombateCabecalho h3{font-size:10.5px!important}
+#batalha .modificadoresCombateCabecalho small{font-size:7px!important;opacity:.72!important}
+#batalha .modsGrid.modsGridVisivel{gap:4px!important}
+#batalha .modsGrid.modsGridVisivel > div{
+  min-height:46px!important;
+  padding:5px 4px!important;
+  border-radius:6px!important;
+  border-color:rgba(18,73,88,.34)!important;
+  background:transparent!important;
+}
+#batalha .modsGrid.modsGridVisivel span{font-size:7px!important}
+#batalha .modsGrid.modsGridVisivel strong{font-size:15px!important}
+#batalha .bonusResumoVazio{
+  min-height:26px!important;
+  margin-top:5px!important;
+  padding:4px 6px!important;
+  border-style:dashed!important;
+  background:transparent!important;
+  font-size:7.5px!important;
+  opacity:.72!important;
+}
+#batalha .ajustesBonusAtributos > summary{padding-top:7px!important;font-size:9px!important}
+
+/* Salvaguardas: linha simples */
+#batalha .testesResistenciaRetratil{border-radius:8px!important}
+#batalha .testesResistenciaResumo{min-height:48px!important;padding:8px 9px!important}
+#batalha .testesResistenciaResumo small{font-size:6.5px!important}
+#batalha .testesResistenciaResumo strong{font-size:11px!important}
+#batalha .testesResistenciaResumo em{font-size:8px!important}
+
+/* Defesas: consulta realmente rápida */
+#batalha .defesasGrid,
+#batalha .defesasGrid.defesasGridComExtras,
+#batalha .defesasGrid.defesasGridComFurtividade,
+#batalha .defesasGrid.defesasGridComExtras.defesasGridComFurtividade{
+  gap:4px!important;
+}
+#batalha .defesasGrid > div,
+#batalha .defesasGrid .extraBatalhaBox,
+#batalha .defesasGrid .levelUpBattleCard{
+  min-height:50px!important;
+  padding:5px 4px!important;
+  border-radius:6px!important;
+  border-color:rgba(18,73,88,.34)!important;
+  background:transparent!important;
+}
+#batalha .defesasGrid span,
+#batalha .defesasGrid .extraBatalhaBox span,
+#batalha .defesasGrid .levelUpBattleCard span{font-size:7px!important}
+#batalha .defesasGrid strong,
+#batalha .defesasGrid .extraBatalhaBox strong,
+#batalha .defesasGrid .levelUpBattleCard strong{font-size:15px!important}
+#batalha .ajustesDefesasBatalha > summary{font-size:8.5px!important;padding-top:6px!important}
+
+/* Resistências: substitui os blocos verdes por chips escuros e discretos */
+#batalha .resistenciasBatalhaHost{padding:9px!important}
+#batalha .resistenciasBatalhaPainel h3{margin-bottom:6px!important;font-size:11px!important}
+#batalha .resistenciasAtivasGrid{gap:5px!important;margin-bottom:6px!important}
+#batalha .resistenciaChipResumo{
+  min-height:32px!important;
+  padding:5px 8px!important;
+  border-radius:6px!important;
+  border:1px solid rgba(46,177,104,.36)!important;
+  background:linear-gradient(180deg,rgba(8,25,17,.92),rgba(2,10,7,.96))!important;
+  color:#bdf4cf!important;
+  font-size:8.5px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+#batalha .resistenciaChipResumo.resistenciaNaturezaAuto{
+  border-color:rgba(255,115,66,.42)!important;
+  background:linear-gradient(180deg,rgba(38,14,8,.92),rgba(15,5,3,.97))!important;
+  color:#ffc2a6!important;
+}
+#batalha .resistenciaChipResumo.imunidadeNaturezaAuto{
+  border-color:rgba(194,108,255,.44)!important;
+  background:linear-gradient(180deg,rgba(28,12,40,.93),rgba(10,4,14,.97))!important;
+  color:#e1b7ff!important;
+}
+#batalha .btnGerenciarResistencias{
+  min-height:32px!important;
+  margin-top:5px!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  border-color:rgba(255,127,34,.28)!important;
+  color:#dba36d!important;
+  font-size:8.7px!important;
+  box-shadow:none!important;
+}
+
+/* Final da tela: acessos mais finos */
+#batalha .historicoBatalhaDetalhes{margin-top:7px!important;border-radius:7px!important}
+#batalha .detalhesBatalha > summary{min-height:44px!important;padding:7px 9px!important}
+#batalha .detalhesBatalha > summary span{font-size:10px!important}
+#batalha .detalhesBatalha > summary small{font-size:7px!important}
+#batalha .batalhaAcessoRapido{
+  min-height:44px!important;
+  margin-top:6px!important;
+  padding:7px 9px!important;
+  border-radius:7px!important;
+  grid-template-columns:26px minmax(0,1fr) 16px!important;
+  background:linear-gradient(180deg,rgba(3,8,10,.98),rgba(0,2,3,.99))!important;
+  box-shadow:none!important;
+}
+#batalha .batalhaAcessoRapido .shinobiIcon{width:20px!important;height:20px!important}
+#batalha .batalhaAcessoRapido strong{font-size:10px!important}
+#batalha .batalhaAcessoRapido small{font-size:7px!important}
+#batalha .batalhaAcessoRapido b{font-size:18px!important}
+
+@media (max-width:430px){
+  #batalha .batalhaViva{padding-left:8px!important;padding-right:8px!important}
+  #batalha .recursoBatalhaCard{min-height:122px!important;padding:8px!important}
+  #batalha .recursoBatalhaTopo strong{font-size:21px!important}
+  #batalha .acaoRecurso{min-height:32px!important;font-size:8px!important}
+  #batalha .batalhaSecao{padding:8px!important}
+  #batalha .resistenciaChipResumo{font-size:8px!important;padding-inline:6px!important}
+}
+
+/* ===== origem: combate-passo5-polimento.css ===== */
+/* Ficha Ninja RPG 2.5.8.29 — Passo 5.2: polimento final do Combate
+   Somente apresentação. Mantém IDs, eventos, cálculos, resistências e salvamento intactos. */
+
+#batalha .batalhaViva{
+  --battle-teal:#123846;
+  --battle-teal-soft:rgba(27,91,108,.26);
+  --battle-teal-line:rgba(40,112,130,.34);
+  --battle-text:#f2eadf;
+  --battle-muted:#7f9098;
+  --battle-orange:#ff7f22;
+  --battle-red:#ff3150;
+  --battle-purple:#b84dff;
+  padding:11px 10px 18px!important;
+}
+
+/* Cabeçalho: forte, mas sem roubar altura do turno. */
+#batalha .batalhaCabecalhoVivo{
+  min-height:48px!important;
+  margin-bottom:8px!important;
+  padding:0 0 7px!important;
+}
+#batalha .batalhaTituloPrincipal{padding-left:32px!important}
+#batalha .batalhaTituloPrincipal::before{
+  width:24px!important;height:24px!important;top:4px!important;font-size:18px!important;
+}
+#batalha .batalhaCabecalhoSelo{font-size:7px!important;letter-spacing:1.15px!important}
+#batalha .batalhaCabecalhoVivo h2{font-size:20px!important;margin:1px 0!important}
+#batalha .batalhaTituloPrincipal > small{font-size:6.5px!important;letter-spacing:1px!important}
+#batalha .batalhaMenuOpcoes > summary{width:32px!important;height:32px!important;border-radius:7px!important}
+
+/* PV / EKO: informação primeiro, ação logo abaixo. */
+#batalha .recursosBatalhaVivos{gap:7px!important;margin-bottom:8px!important}
+#batalha .recursoBatalhaCard{
+  min-height:112px!important;
+  padding:8px 9px!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,rgba(6,7,9,.99),#000)!important;
+}
+#batalha .recursoBatalhaPv{border-color:rgba(255,49,80,.58)!important}
+#batalha .recursoBatalhaChakra{border-color:rgba(184,77,255,.62)!important}
+#batalha .recursoBatalhaTopo{margin-bottom:5px!important}
+#batalha .recursoBatalhaNome{font-size:10.5px!important;gap:6px!important}
+#batalha .recursoBatalhaIcone{width:21px!important;height:21px!important;font-size:14px!important;border-radius:6px!important}
+#batalha .recursoBatalhaTopo strong{font-size:21px!important;letter-spacing:-.35px!important}
+#batalha .recursoBatalhaTopo strong small{font-size:8px!important;margin-left:2px!important}
+#batalha .recursoBatalhaBarra{height:5px!important;margin:0 0 7px!important}
+#batalha .recursoBatalhaAcoes{gap:5px!important}
+#batalha .acaoRecurso{
+  min-height:30px!important;
+  padding:4px 3px!important;
+  border-radius:6px!important;
+  background:rgba(82,28,5,.42)!important;
+  border-color:rgba(255,127,34,.34)!important;
+  color:#f2c69d!important;
+  font-size:7.9px!important;
+  font-weight:850!important;
+}
+#batalha .acaoRecurso:active{background:rgba(116,41,7,.58)!important}
+
+/* Todas as seções usam a mesma superfície discreta do Status. */
+#batalha .batalhaSecao{
+  margin-top:7px!important;
+  padding:8px!important;
+  border:1px solid var(--battle-teal-line)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(3,8,10,.98),rgba(0,3,4,.99))!important;
+}
+#batalha .batalhaSecaoCabecalho{
+  margin-bottom:5px!important;
+  padding-bottom:5px!important;
+  border-bottom:1px solid var(--battle-teal-soft)!important;
+}
+#batalha .batalhaSecaoSelo{font-size:6.5px!important;letter-spacing:1.25px!important}
+#batalha .batalhaSecaoCabecalho h3,
+#batalha .batalhaSecao h3{font-size:10.5px!important;letter-spacing:.25px!important}
+#batalha .batalhaSecaoAjuda{
+  max-width:38%!important;
+  font-size:6.2px!important;
+  line-height:1.18!important;
+  color:#66767d!important;
+}
+
+/* Efeitos/modificadores: um único painel, sem seis mini-cards competindo entre si. */
+#batalha .efeitosJutsuAtivos{gap:4px!important;margin-bottom:5px!important}
+#batalha .efeitoJutsuBatalhaCard{
+  padding:6px 7px!important;
+  border:0!important;
+  border-bottom:1px solid var(--battle-teal-soft)!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+#batalha .modificadoresCombatePainel{
+  margin-top:4px!important;
+  padding-top:5px!important;
+  border-top:0!important;
+}
+#batalha .modificadoresCombateCabecalho{margin-bottom:5px!important}
+#batalha .modificadoresCombateCabecalho h3{font-size:9.5px!important}
+#batalha .modificadoresCombateCabecalho small{font-size:6.3px!important;color:#65767d!important}
+#batalha .modsGrid.modsGridVisivel{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;
+  overflow:hidden!important;
+  border:1px solid var(--battle-teal-soft)!important;
+  border-radius:7px!important;
+  background:rgba(0,0,0,.18)!important;
+}
+#batalha .modsGrid.modsGridVisivel > div{
+  min-height:42px!important;
+  padding:5px 3px!important;
+  border:0!important;
+  border-right:1px solid var(--battle-teal-soft)!important;
+  border-bottom:1px solid var(--battle-teal-soft)!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+#batalha .modsGrid.modsGridVisivel > div:nth-child(3n){border-right:0!important}
+#batalha .modsGrid.modsGridVisivel > div:nth-last-child(-n+3){border-bottom:0!important}
+#batalha .modsGrid.modsGridVisivel span{font-size:6.3px!important;letter-spacing:.45px!important}
+#batalha .modsGrid.modsGridVisivel strong{font-size:14px!important}
+#batalha .bonusResumoCompacto{margin-top:3px!important}
+#batalha .bonusResumoVazio{
+  min-height:0!important;
+  margin:4px 0 0!important;
+  padding:3px 2px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#5f6d73!important;
+  font-size:6.5px!important;
+}
+#batalha .ajustesBonusAtributos{margin-top:4px!important}
+#batalha .ajustesBonusAtributos > summary{padding:6px 1px 0!important;font-size:8px!important}
+
+/* Salvaguardas: linha de consulta, nada mais. */
+#batalha .testesResistenciaRetratil{border-radius:8px!important}
+#batalha .testesResistenciaResumo{
+  min-height:43px!important;
+  padding:6px 8px!important;
+  background:transparent!important;
+}
+#batalha .testesResistenciaResumo small{font-size:5.8px!important;letter-spacing:1px!important}
+#batalha .testesResistenciaResumo strong{font-size:9.8px!important}
+#batalha .testesResistenciaResumo em{font-size:7px!important;color:#d99c62!important}
+
+/* Defesas: uma grade única com divisórias, seguindo o padrão clean do Status. */
+#batalha .defesasGrid,
+#batalha .defesasGrid.defesasGridComExtras,
+#batalha .defesasGrid.defesasGridComFurtividade,
+#batalha .defesasGrid.defesasGridComExtras.defesasGridComFurtividade{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;
+  overflow:hidden!important;
+  border:1px solid var(--battle-teal-soft)!important;
+  border-radius:7px!important;
+  background:rgba(0,0,0,.16)!important;
+}
+#batalha .defesasGrid > div,
+#batalha .defesasGrid .extraBatalhaBox,
+#batalha .defesasGrid .levelUpBattleCard{
+  min-height:43px!important;
+  padding:5px 3px!important;
+  border:0!important;
+  border-right:1px solid var(--battle-teal-soft)!important;
+  border-bottom:1px solid var(--battle-teal-soft)!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+#batalha .defesasGrid > div:nth-child(3n),
+#batalha .defesasGrid .extraBatalhaBox:nth-child(3n){border-right:0!important}
+#batalha .defesasGrid span,
+#batalha .defesasGrid .extraBatalhaBox span,
+#batalha .defesasGrid .levelUpBattleCard span{font-size:6px!important;letter-spacing:.45px!important}
+#batalha .defesasGrid strong,
+#batalha .defesasGrid .extraBatalhaBox strong,
+#batalha .defesasGrid .levelUpBattleCard strong{font-size:14px!important}
+#batalha .ajustesDefesasBatalha{margin-top:4px!important}
+#batalha .ajustesDefesasBatalha > summary{font-size:7.5px!important;padding-top:5px!important}
+
+/* Resistências: indicadores de ficha, não botões verdes. */
+#batalha .resistenciasBatalhaHost{padding:8px!important}
+#batalha .resistenciasBatalhaPainel h3{margin:0 0 5px!important;font-size:9.8px!important}
+#batalha .resistenciasAtivasGrid{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:5px!important;
+  margin:0 0 5px!important;
+}
+#batalha .resistenciaChipResumo{
+  width:auto!important;
+  min-width:0!important;
+  min-height:27px!important;
+  padding:4px 9px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:5px!important;
+  border:1px solid rgba(72,129,142,.34)!important;
+  border-radius:999px!important;
+  background:rgba(6,17,20,.72)!important;
+  color:#c6d6da!important;
+  font-size:7.6px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+#batalha .resistenciaChipResumo::before{
+  content:"";
+  width:5px;height:5px;border-radius:50%;
+  flex:0 0 5px;
+  background:#53d98a;
+  box-shadow:0 0 7px rgba(83,217,138,.38);
+}
+#batalha .resistenciaChipResumo.resistenciaNaturezaAuto{
+  border-color:rgba(255,111,69,.34)!important;
+  background:rgba(32,11,7,.52)!important;
+  color:#eeb8a4!important;
+}
+#batalha .resistenciaChipResumo.resistenciaNaturezaAuto::before{
+  background:#ff7047;
+  box-shadow:0 0 7px rgba(255,112,71,.38);
+}
+#batalha .resistenciaChipResumo.imunidadeNaturezaAuto{
+  border-color:rgba(185,96,241,.36)!important;
+  background:rgba(25,9,34,.52)!important;
+  color:#d9b4ed!important;
+}
+#batalha .resistenciaChipResumo.imunidadeNaturezaAuto::before{background:#b960f1}
+#batalha .btnGerenciarResistencias{
+  min-height:28px!important;
+  margin-top:3px!important;
+  border:0!important;
+  border-top:1px solid var(--battle-teal-soft)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#bf8e64!important;
+  font-size:7.8px!important;
+}
+
+/* Histórico e inventário como atalhos finais. */
+#batalha .historicoBatalhaDetalhes{margin-top:7px!important}
+#batalha .detalhesBatalha > summary,
+#batalha .batalhaAcessoRapido{
+  min-height:40px!important;
+  padding:6px 8px!important;
+  border-radius:7px!important;
+}
+#batalha .detalhesBatalha > summary span,
+#batalha .batalhaAcessoRapido strong{font-size:9px!important}
+#batalha .detalhesBatalha > summary small,
+#batalha .batalhaAcessoRapido small{font-size:6px!important;color:#67777e!important}
+#batalha .batalhaAcessoRapido{grid-template-columns:23px minmax(0,1fr) 14px!important}
+#batalha .batalhaAcessoRapido .shinobiIcon{width:18px!important;height:18px!important}
+#batalha .batalhaAcessoRapido b{font-size:16px!important}
+
+@media (max-width:430px){
+  #batalha .batalhaViva{padding-left:7px!important;padding-right:7px!important}
+  #batalha .recursoBatalhaCard{min-height:108px!important;padding:7px 8px!important}
+  #batalha .recursoBatalhaTopo strong{font-size:20px!important}
+  #batalha .acaoRecurso{min-height:29px!important;font-size:7.4px!important}
+  #batalha .batalhaSecao{padding:7px!important}
+  #batalha .resistenciaChipResumo{font-size:7.2px!important;padding:4px 8px!important}
+}
+
+@media (max-width:360px){
+  #batalha .recursosBatalhaVivos{gap:5px!important}
+  #batalha .recursoBatalhaCard{padding:7px!important}
+  #batalha .recursoBatalhaTopo strong{font-size:18px!important}
+  #batalha .recursoBatalhaNome{font-size:9.7px!important}
+  #batalha .acaoRecurso{font-size:6.9px!important;padding-inline:2px!important}
+}
+
+/* ===== origem: combate-passo5-fechamento.css ===== */
+/* Ficha Ninja RPG 2.5.8.30 — Passo 5.3: fechamento visual do Combate
+   Somente apresentação. Não altera cálculos, eventos ou dados. */
+
+/* Quando não há bônus temporários, remove o estado vazio e comprime a área. */
+#batalha .modificadoresCombatePainel.semBonusTemporario .bonusResumoCompacto{
+  display:none!important;
+}
+
+#batalha .modificadoresCombatePainel.semBonusTemporario{
+  padding-bottom:0!important;
+}
+
+#batalha .modificadoresCombatePainel.semBonusTemporario .ajustesBonusAtributos{
+  margin-top:2px!important;
+}
+
+#batalha .modificadoresCombatePainel.semBonusTemporario .ajustesBonusAtributos > summary{
+  padding-top:5px!important;
+}
+
+/* Acabamento final: menos espaço morto sem perder conforto de toque. */
+#batalha .efeitosBatalhaSecao{
+  padding-bottom:6px!important;
+}
+
+#batalha .efeitosBatalhaSecao .modificadoresCombatePainel{
+  margin-bottom:0!important;
+}
+
+#batalha .modsGrid.modsGridVisivel > div{
+  min-height:40px!important;
+}
+
+#batalha .defesasGrid > div{
+  min-height:39px!important;
+}
+
+#batalha .resistenciasBatalhaPainel{
+  padding-bottom:7px!important;
+}
+
+#batalha .historicoBatalhaDetalhes,
+#batalha .batalhaAcessoRapido{
+  margin-bottom:0!important;
+}
+
+@media (max-width:430px){
+  #batalha .efeitosBatalhaSecao{padding-bottom:5px!important;}
+  #batalha .modsGrid.modsGridVisivel > div{min-height:38px!important;}
+  #batalha .defesasGrid > div{min-height:37px!important;}
+}
