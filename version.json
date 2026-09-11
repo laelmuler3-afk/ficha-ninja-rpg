@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.16",
-  "name": "Level Up correto + recuperação de autenticação",
-  "notes": "Chakra-base permanece apenas como referência e não é somado no Level Up. Mantido Sarutobi com d10 de Chakra. Login Google recebeu fallback de persistência, nova tentativa para auth/internal-error e troca segura de usuário anônimo por Conta Google sem depender de redirect entre domínios.",
+  "version": "2.5.8.17",
+  "name": "Atualização PWA confiável entre dispositivos",
+  "notes": "Força a descoberta do Service Worker pela versão publicada, melhora a detecção de atualização em PWA instalado e mantém as correções de Level Up, Sarutobi D10 e autenticação da 2.5.8.16.",
   "date": "2026-09-10"
 }
