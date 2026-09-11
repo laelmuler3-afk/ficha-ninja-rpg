@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.39",
-  "name": "Consolidação CSS + atualização confiável",
-  "notes": "Consolida camadas CSS incrementais sem alterar a ordem visual, remove duplicatas mortas da raiz e usa network-first para CSS/JS/JSON com fallback offline.",
+  "version": "2.5.8.40",
+  "name": "Passo 6.6 — Jutsus + Ataques sem resíduo marrom",
+  "notes": "Parte da base consolidada 2.5.8.39 e remove fisicamente as camadas visuais acumuladas de Jutsus/Ataques, mantendo uma única superfície AMOLED/petróleo sem gradiente quente ou fade marrom.",
   "date": "2026-09-11"
 }
