@@ -16,87 +16,93 @@
   border-radius:8px!important;
 }
 
-/* Naturezas: cada afinidade vira uma linha compacta, mantendo os 7 níveis clicáveis. */
+/* Naturezas: uma única linha limpa por afinidade, sem cards internos. */
 #atributos .statusNaturezasPainel #naturezasUI{
   display:grid!important;
   grid-template-columns:1fr!important;
-  gap:7px!important;
+  gap:6px!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
-  min-height:56px!important;
-  padding:8px 10px!important;
+  min-height:54px!important;
+  width:100%!important;
+  margin:0!important;
+  padding:7px 9px!important;
   display:grid!important;
-  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-columns:minmax(150px,1fr) auto!important;
   align-items:center!important;
-  gap:10px!important;
+  gap:9px!important;
+  border:1px solid rgba(12,102,122,.30)!important;
   border-radius:8px!important;
-  background:
-    radial-gradient(circle at 5% 50%,color-mix(in srgb,var(--element-color) 9%,transparent),transparent 34%),
-    linear-gradient(180deg,#050b0e,#010304)!important;
-  border-color:rgba(12,102,122,.30)!important;
+  background:linear-gradient(180deg,rgba(4,10,13,.98),rgba(1,4,5,.99))!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
 }
-#atributos .statusNaturezasPainel #naturezasUI .naturezaCard::after{
-  display:none!important;
-}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaCard::after{display:none!important}
 #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{
+  min-width:0!important;
   display:grid!important;
   grid-template-columns:34px minmax(0,1fr)!important;
   align-items:center!important;
   gap:9px!important;
-  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{
-  width:34px!important;
-  height:34px!important;
-  display:grid!important;
-  place-items:center!important;
-  border-radius:50%!important;
-  background:rgba(255,255,255,.025)!important;
+  width:34px!important;height:34px!important;display:grid!important;place-items:center!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:50%!important;
+  background:rgba(255,255,255,.025)!important;box-shadow:none!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaIdentificacao{
-  display:flex!important;
-  align-items:baseline!important;
-  gap:7px!important;
-  min-width:0!important;
+  min-width:0!important;display:flex!important;align-items:baseline!important;gap:8px!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{
-  margin:0!important;
-  font-size:15px!important;
-  line-height:1!important;
-  white-space:nowrap!important;
+  margin:0!important;padding:0!important;border:0!important;background:transparent!important;
+  font-size:14px!important;line-height:1!important;white-space:nowrap!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{
-  margin:0!important;
-  font-size:11px!important;
-  color:#cfc1ae!important;
-  white-space:nowrap!important;
+  flex:0 0 auto!important;margin:0!important;color:#d5c7b3!important;font-size:10.5px!important;white-space:nowrap!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{
-  display:grid!important;
-  grid-template-columns:repeat(7,15px)!important;
-  grid-auto-rows:15px!important;
-  gap:5px!important;
-  align-items:center!important;
-  justify-content:end!important;
-  padding:0!important;
-  min-width:max-content!important;
+  display:grid!important;grid-template-columns:repeat(7,14px)!important;grid-auto-rows:14px!important;
+  gap:5px!important;align-items:center!important;justify-content:end!important;min-width:max-content!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel{
-  width:15px!important;
-  min-width:15px!important;
-  height:15px!important;
-  min-height:15px!important;
-  padding:0!important;
-  margin:0!important;
-  border:0!important;
-  background:transparent!important;
+  width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;
+  margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;
 }
 #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{
-  width:15px!important;
-  min-width:15px!important;
-  height:15px!important;
-  min-height:15px!important;
-  border-width:1.5px!important;
+  display:block!important;width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;
+  margin:0!important;padding:0!important;border-width:1.5px!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha.ativa{
+  box-shadow:0 0 8px color-mix(in srgb,var(--element-color) 48%,transparent)!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNivel small{display:none!important}
+
+@media(max-width:520px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+    min-height:50px!important;padding:6px 7px!important;grid-template-columns:minmax(125px,1fr) auto!important;gap:6px!important;
+  }
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{grid-template-columns:29px minmax(0,1fr)!important;gap:6px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{width:29px!important;height:29px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{font-size:12.5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{font-size:9.5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,12px)!important;grid-auto-rows:12px!important;gap:4px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:12px!important;min-width:12px!important;height:12px!important;min-height:12px!important}
+}
+@media(max-width:370px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{grid-template-columns:minmax(112px,1fr) auto!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,10px)!important;grid-auto-rows:10px!important;gap:3px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:10px!important;min-width:10px!important;height:10px!important;min-height:10px!important}
 }
 
 /* Kekkei: visual de ação secundária, integrado ao bloco. */
