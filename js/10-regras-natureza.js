@@ -1,11 +1,11 @@
-/* Shinobi 1.8.2 — Naturezas + integração com efeitos automáticos de batalha. */
+/* Shinobi 1.8.3 — Naturezas + integração com efeitos automáticos de batalha. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV182) return;
-  window.__regrasNaturezaChakraV182 = true;
+  if(window.__regrasNaturezaChakraV183) return;
+  window.__regrasNaturezaChakraV183 = true;
 
-  const VERSAO = "1.8.2";
+  const VERSAO = "1.8.3";
 
   const NATUREZAS = [
     {id:"katon", nome:"KATON", icone:"🔥", classe:"katon", resistenciaId:"katon", resistenciaNome:"Katon / Fogo"},
@@ -441,17 +441,12 @@
       </option>
     `).join("");
 
-    const resumo = conjuracao.atributoId && conjuracao.modificador !== null
-      ? `${conjuracao.atributoNome}: ${conjuracao.valor} · Mod. ${comSinal(conjuracao.modificador)}`
-      : "Escolha o atributo usado para conjurar os jutsus.";
-
     painel.innerHTML = `
       <label for="atributoConjuracaoNatureza">Atributo de Conjuração</label>
       <select id="atributoConjuracaoNatureza">${opcoes}</select>
       <button type="button" class="conjuracaoBeneficiosToggle ${beneficiosNaturezaAberto ? "aberto" : ""}" aria-expanded="${beneficiosNaturezaAberto ? "true" : "false"}" aria-controls="naturezaBeneficiosPainel" aria-label="Mostrar benefícios cumulativos dos níveis" title="Benefícios cumulativos dos níveis">
         <span class="conjuracaoBeneficiosSeta" aria-hidden="true"></span>
       </button>
-      <span class="conjuracaoNaturezaResumo">${resumo}</span>
       <div id="naturezaBeneficiosPainel" class="naturezaBeneficiosPainel ${beneficiosNaturezaAberto ? "aberto" : ""}" ${beneficiosNaturezaAberto ? "" : "hidden"}>
         <div class="naturezaBeneficiosCabecalho">
           <strong>Benefícios cumulativos dos níveis</strong>
@@ -507,16 +502,15 @@
         }).join("");
 
         return `
-          <div class="naturezaCard ${natureza.classe}">
-            <div class="naturezaInfo">
+          <article class="naturezaCard ${natureza.classe}">
+            <span class="naturezaInfo">
               <span class="naturezaIcone">${natureza.icone}</span>
-              <div class="naturezaIdentificacao">
-                <div class="naturezaNome">${natureza.nome}</div>
-                <span class="naturezaNivelTexto">${nivelAtual}/7</span>
-              </div>
-            </div>
-            <div class="naturezaLinha naturezaLinhaSete">${niveis}</div>
-          </div>
+              <span class="naturezaIdentificacao">
+                <span class="naturezaNome">${natureza.nome}</span>
+              </span>
+            </span>
+            <span class="naturezaLinha naturezaLinhaSete">${niveis}</span>
+          </article>
         `;
       }).join("");
     }finally{
