@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.18",
-  "name": "Nível abre a progressão",
-  "notes": "Transforma o número do nível na Home em gatilho da progressão: ao tocar, abre o fluxo do próximo nível, incluindo rolagens, escolhas e características pendentes. Mantém as correções anteriores de atualização PWA, Level Up, Sarutobi D10 e autenticação.",
+  "version": "2.5.8.19",
+  "name": "Passo 4 — Status",
+  "notes": "Redesign visual da área Status com hierarquia própria, atributos em grade temática, perícias e naturezas reorganizadas. Nenhuma regra, cálculo ou chave de dados foi alterada.",
   "date": "2026-09-10"
 }
