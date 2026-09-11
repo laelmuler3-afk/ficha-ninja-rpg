@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.15 — Passo 3 do redesign: cabeçalho e navegação responsiva.
+/* Shinobi 2.5.8.16 — Correção de Level Up e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.15";
+const APP_VERSION = "2.5.8.16";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.15",
-  "name": "Passo 3 — Cabeçalho e navegação",
-  "notes": "Refinamento estrutural e visual do cabeçalho e da navegação inferior, com responsividade, safe areas e estados ativos. Mantidas as seis rotas e toda a lógica existente; nenhum símbolo de propriedade de terceiros foi adicionado.",
+  "version": "2.5.8.16",
+  "name": "Level Up correto + recuperação de autenticação",
+  "notes": "Chakra-base permanece apenas como referência e não é somado no Level Up. Mantido Sarutobi com d10 de Chakra. Login Google recebeu fallback de persistência, nova tentativa para auth/internal-error e troca segura de usuário anônimo por Conta Google sem depender de redirect entre domínios.",
   "date": "2026-09-10"
 }
