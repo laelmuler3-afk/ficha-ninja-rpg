@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.34",
-  "name": "Passo 6.1 — Ataques harmonizados (cache corrigido)",
-  "notes": "Corrige o desalinhamento de versão/cache da 2.5.8.33 e garante o carregamento do novo layout de Ataques. Mantém as mudanças visuais e toda a lógica de uso, edição e inventário.",
+  "version": "2.5.8.35",
+  "name": "Passo 6.2 — Jutsus e Ataques Neon",
+  "notes": "Aplica o visual AMOLED/neon aprovado em Jutsus e Ataques: superfícies preto e azul-petróleo, acentos neon por natureza, ataques sem tonalidade marrom pesada e punho desarmado com tom de pele natural. Mantém toda a lógica existente.",
   "date": "2026-09-11"
 }
