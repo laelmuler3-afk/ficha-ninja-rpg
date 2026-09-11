@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.21",
-  "name": "Passo 4.2 — Progressão por toque",
-  "notes": "Remove o resumo permanente de Progressão do Status. O número do nível abre um painel retrátil com os mesmos dados de progressão, histórico e acesso seguro ao Level Up. Nenhum cálculo foi alterado.",
+  "version": "2.5.8.23",
+  "name": "Passo 4.4 — Conjuração compacta com benefícios retráteis",
+  "notes": "Mantém o seletor compacto de Atributo de Conjuração e adiciona uma seta retrátil ao lado do seletor para abrir ou fechar a lista de benefícios cumulativos dos níveis, sem alterar cálculos, eventos ou dados salvos.",
   "date": "2026-09-11"
 }
