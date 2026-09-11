@@ -1,4 +1,4 @@
-/* Ficha Ninja RPG 2.5.8.31 — Passo 6: Jutsus com navegação visual por grupos. */
+/* Ficha Ninja RPG 2.5.8.32 — Passo 6: Jutsus com navegação visual por grupos. */
 (function(){
   "use strict";
 
