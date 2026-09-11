@@ -1,11 +1,11 @@
-/* Shinobi 1.8.1 — Naturezas + integração com efeitos automáticos de batalha. */
+/* Shinobi 1.8.2 — Naturezas + integração com efeitos automáticos de batalha. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV181) return;
-  window.__regrasNaturezaChakraV181 = true;
+  if(window.__regrasNaturezaChakraV182) return;
+  window.__regrasNaturezaChakraV182 = true;
 
-  const VERSAO = "1.8.1";
+  const VERSAO = "1.8.2";
 
   const NATUREZAS = [
     {id:"katon", nome:"KATON", icone:"🔥", classe:"katon", resistenciaId:"katon", resistenciaNome:"Katon / Fogo"},
@@ -72,6 +72,7 @@
   let renderizandoJutsus = false;
   let renderizandoNaturezas = false;
   let renderizandoResistencias = false;
+  let beneficiosNaturezaAberto = false;
 
   function numeroSeguro(valor, fallback=0){
     const numero = Number(String(valor ?? "").trim().replace(",", "."));
@@ -447,18 +448,42 @@
     painel.innerHTML = `
       <label for="atributoConjuracaoNatureza">Atributo de Conjuração</label>
       <select id="atributoConjuracaoNatureza">${opcoes}</select>
+      <button type="button" class="conjuracaoBeneficiosToggle ${beneficiosNaturezaAberto ? "aberto" : ""}" aria-expanded="${beneficiosNaturezaAberto ? "true" : "false"}" aria-controls="naturezaBeneficiosPainel" aria-label="Mostrar benefícios cumulativos dos níveis" title="Benefícios cumulativos dos níveis">
+        <span class="conjuracaoBeneficiosSeta" aria-hidden="true"></span>
+      </button>
       <span class="conjuracaoNaturezaResumo">${resumo}</span>
-      <details class="naturezaRegrasDetalhes">
-        <summary>Benefícios cumulativos dos níveis</summary>
+      <div id="naturezaBeneficiosPainel" class="naturezaBeneficiosPainel ${beneficiosNaturezaAberto ? "aberto" : ""}" ${beneficiosNaturezaAberto ? "" : "hidden"}>
+        <div class="naturezaBeneficiosCabecalho">
+          <strong>Benefícios cumulativos dos níveis</strong>
+        </div>
         <ol>
           ${Object.entries(BENEFICIOS).map(([nivel, texto]) => `<li><b>Nível ${nivel}:</b> ${texto}.</li>`).join("")}
         </ol>
-      </details>
+      </div>
     `;
 
     painel.querySelector("#atributoConjuracaoNatureza")?.addEventListener("change", evento => {
       definirAtributoConjuracaoNaturezaComRegras(evento.target.value);
     });
+
+    const toggle = painel.querySelector('.conjuracaoBeneficiosToggle');
+    const beneficios = painel.querySelector('#naturezaBeneficiosPainel');
+    const sincronizarBeneficios = ()=>{
+      const aberto = !!beneficiosNaturezaAberto;
+      if(toggle){
+        toggle.classList.toggle('aberto', aberto);
+        toggle.setAttribute('aria-expanded', String(aberto));
+      }
+      if(beneficios){
+        beneficios.hidden = !aberto;
+        beneficios.classList.toggle('aberto', aberto);
+      }
+    };
+    toggle?.addEventListener('click', ()=>{
+      beneficiosNaturezaAberto = !beneficiosNaturezaAberto;
+      sincronizarBeneficios();
+    });
+    sincronizarBeneficios();
   }
 
   function renderizarNaturezasComRegras(){
