@@ -423,21 +423,10 @@
 
   function abrirProgressaoPeloNivel(){
     if(!regras) return;
-    const atual=nivelAtual();
-    if(precisaConfigurarNivelUm()){
-      abrirConfiguracaoNivelUm();
-      return;
-    }
-    const pendentes=escolhasPendentesAte(atual);
-    if(pendentes.length){
-      abrirEscolhasPendentes();
-      return;
-    }
-    if(atual>=inteiro(regras.maxLevel,20)){
-      abrirProgressaoFixa();
-      return;
-    }
-    abrirLevelUp();
+    // O número do nível abre primeiro o painel completo da progressão atual.
+    // A partir dele o jogador pode iniciar o próximo Level Up, concluir escolhas
+    // pendentes, configurar o nível 1 ou consultar o histórico.
+    abrirProgressaoFixa();
   }
 
   function ligarEdicaoManualNivel(){
@@ -449,9 +438,9 @@
     // Ele vira o gatilho oficial para abrir a progressão do próximo nível,
     // garantindo que rolagens, escolhas e características sejam preenchidas.
     campo.readOnly=true;
-    campo.setAttribute("aria-label","Nível atual. Toque para abrir a progressão e subir para o próximo nível.");
+    campo.setAttribute("aria-label","Nível atual. Toque para abrir a progressão do personagem.");
     campo.setAttribute("role","button");
-    campo.setAttribute("title","Abrir progressão de nível");
+    campo.setAttribute("title","Abrir progressão do personagem");
     campo.tabIndex=0;
 
     const abrir=evento=>{
@@ -1199,20 +1188,58 @@
     if(!regras) return;
     const atual=nivelAtual();
     const fixos=valoresFixos(atual);
-    const ativos=fixos.caracteristicas.map(id=>({id,...(regras.features?.[id]||{name:id,description:""})}));
     const historico=[...(estado.progressaoFixa?.history||[])].reverse();
     const escolhas=Object.entries(estado.progressaoFixa?.choices||{});
     const vital=estado.progressaoFixa?.vital||{};
+    const pendentes=escolhasPendentesAte(atual);
+    const quantidadePendente=totalSelecoesPendentesAte(atual);
+    const configurarNivel1=precisaConfigurarNivelUm();
+    const maximo=atual>=inteiro(regras.maxLevel,20);
+
+    let acaoPrimaria="abrirLevelUp()";
+    let textoPrimario="Subir de nível";
+    if(configurarNivel1){
+      acaoPrimaria="abrirConfiguracaoNivelUm()";
+      textoPrimario="Configurar nível 1";
+    }else if(pendentes.length){
+      acaoPrimaria="abrirEscolhasPendentes()";
+      textoPrimario=`Completar ${quantidadePendente} escolha${quantidadePendente===1?"":"s"}`;
+    }
+
     const corpo=`
-      <header class="levelUpModalCabecalho"><div><span class="levelUpModalSelo">Progressão atual</span><h2>Nível ${atual}</h2></div><button type="button" class="levelUpFechar" onclick="fecharLevelUp()" aria-label="Fechar">×</button></header>
+      <header class="levelUpModalCabecalho">
+        <div><span class="levelUpModalSelo">Progressão atual</span><h2>Nível ${atual}</h2></div>
+        <button type="button" class="levelUpFechar" onclick="fecharLevelUp()" aria-label="Fechar">×</button>
+      </header>
       <div class="levelUpModalCorpo">
-        <div class="levelUpComparacao">${comparacao("Proficiência",`+${fixos.proficiencia}`,`+${fixos.proficiencia}`)}${comparacao("Rank máximo de Jutsu",fixos.rankJutsu,fixos.rankJutsu)}${comparacao("Pontos-chave totais",fixos.pontosChave,fixos.pontosChave)}${comparacao("Pontos de Clã conquistados",fixos.pontosCla,fixos.pontosCla)}${comparacao("Ataques por ação",fixos.ataquesPorAcao,fixos.ataquesPorAcao)}${comparacao("Chakra-base",fixos.chakraBase,fixos.chakraBase)}</div>
-        <section class="levelUpSecao"><h3>PV e Chakra</h3><div class="levelUpCaracteristica"><strong>${vital.status==="preserved-existing"?"Valores anteriores preservados":"Histórico automático ativo"}</strong><p>${vital.status==="preserved-existing"?`As rolagens detalhadas começam no nível ${inteiro(vital.historyStartLevel,atual+1)}.`:"Cada Level Up registra dado, método, modificadores, clã e Chakra-base."}</p></div></section>
-        <section class="levelUpSecao"><h3>Características desbloqueadas</h3><div class="levelUpLista">${ativos.map(item=>`<article class="levelUpCaracteristica"><strong>${escaparHTML(item.name)}</strong><p>${escaparHTML(item.description||item.short||"")}</p></article>`).join("")}</div></section>
-        ${escolhas.length?`<section class="levelUpSecao"><h3>Escolhas salvas</h3><div class="levelUpLista">${escolhas.map(([id,valor])=>`<article class="levelUpCaracteristica"><strong>${escaparHTML(regras.choices?.[id]?.label||id)}</strong><p>${escaparHTML(escolhaTexto(id,valor))}</p></article>`).join("")}</div></section>`:""}
-        <section class="levelUpSecao"><h3>Histórico de Level Up</h3><div class="levelUpHistorico">${historico.length?historico.map(historicoItemHTML).join(""):'<div class="levelUpVazio">O próximo Level Up aparecerá aqui.</div>'}</div></section>
+        <div class="levelUpAvisoFase">Este é o resumo completo da progressão da ficha. Use o botão no final para avançar quando estiver pronto.</div>
+        <div class="levelUpComparacao">
+          ${comparacao("Proficiência",`+${fixos.proficiencia}`,`+${fixos.proficiencia}`)}
+          ${comparacao("Rank máximo de Jutsu",fixos.rankJutsu,fixos.rankJutsu)}
+          ${comparacao("Pontos-chave totais",fixos.pontosChave,fixos.pontosChave)}
+          ${comparacao("Pontos de Clã conquistados",fixos.pontosCla,fixos.pontosCla)}
+          ${comparacao("Ataques por ação",fixos.ataquesPorAcao,fixos.ataquesPorAcao)}
+          ${comparacao("Chakra-base",fixos.chakraBase,fixos.chakraBase)}
+        </div>
+        <section class="levelUpRecursosBloco" aria-label="Recursos de progressão">
+          <div><span>Pontos-chave</span><strong>${fixos.pontosChave}</strong><small>Total do nível</small></div>
+          <div><span>Pontos de Clã</span><strong>${fixos.pontosCla}</strong><small>Conquistados</small></div>
+        </section>
+        <details class="levelUpProgressaoDetalhes">
+          <summary><span>PV e Chakra</span><strong>›</strong></summary>
+          <div class="levelUpProgressaoLista">
+            <article><strong>${vital.status==="preserved-existing"?"Valores anteriores preservados":"Histórico automático ativo"}</strong><small>${vital.status==="preserved-existing"?`As rolagens detalhadas começam no nível ${inteiro(vital.historyStartLevel,atual+1)}.`:"Cada Level Up registra dado, método, modificadores, clã e Chakra-base."}</small></article>
+          </div>
+        </details>
+        ${caracteristicasResumoHTML(fixos)}
+        ${escolhas.length?`<details class="levelUpProgressaoDetalhes"><summary><span>Escolhas salvas</span><strong>${escolhas.length}</strong></summary><div class="levelUpProgressaoLista">${escolhas.map(([id,valor])=>`<article><strong>${escaparHTML(regras.choices?.[id]?.label||id)}</strong><small>${escaparHTML(escolhaTexto(id,valor))}</small></article>`).join("")}</div></details>`:""}
+        <details class="levelUpProgressaoDetalhes">
+          <summary><span>Histórico de Level Up</span><strong>${historico.length}</strong></summary>
+          <div class="levelUpHistorico levelUpProgressaoLista">${historico.length?historico.map(historicoItemHTML).join(""):'<div class="levelUpVazio">O próximo Level Up aparecerá aqui.</div>'}</div>
+        </details>
       </div>`;
-    const acoes=`<footer class="levelUpModalAcoes"><button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Fechar</button><button type="button" class="levelUpConfirmar" onclick="fecharLevelUp();${precisaConfigurarNivelUm()?"abrirConfiguracaoNivelUm()":"abrirLevelUp()"}" ${atual>=inteiro(regras.maxLevel,20)&&!precisaConfigurarNivelUm()?"disabled":""}>${precisaConfigurarNivelUm()?"Configurar nível 1":"Subir de nível"}</button></footer>`;
+    const desabilitado=maximo&&!pendentes.length&&!configurarNivel1;
+    const acoes=`<footer class="levelUpModalAcoes"><button type="button" class="levelUpCancelar" onclick="fecharLevelUp()">Fechar</button><button type="button" class="levelUpConfirmar" onclick="fecharLevelUp();${acaoPrimaria}" ${desabilitado?"disabled":""}>${desabilitado?"Nível máximo":textoPrimario}</button></footer>`;
     criarModal(corpo,acoes);
   }
 
@@ -1292,15 +1319,9 @@
   async function iniciar(){
     const campoNivel=document.getElementById("nivelDisplayMini");
     const xpLinha=document.querySelector("#identidade .xpLinhaNova");
-    const statusLinha=document.querySelector("#identidade .miniStatusNovo");
     if(!campoNivel||!xpLinha) return;
-    let host=document.getElementById("levelUpResumoHost");
-    if(!host){
-      host=document.createElement("div");
-      host.id="levelUpResumoHost";
-      (statusLinha||xpLinha).insertAdjacentElement("afterend",host);
-    }
-    renderizarResumo();
+    const host=document.getElementById("levelUpResumoHost");
+    if(host) renderizarResumo();
 
     try{
       await carregarRegras();
@@ -1318,7 +1339,7 @@
       if(estado.progressaoFixa?.retroactiveReviewPending) setTimeout(abrirRevisaoRetroativa,260);
     }catch(erro){
       console.error("Falha ao iniciar Level Up",erro);
-      host.innerHTML='<section class="levelUpResumoCard"><div class="levelUpResumoTitulo"><small>Progressão</small><strong>Não foi possível carregar as regras</strong></div><div class="levelUpResumoAcoes"><button type="button" class="levelUpBtn" onclick="location.reload()">Recarregar</button></div></section>';
+      if(host) host.innerHTML='<section class="levelUpResumoCard"><div class="levelUpResumoTitulo"><small>Progressão</small><strong>Não foi possível carregar as regras</strong></div><div class="levelUpResumoAcoes"><button type="button" class="levelUpBtn" onclick="location.reload()">Recarregar</button></div></section>';
     }
   }
 
