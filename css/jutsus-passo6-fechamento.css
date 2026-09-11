@@ -1,0 +1,199 @@
+/* Ficha Ninja RPG 2.5.8.36 — Passo 6.3
+   Fechamento visual de Jutsus + Ataques.
+   Meta: AMOLED preto, azul-petróleo e neon controlado; remover o resíduo marrom do tema antigo.
+   Somente visual. */
+
+#jutsus{
+  --p6-black:#000;
+  --p6-surface:#02070a;
+  --p6-surface2:#031015;
+  --p6-line:rgba(25,91,105,.56);
+  --p6-line-soft:rgba(25,91,105,.26);
+  --p6-orange:#ff7a18;
+  --p6-orange-soft:#ff9a43;
+  --p6-text:#f3eee8;
+  --p6-muted:#7d9aa5;
+}
+
+/* Mata de vez a superfície marrom herdada do pergaminho/painel antigo. */
+#jutsus .jutsusPainelPrincipal,
+#jutsus .jutsusAtaquesPainel,
+#jutsus .painelPergaminhoLista{
+  background:#000!important;
+  background-image:
+    radial-gradient(circle at 88% 3%,rgba(11,62,75,.10),transparent 25%),
+    linear-gradient(180deg,rgba(1,7,9,.995),rgba(0,0,0,1))!important;
+  border-color:var(--p6-line)!important;
+  box-shadow:none!important;
+  clip-path:none!important;
+}
+#jutsus .jutsusPainelPrincipal::before,
+#jutsus .jutsusPainelPrincipal::after,
+#jutsus .jutsusAtaquesPainel::before,
+#jutsus .jutsusAtaquesPainel::after,
+#jutsus .painelPergaminhoLista::before,
+#jutsus .painelPergaminhoLista::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* Hero técnico mais seco e próximo do Combate. */
+#jutsus .jutsusHero{
+  min-height:92px!important;
+  padding:13px 14px!important;
+  border:1px solid rgba(25,91,105,.62)!important;
+  border-radius:13px!important;
+  background:
+    radial-gradient(circle at 92% 10%,rgba(18,75,90,.16),transparent 34%),
+    linear-gradient(180deg,rgba(2,11,15,.99),rgba(0,5,7,.995))!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsusHero::before{display:none!important}
+#jutsus .jutsusHero::after{opacity:.50!important}
+#jutsus .jutsusHeroEyebrow{color:#79b5c6!important}
+#jutsus .jutsusHero h2{color:#f4eee5!important;text-shadow:none!important}
+#jutsus .jutsusHero p{color:#7f99a3!important;opacity:.92!important}
+#jutsus .jutsusHeroMarca{color:rgba(31,94,108,.24)!important}
+
+/* Busca: sem placa marrom e com presença menor. */
+#jutsus .jutsuBuscaRetratil{
+  min-height:50px!important;
+  border:1px solid rgba(25,91,105,.56)!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(2,10,14,.995),rgba(0,4,6,1))!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsuBuscaRetratil input{color:#e9eef0!important}
+
+/* Filtros: leves, sem massa escura ou marrom. */
+#jutsus .jutsuElementosAtalhos{gap:8px!important}
+#jutsus .jutsuElementoAtalho{
+  min-height:48px!important;
+  border-width:1px!important;
+  background:rgba(1,7,10,.98)!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsuElementoAtalho.ativo{
+  background:
+    radial-gradient(circle at 18% 50%,color-mix(in srgb,var(--grupo-cor) 12%,transparent),transparent 48%),
+    rgba(1,8,11,.99)!important;
+  box-shadow:0 0 12px color-mix(in srgb,var(--grupo-cor) 10%,transparent)!important;
+}
+
+/* Grupos: mais respiro, preto/petróleo e faixa de cor limpa. */
+#listaJutsus{gap:9px!important}
+#listaJutsus .jutsuGrupoRetratil{
+  border-radius:13px!important;
+  background:
+    radial-gradient(circle at 4% 50%,color-mix(in srgb,var(--grupo-cor) 5%,transparent),transparent 28%),
+    linear-gradient(180deg,rgba(2,9,12,.995),rgba(0,3,5,1))!important;
+  box-shadow:none!important;
+}
+#listaJutsus .jutsuGrupoCabecalho{
+  min-height:68px!important;
+  background:transparent!important;
+}
+#listaJutsus .jutsuGrupoSubtitulo{color:#7795a0!important}
+#listaJutsus .jutsuGrupoContador{
+  background:#000!important;
+  box-shadow:none!important;
+}
+
+/* Ações principais deixam de ser blocos marrons preenchidos. */
+#jutsus .jutsuAdicionarBtn,
+#jutsus .jutsusAtaquesPainel>.btn{
+  min-height:50px!important;
+  border:1px solid rgba(255,122,24,.72)!important;
+  border-radius:12px!important;
+  background:
+    linear-gradient(180deg,rgba(255,122,24,.075),rgba(255,122,24,.025))!important;
+  color:#ffdcb4!important;
+  box-shadow:0 0 14px rgba(255,122,24,.055)!important;
+  text-shadow:none!important;
+}
+#jutsus .jutsuAdicionarBtn:hover,
+#jutsus .jutsusAtaquesPainel>.btn:hover{
+  background:linear-gradient(180deg,rgba(255,122,24,.12),rgba(255,122,24,.04))!important;
+}
+#jutsus .jutsuAdicionarMais{color:#ff9f50!important}
+#jutsus .jutsusFrase{color:#637f89!important;opacity:.82!important}
+
+/* Cabeçalho de Ataques alinhado ao hero e ao Combate. */
+#jutsus .ataquesCabecalho{
+  padding:0 2px 12px!important;
+  border-bottom:1px solid rgba(25,91,105,.30)!important;
+}
+#jutsus .ataquesCabecalhoIcone{color:#ff7a18!important;filter:none!important}
+#jutsus .ataquesEyebrow{color:#78b5c6!important}
+#jutsus .ataquesCabecalho h2{color:#f4eee5!important;text-shadow:none!important}
+#jutsus .ataquesCabecalho p{color:#78939d!important}
+
+/* Ataques: superfície quase preta, borda petróleo, laranja só no acento. */
+#jutsus #listaArmados{gap:8px!important}
+#jutsus .armadoCardCompacto.ataqueListaCard{
+  border:1px solid rgba(25,91,105,.54)!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(2,10,13,.998),rgba(0,3,5,1))!important;
+  box-shadow:none!important;
+}
+#jutsus .armadoCardCompacto.ataqueListaCard::before{
+  width:3px!important;
+  background:linear-gradient(180deg,#ff9b42,#ff7a18)!important;
+  box-shadow:0 0 8px rgba(255,122,24,.18)!important;
+}
+#jutsus #listaArmados .ataqueLinhaResumo{
+  min-height:60px!important;
+  padding-top:8px!important;
+  padding-bottom:8px!important;
+}
+#jutsus #listaArmados .ataqueLinhaIcone{
+  border-color:rgba(25,91,105,.62)!important;
+  background:#031015!important;
+  box-shadow:none!important;
+}
+#jutsus #listaArmados .ataqueLinhaTexto strong{color:#f3ede5!important;text-shadow:none!important}
+#jutsus #listaArmados .ataqueLinhaTexto small{color:#7294a0!important;text-shadow:none!important}
+#jutsus #listaArmados .ataqueLinhaDano{
+  min-width:54px!important;
+  height:28px!important;
+  padding:0 9px!important;
+  border:1px solid rgba(255,137,32,.68)!important;
+  background:#000!important;
+  color:#f5dfc2!important;
+  box-shadow:none!important;
+  font-size:9.5px!important;
+}
+#jutsus #listaArmados .ataqueLinhaSeta{color:#e7e4df!important}
+
+/* Expansão mantém o mesmo idioma visual. */
+#jutsus .ataqueDetalhesCompactos{
+  background:#010608!important;
+  border-top-color:rgba(25,91,105,.26)!important;
+}
+#jutsus .armadoResumoEditavel button{
+  background:#02090c!important;
+  border-color:rgba(25,91,105,.34)!important;
+  box-shadow:none!important;
+}
+#jutsus .armadoResumoEditavel button b{color:#ffac61!important}
+#jutsus .btnUsarAtaqueInventario{
+  background:rgba(255,122,24,.06)!important;
+  border-color:rgba(255,122,24,.58)!important;
+  box-shadow:none!important;
+}
+
+/* Punho natural já vem do JS; aqui só evita saturação excessiva. */
+#jutsus .ataque-desarmado .ataqueIconeFallback{
+  filter:saturate(.82) brightness(1.04)!important;
+}
+
+@media (max-width:520px){
+  #jutsus .jutsusPainelPrincipal,
+  #jutsus .jutsusAtaquesPainel{padding:12px!important;border-radius:11px!important}
+  #jutsus .jutsusHero{min-height:88px!important;padding:12px!important}
+  #listaJutsus .jutsuGrupoCabecalho{min-height:64px!important}
+  #jutsus .jutsuAdicionarBtn,
+  #jutsus .jutsusAtaquesPainel>.btn{min-height:48px!important}
+  #jutsus #listaArmados .ataqueLinhaResumo{min-height:58px!important}
+  #jutsus #listaArmados .ataqueLinhaDano{max-width:92px!important}
+}
