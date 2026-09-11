@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.25",
-  "name": "Passo 4.6 — Naturezas clean",
-  "notes": "Remove o contador textual 0/7–7/7, elimina as bordas internas dos itens de Natureza, centraliza o nome e mantém somente uma borda geral com os sete marcadores de nível. Nenhuma lógica de progressão foi alterada.",
+  "version": "2.5.8.26",
+  "name": "Passo 4.7 — Perícias legíveis",
+  "notes": "Ajusta exclusivamente o layout visual das Perícias: reduz levemente o badge de bônus, reserva uma coluna fixa para ele e reposiciona o nome para eliminar sobreposição, mantendo fonte confortável e toda a lógica de proficiência intacta.",
   "date": "2026-09-11"
 }
