@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.19 — Correção de Level Up e robustez do Firebase Authentication.
+/* Shinobi 2.5.8.20 — Correção de Level Up e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.19";
+const APP_VERSION = "2.5.8.20";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -40,6 +40,7 @@ const APP_SHELL = [
   `./css/perfil-home-passo2-ajuste.css?v=${APP_VERSION}`,
   `./css/cabecalho-navegacao-passo3.css?v=${APP_VERSION}`,
   `./css/status-passo4.css?v=${APP_VERSION}`,
+  `./css/status-passo4-ajuste.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,

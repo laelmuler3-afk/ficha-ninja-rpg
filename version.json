@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.19",
+  "version": "2.5.8.20",
   "name": "Passo 4 — Status",
   "notes": "Redesign visual da área Status com hierarquia própria, atributos em grade temática, perícias e naturezas reorganizadas. Nenhuma regra, cálculo ou chave de dados foi alterada.",
   "date": "2026-09-10"
