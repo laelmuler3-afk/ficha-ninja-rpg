@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.29",
-  "name": "Passo 5.2 — Combate polido",
-  "notes": "Polimento visual do Combate: PV/EKO mais densos, modificadores e defesas com divisórias internas em vez de mini-cards, resistências em chips discretos e atalhos finais mais leves. Nenhuma lógica ou cálculo foi alterado.",
+  "version": "2.5.8.30",
+  "name": "Passo 5.3 — Fechamento do Combate",
+  "notes": "Finaliza o refinamento visual da tela de Combate. Quando não há bônus temporários, o estado vazio deixa de ocupar espaço e a área de modificadores fica mais compacta. Pequenos ajustes de densidade foram aplicados sem alterar cálculos, eventos ou dados salvos.",
   "date": "2026-09-11"
 }
