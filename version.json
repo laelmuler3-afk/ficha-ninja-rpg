@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.23",
-  "name": "Passo 4.4 — Conjuração compacta com benefícios retráteis",
-  "notes": "Mantém o seletor compacto de Atributo de Conjuração e adiciona uma seta retrátil ao lado do seletor para abrir ou fechar a lista de benefícios cumulativos dos níveis, sem alterar cálculos, eventos ou dados salvos.",
+  "version": "2.5.8.24",
+  "name": "Passo 4.5 — Correção visual e validação do Status",
+  "notes": "Corrige as tags CSS quebradas, torna a conjuração compacta com benefícios retráteis, simplifica o DOM das Naturezas para evitar cards internos e reforça o verificador contra HTML malformado. Nenhum cálculo ou dado salvo foi alterado.",
   "date": "2026-09-11"
 }
