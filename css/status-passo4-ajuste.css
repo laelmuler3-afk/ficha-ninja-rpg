@@ -173,3 +173,87 @@
     min-height:11px!important;
   }
 }
+
+
+/* 2.5.8.25 — Naturezas clean: uma borda, uma linha, nome centralizado. */
+#atributos .statusNaturezasPainel #naturezasUI{gap:7px!important}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaCard{
+  min-height:58px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  padding:8px 12px!important;
+  gap:12px!important;
+  border:1px solid rgba(12,102,122,.34)!important;
+  border-radius:10px!important;
+  background:linear-gradient(180deg,rgba(4,10,13,.98),rgba(1,4,5,.99))!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-width:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{
+  width:42px!important;height:42px!important;
+  margin:0!important;padding:0!important;
+  border:0!important;
+  background:rgba(255,255,255,.025)!important;
+  box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaIdentificacao{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNome{
+  display:block!important;
+  width:100%!important;
+  text-align:center!important;
+  margin:0!important;padding:0!important;
+  border:0!important;background:transparent!important;
+  font-size:15px!important;line-height:1!important;
+}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaNivelTexto{display:none!important}
+#atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{
+  display:grid!important;
+  grid-template-columns:repeat(7,14px)!important;
+  grid-auto-rows:14px!important;
+  gap:6px!important;
+  align-items:center!important;
+  justify-content:end!important;
+  min-width:max-content!important;
+  margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+@media(max-width:520px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{min-height:54px!important;padding:7px 9px!important;gap:8px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{grid-template-columns:34px minmax(0,1fr)!important;gap:7px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{width:34px!important;height:34px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{font-size:13.5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,12px)!important;grid-auto-rows:12px!important;gap:4px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:12px!important;min-width:12px!important;height:12px!important;min-height:12px!important}
+}
+@media(max-width:370px){
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaCard{grid-template-columns:minmax(0,1fr) auto!important;padding-inline:7px!important;gap:6px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaInfo{grid-template-columns:30px minmax(0,1fr)!important;gap:5px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaIcone{width:30px!important;height:30px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNome{font-size:12px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaLinha{grid-template-columns:repeat(7,10px)!important;grid-auto-rows:10px!important;gap:3px!important}
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaNivel,
+  #atributos .statusNaturezasPainel #naturezasUI .naturezaBolinha{width:10px!important;min-width:10px!important;height:10px!important;min-height:10px!important}
+}
