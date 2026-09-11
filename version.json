@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.32",
-  "name": "Passo 6 — Jutsus final + Ataques clean",
-  "notes": "Corrige a responsividade dos filtros de Jutsus no celular e redesenha a seção Ataques em formato compacto e clean, preservando integralmente a lógica, edição, inventário e uso dos ataques.",
+  "version": "2.5.8.33",
+  "name": "Passo 6.1 — Ataques harmonizados",
+  "notes": "Harmoniza visualmente a seção Ataques com Jutsus e Combate, deixando os cards mais limpos, compactos e rápidos de ler, sem alterar a lógica de uso, edição e inventário.",
   "date": "2026-09-11"
 }
