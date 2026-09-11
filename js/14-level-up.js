@@ -358,11 +358,13 @@
 
     if(campoNivel){
       campoNivel.value=String(fixos.nivel);
-      campoNivel.readOnly=false;
+      campoNivel.readOnly=true;
       campoNivel.min="1";
       campoNivel.max=String(regras?.maxLevel||20);
-      campoNivel.inputMode="numeric";
-      campoNivel.setAttribute("aria-label","Nível atual. Pode ser ajustado manualmente enquanto a progressão por XP não estiver ativa.");
+      campoNivel.inputMode="none";
+      campoNivel.setAttribute("aria-label","Nível atual. Toque para abrir a progressão e subir para o próximo nível.");
+      campoNivel.setAttribute("role","button");
+      campoNivel.setAttribute("title","Abrir progressão de nível");
     }
     if(campoProf){
       campoProf.value=String(fixos.proficiencia);
@@ -419,14 +421,49 @@
     return true;
   }
 
+  function abrirProgressaoPeloNivel(){
+    if(!regras) return;
+    const atual=nivelAtual();
+    if(precisaConfigurarNivelUm()){
+      abrirConfiguracaoNivelUm();
+      return;
+    }
+    const pendentes=escolhasPendentesAte(atual);
+    if(pendentes.length){
+      abrirEscolhasPendentes();
+      return;
+    }
+    if(atual>=inteiro(regras.maxLevel,20)){
+      abrirProgressaoFixa();
+      return;
+    }
+    abrirLevelUp();
+  }
+
   function ligarEdicaoManualNivel(){
     const campo=document.getElementById("nivelDisplayMini");
     if(!campo||campo.dataset.manualLevelListener==="1") return;
     campo.dataset.manualLevelListener="1";
-    campo.addEventListener("change",()=>aplicarNivelManual(campo.value,{origem:"ficha",notificar:false}));
-    campo.addEventListener("blur",()=>{
-      const alvo=limitarNivel(campo.value);
-      if(String(campo.value)!==String(alvo)) campo.value=String(alvo);
+
+    // O número do nível deixa de ser um campo de edição direta na ficha.
+    // Ele vira o gatilho oficial para abrir a progressão do próximo nível,
+    // garantindo que rolagens, escolhas e características sejam preenchidas.
+    campo.readOnly=true;
+    campo.setAttribute("aria-label","Nível atual. Toque para abrir a progressão e subir para o próximo nível.");
+    campo.setAttribute("role","button");
+    campo.setAttribute("title","Abrir progressão de nível");
+    campo.tabIndex=0;
+
+    const abrir=evento=>{
+      evento?.preventDefault?.();
+      campo.blur();
+      abrirProgressaoPeloNivel();
+    };
+    campo.addEventListener("click",abrir);
+    campo.addEventListener("keydown",evento=>{
+      if(evento.key==="Enter"||evento.key===" "){
+        abrir(evento);
+      }
     });
   }
 
