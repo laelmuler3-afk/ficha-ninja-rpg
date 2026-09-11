@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.20",
-  "name": "Passo 4 — Status",
-  "notes": "Redesign visual da área Status com hierarquia própria, atributos em grade temática, perícias e naturezas reorganizadas. Nenhuma regra, cálculo ou chave de dados foi alterada.",
-  "date": "2026-09-10"
+  "version": "2.5.8.21",
+  "name": "Passo 4.2 — Progressão por toque",
+  "notes": "Remove o resumo permanente de Progressão do Status. O número do nível abre um painel retrátil com os mesmos dados de progressão, histórico e acesso seguro ao Level Up. Nenhum cálculo foi alterado.",
+  "date": "2026-09-11"
 }
