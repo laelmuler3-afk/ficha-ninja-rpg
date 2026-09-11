@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.26",
-  "name": "Passo 4.7 — Perícias legíveis",
-  "notes": "Ajusta exclusivamente o layout visual das Perícias: reduz levemente o badge de bônus, reserva uma coluna fixa para ele e reposiciona o nome para eliminar sobreposição, mantendo fonte confortável e toda a lógica de proficiência intacta.",
+  "version": "2.5.8.27",
+  "name": "Passo 5 — Combate compacto",
+  "notes": "Reorganiza visualmente a Área de Batalha para uso rápido em mesa: PV/EKO prioritários, efeitos e modificadores mais compactos, salvaguardas retráteis, consulta rápida em grade, resistências resumidas e atalhos de apoio. Nenhum cálculo ou dado salvo foi alterado.",
   "date": "2026-09-11"
 }
