@@ -1,0 +1,142 @@
+/* Ficha Ninja RPG 2.5.8.23 — Passo 4.4: benefícios retráteis na conjuração */
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza{
+  grid-template-columns:auto minmax(140px,1fr) 42px!important;
+  gap:10px!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > label{
+  grid-column:1!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > select{
+  grid-column:2!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle{
+  grid-column:3!important;
+  width:42px!important;
+  min-width:42px!important;
+  height:38px!important;
+  border:1px solid rgba(255,138,31,.42)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(20,10,5,.96),rgba(9,4,2,.98))!important;
+  box-shadow:0 0 0 1px rgba(255,138,31,.05), 0 8px 18px rgba(0,0,0,.18)!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  cursor:pointer!important;
+  transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle:hover,
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle:focus-visible{
+  border-color:rgba(255,138,31,.72)!important;
+  box-shadow:0 0 0 2px rgba(255,138,31,.10)!important;
+  outline:none!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle.aberto{
+  border-color:rgba(255,160,58,.82)!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza .conjuracaoBeneficiosSeta{
+  width:10px!important;
+  height:10px!important;
+  border-right:2px solid #ff9e42!important;
+  border-bottom:2px solid #ff9e42!important;
+  transform:rotate(45deg) translateY(-1px)!important;
+  transition:transform .18s ease!important;
+}
+
+#atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle.aberto .conjuracaoBeneficiosSeta{
+  transform:rotate(-135deg) translateY(-1px)!important;
+}
+
+#atributos .statusNaturezasPainel .conjuracaoNaturezaResumo,
+#atributos .statusNaturezasPainel .naturezaRegrasDetalhes{
+  display:none!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel{
+  grid-column:1 / -1!important;
+  margin-top:2px!important;
+  padding:10px 12px!important;
+  border:1px solid rgba(255,138,31,.22)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,rgba(8,11,13,.95),rgba(3,5,6,.98))!important;
+  box-shadow:inset 0 0 12px rgba(255,138,31,.04)!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosCabecalho{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  margin:0 0 6px!important;
+  color:#f1d5aa!important;
+  font-size:12px!important;
+  font-weight:900!important;
+  letter-spacing:.25px!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel ol{
+  margin:0!important;
+  padding-left:18px!important;
+  color:#d8cbb6!important;
+  font-size:11.5px!important;
+  line-height:1.45!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel li + li{
+  margin-top:4px!important;
+}
+
+#atributos .statusNaturezasPainel .naturezaBeneficiosPainel b{
+  color:#ffbe70!important;
+}
+
+@media (max-width:520px){
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza{
+    grid-template-columns:minmax(0,1fr) minmax(120px,1fr) 40px!important;
+    gap:8px!important;
+  }
+
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > label{
+    font-size:11px!important;
+  }
+
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle{
+    width:40px!important;
+    min-width:40px!important;
+    height:36px!important;
+    border-radius:7px!important;
+  }
+
+  #atributos .statusNaturezasPainel .naturezaBeneficiosPainel{
+    padding:9px 10px!important;
+  }
+
+  #atributos .statusNaturezasPainel .naturezaBeneficiosPainel ol{
+    font-size:11px!important;
+  }
+}
+
+@media (max-width:360px){
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza{
+    grid-template-columns:1fr 40px!important;
+  }
+
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > label{
+    grid-column:1 / -1!important;
+  }
+
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > select{
+    grid-column:1!important;
+  }
+
+  #atributos .statusNaturezasPainel .configConjuracaoNatureza > .conjuracaoBeneficiosToggle{
+    grid-column:2!important;
+    align-self:end!important;
+  }
+}
