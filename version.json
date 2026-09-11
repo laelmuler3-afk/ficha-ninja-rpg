@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.17",
-  "name": "Atualização PWA confiável entre dispositivos",
-  "notes": "Força a descoberta do Service Worker pela versão publicada, melhora a detecção de atualização em PWA instalado e mantém as correções de Level Up, Sarutobi D10 e autenticação da 2.5.8.16.",
+  "version": "2.5.8.18",
+  "name": "Nível abre a progressão",
+  "notes": "Transforma o número do nível na Home em gatilho da progressão: ao tocar, abre o fluxo do próximo nível, incluindo rolagens, escolhas e características pendentes. Mantém as correções anteriores de atualização PWA, Level Up, Sarutobi D10 e autenticação.",
   "date": "2026-09-10"
 }
