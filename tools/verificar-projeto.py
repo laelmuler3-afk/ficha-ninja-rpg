@@ -25,11 +25,16 @@ class ReferenciasHTML(HTMLParser):
         super().__init__()
         self.referencias: list[str] = []
 
-    def handle_starttag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        dados = dict(attrs)
-        for atributo in ("src", "href"):
-            valor = dados.get(atributo)
-            if valor:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        nomes = [nome.lower() for nome, _valor in attrs]
+        duplicados = sorted({nome for nome in nomes if nomes.count(nome) > 1})
+        if duplicados:
+            falhar(f"HTML inválido: <{tag}> possui atributo(s) duplicado(s): {', '.join(duplicados)}")
+
+        for atributo, valor in attrs:
+            if atributo.lower() in ("src", "href") and valor:
+                if "<" in valor or ">" in valor or '"' in valor:
+                    falhar(f"HTML inválido: valor suspeito em {atributo} de <{tag}>: {valor}")
                 self.referencias.append(valor)
 
 
@@ -65,6 +70,9 @@ def caminho_local(valor: str) -> Path | None:
 
 def verificar_referencias() -> None:
     html = (ROOT / "index.html").read_text(encoding="utf-8")
+    for numero, linha in enumerate(html.splitlines(), start=1):
+        if '<link rel="stylesheet"' in linha and not re.search(r'href="[^"]+"\s*/?>\s*$', linha.strip()):
+            falhar(f"HTML inválido: tag de stylesheet malformada na linha {numero}: {linha.strip()}")
     parser = ReferenciasHTML()
     parser.feed(html)
     for referencia in parser.referencias:
