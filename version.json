@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.24",
-  "name": "Passo 4.5 — Correção visual e validação do Status",
-  "notes": "Corrige as tags CSS quebradas, torna a conjuração compacta com benefícios retráteis, simplifica o DOM das Naturezas para evitar cards internos e reforça o verificador contra HTML malformado. Nenhum cálculo ou dado salvo foi alterado.",
+  "version": "2.5.8.25",
+  "name": "Passo 4.6 — Naturezas clean",
+  "notes": "Remove o contador textual 0/7–7/7, elimina as bordas internas dos itens de Natureza, centraliza o nome e mantém somente uma borda geral com os sete marcadores de nível. Nenhuma lógica de progressão foi alterada.",
   "date": "2026-09-11"
 }
