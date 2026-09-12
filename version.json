@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.54",
-  "name": "Notas — scroll nativo no toque",
-  "notes": "Corrige o bloqueio de rolagem ao arrastar sobre os cards de tópicos removendo o isolamento de overscroll da lista, preserva o scroll interno apenas quando necessário e melhora a legibilidade do botão Novo tópico.",
+  "version": "2.5.8.55",
+  "name": "Menu lateral — estrutura global",
+  "notes": "Substitui o menu lateral antigo de navegação por uma central global com perfil, sincronização, conta, salas, Configurações com subtítulo Personalização e atalhos de suporte. Preserva o botão de configurações atual nesta primeira etapa para não remover ferramentas existentes.",
   "date": "2026-09-12"
 }
