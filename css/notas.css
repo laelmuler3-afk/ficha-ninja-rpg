@@ -771,3 +771,46 @@ main.scrollPages #anotacoes,
     width:44%!important;
   }
 }
+
+/* ==========================================================
+   NOTAS — ETAPA 6 / scroll nativo no toque — 2.5.8.54
+   Corrige o bloqueio percebido ao arrastar a página por cima
+   dos cards. A lista continua podendo rolar quando realmente
+   houver conteúdo excedente, mas não prende mais o gesto no
+   componente quando a página precisa assumir a rolagem.
+   ========================================================== */
+
+/* O problema vinha do scroll interno com overscroll-behavior:contain.
+   Em telas touch isso isolava o gesto dentro da lista e impedia o
+   encadeamento natural para a página principal. */
+#anotacoes .notasPergaminhoShell,
+#anotacoes .notasPergaminhoConteudo,
+#anotacoes .listaTopicosNotas,
+#anotacoes .topicoNotaCard,
+#anotacoes .topicoNotaHeader,
+#anotacoes .topicoNotaSeta,
+#anotacoes .topicoNotaTitulo{
+  touch-action:pan-y!important;
+}
+
+#anotacoes .listaTopicosNotas{
+  overscroll-behavior-y:auto!important;
+  overscroll-behavior-x:none!important;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* Botões continuam recebendo toque normalmente, sem cancelar o gesto
+   vertical do navegador quando o dedo começa a arrastar. */
+#anotacoes .topicoNotaEditar,
+#anotacoes .topicoNotaRemover,
+#anotacoes .btnAdicionarTopicoNota{
+  touch-action:manipulation!important;
+}
+
+/* Pequeno refinamento de legibilidade observado no deploy real. */
+#anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+  color:#f0a06f!important;
+}
+#anotacoes .btnAdicionarTopicoNota .shinobiIcon{
+  background-color:#e97f4d!important;
+}
