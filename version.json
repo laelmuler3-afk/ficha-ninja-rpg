@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.41",
-  "name": "Passo 7.1 — Inventário AMOLED/Petróleo",
-  "notes": "Mantém o layout compacto do Inventário e troca apenas a identidade visual para preto AMOLED, azul-petróleo e laranja como acento, sem alterar lógica ou estrutura.",
-  "date": "2026-09-11"
+  "version": "2.5.8.42",
+  "name": "Passo 7.2 — Carteira AMOLED/Petróleo",
+  "notes": "Remove a camada marrom antiga da Carteira e harmoniza resumo, moedas, controles, conversão e histórico com o visual preto AMOLED, azul-petróleo e laranja como acento, sem alterar lógica ou estrutura.",
+  "date": "2026-09-12"
 }
