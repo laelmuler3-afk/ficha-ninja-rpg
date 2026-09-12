@@ -117,26 +117,42 @@
   }
   window.fecharShinobiDrawer=fecharShinobiDrawer;
 
-  function abrirPainelOnline(destino){
+  function executarAposFecharDrawer(callback){
     fecharShinobiDrawer();
-    if(typeof window.ShinobiOnlineUI?.abrir==="function"){
-      window.ShinobiOnlineUI.abrir(destino);
-      return;
-    }
-    if(typeof window.avisoShinobi==="function")window.avisoShinobi("Recursos online","O painel de conta, sincronização e salas ainda está carregando.");
+    // O clique que vem de dentro do drawer ainda está no mesmo ciclo de evento.
+    // Adiar a abertura impede que listeners globais de "clique fora" fechem
+    // imediatamente o painel que acabamos de abrir.
+    requestAnimationFrame(()=>setTimeout(callback,0));
+  }
+
+  function abrirPainelOnline(destino){
+    executarAposFecharDrawer(()=>{
+      if(typeof window.ShinobiOnlineUI?.abrir==="function"){
+        window.ShinobiOnlineUI.abrir(destino);
+        return;
+      }
+      if(typeof window.avisoShinobi==="function")window.avisoShinobi("Recursos online","O painel de conta, sincronização e salas ainda está carregando.");
+    });
   }
 
 
   function abrirConfiguracoesExistentes(){
-    fecharShinobiDrawer();
-    const menu=document.getElementById("configMenu");
-    if(menu){
-      menu.classList.add("aberto");
-      requestAnimationFrame(()=>menu.scrollIntoView({behavior:"smooth",block:"start"}));
-      return;
-    }
-    if(typeof window.toggleConfigMenu==="function")window.toggleConfigMenu();
+    executarAposFecharDrawer(()=>{
+      const menu=document.getElementById("configMenu");
+      if(menu){
+        menu.classList.add("aberto");
+        menu.setAttribute("data-opened-from-drawer","1");
+        const primeiro=menu.querySelector("select,button:not([disabled]),input:not([type=hidden])");
+        requestAnimationFrame(()=>{
+          menu.scrollIntoView({behavior:"smooth",block:"nearest"});
+          primeiro?.focus?.({preventScroll:true});
+        });
+        return;
+      }
+      if(typeof window.toggleConfigMenu==="function")window.toggleConfigMenu();
+    });
   }
+  window.abrirConfiguracoesShinobi=abrirConfiguracoesExistentes;
 
   function avisoEmBreve(titulo){
     if(typeof window.avisoShinobi==="function")window.avisoShinobi(titulo,"Esta opção já está reservada na nova estrutura e será ativada em uma próxima etapa.");
@@ -264,6 +280,10 @@
     drawer.addEventListener("click",event=>{
       const botao=event.target.closest("[data-drawer-action]");
       if(!botao)return;
+      // Evita que o mesmo toque chegue ao listener global que fecha menus ao
+      // detectar um clique fora da área de configurações.
+      event.preventDefault();
+      event.stopPropagation();
       const acao=botao.dataset.drawerAction;
       if(acao==="sync"){abrirPainelOnline("sincronizacao");return;}
       if(acao==="account"){abrirPainelOnline("conta");return;}

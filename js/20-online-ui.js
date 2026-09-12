@@ -392,11 +392,25 @@
 
   function abrir(destino){
     destinoAtual=normalizarDestino(destino);
-    criarRoot();aberto=true;root.hidden=false;document.body.classList.add("onlineAberto");
+    criarRoot();
+    aberto=true;
+    root.hidden=false;
+    root.removeAttribute("hidden");
+    root.setAttribute("aria-hidden","false");
+    document.body.classList.add("onlineAberto");
     document.getElementById("configMenu")?.classList.remove("aberto");
     renderizar();
+    // Uma segunda confirmação no frame seguinte evita que transições/fechamento
+    // do drawer deixem o overlay atrás da ficha em alguns navegadores móveis.
+    requestAnimationFrame(()=>{
+      if(!aberto||!root)return;
+      root.hidden=false;
+      root.removeAttribute("hidden");
+      aplicarDestino();
+    });
+    return true;
   }
-  function fechar(){aberto=false;pararScanner();if(root)root.hidden=true;document.body.classList.remove("onlineAberto");}
+  function fechar(){aberto=false;pararScanner();if(root){root.hidden=true;root.setAttribute("aria-hidden","true");}document.body.classList.remove("onlineAberto");}
 
   function atualizarIndicadores(){
     const st=obterEstado();
