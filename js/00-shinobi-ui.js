@@ -117,13 +117,25 @@
   }
   window.fecharShinobiDrawer=fecharShinobiDrawer;
 
-  function abrirPainelOnline(){
+  function abrirPainelOnline(destino){
     fecharShinobiDrawer();
     if(typeof window.ShinobiOnlineUI?.abrir==="function"){
-      window.ShinobiOnlineUI.abrir();
+      window.ShinobiOnlineUI.abrir(destino);
       return;
     }
     if(typeof window.avisoShinobi==="function")window.avisoShinobi("Recursos online","O painel de conta, sincronização e salas ainda está carregando.");
+  }
+
+
+  function abrirConfiguracoesExistentes(){
+    fecharShinobiDrawer();
+    const menu=document.getElementById("configMenu");
+    if(menu){
+      menu.classList.add("aberto");
+      requestAnimationFrame(()=>menu.scrollIntoView({behavior:"smooth",block:"start"}));
+      return;
+    }
+    if(typeof window.toggleConfigMenu==="function")window.toggleConfigMenu();
   }
 
   function avisoEmBreve(titulo){
@@ -160,7 +172,7 @@
           </div>
         </section>
 
-        <button type="button" class="shinobiDrawerSyncCard" data-drawer-action="online" data-drawer-sync>
+        <button type="button" class="shinobiDrawerSyncCard" data-drawer-action="sync" data-drawer-sync>
           <span class="shinobiDrawerItemIcon">${iconHTML("cloud")}</span>
           <span class="shinobiDrawerItemTexto"><b>Sincronização</b><small><i class="shinobiDrawerStatusDot"></i><span data-drawer-sync-text>Somente neste aparelho</span></small></span>
           <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
@@ -168,12 +180,12 @@
 
         <div class="shinobiDrawerGrupo">
           <h3>CONTA</h3>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="online">
+          <button type="button" class="shinobiDrawerItem" data-drawer-action="account">
             <span class="shinobiDrawerItemIcon">${iconHTML("profile")}</span>
             <span class="shinobiDrawerItemTexto"><b>Minha conta</b><small>Perfil e acesso à nuvem</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="online">
+          <button type="button" class="shinobiDrawerItem" data-drawer-action="login">
             <span class="shinobiDrawerItemIcon">${iconHTML("sync")}</span>
             <span class="shinobiDrawerItemTexto"><b data-drawer-login-text>Login / Conta</b><small>Gerenciar sessão</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
@@ -182,17 +194,17 @@
 
         <div class="shinobiDrawerGrupo">
           <h3>SALA</h3>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="online">
+          <button type="button" class="shinobiDrawerItem" data-drawer-action="create-room">
             <span class="shinobiDrawerItemIcon">${iconHTML("plus")}</span>
             <span class="shinobiDrawerItemTexto"><b>Criar sala</b><small>Para iniciar uma mesa como mestre</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="online">
+          <button type="button" class="shinobiDrawerItem" data-drawer-action="join-room">
             <span class="shinobiDrawerItemIcon">${iconHTML("download")}</span>
             <span class="shinobiDrawerItemTexto"><b>Entrar em sala</b><small>Junte-se a uma campanha</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="online">
+          <button type="button" class="shinobiDrawerItem" data-drawer-action="current-room">
             <span class="shinobiDrawerItemIcon">${iconHTML("attributes")}</span>
             <span class="shinobiDrawerItemTexto"><b>Sala atual</b><small data-drawer-room-current>Nenhuma sala ativa</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
@@ -201,7 +213,7 @@
 
         <div class="shinobiDrawerGrupo shinobiDrawerConfiguracoes">
           <h3>CONFIGURAÇÕES</h3>
-          <button type="button" class="shinobiDrawerItem shinobiDrawerItemExpansivel" data-drawer-action="toggle-config" aria-expanded="false">
+          <button type="button" class="shinobiDrawerItem shinobiDrawerItemExpansivel" data-drawer-action="settings" aria-expanded="false">
             <span class="shinobiDrawerItemIcon">${iconHTML("settings")}</span>
             <span class="shinobiDrawerItemTexto"><b>Configurações</b><small>Ajustes gerais do aplicativo</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
@@ -253,15 +265,13 @@
       const botao=event.target.closest("[data-drawer-action]");
       if(!botao)return;
       const acao=botao.dataset.drawerAction;
-      if(acao==="online"){abrirPainelOnline();return;}
-      if(acao==="toggle-config"){
-        const conteudo=drawer.querySelector("[data-drawer-config]");
-        const abrir=conteudo?.hidden!==false;
-        if(conteudo)conteudo.hidden=!abrir;
-        botao.setAttribute("aria-expanded",abrir?"true":"false");
-        botao.classList.toggle("aberto",abrir);
-        return;
-      }
+      if(acao==="sync"){abrirPainelOnline("sincronizacao");return;}
+      if(acao==="account"){abrirPainelOnline("conta");return;}
+      if(acao==="login"){abrirPainelOnline("login");return;}
+      if(acao==="create-room"){abrirPainelOnline("criar-sala");return;}
+      if(acao==="join-room"){abrirPainelOnline("entrar-sala");return;}
+      if(acao==="current-room"){abrirPainelOnline("sala-atual");return;}
+      if(acao==="settings"){abrirConfiguracoesExistentes();return;}
       if(acao==="themes"){avisoEmBreve("Loja de temas");return;}
       if(acao==="personalization"){avisoEmBreve("Personalização");return;}
       if(acao==="about"){avisoEmBreve("Sobre o app");return;}

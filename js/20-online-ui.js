@@ -355,7 +355,43 @@
     return root;
   }
 
-  function abrir(){
+  function normalizarDestino(destino){
+    const valor=String(destino||"").trim().toLowerCase();
+    const permitidos=new Set(["conta","login","sincronizacao","criar-sala","entrar-sala","sala-atual"]);
+    return permitidos.has(valor)?valor:null;
+  }
+
+  function seletorDestino(destino,st){
+    if(destino==="entrar-sala") return 'form[data-form="join-room"]';
+    if(destino==="criar-sala"){
+      if(!st?.user||st.user.anonymous) return '.onlineGridDois';
+      return st.campanhas?.length?'form[data-form="create-room"]':'form[data-form="create-campaign"]';
+    }
+    if(destino==="sala-atual") return st?.sala?'.onlineSalaTopo':'form[data-form="join-room"]';
+    if(destino==="sincronizacao") return st?.user&&!st.user.anonymous?'.onlineContaNuvem,.onlineConta':'.onlineConta,.onlineGridDois';
+    if(destino==="conta"||destino==="login") return st?.user?'.onlineConta':'.onlineGridDois';
+    return null;
+  }
+
+  function aplicarDestino(){
+    if(!destinoAtual||!root)return;
+    const st=obterEstado();
+    const seletor=seletorDestino(destinoAtual,st);
+    if(!seletor)return;
+    requestAnimationFrame(()=>{
+      const alvo=root.querySelector(seletor);
+      if(!alvo)return;
+      const destaque=alvo.matches('form')?(alvo.closest('.onlineCard')||alvo):alvo;
+      root.querySelectorAll('.onlineDestinoDestaque').forEach(el=>el.classList.remove('onlineDestinoDestaque'));
+      destaque.classList.add('onlineDestinoDestaque');
+      alvo.scrollIntoView({behavior:'smooth',block:'start'});
+      if(destinoAtual==='entrar-sala') setTimeout(()=>alvo.querySelector('input[name="code"]')?.focus({preventScroll:true}),260);
+      setTimeout(()=>destaque.classList.remove('onlineDestinoDestaque'),1800);
+    });
+  }
+
+  function abrir(destino){
+    destinoAtual=normalizarDestino(destino);
     criarRoot();aberto=true;root.hidden=false;document.body.classList.add("onlineAberto");
     document.getElementById("configMenu")?.classList.remove("aberto");
     renderizar();
@@ -776,10 +812,10 @@
     if(st.carregando){conteudo.innerHTML='<div class="onlineLoading"><span></span><p>Conectando ao sistema online...</p></div>';return;}
     if(!st.configurado){conteudo.innerHTML=renderConfiguracao();return;}
     if(st.ultimoErro&&!st.iniciado){conteudo.innerHTML=`<section class="onlineCard"><h3>Falha ao iniciar</h3><p>${esc(st.ultimoErro)}</p><button type="button" class="onlineBtn primario" data-action="retry-online">Tentar novamente</button></section>`;return;}
-    if(!st.user){conteudo.innerHTML=renderLogin();return;}
+    if(!st.user){conteudo.innerHTML=renderLogin();aplicarDestino();return;}
     conteudo.innerHTML=st.sala?renderSala(st):renderHome(st);
     restaurarInteracao(conteudo,interacao);
-    requestAnimationFrame(renderQr);
+    requestAnimationFrame(()=>{renderQr();aplicarDestino();});
   }
 
   function renderQr(){
