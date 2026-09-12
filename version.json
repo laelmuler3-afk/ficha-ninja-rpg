@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.43",
-  "name": "Passo 7.3 — Loja AMOLED/Petróleo",
-  "notes": "Harmoniza a Loja com a identidade AMOLED/petróleo, remove fundos marrons residuais das categorias e cards e refina busca, produtos, ações e modal de compra sem alterar lógica, catálogo ou dados.",
+  "version": "2.5.8.44",
+  "name": "Correção — Loja inicia recolhida",
+  "notes": "Corrige a categoria Arremessáveis abrindo sozinha. A Loja agora inicia com todas as categorias recolhidas, preserva a categoria escolhida pelo usuário e continua abrindo resultados automaticamente apenas durante uma busca.",
   "date": "2026-09-12"
 }
