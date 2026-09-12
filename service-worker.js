@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.40 — Progressão por toque e robustez do Firebase Authentication.
- * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
+/* Ficha Ninja RPG 2.5.8.58 — menu lateral global e atualização PWA.
+ * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.57";
+const APP_VERSION = "2.5.8.58";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

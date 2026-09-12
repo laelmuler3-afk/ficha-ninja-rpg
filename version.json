@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.57",
-  "name": "Menu lateral — correção de abertura",
-  "notes": "Corrige o conflito de eventos que fazia Configurações abrir e fechar no mesmo toque. Adia a abertura dos painéis até o drawer terminar de fechar e reforça a exibição do painel online em navegadores móveis.",
+  "version": "2.5.8.58",
+  "name": "Menu lateral global — migração completa",
+  "notes": "Substitui o menu superior direito pelo drawer esquerdo. Move ficha ativa, gerenciamento de fichas, salvar, backup, armazenamento e atualização para Configurações; conecta o submenu expansível; remove os atalhos Online do cabeçalho e melhora responsividade/safe-area do drawer.",
   "date": "2026-09-12"
 }
