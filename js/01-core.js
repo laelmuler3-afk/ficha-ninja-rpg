@@ -840,7 +840,7 @@ function renderizarTopicosNotas(){
               onclick="editarTituloTopicoNota(${i}, event)"
               aria-label="Editar tópico"
             >
-              ✎
+              <span class="shinobiIcon icon-edit" aria-hidden="true"></span>
             </button>
 
             <button
@@ -849,7 +849,7 @@ function renderizarTopicosNotas(){
               onclick="removerTopicoNota(${i}, event)"
               aria-label="Remover tópico"
             >
-              ×
+              <span class="shinobiIcon icon-trash" aria-hidden="true"></span>
             </button>
           </div>
 
