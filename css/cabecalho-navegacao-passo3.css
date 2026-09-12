@@ -1,5 +1,5 @@
-/* Ficha Ninja RPG 2.5.8.15 — Passo 3: cabeçalho + navegação responsiva
-   Camada exclusivamente visual. Não altera rotas, IDs, cálculos ou dados. */
+/* Ficha Ninja RPG 2.5.8.58 — cabeçalho + navegação responsiva
+   O drawer esquerdo é o único menu global; o cabeçalho mantém o título centralizado. */
 
 :root{
   --nav-h:76px;
@@ -13,7 +13,7 @@
   min-height:var(--header-h)!important;
   height:var(--header-h)!important;
   padding:8px max(16px,env(safe-area-inset-left))!important;
-  grid-template-columns:44px minmax(0,1fr) auto 46px!important;
+  grid-template-columns:44px minmax(0,1fr) 44px!important;
   gap:8px!important;
   background:#000!important;
   border-bottom:1px solid rgba(16,63,78,.62)!important;
@@ -120,7 +120,7 @@ main{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px)!impo
 /* Telefones estreitos: preserva área de toque sem esmagar os rótulos. */
 @media (max-width:390px){
   :root{--nav-h:72px;--header-h:68px}
-  .topo.topoCompacto{grid-template-columns:40px minmax(0,1fr) 12px 42px!important;padding-left:10px!important;padding-right:10px!important;gap:5px!important}
+  .topo.topoCompacto{grid-template-columns:40px minmax(0,1fr) 40px!important;padding-left:10px!important;padding-right:10px!important;gap:5px!important}
   .topoMenuBtn,.configBtn{width:40px!important;height:40px!important;min-width:40px!important}
   .topo.topoCompacto .topoTitulo h1{font-size:clamp(18px,5.1vw,22px)!important;letter-spacing:.25px!important}
   .shinobiOnlineTopoBtn{width:12px!important;min-width:12px!important;height:40px!important;min-height:40px!important}
@@ -141,3 +141,14 @@ main{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 28px)!impo
 @media (prefers-reduced-motion:reduce){
   .menu.bottomNav button,.menu.bottomNav button::before,.menu.bottomNav button .navIcon{transition:none!important}
 }
+
+
+/* 2.5.8.58 — cabeçalho de controle único: o drawer esquerdo substitui a engrenagem antiga. */
+.topo.topoCompacto::after{content:"";display:block;width:44px;height:44px;grid-column:3;pointer-events:none}
+.topo.topoCompacto .topoMenuBtn{grid-column:1;grid-row:1}
+.topo.topoCompacto .topoTitulo{grid-column:2;grid-row:1}
+.topo.topoCompacto .configGlobal,.topo.topoCompacto .configBtn,.topo.topoCompacto .shinobiOnlineTopoBtn{display:none!important}
+@media(max-width:390px){.topo.topoCompacto::after{width:40px;height:40px}}
+
+.topo.topoCompacto{padding-left:max(16px,env(safe-area-inset-left))!important;padding-right:max(16px,env(safe-area-inset-right))!important}
+@media(max-width:390px){.topo.topoCompacto{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important}}

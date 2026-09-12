@@ -1438,3 +1438,55 @@ body{
 .shinobiDrawerGrupo:last-of-type .shinobiDrawerItemTexto b,.shinobiDrawerGrupo:last-of-type .shinobiDrawerItemTexto small{display:block;line-height:1.25}
 .onlineDestinoDestaque{animation:shinobiDestinoPulse 1.15s ease-out 1;outline:1px solid rgba(255,132,53,.68)!important;box-shadow:0 0 0 3px rgba(255,132,53,.08),0 0 24px rgba(32,135,160,.12)!important}
 @keyframes shinobiDestinoPulse{0%{outline-color:rgba(255,132,53,.18);box-shadow:0 0 0 0 rgba(255,132,53,0)}45%{outline-color:rgba(255,132,53,.86);box-shadow:0 0 0 4px rgba(255,132,53,.10),0 0 28px rgba(32,135,160,.16)}100%{outline-color:rgba(255,132,53,.38);box-shadow:0 0 0 1px rgba(255,132,53,.02)}}
+
+
+/* ---------- 2.5.8.58 · MIGRAÇÃO DEFINITIVA DO MENU GLOBAL ---------- */
+.shinobiDrawerPainel{max-height:100dvh}
+.shinobiDrawerTopo{padding-top:max(30px,calc(env(safe-area-inset-top) + 16px))}
+.shinobiDrawerConfigConteudo{margin-left:42px;padding-left:10px;min-width:0}
+.shinobiDrawerConfigLegado{min-width:0}
+.shinobiDrawerConfigConteudo #configMenu.shinobiConfigMigrado{
+  position:static!important;inset:auto!important;display:grid!important;width:100%!important;max-width:none!important;
+  gap:7px!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;transform:none!important;z-index:auto!important;
+}
+.shinobiDrawerConfigConteudo #configMenu .shinobiLegacyTitulo{margin-top:13px!important;margin-bottom:2px!important}
+.shinobiDrawerConfigConteudo #configMenu .shinobiLegacyTitulo:first-child{margin-top:0!important}
+.shinobiDrawerConfigConteudo #configMenu .configLabel{margin:2px 3px 0!important;color:#88a9b1!important;font-size:10px!important;letter-spacing:.7px!important}
+.shinobiDrawerConfigConteudo #configMenu .seletorFicha{
+  width:100%!important;min-width:0!important;min-height:42px!important;margin:0 0 3px!important;padding:8px 10px!important;
+  border:1px solid rgba(48,139,160,.34)!important;border-radius:9px!important;background:#031014!important;color:#edf5f7!important;box-shadow:none!important;
+}
+.shinobiDrawerConfigConteudo #configMenu .btn,
+.shinobiDrawerConfigConteudo #configMenu .backupBtn,
+.shinobiDrawerConfigConteudo #configMenu .salvar{
+  width:100%!important;min-width:0!important;min-height:46px!important;margin:0!important;padding:8px 8px!important;
+  display:grid!important;grid-template-columns:30px minmax(0,1fr)!important;gap:8px!important;align-items:center!important;justify-content:stretch!important;
+  border:0!important;border-bottom:1px solid rgba(43,125,145,.18)!important;border-radius:0!important;
+  background:transparent!important;color:#e5ecee!important;text-align:left!important;box-shadow:none!important;font-size:13px!important;
+}
+.shinobiDrawerConfigConteudo #configMenu .btn:hover,
+.shinobiDrawerConfigConteudo #configMenu .btn:focus-visible{background:rgba(19,83,98,.12)!important;outline:none!important}
+.shinobiDrawerConfigConteudo #configMenu .btn .shinobiIcon{--icon-size:20px!important;color:#d69a62!important;justify-self:center}
+.shinobiDrawerConfigConteudo #configMenu .dangerFicha{color:#ff9f96!important}
+.shinobiDrawerConfigConteudo #shinobiAtualizacaoPainel{width:100%!important;margin:3px 0 6px!important;box-sizing:border-box!important}
+.shinobiPersonalizacaoTitulo{margin-top:17px!important}
+.shinobiDrawerSyncCard.onlineErro .shinobiDrawerStatusDot{background:#ef6666!important;box-shadow:0 0 10px rgba(239,102,102,.45)!important}
+.shinobiDrawerItemExpansivel.temAtualizacao::after{
+  content:"";position:absolute;right:28px;top:12px;width:8px;height:8px;border-radius:50%;background:#ff9d3f;box-shadow:0 0 0 2px #02090c,0 0 8px rgba(255,157,63,.42)
+}
+@media(max-width:420px){
+  .shinobiDrawerPainel{width:min(368px,94vw)}
+  .shinobiDrawerConfigConteudo{margin-left:30px;padding-left:9px}
+}
+@media(max-width:350px){
+  .shinobiDrawerPainel{width:96vw;padding-left:11px;padding-right:11px}
+  .shinobiDrawerConfigConteudo{margin-left:20px}
+}
+
+.shinobiDrawerPainel{padding-left:max(18px,env(safe-area-inset-left));padding-right:18px}
+html.shinobiTemAtualizacao .shinobiDrawerItemExpansivel[data-drawer-action="settings"]::after{
+  content:"";position:absolute;right:28px;top:12px;width:8px;height:8px;border-radius:50%;background:#ff9d3f;box-shadow:0 0 0 2px #02090c,0 0 8px rgba(255,157,63,.42)
+}
+@media(max-width:420px){.shinobiDrawerPainel{padding-left:max(14px,env(safe-area-inset-left));padding-right:14px}}
+@media(max-width:350px){.shinobiDrawerPainel{padding-left:max(11px,env(safe-area-inset-left));padding-right:11px}}

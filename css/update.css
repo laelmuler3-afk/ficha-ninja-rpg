@@ -123,11 +123,11 @@
   opacity:.72;
 }
 
-.configBtn.temAtualizacao{
+.topoMenuBtn.temAtualizacao{
   position:relative;
 }
 
-.configBtn.temAtualizacao::after{
+.topoMenuBtn.temAtualizacao::after{
   content:"";
   position:absolute;
   top:2px;
