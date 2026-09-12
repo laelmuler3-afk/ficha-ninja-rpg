@@ -9,7 +9,9 @@
     "moeda-de-prata": "assets/inventory-moeda-de-prata.webp",
     "moeda-de-bronze": "assets/inventory-moeda-de-bronze.webp",
     "moeda-de-cobre": "assets/inventory-moeda-de-bronze.webp",
-    "moeda-de-diamante": "assets/inventory-moeda-de-diamante.webp",
+    "moeda-de-platina": "assets/inventory-moeda-de-platina.webp",
+    // Slug legado mantido apenas para fichas antigas.
+    "moeda-de-diamante": "assets/inventory-moeda-de-platina.webp",
     "kunai": "assets/inventory-kunai.webp",
     "shuriken": "assets/inventory-shuriken.webp",
     "agulhas": "assets/inventory-agulhas.webp",
@@ -85,8 +87,12 @@
     "senbon": "agulhas",
     "shuriken": "shuriken",
     "kunai": "kunai",
-    "moeda de diamante": "moeda-de-diamante",
-    "diamante": "moeda-de-diamante",
+    "moeda de platina": "moeda-de-platina",
+    "platina": "moeda-de-platina",
+    "pl": "moeda-de-platina",
+    // Compatibilidade com fichas antigas que ainda salvam a nomenclatura anterior.
+    "moeda de diamante": "moeda-de-platina",
+    "diamante": "moeda-de-platina",
     "moeda de ouro": "moeda-de-ouro",
     "ouro": "moeda-de-ouro",
     "moeda de prata": "moeda-de-prata",
@@ -102,7 +108,8 @@
   });
 
   const MOEDAS = Object.freeze([
-    { chave:"pd", sigla:"PD", nome:"Diamante", fator:1000000, slug:"moeda-de-diamante" },
+    // A chave interna "pd" e o slug legado são mantidos para não quebrar fichas já salvas.
+    { chave:"pd", sigla:"PL", nome:"Platina", fator:1000000, slug:"moeda-de-platina" },
     { chave:"po", sigla:"PO", nome:"Ouro", fator:10000, slug:"moeda-de-ouro" },
     { chave:"pp", sigla:"PP", nome:"Prata", fator:100, slug:"moeda-de-prata" },
     { chave:"pc", sigla:"PC", nome:"Cobre", fator:1, slug:"moeda-de-cobre" }
@@ -266,6 +273,14 @@
     try{return new Intl.NumberFormat("pt-BR").format(valor);}catch(_erro){return String(valor);}
   }
 
+  function normalizarTerminologiaMoedas(texto){
+    return String(texto??"")
+      .replace(/\bPeças? de Diamante\b/gi, termo=>/^Peças/.test(termo)?"Peças de Platina":"Peça de Platina")
+      .replace(/\bMoedas? de Diamante\b/gi, termo=>/^Moedas/.test(termo)?"Moedas de Platina":"Moeda de Platina")
+      .replace(/\bDiamante\b/gi,"Platina")
+      .replace(/\bPD\b/g,"PL");
+  }
+
   function formatarCarteira(carteira=garantirCarteira(),{incluirZeros=false}={}){
     const partes = MOEDAS
       .map(moeda=>({moeda,quantidade:inteiroSeguro(carteira[moeda.chave])}))
@@ -309,7 +324,7 @@
   }
 
   function moedaPorSlug(slug){
-    if(slug==="moeda-de-diamante") return "pd";
+    if(slug==="moeda-de-platina"||slug==="moeda-de-diamante") return "pd";
     if(slug==="moeda-de-ouro") return "po";
     if(slug==="moeda-de-prata") return "pp";
     if(slug==="moeda-de-cobre"||slug==="moeda-de-bronze") return "pc";
@@ -323,6 +338,8 @@
 
     const nome=normalizarNome(item?.nome);
     const nomesExatos={
+      "moeda de platina":"pd","platina":"pd","pl":"pd","peca de platina":"pd",
+      // Legado: aceita a nomenclatura antiga apenas para migrar fichas existentes.
       "moeda de diamante":"pd","diamante":"pd","pd":"pd","peca de diamante":"pd",
       "moeda de ouro":"po","ouro":"po","po":"po","peca de ouro":"po",
       "moeda de prata":"pp","prata":"pp","pp":"pp","peca de prata":"pp",
@@ -472,7 +489,8 @@
     const html=[];
     itens.forEach((item,indice)=>{
       const nomeOriginal=String(item?.nome||"Item");
-      const nomeSeguro=escaparHtml(nomeOriginal);
+      const nomeExibicao=normalizarTerminologiaMoedas(nomeOriginal);
+      const nomeSeguro=escaparHtml(nomeExibicao);
       const quantidade=quantidadeInventarioVisual(item);
       const aberto=detalheAberto===indice;
       const menuAberto=menuAcoesAberto===indice;
@@ -552,7 +570,7 @@
 
       <div class="carteiraConversao">
         <span class="shinobiIcon icon-sync carteiraConversaoIcone" aria-hidden="true"></span>
-        <div><strong>Conversão automática</strong><span>1 PD = 100 PO · 1 PO = 100 PP · 1 PP = 100 PC</span></div>
+        <div><strong>Conversão automática</strong><span>1 PL = 100 PO · 1 PO = 100 PP · 1 PP = 100 PC</span></div>
       </div>
 
       <button type="button" class="carteiraOrganizarBtn" onclick="organizarMoedasCarteira()">
@@ -567,7 +585,7 @@
           ${historico.length?historico.slice(0,20).map(item=>`
             <article>
               <div><strong>${escaparHtml(item.titulo||"Movimentação")}</strong><small>${new Date(Number(item.data)||Date.now()).toLocaleString("pt-BR")}</small></div>
-              <span>${escaparHtml(item.detalhe||"")}</span>
+              <span>${escaparHtml(normalizarTerminologiaMoedas(item.detalhe||""))}</span>
             </article>
           `).join(""):'<p>Nenhuma movimentação registrada.</p>'}
         </div>
