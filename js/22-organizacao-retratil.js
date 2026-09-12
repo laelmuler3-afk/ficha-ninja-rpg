@@ -1,4 +1,4 @@
-/* Ficha Ninja RPG 2.5.8.32 — Passo 6: Jutsus com navegação visual por grupos. */
+/* Ficha Ninja RPG 2.5.8.44 — organização retrátil de Jutsus e Loja. */
 (function(){
   "use strict";
 
@@ -517,7 +517,7 @@
         });
       });
 
-      const chaveInicial = categorias.includes(preferida) ? preferida : categorias[0];
+      const chaveInicial = categorias.includes(preferida) ? preferida : "";
       secoes.forEach(secao=>{
         const aberta = pesquisando || secao.dataset.categoriaLoja === chaveInicial;
         definirCategoriaLojaAberta(secao,aberta);
