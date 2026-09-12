@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.52",
-  "name": "Notas — fidelidade fina à referência",
-  "notes": "Refina cabeçalho, linha ornamental, linhas laterais sem glow com ornamento central, presença do pergaminho, espaçamento interno e reduz o espaço morto inferior. Mantém Novo tópico flutuante à direita conforme preferência aprovada.",
+  "version": "2.5.8.53",
+  "name": "Notas — acabamento final do deploy real",
+  "notes": "Corrige legado visual antigo que causava faixa bege e espaço morto, reposiciona Novo tópico acima do rolo, traz as linhas laterais para dentro da área visível sem glow e recupera largura para títulos.",
   "date": "2026-09-12"
 }
