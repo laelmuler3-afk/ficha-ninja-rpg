@@ -136,30 +136,43 @@
   }
 
 
-  function abrirConfiguracoesExistentes(){
-    executarAposFecharDrawer(()=>{
-      const menu=document.getElementById("configMenu");
-      if(menu){
-        menu.classList.add("aberto");
-        menu.setAttribute("data-opened-from-drawer","1");
-        const primeiro=menu.querySelector("select,button:not([disabled]),input:not([type=hidden])");
-        requestAnimationFrame(()=>{
-          menu.scrollIntoView({behavior:"smooth",block:"nearest"});
-          primeiro?.focus?.({preventScroll:true});
-        });
-        return;
-      }
-      if(typeof window.toggleConfigMenu==="function")window.toggleConfigMenu();
-    });
+  function migrarConfiguracoesLegadas(drawer=document.getElementById("shinobiNavDrawer")){
+    const destino=drawer?.querySelector("[data-drawer-config-legacy]");
+    const menu=document.getElementById("configMenu");
+    if(!destino||!menu)return;
+    if(menu.parentElement!==destino)destino.appendChild(menu);
+    menu.classList.add("aberto","shinobiConfigMigrado");
+    menu.removeAttribute("aria-hidden");
+    const host=document.getElementById("shinobiLegacyConfigHost");
+    if(host)host.remove();
   }
-  window.abrirConfiguracoesShinobi=abrirConfiguracoesExistentes;
+
+  function alternarConfiguracoesDrawer(forcar){
+    const drawer=document.getElementById("shinobiNavDrawer");
+    if(!drawer)return;
+    migrarConfiguracoesLegadas(drawer);
+    const botao=drawer.querySelector('[data-drawer-action="settings"]');
+    const conteudo=drawer.querySelector("[data-drawer-config]");
+    if(!botao||!conteudo)return;
+    const abrir=typeof forcar==="boolean"?forcar:conteudo.hidden;
+    conteudo.hidden=!abrir;
+    botao.classList.toggle("aberto",abrir);
+    botao.setAttribute("aria-expanded",abrir?"true":"false");
+    if(abrir){
+      requestAnimationFrame(()=>{
+        botao.scrollIntoView({behavior:"smooth",block:"nearest"});
+      });
+    }
+  }
+  window.abrirConfiguracoesShinobi=()=>alternarConfiguracoesDrawer(true);
 
   function avisoEmBreve(titulo){
     if(typeof window.avisoShinobi==="function")window.avisoShinobi(titulo,"Esta opção já está reservada na nova estrutura e será ativada em uma próxima etapa.");
   }
 
   function instalarDrawer(){
-    if(document.getElementById("shinobiNavDrawer"))return;
+    const existente=document.getElementById("shinobiNavDrawer");
+    if(existente){migrarConfiguracoesLegadas(existente);return existente;}
     const drawer=document.createElement("aside");
     drawer.id="shinobiNavDrawer";
     drawer.className="shinobiNavDrawer";
@@ -235,7 +248,8 @@
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
           <div class="shinobiDrawerConfigConteudo" data-drawer-config hidden>
-            <p class="shinobiDrawerSubtitulo">PERSONALIZAÇÃO</p>
+            <div class="shinobiDrawerConfigLegado" data-drawer-config-legacy></div>
+            <p class="shinobiDrawerSubtitulo shinobiPersonalizacaoTitulo">PERSONALIZAÇÃO</p>
             <button type="button" class="shinobiDrawerSubitem" data-drawer-action="themes">
               <span class="shinobiDrawerItemIcon">${iconHTML("store")}</span>
               <span class="shinobiDrawerItemTexto"><b>Loja de temas</b><small>Em breve</small></span>
@@ -274,6 +288,8 @@
         </footer>
       </nav>`;
     document.body.appendChild(drawer);
+    migrarConfiguracoesLegadas(drawer);
+    drawer.querySelector('[data-drawer-action="settings"]')?.classList.toggle("temAtualizacao",document.documentElement.classList.contains("shinobiTemAtualizacao"));
 
     drawer.querySelector(".shinobiDrawerBackdrop")?.addEventListener("click",fecharShinobiDrawer);
     drawer.querySelector(".shinobiDrawerFechar")?.addEventListener("click",fecharShinobiDrawer);
@@ -291,7 +307,7 @@
       if(acao==="create-room"){abrirPainelOnline("criar-sala");return;}
       if(acao==="join-room"){abrirPainelOnline("entrar-sala");return;}
       if(acao==="current-room"){abrirPainelOnline("sala-atual");return;}
-      if(acao==="settings"){abrirConfiguracoesExistentes();return;}
+      if(acao==="settings"){alternarConfiguracoesDrawer();return;}
       if(acao==="themes"){avisoEmBreve("Loja de temas");return;}
       if(acao==="personalization"){avisoEmBreve("Personalização");return;}
       if(acao==="about"){avisoEmBreve("Sobre o app");return;}

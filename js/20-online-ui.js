@@ -297,29 +297,11 @@
   }
 
   function instalarBotao(){
-    const config=document.getElementById("configMenu");
-    if(config&&!document.getElementById("shinobiOnlineMenuBtn")){
-      const botao=document.createElement("button");
-      botao.id="shinobiOnlineMenuBtn";
-      botao.type="button";
-      botao.className="btn backupBtn shinobiOnlineMenuBtn";
-      botao.innerHTML='<span class="onlineDot" aria-hidden="true"></span><span>Mesa online e nuvem</span>';
-      botao.addEventListener("click",abrir);
-      const painelUpdate=config.querySelector("#shinobiAtualizacaoPainel");
-      config.insertBefore(botao,painelUpdate||null);
-    }
-
-    const topo=document.querySelector(".topo");
-    if(topo&&!document.getElementById("shinobiOnlineTopoBtn")){
-      const botao=document.createElement("button");
-      botao.id="shinobiOnlineTopoBtn";
-      botao.type="button";
-      botao.className="shinobiOnlineTopoBtn";
-      botao.innerHTML='<span class="onlineDot"></span><span class="onlineTopoTexto">Online</span>';
-      botao.addEventListener("click",abrir);
-      const configGlobal=topo.querySelector(".configGlobal");
-      topo.insertBefore(botao,configGlobal||null);
-    }
+    // A navegação online agora pertence integralmente ao menu lateral esquerdo.
+    // Mantemos apenas o widget de batalha/sala, sem recriar atalhos no cabeçalho
+    // ou no antigo menu de configurações.
+    document.getElementById("shinobiOnlineMenuBtn")?.remove();
+    document.getElementById("shinobiOnlineTopoBtn")?.remove();
     document.getElementById("shinobiTurnoMini")?.remove();
     instalarPainelFlutuante();
     atualizarIndicadores();
@@ -398,7 +380,6 @@
     root.removeAttribute("hidden");
     root.setAttribute("aria-hidden","false");
     document.body.classList.add("onlineAberto");
-    document.getElementById("configMenu")?.classList.remove("aberto");
     renderizar();
     // Uma segunda confirmação no frame seguinte evita que transições/fechamento
     // do drawer deixem o overlay atrás da ficha em alguns navegadores móveis.
@@ -416,12 +397,12 @@
     const st=obterEstado();
     const ativo=Boolean(st.configurado&&st.conectado);
     const emSala=Boolean(st.salaId&&st.sala);
-    document.querySelectorAll("#shinobiOnlineMenuBtn,#shinobiOnlineTopoBtn").forEach(el=>{
-      el.classList.toggle("onlineAtivo",ativo);
-      el.classList.toggle("onlineEmSala",emSala);
-    });
-    const textoTopo=document.querySelector("#shinobiOnlineTopoBtn .onlineTopoTexto");
-    if(textoTopo) textoTopo.textContent=emSala?`Sala ${st.sala?.code||""}`:ativo?"Nuvem":"Online";
+    const card=document.querySelector("[data-drawer-sync]");
+    if(card){
+      card.classList.toggle("onlineAtivo",ativo);
+      card.classList.toggle("onlineEmSala",emSala);
+      if(ativo)card.classList.remove("onlineErro");
+    }
     renderPainelFlutuante(st);
   }
 
@@ -1071,11 +1052,11 @@
     window.__shinobiOnlineUIEventos=true;
     ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
     window.ShinobiOnline.on("erro",e=>{
-      document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");
+      document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");
       console.warn("Modo online indisponível:",e.detail.mensagem);
       agendarRender();
     });
-    window.ShinobiOnline.on("erro-sync",e=>{document.getElementById("shinobiOnlineTopoBtn")?.classList.add("onlineErro");console.warn(e.detail.mensagem);});
+    window.ShinobiOnline.on("erro-sync",e=>{document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");console.warn(e.detail.mensagem);});
     window.ShinobiOnline.on("conflito-ficha",e=>{conflitoAtual=e.detail;abrir();agendarRender();});
     window.ShinobiOnline.on("xp-recebido",e=>{
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);

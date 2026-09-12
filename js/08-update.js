@@ -137,7 +137,10 @@
   }
 
   function marcarIconeAtualizacao(ativo){
-    document.querySelector(".configBtn")?.classList.toggle("temAtualizacao",Boolean(ativo));
+    const estado=Boolean(ativo);
+    document.documentElement.classList.toggle("shinobiTemAtualizacao",estado);
+    document.querySelector(".topoMenuBtn")?.classList.toggle("temAtualizacao",estado);
+    document.querySelector('[data-drawer-action="settings"]')?.classList.toggle("temAtualizacao",estado);
   }
 
   function obterAviso(){
