@@ -1,5 +1,5 @@
 /* ==========================================================
-   NOTAS — Etapa 1 / 2.5.8.49
+   NOTAS — Etapa 2 / 2.5.8.50
    Visual híbrido: shell AMOLED/petróleo + pergaminho temático.
    A lógica de criação, edição, expansão e salvamento permanece
    em js/01-core.js; este arquivo cuida apenas da apresentação.
@@ -137,7 +137,7 @@
   position:relative;
   width:min(100%,760px);
   aspect-ratio:941/1672;
-  margin:0 auto;
+  margin:-14px auto 0;
   background:url("../assets/ui-notes-scroll.webp") center top/100% 100% no-repeat;
   filter:drop-shadow(0 20px 22px rgba(0,0,0,.42));
   isolation:isolate;
@@ -146,10 +146,10 @@
 #anotacoes .notasPergaminhoConteudo{
   position:absolute;
   z-index:2;
-  left:15.6%;
-  right:14.7%;
-  top:19.3%;
-  bottom:14.7%;
+  left:13.7%;
+  right:13.5%;
+  top:16.6%;
+  bottom:24.7%;
   display:flex;
   flex-direction:column;
   min-height:0;
@@ -157,10 +157,12 @@
 
 #anotacoes .listaTopicosNotas{
   flex:1 1 auto;
+  width:100%!important;
+  max-width:none!important;
   min-height:0;
   max-height:none!important;
   margin:0!important;
-  padding:2px 5px 7px!important;
+  padding:2px 4px 6px!important;
   display:flex!important;
   flex-direction:column;
   gap:9px!important;
@@ -179,6 +181,8 @@
 
 #anotacoes .topicoNotaCard{
   flex:0 0 auto;
+  width:100%!important;
+  max-width:none!important;
   margin:0!important;
   overflow:hidden!important;
   border:1px solid rgba(106,65,32,.30)!important;
@@ -191,10 +195,10 @@
 #anotacoes .topicoNotaHeader{
   display:grid!important;
   grid-template-columns:20px minmax(0,1fr) 34px 34px!important;
-  gap:5px!important;
+  gap:6px!important;
   align-items:center!important;
-  min-height:54px!important;
-  padding:7px 8px 7px 12px!important;
+  min-height:50px!important;
+  padding:6px 8px 6px 11px!important;
   cursor:pointer;
   background:transparent!important;
 }
@@ -216,7 +220,9 @@
 }
 
 #anotacoes .topicoNotaTitulo{
+  width:100%!important;
   min-width:0!important;
+  max-width:none!important;
   overflow:hidden!important;
   color:#18120c!important;
   font-family:Georgia,"Times New Roman",serif!important;
@@ -257,6 +263,8 @@
 
 #anotacoes .topicoNotaConteudo{
   display:none;
+  width:100%!important;
+  max-width:none!important;
   padding:0 10px 10px!important;
   background:transparent!important;
 }
@@ -289,10 +297,16 @@
 }
 
 #anotacoes .btnAdicionarTopicoNota{
+  position:relative!important;
+  top:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  left:auto!important;
   flex:0 0 auto;
-  width:calc(100% - 10px)!important;
-  min-height:58px!important;
-  margin:9px 5px 3px!important;
+  width:calc(100% - 8px)!important;
+  max-width:none!important;
+  min-height:52px!important;
+  margin:8px 4px 2px!important;
   padding:10px 16px!important;
   display:flex!important;
   align-items:center!important;
@@ -350,24 +364,25 @@
   #anotacoes .notasHeroTitulo small{font-size:9px;letter-spacing:3px}
   #anotacoes .notasHeroLema{padding-right:34px;font-size:6.8px;letter-spacing:2.2px}
   #anotacoes .notasHeroKanji{right:0;font-size:49px}
-  #anotacoes .notasFrase{margin:11px auto 4px;font-size:11px;letter-spacing:.8px}
-  #anotacoes .notasPergaminhoShell{width:calc(100% + 8px);margin-left:-4px}
-  #anotacoes .notasPergaminhoConteudo{left:14.8%;right:13.9%;top:19.2%;bottom:14.5%}
-  #anotacoes .listaTopicosNotas{gap:6px!important;padding:1px 3px 5px!important}
+  #anotacoes .notasFrase{margin:10px auto 2px;font-size:11px;letter-spacing:.8px}
+  #anotacoes .notasPergaminhoShell{width:calc(100% + 12px);margin:-18px 0 0 -6px}
+  #anotacoes .notasPergaminhoConteudo{left:13.4%;right:13.2%;top:16.3%;bottom:24.5%}
+  #anotacoes .listaTopicosNotas{width:100%!important;max-width:none!important;margin:0!important;gap:6px!important;padding:1px 2px 4px!important}
   #anotacoes .topicoNotaHeader{
-    grid-template-columns:17px minmax(0,1fr) 29px 29px!important;
-    gap:3px!important;
-    min-height:43px!important;
-    padding:5px 4px 5px 8px!important;
+    grid-template-columns:16px minmax(0,1fr) 28px 28px!important;
+    gap:4px!important;
+    min-height:40px!important;
+    padding:4px 4px 4px 7px!important;
   }
-  #anotacoes .topicoNotaSeta{width:17px!important;font-size:12px!important}
+  #anotacoes .topicoNotaSeta{width:16px!important;font-size:12px!important}
+  #anotacoes .topicoNotaTitulo{font-size:14px!important}
   #anotacoes .topicoNotaEditar,
-  #anotacoes .topicoNotaRemover{width:29px!important;height:29px!important;min-width:29px!important}
+  #anotacoes .topicoNotaRemover{width:28px!important;height:28px!important;min-width:28px!important}
   #anotacoes .topicoNotaEditar .shinobiIcon,
-  #anotacoes .topicoNotaRemover .shinobiIcon{--icon-size:16px}
-  #anotacoes .topicoNotaConteudo{padding:0 7px 7px!important}
-  #anotacoes .topicoNotaConteudo textarea{min-height:105px!important;padding:9px 10px!important;font-size:13px!important}
-  #anotacoes .btnAdicionarTopicoNota{min-height:47px!important;margin-top:6px!important;padding:7px 10px!important}
+  #anotacoes .topicoNotaRemover .shinobiIcon{--icon-size:15px}
+  #anotacoes .topicoNotaConteudo{width:100%!important;max-width:none!important;padding:0 6px 6px!important}
+  #anotacoes .topicoNotaConteudo textarea{min-height:108px!important;max-height:190px!important;padding:9px 10px!important;font-size:13px!important}
+  #anotacoes .btnAdicionarTopicoNota{position:relative!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;width:calc(100% - 6px)!important;max-width:none!important;min-height:44px!important;margin:6px 3px 2px!important;padding:6px 9px!important;font-size:15px!important}
   #anotacoes .btnAdicionarTopicoNota .shinobiIcon{--icon-size:18px}
 }
 
@@ -377,6 +392,27 @@
   #anotacoes .notasHeroIcone{width:48px;height:48px}
   #anotacoes .notasHeroTitulo h2{font-size:29px!important}
   #anotacoes .notasHeroKanji{font-size:42px;opacity:.72}
-  #anotacoes .notasPergaminhoConteudo{left:14.2%;right:13.3%}
-  #anotacoes .topicoNotaTitulo{font-size:13.5px!important}
+  #anotacoes .notasPergaminhoConteudo{left:13.2%;right:13%;top:16.2%;bottom:24.3%}
+  #anotacoes .topicoNotaTitulo{font-size:13px!important}
+}
+
+
+/* Etapa 2: neutraliza regras legadas de Notas ainda presentes no app.css.
+   Esta camada é intencionalmente explícita até a limpeza global do CSS. */
+#anotacoes .notasPergaminhoConteudo > .listaTopicosNotas{
+  position:relative!important;
+  top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+  width:100%!important;max-width:none!important;
+  margin:0!important;
+}
+#anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+  position:relative!important;
+  inset:auto!important;
+  transform:none!important;
+}
+#anotacoes .topicoNotaCard,
+#anotacoes .topicoNotaHeader,
+#anotacoes .topicoNotaConteudo,
+#anotacoes .topicoNotaConteudo textarea{
+  box-sizing:border-box!important;
 }
