@@ -418,88 +418,207 @@
 }
 
 /* ==========================================================
-   NOTAS — ETAPA 3 / acabamento aprovado
-   - linhas laterais ciano finas, sem glow
-   - aura azul-petróleo muito suave no pergaminho
-   - botão Novo tópico flutuante na área ilustrada à direita
+   NOTAS — ETAPA 4 / fidelidade fina à referência — 2.5.8.52
+   - moldura superior mais compacta e integrada
+   - linha decorativa sob o cabeçalho com selo geométrico central
+   - linhas laterais finas, sem glow, com ornamento no meio
+   - pergaminho ligeiramente mais presente
+   - menos espaço morto abaixo da arte
+   - botão Novo tópico permanece flutuante à direita (preferência aprovada)
    ========================================================== */
-#anotacoes .notasPergaminhoShell{
-  overflow:visible!important;
-  filter:
-    drop-shadow(0 20px 22px rgba(0,0,0,.42))
-    drop-shadow(0 0 10px rgba(20,142,181,.10))
-    drop-shadow(0 0 22px rgba(8,77,101,.08))!important;
+
+/* Cabeçalho mais fechado, próximo da composição da referência. */
+#anotacoes .notasModulo{
+  padding-top:14px;
+  padding-bottom:10px;
 }
 
-/* As linhas pertencem à moldura da seção, não ao pergaminho.
-   Sem blur, sem box-shadow e sem halo: apenas traço fino. */
+#anotacoes .notasHero{
+  min-height:88px;
+  padding:8px 6px 10px;
+}
+
+/* Substitui a linha simples por dois traços + ornamento central.
+   O SVG está embutido no CSS e funciona offline. */
+#anotacoes .notasHero::after{
+  content:"";
+  position:absolute;
+  left:82px;
+  right:10px;
+  bottom:-8px;
+  height:17px;
+  background:
+    linear-gradient(90deg,rgba(78,161,182,.72),rgba(78,161,182,.25)) left center/calc(50% - 15px) 1px no-repeat,
+    linear-gradient(90deg,rgba(78,161,182,.25),rgba(78,161,182,.72)) right center/calc(50% - 15px) 1px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%234e9fb5' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round' opacity='.78'%3E%3Cpath d='M12 2.8l2.25 6.95L21.2 12l-6.95 2.25L12 21.2l-2.25-6.95L2.8 12l6.95-2.25L12 2.8z'/%3E%3Cpath d='M12 7.5l1.05 3.45L16.5 12l-3.45 1.05L12 16.5l-1.05-3.45L7.5 12l3.45-1.05L12 7.5z'/%3E%3C/g%3E%3C/svg%3E") center/17px 17px no-repeat;
+  box-shadow:none!important;
+  filter:none!important;
+  pointer-events:none;
+}
+
+#anotacoes .notasFrase{
+  margin:16px auto 2px;
+}
+
+/* O pergaminho cresce poucos pixels para ganhar presença sem distorcer a arte.
+   O margin-bottom negativo só elimina o preto vazio existente no próprio asset. */
+#anotacoes .notasPergaminhoShell{
+  width:min(calc(100% + 10px),780px);
+  margin:-13px auto clamp(-74px,-10vw,-36px);
+  overflow:visible!important;
+  filter:
+    drop-shadow(0 19px 22px rgba(0,0,0,.43))
+    drop-shadow(0 0 9px rgba(25,121,151,.075))
+    drop-shadow(0 0 20px rgba(7,62,83,.055))!important;
+}
+
+/* Linhas laterais da referência: traço fino e opaco, SEM halo.
+   Cada pseudo-elemento desenha dois segmentos e o pequeno ornamento central. */
 #anotacoes .notasPergaminhoShell::before,
 #anotacoes .notasPergaminhoShell::after{
   content:"";
   position:absolute;
   z-index:0;
-  top:24%;
-  bottom:10%;
-  width:1px;
-  background:rgba(31,151,190,.52);
+  top:10.2%;
+  bottom:10.8%;
+  width:21px;
+  background:
+    linear-gradient(rgba(42,151,184,.52),rgba(42,151,184,.52)) center top/1px 42% no-repeat,
+    linear-gradient(rgba(42,151,184,.52),rgba(42,151,184,.52)) center bottom/1px 42% no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%232a97b8' stroke-width='1.15' stroke-linecap='round' stroke-linejoin='round' opacity='.72'%3E%3Cpath d='M12 2.5l2.1 7.4 7.4 2.1-7.4 2.1-2.1 7.4-2.1-7.4-7.4-2.1 7.4-2.1L12 2.5z'/%3E%3Cpath d='M12 8.4l.95 2.65L15.6 12l-2.65.95L12 15.6l-.95-2.65L8.4 12l2.65-.95L12 8.4z'/%3E%3C/g%3E%3C/svg%3E") center/19px 19px no-repeat;
   box-shadow:none!important;
   filter:none!important;
+  opacity:.9;
   pointer-events:none;
 }
-#anotacoes .notasPergaminhoShell::before{left:-1px}
-#anotacoes .notasPergaminhoShell::after{right:-1px}
+#anotacoes .notasPergaminhoShell::before{left:-4.2%}
+#anotacoes .notasPergaminhoShell::after{right:-4.2%}
 
-/* O botão continua flutuante e usa o vazio da ilustração inferior. */
+/* Um pouco mais de respiro dentro do papel, mantendo a largura dos títulos. */
+#anotacoes .notasPergaminhoConteudo{
+  left:13.8%;
+  right:13.7%;
+  top:16.45%;
+  bottom:24.7%;
+}
+
+#anotacoes .listaTopicosNotas{
+  gap:8px!important;
+  padding:2px 3px 5px!important;
+}
+
+#anotacoes .topicoNotaHeader{
+  grid-template-columns:18px minmax(0,1fr) 30px 30px!important;
+  gap:4px!important;
+  min-height:48px!important;
+  padding:5px 4px 5px 9px!important;
+}
+
+#anotacoes .topicoNotaEditar,
+#anotacoes .topicoNotaRemover{
+  width:30px!important;
+  height:32px!important;
+  min-width:30px!important;
+}
+
+/* Mantém a decisão aprovada: botão flutuante à direita, integrado ao desenho. */
 #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
   position:absolute!important;
   left:auto!important;
-  right:1.5%!important;
+  right:2.8%!important;
   top:auto!important;
-  bottom:-20.5%!important;
-  width:48%!important;
-  max-width:220px!important;
+  bottom:-20.2%!important;
+  width:45%!important;
+  max-width:210px!important;
   min-height:44px!important;
   margin:0!important;
   padding:7px 12px!important;
   z-index:5!important;
-  background:rgba(55,28,20,.90)!important;
-  border:1px solid rgba(177,67,31,.72)!important;
-  box-shadow:0 6px 14px rgba(0,0,0,.22)!important;
-}
-
-/* Recupera alguns pixels para títulos longos sem reduzir legibilidade. */
-#anotacoes .topicoNotaHeader{
-  grid-template-columns:18px minmax(0,1fr) 30px 30px!important;
-  gap:4px!important;
-  padding-left:8px!important;
-  padding-right:4px!important;
-}
-#anotacoes .topicoNotaEditar,
-#anotacoes .topicoNotaRemover{
-  width:30px!important;
-  min-width:30px!important;
+  background:rgba(50,24,17,.91)!important;
+  border:1px solid rgba(175,64,29,.70)!important;
+  border-radius:11px!important;
+  box-shadow:0 6px 14px rgba(0,0,0,.20)!important;
 }
 
 @media (max-width:560px){
-  #anotacoes .notasPergaminhoShell::before{left:1px}
-  #anotacoes .notasPergaminhoShell::after{right:1px}
-  #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
-    right:1%!important;
-    bottom:-20%!important;
-    width:49%!important;
-    min-height:40px!important;
-    padding:5px 8px!important;
-    font-size:14px!important;
+  #anotacoes .notasModulo{
+    padding-top:12px;
+    padding-bottom:6px;
+  }
+  #anotacoes .notasHero{
+    min-height:78px;
+    padding-bottom:8px;
+  }
+  #anotacoes .notasHero::after{
+    left:70px;
+    right:8px;
+    bottom:-7px;
+    height:15px;
+    background-size:calc(50% - 13px) 1px,calc(50% - 13px) 1px,15px 15px;
+  }
+  #anotacoes .notasFrase{
+    margin:13px auto 0;
+  }
+  #anotacoes .notasPergaminhoShell{
+    width:calc(100% + 18px);
+    margin:-15px 0 clamp(-62px,-12vw,-38px) -9px;
+  }
+  #anotacoes .notasPergaminhoShell::before{left:-2.6%}
+  #anotacoes .notasPergaminhoShell::after{right:-2.6%}
+  #anotacoes .notasPergaminhoShell::before,
+  #anotacoes .notasPergaminhoShell::after{
+    top:10.5%;
+    bottom:10.4%;
+    width:17px;
+    background-size:1px 42%,1px 42%,16px 16px;
+  }
+  #anotacoes .notasPergaminhoConteudo{
+    left:13.55%;
+    right:13.45%;
+    top:16.25%;
+    bottom:24.4%;
+  }
+  #anotacoes .listaTopicosNotas{
+    gap:6px!important;
+    padding:1px 2px 4px!important;
   }
   #anotacoes .topicoNotaHeader{
     grid-template-columns:15px minmax(0,1fr) 26px 26px!important;
     gap:3px!important;
-    padding:4px 3px 4px 6px!important;
+    min-height:40px!important;
+    padding:4px 3px 4px 7px!important;
   }
   #anotacoes .topicoNotaEditar,
   #anotacoes .topicoNotaRemover{
     width:26px!important;
     height:28px!important;
     min-width:26px!important;
+  }
+  #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+    right:2.5%!important;
+    bottom:-19.7%!important;
+    width:47%!important;
+    max-width:190px!important;
+    min-height:40px!important;
+    padding:5px 8px!important;
+    font-size:14px!important;
+  }
+}
+
+@media (max-width:370px){
+  #anotacoes .notasHero::after{left:62px}
+  #anotacoes .notasPergaminhoShell{
+    width:calc(100% + 14px);
+    margin-left:-7px;
+  }
+  #anotacoes .notasPergaminhoShell::before{left:-1.8%}
+  #anotacoes .notasPergaminhoShell::after{right:-1.8%}
+  #anotacoes .notasPergaminhoConteudo{
+    left:13.35%;
+    right:13.25%;
+  }
+  #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+    right:2%!important;
+    width:49%!important;
   }
 }
