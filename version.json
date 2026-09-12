@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.56",
-  "name": "Menu lateral — integração funcional",
-  "notes": "Conecta Sincronização, Conta, Login, Criar sala, Entrar em sala e Sala atual às funções online já existentes, com abertura focada da área correspondente. Configurações passa a abrir o painel de ajustes já existente. Corrige o espaçamento de Ajuda/Feedback no drawer.",
+  "version": "2.5.8.57",
+  "name": "Menu lateral — correção de abertura",
+  "notes": "Corrige o conflito de eventos que fazia Configurações abrir e fechar no mesmo toque. Adia a abertura dos painéis até o drawer terminar de fechar e reforça a exibição do painel online em navegadores móveis.",
   "date": "2026-09-12"
 }
