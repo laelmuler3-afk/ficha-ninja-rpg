@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.49",
-  "name": "Notas — Etapa 1 visual",
-  "notes": "Implementa a base visual da nova área de Notas com shell AMOLED/petróleo e pergaminho temático aprovado, preservando criação, expansão, edição, exclusão e salvamento dos tópicos.",
+  "version": "2.5.8.50",
+  "name": "Notas — Etapa 2 layout do pergaminho",
+  "notes": "Expande a lista de tópicos para toda a largura útil do pergaminho, mantém ações à direita, reposiciona o botão Novo tópico dentro do papel e melhora a expansão das anotações no mobile.",
   "date": "2026-09-12"
 }
