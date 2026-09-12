@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.50",
-  "name": "Notas — Etapa 2 layout do pergaminho",
-  "notes": "Expande a lista de tópicos para toda a largura útil do pergaminho, mantém ações à direita, reposiciona o botão Novo tópico dentro do papel e melhora a expansão das anotações no mobile.",
+  "version": "2.5.8.51",
+  "name": "Notas — Etapa 3 acabamento visual",
+  "notes": "Adiciona aura azul-petróleo muito suave ao pergaminho, linhas laterais ciano finas sem brilho, reposiciona Novo tópico como botão flutuante à direita e amplia o espaço útil dos títulos.",
   "date": "2026-09-12"
 }
