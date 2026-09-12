@@ -1,7 +1,7 @@
 /* Shinobi 2.5.8.40 — Progressão por toque e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.45";
+const APP_VERSION = "2.5.8.46";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -125,7 +125,7 @@ const APP_SHELL = [
   `./assets/inventory-fio-de-nilon.webp?v=${APP_VERSION}`,
   `./assets/inventory-kunai.webp?v=${APP_VERSION}`,
   `./assets/inventory-moeda-de-bronze.webp?v=${APP_VERSION}`,
-  `./assets/inventory-moeda-de-diamante.webp?v=${APP_VERSION}`,
+  `./assets/inventory-moeda-de-platina.webp?v=${APP_VERSION}`,
   `./assets/inventory-moeda-de-ouro.webp?v=${APP_VERSION}`,
   `./assets/inventory-moeda-de-prata.webp?v=${APP_VERSION}`,
   `./assets/inventory-papel-bomba.webp?v=${APP_VERSION}`,

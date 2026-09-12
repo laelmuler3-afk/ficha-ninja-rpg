@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.45",
-  "name": "Passo 7.4 — Carteira compacta",
-  "notes": "Compacta o cabeçalho de Equipamentos e Recursos, reduz o resumo da carteira e transforma PD, PO, PP e PC em linhas compactas com quantidade editável diretamente, removendo os botões + e -. Mantém conversão, histórico e salvamento.",
+  "version": "2.5.8.46",
+  "name": "Correção monetária — Platina",
+  "notes": "Padroniza a moeda de maior valor como Peças de Platina (PL) em toda a interface, mantendo compatibilidade com fichas antigas e sem alterar valores, conversão ou saldo salvo.",
   "date": "2026-09-12"
 }
