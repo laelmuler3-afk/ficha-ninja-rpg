@@ -1,10 +1,12 @@
 /* ==========================================================
    Ficha Ninja RPG — Carteira
-   v2.5.8.42 — Passo 7.2 AMOLED/Petróleo
+   v2.5.8.45 — Passo 7.4 Carteira compacta
 
-   A Carteira mantém exatamente a estrutura e a lógica existentes.
-   Este arquivo é a fonte visual dedicada do módulo para impedir que
-   regras antigas marrom/dourado voltem a aparecer por especificidade.
+   - Cabeçalho do módulo simplificado para "Equipamentos e recursos".
+   - Resumo de valor total mais baixo.
+   - Moedas em linha única: imagem + sigla/nome + quantidade editável.
+   - Botões +/- removidos da interface; o valor é editado diretamente.
+   - Conversão, organização e histórico preservados.
    ========================================================== */
 
 #inventario #carteiraConteudo{
@@ -22,7 +24,8 @@
 #inventario #carteiraConteudo .carteiraResumoCard,
 #inventario #carteiraConteudo .carteiraMoedaCard,
 #inventario #carteiraConteudo .carteiraConversao,
-#inventario #carteiraConteudo .carteiraHistorico{
+#inventario #carteiraConteudo .carteiraHistorico,
+#inventario #carteiraConteudo .carteiraOrganizarBtn{
   color:var(--wallet-text)!important;
   border:1px solid var(--wallet-line)!important;
   background:var(--wallet-bg)!important;
@@ -30,12 +33,14 @@
   box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
 }
 
-/* ---------- Resumo ---------- */
+/* ---------- Resumo compacto ---------- */
 #inventario #carteiraConteudo .carteiraResumoCard{
-  min-height:116px;
+  min-height:82px!important;
+  padding:13px 16px!important;
+  border-radius:16px!important;
   border-color:rgba(255,122,24,.66)!important;
   background:
-    linear-gradient(90deg,rgba(255,122,24,.035),transparent 52%),
+    linear-gradient(90deg,rgba(255,122,24,.035),transparent 58%),
     #010609!important;
   box-shadow:
     inset 3px 0 0 rgba(255,122,24,.82),
@@ -45,43 +50,59 @@
 #inventario #carteiraConteudo .carteiraResumoCard::after{
   content:""!important;
   display:block!important;
-  right:-44px!important;
-  bottom:-62px!important;
-  width:150px!important;
-  height:150px!important;
-  border:1px solid rgba(24,92,106,.20)!important;
+  right:-48px!important;
+  bottom:-84px!important;
+  width:146px!important;
+  height:146px!important;
+  border:1px solid rgba(24,92,106,.16)!important;
   background:transparent!important;
   box-shadow:none!important;
-  opacity:.9!important;
+  opacity:.8!important;
 }
 
 #inventario #carteiraConteudo .carteiraResumoCard>span{
   color:#90aeb8!important;
-  font-size:10px!important;
+  font-size:9px!important;
   font-weight:1000!important;
-  letter-spacing:1.35px!important;
+  letter-spacing:1.25px!important;
   text-shadow:none!important;
 }
 
 #inventario #carteiraConteudo .carteiraResumoCard>strong{
+  margin-top:5px!important;
   color:#ff9d48!important;
+  font-size:clamp(20px,5vw,27px)!important;
+  line-height:1.08!important;
   text-shadow:none!important;
   font-variant-numeric:tabular-nums;
 }
 
 #inventario #carteiraConteudo .carteiraResumoCard>small{
+  margin-top:4px!important;
   color:#9fb0b6!important;
+  font-size:11px!important;
   text-shadow:none!important;
 }
 
-/* ---------- Cards das moedas ---------- */
+/* ---------- Lista compacta de moedas ---------- */
 #inventario #carteiraConteudo .carteiraMoedasGrid{
-  gap:10px!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+  margin-top:10px!important;
 }
 
 #inventario #carteiraConteudo .carteiraMoedaCard{
   position:relative;
   overflow:hidden;
+  min-width:0!important;
+  min-height:78px!important;
+  padding:9px 10px!important;
+  display:grid!important;
+  grid-template-columns:60px minmax(0,1fr) minmax(88px,112px)!important;
+  gap:10px!important;
+  align-items:center!important;
+  border-radius:15px!important;
   border-color:rgba(24,92,106,.58)!important;
   background:#010609!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
@@ -91,13 +112,19 @@
   content:"";
   position:absolute;
   inset:0 auto 0 0;
-  width:2px;
+  width:3px;
   background:rgba(120,184,201,.55);
   pointer-events:none;
 }
 
 #inventario #carteiraConteudo .carteiraMoedaImagem{
+  width:60px!important;
+  height:60px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
   border:1px solid rgba(24,92,106,.42)!important;
+  border-radius:14px!important;
   background:#020a0d!important;
   background-image:none!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
@@ -105,119 +132,202 @@
 
 #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioImg,
 #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioIconeFallback{
+  width:56px!important;
+  height:56px!important;
+  object-fit:contain!important;
   filter:drop-shadow(0 5px 5px rgba(0,0,0,.42))!important;
 }
 
+#inventario #carteiraConteudo .carteiraMoedaInfo{
+  min-width:0!important;
+  align-self:center!important;
+}
+
 #inventario #carteiraConteudo .carteiraMoedaInfo strong{
+  display:block!important;
   color:#f3eee8!important;
+  font-size:19px!important;
+  line-height:1!important;
   text-shadow:none!important;
 }
 
 #inventario #carteiraConteudo .carteiraMoedaInfo small{
+  display:block!important;
+  margin-top:5px!important;
   color:#8199a2!important;
+  font-size:11px!important;
+  font-weight:800!important;
   text-shadow:none!important;
 }
 
 /* Cor da moeda só como acento fino; o card permanece AMOLED/petróleo. */
-#inventario #carteiraConteudo .carteiraMoeda-pd{
-  border-color:rgba(74,164,214,.58)!important;
-}
+#inventario #carteiraConteudo .carteiraMoeda-pd{border-color:rgba(74,164,214,.58)!important;}
 #inventario #carteiraConteudo .carteiraMoeda-pd::before{background:#4aa4d6;}
 #inventario #carteiraConteudo .carteiraMoeda-pd .carteiraMoedaImagem{border-color:rgba(74,164,214,.42)!important;}
 
-#inventario #carteiraConteudo .carteiraMoeda-po{
-  border-color:rgba(214,157,62,.52)!important;
-}
+#inventario #carteiraConteudo .carteiraMoeda-po{border-color:rgba(214,157,62,.52)!important;}
 #inventario #carteiraConteudo .carteiraMoeda-po::before{background:#d69d3e;}
 #inventario #carteiraConteudo .carteiraMoeda-po .carteiraMoedaImagem{border-color:rgba(214,157,62,.38)!important;}
 
-#inventario #carteiraConteudo .carteiraMoeda-pp{
-  border-color:rgba(169,185,194,.48)!important;
-}
+#inventario #carteiraConteudo .carteiraMoeda-pp{border-color:rgba(169,185,194,.48)!important;}
 #inventario #carteiraConteudo .carteiraMoeda-pp::before{background:#a9b9c2;}
 #inventario #carteiraConteudo .carteiraMoeda-pp .carteiraMoedaImagem{border-color:rgba(169,185,194,.34)!important;}
 
-#inventario #carteiraConteudo .carteiraMoeda-pc{
-  border-color:rgba(184,97,61,.50)!important;
-}
+#inventario #carteiraConteudo .carteiraMoeda-pc{border-color:rgba(184,97,61,.50)!important;}
 #inventario #carteiraConteudo .carteiraMoeda-pc::before{background:#b8613d;}
 #inventario #carteiraConteudo .carteiraMoeda-pc .carteiraMoedaImagem{border-color:rgba(184,97,61,.36)!important;}
 
-/* ---------- Controles +/- ---------- */
-#inventario #carteiraConteudo .carteiraMoedaControle button,
+/* ---------- Quantidade: edição direta ---------- */
+#inventario #carteiraConteudo .carteiraMoedaControle{
+  position:relative!important;
+  grid-column:auto!important;
+  display:block!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+
 #inventario #carteiraConteudo .carteiraMoedaControle input{
-  min-height:42px!important;
+  width:100%!important;
+  min-width:0!important;
+  height:48px!important;
+  min-height:48px!important;
+  margin:0!important;
+  padding:5px 30px 5px 8px!important;
   border:1px solid rgba(24,92,106,.52)!important;
+  border-radius:12px!important;
   color:#f3eee8!important;
   background:#02080b!important;
   background-image:none!important;
   box-shadow:none!important;
-  text-shadow:none!important;
-}
-
-#inventario #carteiraConteudo .carteiraMoedaControle button{
-  color:#ffad67!important;
-  border-color:rgba(255,122,24,.46)!important;
-  background:#050707!important;
+  font-size:22px!important;
   font-weight:1000!important;
-}
-
-#inventario #carteiraConteudo .carteiraMoedaControle button:active{
-  color:#fff3e8!important;
-  background:rgba(255,122,24,.10)!important;
-  border-color:rgba(255,122,24,.76)!important;
-  transform:translateY(1px);
-}
-
-#inventario #carteiraConteudo .carteiraMoedaControle input{
-  font-weight:900!important;
-  font-size:20px!important;
+  line-height:1!important;
   text-align:center!important;
+  text-shadow:none!important;
   font-variant-numeric:tabular-nums;
+  appearance:textfield!important;
+  -moz-appearance:textfield!important;
+}
+
+#inventario #carteiraConteudo .carteiraMoedaControle input::-webkit-inner-spin-button,
+#inventario #carteiraConteudo .carteiraMoedaControle input::-webkit-outer-spin-button{
+  appearance:none!important;
+  margin:0!important;
 }
 
 #inventario #carteiraConteudo .carteiraMoedaControle input:focus{
-  border-color:rgba(255,122,24,.66)!important;
-  box-shadow:0 0 0 2px rgba(255,122,24,.07)!important;
+  border-color:rgba(255,122,24,.72)!important;
+  box-shadow:0 0 0 2px rgba(255,122,24,.08)!important;
+  outline:none!important;
 }
 
-/* ---------- Conversão ---------- */
+#inventario #carteiraConteudo .carteiraMoedaEditIcon{
+  --icon-size:14px!important;
+  position:absolute!important;
+  right:10px!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  color:#6c8993!important;
+  opacity:.78!important;
+  pointer-events:none!important;
+}
+
+#inventario #carteiraConteudo .carteiraMoedaControle:focus-within .carteiraMoedaEditIcon{
+  color:#ff9d48!important;
+  opacity:1!important;
+}
+
+/* ---------- Conversão compacta ---------- */
 #inventario #carteiraConteudo .carteiraConversao{
+  margin-top:10px!important;
+  min-height:60px!important;
+  padding:10px 12px!important;
+  display:grid!important;
+  grid-template-columns:32px minmax(0,1fr)!important;
+  gap:10px!important;
+  align-items:center!important;
+  border-radius:14px!important;
   border-color:rgba(24,92,106,.48)!important;
   background:#010609!important;
 }
 
+#inventario #carteiraConteudo .carteiraConversaoIcone{
+  --icon-size:24px!important;
+  color:#55b8c8!important;
+}
+
+#inventario #carteiraConteudo .carteiraConversao div{
+  min-width:0!important;
+}
+
 #inventario #carteiraConteudo .carteiraConversao strong{
+  display:block!important;
   color:#e6eef0!important;
+  font-size:12px!important;
   text-shadow:none!important;
 }
 
-#inventario #carteiraConteudo .carteiraConversao span{
+#inventario #carteiraConteudo .carteiraConversao span:not(.shinobiIcon){
+  display:block!important;
+  margin-top:3px!important;
   color:#78929c!important;
+  font-size:10px!important;
+  line-height:1.3!important;
   text-shadow:none!important;
 }
 
-#inventario #carteiraConteudo .carteiraConversao button{
-  border:1px solid rgba(255,122,24,.62)!important;
-  background:#030708!important;
-  background-image:none!important;
-  color:#ffb46f!important;
-  box-shadow:none!important;
+/* ---------- Ação organizar moedas ---------- */
+#inventario #carteiraConteudo .carteiraOrganizarBtn{
+  width:100%!important;
+  min-height:50px!important;
+  margin-top:9px!important;
+  padding:9px 12px!important;
+  display:grid!important;
+  grid-template-columns:30px minmax(0,1fr) auto!important;
+  gap:9px!important;
+  align-items:center!important;
+  border-radius:14px!important;
+  color:#dfe8eb!important;
+  text-align:left!important;
+  cursor:pointer!important;
 }
 
-#inventario #carteiraConteudo .carteiraConversao button:active{
-  background:rgba(255,122,24,.09)!important;
-  border-color:rgba(255,122,24,.82)!important;
+#inventario #carteiraConteudo .carteiraOrganizarBtn>.shinobiIcon{
+  --icon-size:21px!important;
+  color:#ff8d35!important;
+}
+
+#inventario #carteiraConteudo .carteiraOrganizarBtn strong{
+  color:#dfe8eb!important;
+  font-size:12px!important;
+}
+
+#inventario #carteiraConteudo .carteiraOrganizarBtn .carteiraAcaoSeta{
+  color:#9ab1ba!important;
+  font-size:24px!important;
+  line-height:1!important;
+}
+
+#inventario #carteiraConteudo .carteiraOrganizarBtn:active{
+  background:rgba(255,122,24,.06)!important;
+  border-color:rgba(255,122,24,.54)!important;
+  transform:translateY(1px)!important;
 }
 
 /* ---------- Histórico ---------- */
 #inventario #carteiraConteudo .carteiraHistorico{
+  margin-top:9px!important;
+  border-radius:14px!important;
   border-color:rgba(24,92,106,.44)!important;
   background:#010609!important;
 }
 
 #inventario #carteiraConteudo .carteiraHistorico summary{
+  min-height:50px!important;
+  padding:9px 12px!important;
   color:#dfe8eb!important;
+  font-size:12px!important;
   text-shadow:none!important;
 }
 
@@ -229,63 +339,92 @@
   border-top-color:rgba(24,92,106,.24)!important;
 }
 
-#inventario #carteiraConteudo .carteiraHistoricoLista strong{
-  color:#e7edef!important;
-}
-
+#inventario #carteiraConteudo .carteiraHistoricoLista strong{color:#e7edef!important;}
 #inventario #carteiraConteudo .carteiraHistoricoLista small,
-#inventario #carteiraConteudo .carteiraHistoricoLista p{
-  color:#708891!important;
-}
+#inventario #carteiraConteudo .carteiraHistoricoLista p{color:#708891!important;}
+#inventario #carteiraConteudo .carteiraHistoricoLista article>span{color:#ff9d48!important;}
 
-#inventario #carteiraConteudo .carteiraHistoricoLista article>span{
-  color:#ff9d48!important;
-}
-
-/* ---------- Mobile ---------- */
-@media (max-width:560px){
-  #inventario #carteiraConteudo .carteiraResumoCard{
-    min-height:110px;
-    padding:16px!important;
-  }
-
+/* ---------- Mobile: uma moeda por linha ---------- */
+@media (max-width:700px){
   #inventario #carteiraConteudo .carteiraMoedasGrid{
     grid-template-columns:1fr!important;
-    gap:9px!important;
   }
 
   #inventario #carteiraConteudo .carteiraMoedaCard{
-    grid-template-columns:56px minmax(0,1fr)!important;
-    padding:10px!important;
+    grid-template-columns:64px minmax(0,1fr) minmax(96px,120px)!important;
+    min-height:82px!important;
+    padding:9px 10px!important;
   }
 
   #inventario #carteiraConteudo .carteiraMoedaImagem{
-    width:56px!important;
-    height:56px!important;
+    width:64px!important;
+    height:64px!important;
   }
 
   #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioImg,
   #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioIconeFallback{
-    width:51px!important;
-    height:51px!important;
-  }
-
-  #inventario #carteiraConteudo .carteiraMoedaControle{
-    grid-template-columns:40px minmax(0,1fr) 40px!important;
+    width:60px!important;
+    height:60px!important;
   }
 }
 
-@media (max-width:390px){
+@media (max-width:430px){
+  #inventario #carteiraConteudo .carteiraResumoCard{
+    min-height:78px!important;
+    padding:12px 14px!important;
+  }
+
   #inventario #carteiraConteudo .carteiraResumoCard>strong{
-    font-size:clamp(20px,6.4vw,27px)!important;
+    font-size:clamp(19px,5.7vw,24px)!important;
   }
 
-  #inventario #carteiraConteudo .carteiraConversao{
-    align-items:stretch!important;
-    flex-direction:column!important;
+  #inventario #carteiraConteudo .carteiraMoedaCard{
+    grid-template-columns:58px minmax(0,1fr) minmax(88px,108px)!important;
+    gap:9px!important;
+    min-height:76px!important;
+    padding:8px 9px!important;
   }
 
-  #inventario #carteiraConteudo .carteiraConversao button{
-    width:100%!important;
+  #inventario #carteiraConteudo .carteiraMoedaImagem{
+    width:58px!important;
+    height:58px!important;
   }
+
+  #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioImg,
+  #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioIconeFallback{
+    width:54px!important;
+    height:54px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaInfo strong{font-size:18px!important;}
+  #inventario #carteiraConteudo .carteiraMoedaControle input{
+    height:46px!important;
+    min-height:46px!important;
+    font-size:21px!important;
+  }
+}
+
+@media (max-width:355px){
+  #inventario #carteiraConteudo .carteiraMoedaCard{
+    grid-template-columns:54px minmax(0,1fr) 82px!important;
+    gap:7px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaImagem{
+    width:54px!important;
+    height:54px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioImg,
+  #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioIconeFallback{
+    width:50px!important;
+    height:50px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaControle input{
+    padding-right:24px!important;
+    font-size:19px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaEditIcon{right:7px!important;}
 }
