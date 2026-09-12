@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.53",
-  "name": "Notas — acabamento final do deploy real",
-  "notes": "Corrige legado visual antigo que causava faixa bege e espaço morto, reposiciona Novo tópico acima do rolo, traz as linhas laterais para dentro da área visível sem glow e recupera largura para títulos.",
+  "version": "2.5.8.54",
+  "name": "Notas — scroll nativo no toque",
+  "notes": "Corrige o bloqueio de rolagem ao arrastar sobre os cards de tópicos removendo o isolamento de overscroll da lista, preserva o scroll interno apenas quando necessário e melhora a legibilidade do botão Novo tópico.",
   "date": "2026-09-12"
 }
