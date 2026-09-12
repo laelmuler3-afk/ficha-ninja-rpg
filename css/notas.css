@@ -416,3 +416,90 @@
 #anotacoes .topicoNotaConteudo textarea{
   box-sizing:border-box!important;
 }
+
+/* ==========================================================
+   NOTAS — ETAPA 3 / acabamento aprovado
+   - linhas laterais ciano finas, sem glow
+   - aura azul-petróleo muito suave no pergaminho
+   - botão Novo tópico flutuante na área ilustrada à direita
+   ========================================================== */
+#anotacoes .notasPergaminhoShell{
+  overflow:visible!important;
+  filter:
+    drop-shadow(0 20px 22px rgba(0,0,0,.42))
+    drop-shadow(0 0 10px rgba(20,142,181,.10))
+    drop-shadow(0 0 22px rgba(8,77,101,.08))!important;
+}
+
+/* As linhas pertencem à moldura da seção, não ao pergaminho.
+   Sem blur, sem box-shadow e sem halo: apenas traço fino. */
+#anotacoes .notasPergaminhoShell::before,
+#anotacoes .notasPergaminhoShell::after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  top:24%;
+  bottom:10%;
+  width:1px;
+  background:rgba(31,151,190,.52);
+  box-shadow:none!important;
+  filter:none!important;
+  pointer-events:none;
+}
+#anotacoes .notasPergaminhoShell::before{left:-1px}
+#anotacoes .notasPergaminhoShell::after{right:-1px}
+
+/* O botão continua flutuante e usa o vazio da ilustração inferior. */
+#anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+  position:absolute!important;
+  left:auto!important;
+  right:1.5%!important;
+  top:auto!important;
+  bottom:-20.5%!important;
+  width:48%!important;
+  max-width:220px!important;
+  min-height:44px!important;
+  margin:0!important;
+  padding:7px 12px!important;
+  z-index:5!important;
+  background:rgba(55,28,20,.90)!important;
+  border:1px solid rgba(177,67,31,.72)!important;
+  box-shadow:0 6px 14px rgba(0,0,0,.22)!important;
+}
+
+/* Recupera alguns pixels para títulos longos sem reduzir legibilidade. */
+#anotacoes .topicoNotaHeader{
+  grid-template-columns:18px minmax(0,1fr) 30px 30px!important;
+  gap:4px!important;
+  padding-left:8px!important;
+  padding-right:4px!important;
+}
+#anotacoes .topicoNotaEditar,
+#anotacoes .topicoNotaRemover{
+  width:30px!important;
+  min-width:30px!important;
+}
+
+@media (max-width:560px){
+  #anotacoes .notasPergaminhoShell::before{left:1px}
+  #anotacoes .notasPergaminhoShell::after{right:1px}
+  #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+    right:1%!important;
+    bottom:-20%!important;
+    width:49%!important;
+    min-height:40px!important;
+    padding:5px 8px!important;
+    font-size:14px!important;
+  }
+  #anotacoes .topicoNotaHeader{
+    grid-template-columns:15px minmax(0,1fr) 26px 26px!important;
+    gap:3px!important;
+    padding:4px 3px 4px 6px!important;
+  }
+  #anotacoes .topicoNotaEditar,
+  #anotacoes .topicoNotaRemover{
+    width:26px!important;
+    height:28px!important;
+    min-width:26px!important;
+  }
+}
