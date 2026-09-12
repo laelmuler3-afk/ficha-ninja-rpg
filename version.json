@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.44",
-  "name": "Correção — Loja inicia recolhida",
-  "notes": "Corrige a categoria Arremessáveis abrindo sozinha. A Loja agora inicia com todas as categorias recolhidas, preserva a categoria escolhida pelo usuário e continua abrindo resultados automaticamente apenas durante uma busca.",
+  "version": "2.5.8.45",
+  "name": "Passo 7.4 — Carteira compacta",
+  "notes": "Compacta o cabeçalho de Equipamentos e Recursos, reduz o resumo da carteira e transforma PD, PO, PP e PC em linhas compactas com quantidade editável diretamente, removendo os botões + e -. Mantém conversão, histórico e salvamento.",
   "date": "2026-09-12"
 }
