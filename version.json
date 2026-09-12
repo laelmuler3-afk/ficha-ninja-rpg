@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.46",
-  "name": "Correção monetária — Platina",
-  "notes": "Padroniza a moeda de maior valor como Peças de Platina (PL) em toda a interface, mantendo compatibilidade com fichas antigas e sem alterar valores, conversão ou saldo salvo.",
+  "version": "2.5.8.47",
+  "name": "Fechamento do Inventário",
+  "notes": "Auditoria final do módulo Equipamentos e Recursos: harmoniza espaçamentos, raios, estados ativos e compactação entre Carteira, Inventário e Loja, sem alterar lógica, dados ou funcionamento.",
   "date": "2026-09-12"
 }
