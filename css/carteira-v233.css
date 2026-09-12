@@ -1,77 +1,291 @@
-/* Ficha Ninja v2.3.3 — Tema dedicado da Carteira
-   Arquivo separado para evitar conflito com regras antigas e cache do Android/PWA. */
+/* ==========================================================
+   Ficha Ninja RPG — Carteira
+   v2.5.8.42 — Passo 7.2 AMOLED/Petróleo
+
+   A Carteira mantém exatamente a estrutura e a lógica existentes.
+   Este arquivo é a fonte visual dedicada do módulo para impedir que
+   regras antigas marrom/dourado voltem a aparecer por especificidade.
+   ========================================================== */
+
+#inventario #carteiraConteudo{
+  --wallet-bg:#010609;
+  --wallet-bg-2:#020a0d;
+  --wallet-line:rgba(24,92,106,.58);
+  --wallet-line-soft:rgba(24,92,106,.32);
+  --wallet-text:#f3eee8;
+  --wallet-muted:#809aa4;
+  --wallet-orange:#ff7a18;
+  --wallet-orange-soft:#ff9d48;
+}
+
+/* ---------- Superfícies base ---------- */
 #inventario #carteiraConteudo .carteiraResumoCard,
 #inventario #carteiraConteudo .carteiraMoedaCard,
 #inventario #carteiraConteudo .carteiraConversao,
 #inventario #carteiraConteudo .carteiraHistorico{
-  color:#fff3df;
-  border:1px solid rgba(226,111,31,.72) !important;
-  background:linear-gradient(145deg,#24170f 0%,#15110d 55%,#0b0d0f 100%) !important;
-  box-shadow:0 10px 22px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,197,113,.08) !important;
+  color:var(--wallet-text)!important;
+  border:1px solid var(--wallet-line)!important;
+  background:var(--wallet-bg)!important;
+  background-image:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
 }
+
+/* ---------- Resumo ---------- */
 #inventario #carteiraConteudo .carteiraResumoCard{
+  min-height:116px;
+  border-color:rgba(255,122,24,.66)!important;
   background:
-    radial-gradient(circle at 85% 15%,rgba(210,91,22,.22),transparent 36%),
-    linear-gradient(145deg,#2b1b10 0%,#17110d 55%,#0b0d0f 100%) !important;
+    linear-gradient(90deg,rgba(255,122,24,.035),transparent 52%),
+    #010609!important;
+  box-shadow:
+    inset 3px 0 0 rgba(255,122,24,.82),
+    inset 0 1px 0 rgba(255,255,255,.015)!important;
 }
-#inventario #carteiraConteudo .carteiraResumoCard>span,
-#inventario #carteiraConteudo .carteiraMoedaInfo strong,
-#inventario #carteiraConteudo .carteiraConversao strong,
-#inventario #carteiraConteudo .carteiraHistorico summary{
-  color:#fff4e4 !important;
-  text-shadow:0 1px 2px rgba(0,0,0,.75);
+
+#inventario #carteiraConteudo .carteiraResumoCard::after{
+  content:""!important;
+  display:block!important;
+  right:-44px!important;
+  bottom:-62px!important;
+  width:150px!important;
+  height:150px!important;
+  border:1px solid rgba(24,92,106,.20)!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  opacity:.9!important;
 }
+
+#inventario #carteiraConteudo .carteiraResumoCard>span{
+  color:#90aeb8!important;
+  font-size:10px!important;
+  font-weight:1000!important;
+  letter-spacing:1.35px!important;
+  text-shadow:none!important;
+}
+
 #inventario #carteiraConteudo .carteiraResumoCard>strong{
-  color:#ff9b42 !important;
-  text-shadow:0 2px 3px rgba(0,0,0,.75);
+  color:#ff9d48!important;
+  text-shadow:none!important;
+  font-variant-numeric:tabular-nums;
 }
-#inventario #carteiraConteudo .carteiraResumoCard>small,
-#inventario #carteiraConteudo .carteiraMoedaInfo small,
-#inventario #carteiraConteudo .carteiraConversao span,
-#inventario #carteiraConteudo .carteiraHistorico summary small{
-  color:#d8b991 !important;
+
+#inventario #carteiraConteudo .carteiraResumoCard>small{
+  color:#9fb0b6!important;
+  text-shadow:none!important;
 }
+
+/* ---------- Cards das moedas ---------- */
+#inventario #carteiraConteudo .carteiraMoedasGrid{
+  gap:10px!important;
+}
+
+#inventario #carteiraConteudo .carteiraMoedaCard{
+  position:relative;
+  overflow:hidden;
+  border-color:rgba(24,92,106,.58)!important;
+  background:#010609!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
+}
+
+#inventario #carteiraConteudo .carteiraMoedaCard::before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:2px;
+  background:rgba(120,184,201,.55);
+  pointer-events:none;
+}
+
 #inventario #carteiraConteudo .carteiraMoedaImagem{
-  border:1px solid rgba(226,111,31,.48) !important;
-  background:radial-gradient(circle at 50% 42%,rgba(142,70,27,.42),rgba(43,26,17,.94) 60%,#15100c 100%) !important;
-  box-shadow:inset 0 1px 0 rgba(255,208,143,.08) !important;
+  border:1px solid rgba(24,92,106,.42)!important;
+  background:#020a0d!important;
+  background-image:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
 }
+
+#inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioImg,
+#inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioIconeFallback{
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.42))!important;
+}
+
+#inventario #carteiraConteudo .carteiraMoedaInfo strong{
+  color:#f3eee8!important;
+  text-shadow:none!important;
+}
+
+#inventario #carteiraConteudo .carteiraMoedaInfo small{
+  color:#8199a2!important;
+  text-shadow:none!important;
+}
+
+/* Cor da moeda só como acento fino; o card permanece AMOLED/petróleo. */
+#inventario #carteiraConteudo .carteiraMoeda-pd{
+  border-color:rgba(74,164,214,.58)!important;
+}
+#inventario #carteiraConteudo .carteiraMoeda-pd::before{background:#4aa4d6;}
+#inventario #carteiraConteudo .carteiraMoeda-pd .carteiraMoedaImagem{border-color:rgba(74,164,214,.42)!important;}
+
+#inventario #carteiraConteudo .carteiraMoeda-po{
+  border-color:rgba(214,157,62,.52)!important;
+}
+#inventario #carteiraConteudo .carteiraMoeda-po::before{background:#d69d3e;}
+#inventario #carteiraConteudo .carteiraMoeda-po .carteiraMoedaImagem{border-color:rgba(214,157,62,.38)!important;}
+
+#inventario #carteiraConteudo .carteiraMoeda-pp{
+  border-color:rgba(169,185,194,.48)!important;
+}
+#inventario #carteiraConteudo .carteiraMoeda-pp::before{background:#a9b9c2;}
+#inventario #carteiraConteudo .carteiraMoeda-pp .carteiraMoedaImagem{border-color:rgba(169,185,194,.34)!important;}
+
+#inventario #carteiraConteudo .carteiraMoeda-pc{
+  border-color:rgba(184,97,61,.50)!important;
+}
+#inventario #carteiraConteudo .carteiraMoeda-pc::before{background:#b8613d;}
+#inventario #carteiraConteudo .carteiraMoeda-pc .carteiraMoedaImagem{border-color:rgba(184,97,61,.36)!important;}
+
+/* ---------- Controles +/- ---------- */
 #inventario #carteiraConteudo .carteiraMoedaControle button,
 #inventario #carteiraConteudo .carteiraMoedaControle input{
-  min-height:46px;
-  border:1px solid rgba(232,132,48,.58) !important;
-  color:#fff7ea !important;
-  background:linear-gradient(180deg,#241a13,#100f0d) !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05) !important;
+  min-height:42px!important;
+  border:1px solid rgba(24,92,106,.52)!important;
+  color:#f3eee8!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
 }
+
 #inventario #carteiraConteudo .carteiraMoedaControle button{
-  background:linear-gradient(180deg,#6b3012,#35170a) !important;
-  color:#ffe9c9 !important;
-  font-weight:800;
+  color:#ffad67!important;
+  border-color:rgba(255,122,24,.46)!important;
+  background:#050707!important;
+  font-weight:1000!important;
 }
+
+#inventario #carteiraConteudo .carteiraMoedaControle button:active{
+  color:#fff3e8!important;
+  background:rgba(255,122,24,.10)!important;
+  border-color:rgba(255,122,24,.76)!important;
+  transform:translateY(1px);
+}
+
 #inventario #carteiraConteudo .carteiraMoedaControle input{
-  font-weight:800;
-  font-size:20px;
-  text-align:center;
+  font-weight:900!important;
+  font-size:20px!important;
+  text-align:center!important;
+  font-variant-numeric:tabular-nums;
 }
+
+#inventario #carteiraConteudo .carteiraMoedaControle input:focus{
+  border-color:rgba(255,122,24,.66)!important;
+  box-shadow:0 0 0 2px rgba(255,122,24,.07)!important;
+}
+
+/* ---------- Conversão ---------- */
+#inventario #carteiraConteudo .carteiraConversao{
+  border-color:rgba(24,92,106,.48)!important;
+  background:#010609!important;
+}
+
+#inventario #carteiraConteudo .carteiraConversao strong{
+  color:#e6eef0!important;
+  text-shadow:none!important;
+}
+
+#inventario #carteiraConteudo .carteiraConversao span{
+  color:#78929c!important;
+  text-shadow:none!important;
+}
+
 #inventario #carteiraConteudo .carteiraConversao button{
-  border:1px solid #ef7a2a !important;
-  background:linear-gradient(180deg,#d15a19,#7a290c) !important;
-  color:#fff7ea !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 10px rgba(0,0,0,.3) !important;
+  border:1px solid rgba(255,122,24,.62)!important;
+  background:#030708!important;
+  background-image:none!important;
+  color:#ffb46f!important;
+  box-shadow:none!important;
 }
+
+#inventario #carteiraConteudo .carteiraConversao button:active{
+  background:rgba(255,122,24,.09)!important;
+  border-color:rgba(255,122,24,.82)!important;
+}
+
+/* ---------- Histórico ---------- */
+#inventario #carteiraConteudo .carteiraHistorico{
+  border-color:rgba(24,92,106,.44)!important;
+  background:#010609!important;
+}
+
+#inventario #carteiraConteudo .carteiraHistorico summary{
+  color:#dfe8eb!important;
+  text-shadow:none!important;
+}
+
+#inventario #carteiraConteudo .carteiraHistorico summary small{
+  color:#78929c!important;
+}
+
 #inventario #carteiraConteudo .carteiraHistoricoLista article{
-  border-top-color:rgba(229,121,42,.24) !important;
+  border-top-color:rgba(24,92,106,.24)!important;
 }
-#inventario #carteiraConteudo .carteiraHistoricoLista strong{color:#fff3df !important;}
+
+#inventario #carteiraConteudo .carteiraHistoricoLista strong{
+  color:#e7edef!important;
+}
+
 #inventario #carteiraConteudo .carteiraHistoricoLista small,
-#inventario #carteiraConteudo .carteiraHistoricoLista p{color:#bba994 !important;}
-#inventario #carteiraConteudo .carteiraHistoricoLista article>span{color:#ff9b42 !important;}
-#inventario #carteiraConteudo .carteiraMoeda-pd{border-color:rgba(69,168,231,.76) !important;}
-#inventario #carteiraConteudo .carteiraMoeda-pd .carteiraMoedaImagem{
-  border-color:rgba(69,168,231,.56) !important;
-  background:radial-gradient(circle at 50% 42%,rgba(45,144,205,.3),rgba(30,34,38,.94) 61%,#0d1115 100%) !important;
+#inventario #carteiraConteudo .carteiraHistoricoLista p{
+  color:#708891!important;
 }
-#inventario #carteiraConteudo .carteiraMoeda-po{border-color:rgba(226,157,45,.8) !important;}
-#inventario #carteiraConteudo .carteiraMoeda-pp{border-color:rgba(184,190,198,.72) !important;}
-#inventario #carteiraConteudo .carteiraMoeda-pc{border-color:rgba(197,87,35,.8) !important;}
+
+#inventario #carteiraConteudo .carteiraHistoricoLista article>span{
+  color:#ff9d48!important;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width:560px){
+  #inventario #carteiraConteudo .carteiraResumoCard{
+    min-height:110px;
+    padding:16px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedasGrid{
+    grid-template-columns:1fr!important;
+    gap:9px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaCard{
+    grid-template-columns:56px minmax(0,1fr)!important;
+    padding:10px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaImagem{
+    width:56px!important;
+    height:56px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioImg,
+  #inventario #carteiraConteudo .carteiraMoedaImagem .itemInventarioIconeFallback{
+    width:51px!important;
+    height:51px!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraMoedaControle{
+    grid-template-columns:40px minmax(0,1fr) 40px!important;
+  }
+}
+
+@media (max-width:390px){
+  #inventario #carteiraConteudo .carteiraResumoCard>strong{
+    font-size:clamp(20px,6.4vw,27px)!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraConversao{
+    align-items:stretch!important;
+    flex-direction:column!important;
+  }
+
+  #inventario #carteiraConteudo .carteiraConversao button{
+    width:100%!important;
+  }
+}
