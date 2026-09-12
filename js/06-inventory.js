@@ -542,19 +542,24 @@
           <article class="carteiraMoedaCard carteiraMoeda-${moeda.chave}">
             <div class="carteiraMoedaImagem">${imagemInventarioVisual(`Moeda de ${moeda.nome}`,"",moeda.slug)}</div>
             <div class="carteiraMoedaInfo"><strong>${moeda.sigla}</strong><small>${moeda.nome}</small></div>
-            <div class="carteiraMoedaControle">
-              <button type="button" onclick="ajustarMoedaCarteira('${moeda.chave}',-1)" aria-label="Remover uma moeda de ${moeda.nome}">−</button>
-              <input type="number" min="0" inputmode="numeric" value="${inteiroSeguro(carteira[moeda.chave])}" onchange="definirMoedaCarteira('${moeda.chave}',this.value)" aria-label="Quantidade de moedas de ${moeda.nome}">
-              <button type="button" onclick="ajustarMoedaCarteira('${moeda.chave}',1)" aria-label="Adicionar uma moeda de ${moeda.nome}">+</button>
-            </div>
+            <label class="carteiraMoedaControle" aria-label="Editar quantidade de moedas de ${moeda.nome}">
+              <input type="number" min="0" step="1" inputmode="numeric" value="${inteiroSeguro(carteira[moeda.chave])}" onchange="definirMoedaCarteira('${moeda.chave}',this.value)" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur()}" aria-label="Quantidade de moedas de ${moeda.nome}">
+              <span class="shinobiIcon icon-edit carteiraMoedaEditIcon" aria-hidden="true"></span>
+            </label>
           </article>
         `).join("")}
       </div>
 
       <div class="carteiraConversao">
+        <span class="shinobiIcon icon-sync carteiraConversaoIcone" aria-hidden="true"></span>
         <div><strong>Conversão automática</strong><span>1 PD = 100 PO · 1 PO = 100 PP · 1 PP = 100 PC</span></div>
-        <button type="button" onclick="organizarMoedasCarteira()">Organizar moedas</button>
       </div>
+
+      <button type="button" class="carteiraOrganizarBtn" onclick="organizarMoedasCarteira()">
+        <span class="shinobiIcon icon-wallet" aria-hidden="true"></span>
+        <strong>Organizar moedas</strong>
+        <span class="carteiraAcaoSeta" aria-hidden="true">›</span>
+      </button>
 
       <details class="carteiraHistorico" ${historico.length?"":"disabled"}>
         <summary><span>Histórico da carteira</span><small>${historico.length} ${historico.length===1?"movimentação":"movimentações"}</small></summary>
