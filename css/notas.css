@@ -1,0 +1,382 @@
+/* ==========================================================
+   NOTAS — Etapa 1 / 2.5.8.49
+   Visual híbrido: shell AMOLED/petróleo + pergaminho temático.
+   A lógica de criação, edição, expansão e salvamento permanece
+   em js/01-core.js; este arquivo cuida apenas da apresentação.
+   ========================================================== */
+
+#anotacoes{
+  --notas-petroleo:#123d48;
+  --notas-petroleo-claro:#4ea1b6;
+  --notas-laranja:#ff7a24;
+  --notas-papel:#efd19a;
+  --notas-tinta:#17120d;
+  --notas-tinta-suave:#6d4a2c;
+  --notas-vermelho:#a52817;
+  width:100%;
+}
+
+#anotacoes .notasModulo{
+  position:relative;
+  width:min(100%,920px);
+  margin:0 auto;
+  padding:18px 14px 26px;
+  overflow:hidden;
+  border:1px solid rgba(31,91,106,.58);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at 82% 8%,rgba(21,78,91,.12),transparent 26%),
+    linear-gradient(180deg,#010609 0%,#02090c 100%);
+  box-shadow:0 22px 54px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+#anotacoes .notasHero{
+  position:relative;
+  display:grid;
+  grid-template-columns:68px minmax(0,1fr) auto;
+  gap:15px;
+  align-items:center;
+  min-height:94px;
+  padding:10px 6px 13px;
+  border-bottom:1px solid rgba(59,128,146,.34);
+}
+
+#anotacoes .notasHero::after{
+  content:"";
+  position:absolute;
+  left:88px;
+  right:12px;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,rgba(78,161,182,.74),rgba(78,161,182,.08),transparent 82%);
+}
+
+#anotacoes .notasHeroIcone{
+  width:62px;
+  height:62px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(49,121,139,.52);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(22,11,7,.95),rgba(8,7,7,.98));
+  box-shadow:inset 0 0 0 5px rgba(7,24,29,.72),0 0 18px rgba(255,122,36,.10);
+}
+
+#anotacoes .notasHeroIcone .shinobiIcon{
+  --icon-size:34px;
+  background-color:#ff8a47;
+  filter:drop-shadow(0 0 8px rgba(255,122,36,.24));
+}
+
+#anotacoes .notasHeroTitulo{
+  min-width:0;
+}
+
+#anotacoes .notasHeroTitulo small{
+  display:block;
+  margin-bottom:4px;
+  color:#7fb8c7;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:4px;
+  text-transform:uppercase;
+}
+
+#anotacoes .notasHeroTitulo h2{
+  margin:0!important;
+  color:#f4f1ea!important;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(31px,6vw,46px)!important;
+  font-weight:700!important;
+  letter-spacing:.5px!important;
+  line-height:.95!important;
+  text-transform:uppercase!important;
+  text-shadow:0 2px 16px rgba(0,0,0,.52);
+}
+
+#anotacoes .notasHeroLema{
+  position:relative;
+  z-index:1;
+  display:grid;
+  gap:2px;
+  padding-right:42px;
+  color:#739ead;
+  font-size:8px;
+  font-weight:800;
+  line-height:1.35;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  text-align:left;
+}
+
+#anotacoes .notasHeroKanji{
+  position:absolute;
+  top:5px;
+  right:4px;
+  color:rgba(31,91,106,.27);
+  font-family:serif;
+  font-size:58px;
+  font-weight:800;
+  line-height:1;
+  pointer-events:none;
+  user-select:none;
+}
+
+#anotacoes .notasFrase{
+  margin:14px auto 8px;
+  color:#6595a3;
+  font-size:13px;
+  font-style:italic;
+  letter-spacing:1.4px;
+  text-align:center;
+}
+
+/* O pergaminho é a arte limpa aprovada. O conteúdo é HTML real por cima,
+   então continua editável, acessível e funcional offline. */
+#anotacoes .notasPergaminhoShell{
+  position:relative;
+  width:min(100%,760px);
+  aspect-ratio:941/1672;
+  margin:0 auto;
+  background:url("../assets/ui-notes-scroll.webp") center top/100% 100% no-repeat;
+  filter:drop-shadow(0 20px 22px rgba(0,0,0,.42));
+  isolation:isolate;
+}
+
+#anotacoes .notasPergaminhoConteudo{
+  position:absolute;
+  z-index:2;
+  left:15.6%;
+  right:14.7%;
+  top:19.3%;
+  bottom:14.7%;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+#anotacoes .listaTopicosNotas{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:none!important;
+  margin:0!important;
+  padding:2px 5px 7px!important;
+  display:flex!important;
+  flex-direction:column;
+  gap:9px!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(114,67,32,.52) transparent;
+}
+
+#anotacoes .listaTopicosNotas::-webkit-scrollbar{width:5px}
+#anotacoes .listaTopicosNotas::-webkit-scrollbar-track{background:transparent}
+#anotacoes .listaTopicosNotas::-webkit-scrollbar-thumb{
+  border-radius:999px;
+  background:rgba(114,67,32,.52);
+}
+
+#anotacoes .topicoNotaCard{
+  flex:0 0 auto;
+  margin:0!important;
+  overflow:hidden!important;
+  border:1px solid rgba(106,65,32,.30)!important;
+  border-radius:12px!important;
+  background:rgba(255,246,217,.16)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important;
+  color:var(--notas-tinta)!important;
+}
+
+#anotacoes .topicoNotaHeader{
+  display:grid!important;
+  grid-template-columns:20px minmax(0,1fr) 34px 34px!important;
+  gap:5px!important;
+  align-items:center!important;
+  min-height:54px!important;
+  padding:7px 8px 7px 12px!important;
+  cursor:pointer;
+  background:transparent!important;
+}
+
+#anotacoes .topicoNotaHeader:hover,
+#anotacoes .topicoNotaCard.aberto .topicoNotaHeader{
+  background:rgba(255,248,224,.16)!important;
+}
+
+#anotacoes .topicoNotaSeta{
+  display:grid!important;
+  place-items:center!important;
+  width:20px!important;
+  color:#15100b!important;
+  font-family:Arial,sans-serif!important;
+  font-size:15px!important;
+  font-weight:900!important;
+  line-height:1!important;
+}
+
+#anotacoes .topicoNotaTitulo{
+  min-width:0!important;
+  overflow:hidden!important;
+  color:#18120c!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(15px,3.4vw,22px)!important;
+  font-weight:700!important;
+  line-height:1.15!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  text-shadow:0 1px 0 rgba(255,255,255,.18);
+}
+
+#anotacoes .topicoNotaEditar,
+#anotacoes .topicoNotaRemover{
+  width:34px!important;
+  height:34px!important;
+  min-width:34px!important;
+  margin:0!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  border-left:1px solid rgba(111,70,38,.25)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+#anotacoes .topicoNotaEditar .shinobiIcon,
+#anotacoes .topicoNotaRemover .shinobiIcon{
+  --icon-size:19px;
+}
+
+#anotacoes .topicoNotaEditar .shinobiIcon{background-color:#1f2b2e!important}
+#anotacoes .topicoNotaRemover .shinobiIcon{background-color:var(--notas-vermelho)!important}
+
+#anotacoes .topicoNotaEditar:active,
+#anotacoes .topicoNotaRemover:active{transform:scale(.92)}
+
+#anotacoes .topicoNotaConteudo{
+  display:none;
+  padding:0 10px 10px!important;
+  background:transparent!important;
+}
+
+#anotacoes .topicoNotaCard.aberto .topicoNotaConteudo{display:block!important}
+
+#anotacoes .topicoNotaConteudo textarea{
+  width:100%!important;
+  min-height:126px!important;
+  max-height:220px!important;
+  margin:0!important;
+  padding:12px 13px!important;
+  resize:vertical;
+  border:1px solid rgba(100,59,27,.28)!important;
+  border-radius:9px!important;
+  outline:none!important;
+  background:rgba(255,249,229,.30)!important;
+  box-shadow:inset 0 1px 5px rgba(86,50,22,.07)!important;
+  color:#22170f!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:15px!important;
+  line-height:1.48!important;
+  caret-color:#8d2d1a!important;
+}
+
+#anotacoes .topicoNotaConteudo textarea::placeholder{color:rgba(77,50,29,.55)!important}
+#anotacoes .topicoNotaConteudo textarea:focus{
+  border-color:rgba(144,59,29,.55)!important;
+  box-shadow:0 0 0 2px rgba(144,59,29,.08),inset 0 1px 5px rgba(86,50,22,.07)!important;
+}
+
+#anotacoes .btnAdicionarTopicoNota{
+  flex:0 0 auto;
+  width:calc(100% - 10px)!important;
+  min-height:58px!important;
+  margin:9px 5px 3px!important;
+  padding:10px 16px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:10px!important;
+  border:1px dashed rgba(149,52,28,.58)!important;
+  border-radius:11px!important;
+  background:rgba(255,246,219,.10)!important;
+  box-shadow:none!important;
+  color:#8e2f1d!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(16px,3.4vw,21px)!important;
+  font-weight:700!important;
+  text-transform:none!important;
+}
+
+#anotacoes .btnAdicionarTopicoNota .shinobiIcon{
+  --icon-size:22px;
+  background-color:#9a351f!important;
+}
+
+#anotacoes .btnAdicionarTopicoNota:hover,
+#anotacoes .btnAdicionarTopicoNota:active{
+  background:rgba(255,247,221,.21)!important;
+  border-color:rgba(149,52,28,.76)!important;
+}
+
+#anotacoes .notaVazia{
+  margin:auto 5px!important;
+  padding:20px 14px!important;
+  border:1px dashed rgba(100,59,27,.30)!important;
+  border-radius:10px!important;
+  background:rgba(255,247,221,.12)!important;
+  color:#6c4a2f!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:15px!important;
+  text-align:center!important;
+}
+
+@media (max-width:560px){
+  #anotacoes .notasModulo{
+    width:calc(100% + 10px);
+    margin-left:-5px;
+    padding:14px 8px 20px;
+    border-radius:17px;
+  }
+  #anotacoes .notasHero{
+    grid-template-columns:58px minmax(0,1fr) auto;
+    gap:11px;
+    min-height:82px;
+    padding:8px 5px 10px;
+  }
+  #anotacoes .notasHeroIcone{width:54px;height:54px;border-radius:14px}
+  #anotacoes .notasHeroIcone .shinobiIcon{--icon-size:30px}
+  #anotacoes .notasHeroTitulo small{font-size:9px;letter-spacing:3px}
+  #anotacoes .notasHeroLema{padding-right:34px;font-size:6.8px;letter-spacing:2.2px}
+  #anotacoes .notasHeroKanji{right:0;font-size:49px}
+  #anotacoes .notasFrase{margin:11px auto 4px;font-size:11px;letter-spacing:.8px}
+  #anotacoes .notasPergaminhoShell{width:calc(100% + 8px);margin-left:-4px}
+  #anotacoes .notasPergaminhoConteudo{left:14.8%;right:13.9%;top:19.2%;bottom:14.5%}
+  #anotacoes .listaTopicosNotas{gap:6px!important;padding:1px 3px 5px!important}
+  #anotacoes .topicoNotaHeader{
+    grid-template-columns:17px minmax(0,1fr) 29px 29px!important;
+    gap:3px!important;
+    min-height:43px!important;
+    padding:5px 4px 5px 8px!important;
+  }
+  #anotacoes .topicoNotaSeta{width:17px!important;font-size:12px!important}
+  #anotacoes .topicoNotaEditar,
+  #anotacoes .topicoNotaRemover{width:29px!important;height:29px!important;min-width:29px!important}
+  #anotacoes .topicoNotaEditar .shinobiIcon,
+  #anotacoes .topicoNotaRemover .shinobiIcon{--icon-size:16px}
+  #anotacoes .topicoNotaConteudo{padding:0 7px 7px!important}
+  #anotacoes .topicoNotaConteudo textarea{min-height:105px!important;padding:9px 10px!important;font-size:13px!important}
+  #anotacoes .btnAdicionarTopicoNota{min-height:47px!important;margin-top:6px!important;padding:7px 10px!important}
+  #anotacoes .btnAdicionarTopicoNota .shinobiIcon{--icon-size:18px}
+}
+
+@media (max-width:370px){
+  #anotacoes .notasHero{grid-template-columns:52px minmax(0,1fr)}
+  #anotacoes .notasHeroLema{display:none}
+  #anotacoes .notasHeroIcone{width:48px;height:48px}
+  #anotacoes .notasHeroTitulo h2{font-size:29px!important}
+  #anotacoes .notasHeroKanji{font-size:42px;opacity:.72}
+  #anotacoes .notasPergaminhoConteudo{left:14.2%;right:13.3%}
+  #anotacoes .topicoNotaTitulo{font-size:13.5px!important}
+}

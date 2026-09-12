@@ -525,15 +525,6 @@ input:focus,textarea:focus,select:focus{
 .itemInventarioIcone .shinobiIcon{--icon-size:24px}
 .lojaBusca{border-radius:12px!important;background:#02080b!important}
 
-/* ---------- NOTAS ---------- */
-.notasTopicosPainel{background:
-  linear-gradient(145deg,rgba(11,17,20,.96),rgba(4,8,11,.98)),
-  url("../assets/ui-notes-parchment.jpg") center/cover!important}
-.notaTopico,.notaCard,.topicoNota{
-  border:1px solid rgba(198,138,72,.22)!important;border-radius:12px!important;background:rgba(4,9,12,.84)!important;box-shadow:none!important;
-}
-.btnAdicionarTopicoNota{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important}
-
 /* ---------- ONLINE, MODAIS E OVERLAYS ---------- */
 .shinobiOnlineShell,.levelUpModal,.ajusteFundoPainel{
   border:1px solid var(--ui-line)!important;border-radius:18px!important;background:rgba(5,9,12,.98)!important;box-shadow:0 28px 90px rgba(0,0,0,.68)!important;
