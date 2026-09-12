@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.40",
-  "name": "Passo 6.6 — Jutsus + Ataques sem resíduo marrom",
-  "notes": "Parte da base consolidada 2.5.8.39 e remove fisicamente as camadas visuais acumuladas de Jutsus/Ataques, mantendo uma única superfície AMOLED/petróleo sem gradiente quente ou fade marrom.",
+  "version": "2.5.8.41",
+  "name": "Passo 7.1 — Inventário AMOLED/Petróleo",
+  "notes": "Mantém o layout compacto do Inventário e troca apenas a identidade visual para preto AMOLED, azul-petróleo e laranja como acento, sem alterar lógica ou estrutura.",
   "date": "2026-09-11"
 }
