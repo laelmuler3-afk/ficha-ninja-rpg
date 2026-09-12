@@ -1,6 +1,6 @@
 /* ==========================================================
    Ficha Ninja RPG — Loja
-   v2.5.8.43 — Passo 7.3 AMOLED/Petróleo
+   v2.5.8.47 — Fechamento do Inventário
 
    Mantém estrutura, busca, categorias, preço e compra intactos.
    Esta camada é exclusivamente visual e elimina o marrom residual
@@ -22,6 +22,9 @@
 
 /* ---------- Busca e resumo ---------- */
 #inventario .lojaTopo{
+  padding:9px!important;
+  margin-bottom:10px!important;
+  border-radius:14px!important;
   border:1px solid var(--shop-line)!important;
   background:#010609!important;
   background-image:none!important;
@@ -74,7 +77,7 @@
 
 /* ---------- Categorias retráteis ---------- */
 #inventario .lojaCategoria{
-  margin-bottom:11px!important;
+  margin-bottom:9px!important;
   overflow:hidden!important;
   border:1px solid rgba(24,92,106,.46)!important;
   border-radius:14px!important;
@@ -84,7 +87,7 @@
 }
 
 #inventario .lojaCategoriaCabecalho{
-  min-height:50px!important;
+  min-height:48px!important;
   color:#dce5e8!important;
   border:0!important;
   background:#02080b!important;
@@ -140,8 +143,8 @@
 }
 
 #inventario .lojaCategoria>.lojaGrid{
-  padding:8px!important;
-  gap:8px!important;
+  padding:7px!important;
+  gap:7px!important;
   background:#000!important;
   background-image:none!important;
 }
@@ -150,7 +153,7 @@
 #inventario .lojaItemCard{
   overflow:hidden!important;
   border:1px solid rgba(24,92,106,.58)!important;
-  border-radius:13px!important;
+  border-radius:14px!important;
   background:#010609!important;
   background-image:none!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.012)!important;
@@ -304,7 +307,7 @@
 }
 
 @media (max-width:560px){
-  #inventario .lojaCategoria>.lojaGrid{padding:7px!important;gap:7px!important;}
+  #inventario .lojaCategoria>.lojaGrid{padding:6px!important;gap:7px!important;}
 }
 
 @media (prefers-reduced-motion:reduce){

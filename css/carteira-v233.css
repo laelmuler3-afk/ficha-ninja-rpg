@@ -1,6 +1,6 @@
 /* ==========================================================
    Ficha Ninja RPG — Carteira
-   v2.5.8.45 — Passo 7.4 Carteira compacta
+   v2.5.8.47 — Fechamento do Inventário
 
    - Cabeçalho do módulo simplificado para "Equipamentos e recursos".
    - Resumo de valor total mais baixo.
@@ -35,8 +35,8 @@
 
 /* ---------- Resumo compacto ---------- */
 #inventario #carteiraConteudo .carteiraResumoCard{
-  min-height:82px!important;
-  padding:13px 16px!important;
+  min-height:74px!important;
+  padding:11px 14px!important;
   border-radius:16px!important;
   border-color:rgba(255,122,24,.66)!important;
   background:
@@ -96,8 +96,8 @@
   position:relative;
   overflow:hidden;
   min-width:0!important;
-  min-height:78px!important;
-  padding:9px 10px!important;
+  min-height:74px!important;
+  padding:8px 10px!important;
   display:grid!important;
   grid-template-columns:60px minmax(0,1fr) minmax(88px,112px)!important;
   gap:10px!important;
@@ -190,8 +190,8 @@
 #inventario #carteiraConteudo .carteiraMoedaControle input{
   width:100%!important;
   min-width:0!important;
-  height:48px!important;
-  min-height:48px!important;
+  height:44px!important;
+  min-height:44px!important;
   margin:0!important;
   padding:5px 30px 5px 8px!important;
   border:1px solid rgba(24,92,106,.52)!important;
@@ -241,8 +241,8 @@
 /* ---------- Conversão compacta ---------- */
 #inventario #carteiraConteudo .carteiraConversao{
   margin-top:10px!important;
-  min-height:60px!important;
-  padding:10px 12px!important;
+  min-height:56px!important;
+  padding:9px 12px!important;
   display:grid!important;
   grid-template-columns:32px minmax(0,1fr)!important;
   gap:10px!important;
@@ -280,8 +280,8 @@
 /* ---------- Ação organizar moedas ---------- */
 #inventario #carteiraConteudo .carteiraOrganizarBtn{
   width:100%!important;
-  min-height:50px!important;
-  margin-top:9px!important;
+  min-height:48px!important;
+  margin-top:8px!important;
   padding:9px 12px!important;
   display:grid!important;
   grid-template-columns:30px minmax(0,1fr) auto!important;
@@ -324,8 +324,8 @@
 }
 
 #inventario #carteiraConteudo .carteiraHistorico summary{
-  min-height:50px!important;
-  padding:9px 12px!important;
+  min-height:48px!important;
+  padding:8px 12px!important;
   color:#dfe8eb!important;
   font-size:12px!important;
   text-shadow:none!important;
@@ -370,8 +370,8 @@
 
 @media (max-width:430px){
   #inventario #carteiraConteudo .carteiraResumoCard{
-    min-height:78px!important;
-    padding:12px 14px!important;
+    min-height:72px!important;
+    padding:10px 13px!important;
   }
 
   #inventario #carteiraConteudo .carteiraResumoCard>strong{
@@ -381,8 +381,8 @@
   #inventario #carteiraConteudo .carteiraMoedaCard{
     grid-template-columns:58px minmax(0,1fr) minmax(88px,108px)!important;
     gap:9px!important;
-    min-height:76px!important;
-    padding:8px 9px!important;
+    min-height:72px!important;
+    padding:7px 9px!important;
   }
 
   #inventario #carteiraConteudo .carteiraMoedaImagem{
@@ -398,8 +398,8 @@
 
   #inventario #carteiraConteudo .carteiraMoedaInfo strong{font-size:18px!important;}
   #inventario #carteiraConteudo .carteiraMoedaControle input{
-    height:46px!important;
-    min-height:46px!important;
+    height:44px!important;
+    min-height:44px!important;
     font-size:21px!important;
   }
 }

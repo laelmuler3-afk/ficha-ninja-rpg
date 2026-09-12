@@ -507,22 +507,23 @@ input:focus,textarea:focus,select:focus{
 .danoInteligentePreviaTopo .shinobiIcon{--icon-size:21px;color:#d7b486}
 
 /* ---------- INVENTÁRIO / LOJA ---------- */
+/* Fallback neutro: evita qualquer flash/resíduo marrom antes das camadas específicas. */
 .inventarioHub{padding:0!important;overflow:hidden!important}
-.inventarioHubCabecalho{padding:22px 22px 12px!important;background:transparent!important}
+.inventarioHubCabecalho{padding:14px 18px!important;background:transparent!important}
 .inventarioAbas{
-  margin:0 18px 18px!important;padding:5px!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:5px!important;
-  border:1px solid rgba(198,138,72,.22)!important;border-radius:12px!important;background:rgba(3,7,10,.72)!important;
+  margin:0 18px 14px!important;padding:5px!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:5px!important;
+  border:1px solid rgba(24,92,106,.52)!important;border-radius:14px!important;background:#02070a!important;
 }
-.inventarioAbas button{min-height:62px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;border-radius:9px!important;color:#a99e8e!important}
-.inventarioAbas button[aria-selected="true"],.inventarioAbas button.ativo{color:#edc58d!important;background:rgba(108,53,23,.42)!important;border-color:rgba(211,143,70,.38)!important}
-.inventarioAbas .shinobiIcon{--icon-size:23px}
-.inventarioSubpagina{padding:0 18px 20px!important}
+.inventarioAbas button{min-height:58px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;border-radius:10px!important;color:#9cb0b8!important}
+.inventarioAbas button[aria-selected="true"],.inventarioAbas button.ativo{color:#ff9d48!important;background:rgba(255,122,24,.045)!important;border-color:rgba(255,122,24,.78)!important}
+.inventarioAbas .shinobiIcon{--icon-size:22px}
+.inventarioSubpagina{padding:0 18px 18px!important}
 .itemInventario,.lojaItemCard,.carteiraPainel,.carteiraResumo{
-  border-radius:12px!important;border-color:rgba(198,138,72,.20)!important;background:rgba(5,10,13,.72)!important;box-shadow:none!important;
+  border-radius:14px!important;border-color:rgba(24,92,106,.52)!important;background:#010609!important;box-shadow:none!important;
 }
-.itemInventarioIcone{font-size:0!important;color:#c99a64!important}
-.itemInventarioIcone .shinobiIcon{--icon-size:25px}
-.lojaBusca{border-radius:10px!important;background:rgba(3,7,10,.72)!important}
+.itemInventarioIcone{font-size:0!important;color:#78b8c9!important}
+.itemInventarioIcone .shinobiIcon{--icon-size:24px}
+.lojaBusca{border-radius:12px!important;background:#02080b!important}
 
 /* ---------- NOTAS ---------- */
 .notasTopicosPainel{background:
@@ -749,7 +750,11 @@ body::before{
   --inv-orange:#ff7a18;
   --inv-orange-2:#ff9d48;
   --inv-danger:#e14b3e;
+  --inv-radius:14px;
+  --inv-radius-small:10px;
+  --inv-space-x:18px;
 }
+
 
 #inventario .inventarioPainel,
 #inventario .inventarioHub{
@@ -776,7 +781,7 @@ body::before{
 }
 #inventario .inventarioHubCabecalhoCompacto{
   min-height:0!important;
-  padding:14px 18px!important;
+  padding:12px var(--inv-space-x)!important;
   display:flex!important;
   align-items:center!important;
 }
@@ -786,7 +791,7 @@ body::before{
   align-items:center!important;
   gap:10px!important;
   color:var(--inv-cyan)!important;
-  font-size:15px!important;
+  font-size:14px!important;
   font-weight:1000!important;
   letter-spacing:1.2px!important;
   line-height:1.1!important;
@@ -794,19 +799,26 @@ body::before{
   text-shadow:none!important;
 }
 #inventario .inventarioHubCabecalhoCompacto .shinobiIcon{
-  --icon-size:23px!important;
+  --icon-size:21px!important;
   color:var(--inv-orange)!important;
   text-shadow:none!important;
   filter:none!important;
 }
 
 #inventario .inventarioAbas{
+  margin:0 var(--inv-space-x) 14px!important;
+  padding:5px!important;
+  gap:5px!important;
+  border-radius:var(--inv-radius)!important;
   background:#02070a!important;
   background-image:none!important;
   border:1px solid var(--inv-line)!important;
   box-shadow:none!important;
 }
 #inventario .inventarioAbas button{
+  min-height:58px!important;
+  gap:8px!important;
+  border-radius:var(--inv-radius-small)!important;
   color:#9cb0b8!important;
   background:transparent!important;
   background-image:none!important;
@@ -834,6 +846,22 @@ body::before{
 #inventario .inventarioAbas button[aria-selected="true"] span,
 #inventario .inventarioAbas button[aria-selected="true"] .shinobiIcon{
   color:#ff9d48!important;
+}
+
+#inventario .inventarioSubpagina{
+  padding:0 var(--inv-space-x) 18px!important;
+}
+#inventario .inventarioBotoesRodape{
+  gap:9px!important;
+  margin-top:14px!important;
+}
+#inventario .inventarioBotoesRodape .btn{
+  min-height:48px!important;
+  border-radius:12px!important;
+}
+#inventario .inventarioNotas{
+  margin-top:10px!important;
+  border-radius:var(--inv-radius)!important;
 }
 
 /* Grade compacta: mesma estrutura, nova identidade. */
@@ -1004,7 +1032,8 @@ body::before{
 #inventario input:disabled{opacity:.55!important;cursor:not-allowed!important}
 
 @media (max-width:430px){
-  #inventario .inventarioHubCabecalhoCompacto h2{font-size:14px!important;letter-spacing:1px!important}
+  #inventario{--inv-space-x:14px}
+  #inventario .inventarioHubCabecalhoCompacto h2{font-size:13px!important;letter-spacing:.9px!important}
   #inventario .inventarioAbas button strong{font-size:11px!important}
   #inventario .inventarioNotas{min-height:135px!important}
 }
