@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.48",
-  "name": "Correção monetária — Platina",
-  "notes": "Padroniza a moeda de maior valor como Peças de Platina (PL) em toda a interface, mantendo compatibilidade com fichas antigas e sem alterar valores, conversão ou saldo salvo.",
+  "version": "2.5.8.49",
+  "name": "Notas — Etapa 1 visual",
+  "notes": "Implementa a base visual da nova área de Notas com shell AMOLED/petróleo e pergaminho temático aprovado, preservando criação, expansão, edição, exclusão e salvamento dos tópicos.",
   "date": "2026-09-12"
 }

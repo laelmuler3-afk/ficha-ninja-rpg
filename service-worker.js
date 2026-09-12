@@ -1,7 +1,7 @@
 /* Shinobi 2.5.8.40 — Progressão por toque e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.48";
+const APP_VERSION = "2.5.8.49";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -42,6 +42,7 @@ const APP_SHELL = [
   `./css/combate.css?v=${APP_VERSION}`,
   `./css/jutsus.css?v=${APP_VERSION}`,
   `./css/loja-v25843.css?v=${APP_VERSION}`,
+  `./css/notas.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
@@ -72,7 +73,7 @@ const APP_SHELL = [
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
   `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
-  `./assets/ui-notes-parchment.jpg?v=${APP_VERSION}`,
+  `./assets/ui-notes-scroll.webp?v=${APP_VERSION}`,
   `./assets/icons/attributes.svg?v=${APP_VERSION}`,
   `./assets/icons/attributes-reference.png?v=${APP_VERSION}`,
   `./assets/icons/jutsu-reference.png?v=${APP_VERSION}`,
