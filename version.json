@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.51",
-  "name": "Notas — Etapa 3 acabamento visual",
-  "notes": "Adiciona aura azul-petróleo muito suave ao pergaminho, linhas laterais ciano finas sem brilho, reposiciona Novo tópico como botão flutuante à direita e amplia o espaço útil dos títulos.",
+  "version": "2.5.8.52",
+  "name": "Notas — fidelidade fina à referência",
+  "notes": "Refina cabeçalho, linha ornamental, linhas laterais sem glow com ornamento central, presença do pergaminho, espaçamento interno e reduz o espaço morto inferior. Mantém Novo tópico flutuante à direita conforme preferência aprovada.",
   "date": "2026-09-12"
 }
