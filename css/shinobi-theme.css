@@ -1430,3 +1430,11 @@ body{
   }
 }
 
+
+
+/* 2.5.8.56 — integração funcional do menu lateral */
+.shinobiDrawerGrupo:last-of-type .shinobiDrawerItem{min-height:66px;padding-top:9px;padding-bottom:9px}
+.shinobiDrawerGrupo:last-of-type .shinobiDrawerItemTexto{gap:5px}
+.shinobiDrawerGrupo:last-of-type .shinobiDrawerItemTexto b,.shinobiDrawerGrupo:last-of-type .shinobiDrawerItemTexto small{display:block;line-height:1.25}
+.onlineDestinoDestaque{animation:shinobiDestinoPulse 1.15s ease-out 1;outline:1px solid rgba(255,132,53,.68)!important;box-shadow:0 0 0 3px rgba(255,132,53,.08),0 0 24px rgba(32,135,160,.12)!important}
+@keyframes shinobiDestinoPulse{0%{outline-color:rgba(255,132,53,.18);box-shadow:0 0 0 0 rgba(255,132,53,0)}45%{outline-color:rgba(255,132,53,.86);box-shadow:0 0 0 4px rgba(255,132,53,.10),0 0 28px rgba(32,135,160,.16)}100%{outline-color:rgba(255,132,53,.38);box-shadow:0 0 0 1px rgba(255,132,53,.02)}}
