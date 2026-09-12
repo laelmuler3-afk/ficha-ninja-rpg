@@ -1,0 +1,312 @@
+/* ==========================================================
+   Ficha Ninja RPG — Loja
+   v2.5.8.43 — Passo 7.3 AMOLED/Petróleo
+
+   Mantém estrutura, busca, categorias, preço e compra intactos.
+   Esta camada é exclusivamente visual e elimina o marrom residual
+   da Loja em favor de preto AMOLED, azul-petróleo e laranja-acento.
+   ========================================================== */
+
+#inventario #lojaConteudo,
+#inventario .inventarioSubpagina[data-subpagina="loja"]{
+  --shop-bg:#000;
+  --shop-surface:#010609;
+  --shop-surface-2:#020a0d;
+  --shop-line:rgba(24,92,106,.58);
+  --shop-line-soft:rgba(24,92,106,.34);
+  --shop-text:#f3eee8;
+  --shop-muted:#8199a2;
+  --shop-orange:#ff7a18;
+  --shop-orange-soft:#ff9d48;
+}
+
+/* ---------- Busca e resumo ---------- */
+#inventario .lojaTopo{
+  border:1px solid var(--shop-line)!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.015)!important;
+}
+
+#inventario .lojaBusca{
+  min-height:44px!important;
+  border:1px solid rgba(24,92,106,.58)!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaBusca>span{
+  color:var(--shop-orange-soft)!important;
+  text-shadow:none!important;
+}
+
+#inventario .lojaBusca input{
+  color:#dce5e8!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaBusca input::placeholder{
+  color:#8ba0a8!important;
+  opacity:1!important;
+}
+
+#inventario .lojaResumoLinha{
+  margin-top:8px!important;
+}
+
+#inventario .lojaResumoLinha>span{
+  color:#79939d!important;
+}
+
+#inventario .lojaResumoLinha button{
+  color:#dfe8eb!important;
+  border:1px solid rgba(24,92,106,.46)!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaResumoLinha button strong{
+  color:#f3eee8!important;
+}
+
+/* ---------- Categorias retráteis ---------- */
+#inventario .lojaCategoria{
+  margin-bottom:11px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(24,92,106,.46)!important;
+  border-radius:14px!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaCategoriaCabecalho{
+  min-height:50px!important;
+  color:#dce5e8!important;
+  border:0!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaCategoria.aberta{
+  border-color:rgba(255,122,24,.58)!important;
+  box-shadow:inset 2px 0 0 rgba(255,122,24,.72)!important;
+}
+
+#inventario .lojaCategoria.aberta .lojaCategoriaCabecalho{
+  border-bottom:1px solid rgba(24,92,106,.42)!important;
+  background:
+    linear-gradient(90deg,rgba(255,122,24,.045),transparent 42%),
+    #02080b!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaCategoriaIcone{
+  color:#ff9d48!important;
+  border:1px solid rgba(255,122,24,.46)!important;
+  background:rgba(255,122,24,.045)!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaCategoriaTitulo{
+  color:#dfe8eb!important;
+  text-shadow:none!important;
+}
+
+#inventario .lojaCategoria.aberta .lojaCategoriaTitulo{
+  color:#ff9d48!important;
+}
+
+#inventario .lojaCategoriaContador{
+  color:#ff9d48!important;
+  border:1px solid rgba(255,122,24,.42)!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaCategoriaSeta{
+  color:#9bb0b8!important;
+  text-shadow:none!important;
+}
+
+#inventario .lojaCategoria.aberta .lojaCategoriaSeta{
+  color:#ff9d48!important;
+}
+
+#inventario .lojaCategoria>.lojaGrid{
+  padding:8px!important;
+  gap:8px!important;
+  background:#000!important;
+  background-image:none!important;
+}
+
+/* ---------- Cards dos produtos ---------- */
+#inventario .lojaItemCard{
+  overflow:hidden!important;
+  border:1px solid rgba(24,92,106,.58)!important;
+  border-radius:13px!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.012)!important;
+}
+
+#inventario .lojaItemImagem{
+  border:0!important;
+  border-right:1px solid rgba(24,92,106,.30)!important;
+  background:#020a0d!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaItemImagem .itemInventarioImg,
+#inventario .lojaItemImagem .itemInventarioIconeFallback{
+  filter:drop-shadow(0 5px 5px rgba(0,0,0,.42))!important;
+}
+
+#inventario .lojaItemPossui{
+  color:#fff8ee!important;
+  border:1px solid rgba(255,168,122,.60)!important;
+  background:#d94b31!important;
+  background-image:none!important;
+  box-shadow:0 3px 8px rgba(0,0,0,.34)!important;
+}
+
+#inventario .lojaItemConteudo{
+  background:transparent!important;
+}
+
+#inventario .lojaItemConteudo>small{
+  color:#ff9d48!important;
+  text-shadow:none!important;
+}
+
+#inventario .lojaItemConteudo>strong{
+  color:#f3eee8!important;
+  text-shadow:none!important;
+}
+
+#inventario .lojaItemConteudo>span{
+  color:#8098a1!important;
+  text-shadow:none!important;
+}
+
+#inventario .lojaItemRodape{
+  border-top:1px solid rgba(24,92,106,.30)!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaItemRodape b{
+  color:#f3eee8!important;
+  font-variant-numeric:tabular-nums;
+}
+
+#inventario .lojaItemRodape button{
+  min-height:34px!important;
+  color:#ffe1c2!important;
+  border:1px solid rgba(255,122,24,.68)!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaItemRodape button:active:not(:disabled){
+  color:#fff!important;
+  border-color:rgba(255,157,72,.9)!important;
+  background:rgba(255,122,24,.08)!important;
+  transform:translateY(1px);
+}
+
+#inventario .lojaItemRodape button:disabled{
+  color:#67777e!important;
+  border-color:rgba(24,92,106,.24)!important;
+  background:#010507!important;
+  opacity:.72!important;
+}
+
+#inventario .lojaItemIndisponivel{
+  opacity:.64!important;
+}
+
+/* ---------- Rodapé/avisos da Loja ---------- */
+#inventario .lojaAvisoTabela,
+#inventario .lojaSemResultado{
+  color:#8199a2!important;
+  border-color:rgba(24,92,106,.40)!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+#inventario .lojaAvisoTabela{
+  border-left:2px solid rgba(255,122,24,.62)!important;
+}
+
+/* ---------- Modal de compra: mesma linguagem visual ---------- */
+.compraLojaBox{
+  color:#f3eee8!important;
+  border-color:rgba(24,92,106,.62)!important;
+  background:#010609!important;
+  background-image:none!important;
+  box-shadow:0 22px 58px rgba(0,0,0,.76)!important;
+}
+
+.compraLojaBox>header,
+.compraLojaBox>footer,
+.compraLojaResumo,
+.compraLojaItemImagem{
+  border-color:rgba(24,92,106,.34)!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+.compraLojaBox>header small,
+.compraLojaDetalhes span,
+.compraLojaResumo small,
+.compraLojaQuantidade>span{
+  color:#8199a2!important;
+}
+
+.compraLojaBox>header h3,
+.compraLojaDetalhes b,
+.compraLojaResumo strong{
+  color:#f3eee8!important;
+}
+
+.compraLojaQuantidade button,
+.compraLojaQuantidade input,
+.compraLojaCancelar,
+.compraLojaConfirmar{
+  color:#f3eee8!important;
+  border-color:rgba(24,92,106,.50)!important;
+  background:#02080b!important;
+  background-image:none!important;
+  box-shadow:none!important;
+}
+
+.compraLojaConfirmar{
+  color:#ffe1c2!important;
+  border-color:rgba(255,122,24,.72)!important;
+}
+
+.compraLojaConfirmar:disabled{
+  color:#687980!important;
+  border-color:rgba(24,92,106,.25)!important;
+  opacity:.68!important;
+}
+
+@media (max-width:560px){
+  #inventario .lojaCategoria>.lojaGrid{padding:7px!important;gap:7px!important;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #inventario .lojaItemRodape button{transition:none!important;}
+}
