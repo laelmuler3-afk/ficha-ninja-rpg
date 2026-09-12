@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.55",
-  "name": "Menu lateral — estrutura global",
-  "notes": "Substitui o menu lateral antigo de navegação por uma central global com perfil, sincronização, conta, salas, Configurações com subtítulo Personalização e atalhos de suporte. Preserva o botão de configurações atual nesta primeira etapa para não remover ferramentas existentes.",
+  "version": "2.5.8.56",
+  "name": "Menu lateral — integração funcional",
+  "notes": "Conecta Sincronização, Conta, Login, Criar sala, Entrar em sala e Sala atual às funções online já existentes, com abertura focada da área correspondente. Configurações passa a abrir o painel de ajustes já existente. Corrige o espaçamento de Ajuda/Feedback no drawer.",
   "date": "2026-09-12"
 }
