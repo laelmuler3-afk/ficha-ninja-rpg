@@ -1,7 +1,7 @@
-/* Shinobi 2.5.8.47 — Fechamento visual e técnico do módulo Inventário.
+/* Shinobi 2.5.8.40 — Progressão por toque e robustez do Firebase Authentication.
  * Mantém toda a lógica anterior e adiciona a nova identidade visual em camada isolada.
  */
-const APP_VERSION = "2.5.8.47";
+const APP_VERSION = "2.5.8.48";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -236,11 +236,22 @@ async function instalarAppShell(){
     LIMITE_DOWNLOADS_SIMULTANEOS,
     async url=>{
       try{
-        const pathname=new URL(url).pathname;
+        const recursoUrl=new URL(url);
+        const pathname=recursoUrl.pathname;
         const chave=pathname.endsWith("/index.html")?INDEX_URL:url;
         const response=await fetchComTentativas(url);
 
+        // Mantém a chave versionada e também uma chave canônica sem query string.
+        // Vários recursos internos (principalmente imagens referenciadas pelo CSS/JS)
+        // podem ser solicitados com uma versão diferente ou sem ?v=. Sem este alias,
+        // o arquivo existe no cache mas não é encontrado quando o aparelho está offline.
         await cache.put(chave,response.clone());
+        if(!pathname.endsWith("/index.html")){
+          const canonica=new URL(url);
+          canonica.search="";
+          canonica.hash="";
+          await cache.put(canonica.href,response.clone());
+        }
         carregados+=1;
         await avisarClientes({
           type:"SW_INSTALL_PROGRESS",
@@ -282,12 +293,31 @@ async function limparCachesAntigos(){
 
 async function buscarShellNoCache(request){
   const cache=await caches.open(SHELL_CACHE);
-  const resposta=await cache.match(request);
+
+  // Primeiro tenta a URL exata. Em seguida ignora a query string para aceitar
+  // o mesmo recurso solicitado como arquivo.png, arquivo.png?v=antiga ou
+  // arquivo.png?v=atual. Isso é essencial para o carregamento 100% offline.
+  const resposta=await cache.match(request)
+    || await cache.match(request,{ignoreSearch:true});
   if(resposta) return resposta;
 
-  const rede=await fetch(request);
-  if(respostaPodeSerSalva(rede)) await cache.put(request,rede.clone());
-  return rede;
+  try{
+    const rede=await fetch(request);
+    if(respostaPodeSerSalva(rede)){
+      await cache.put(request,rede.clone());
+      const canonica=new URL(request.url);
+      canonica.search="";
+      canonica.hash="";
+      await cache.put(canonica.href,rede.clone());
+    }
+    return rede;
+  }catch(erro){
+    // Última tentativa: procura pelo pathname dentro dos caches atuais.
+    // Protege instalações antigas que só possuíam a entrada versionada.
+    const compat=await cache.match(request,{ignoreSearch:true});
+    if(compat) return compat;
+    throw erro;
+  }
 }
 
 // CSS, JavaScript e JSON mudam com frequência durante o desenvolvimento.
