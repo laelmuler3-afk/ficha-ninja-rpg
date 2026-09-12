@@ -622,3 +622,152 @@
     width:49%!important;
   }
 }
+
+/* ==========================================================
+   NOTAS — ETAPA 5 / acabamento final do deploy real — 2.5.8.53
+   Correções guiadas pelo print em dispositivo:
+   - neutraliza o antigo frame bege/fixo ainda herdado de app.css
+   - elimina faixa bege e espaço morto abaixo do pergaminho
+   - traz as linhas laterais para dentro da área visível, sem glow
+   - reposiciona o botão Novo tópico acima do rolo inferior
+   - recupera alguns pixels para títulos longos
+   ========================================================== */
+
+/* O app.css ainda contém a implementação antiga de Notas com altura fixa
+   e fundo de pergaminho aplicado na própria página. Como notas.css é o
+   componente atual, esta regra zera somente esse legado sem tocar na lógica. */
+main.scrollPages #anotacoes,
+#anotacoes{
+  position:relative!important;
+  isolation:isolate!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0 auto!important;
+  padding:0!important;
+  overflow:visible!important;
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  scroll-margin-top:70px!important;
+}
+
+#anotacoes::before,
+#anotacoes::after{
+  display:none!important;
+  content:none!important;
+  width:0!important;
+  height:0!important;
+  min-height:0!important;
+  background:none!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+#anotacoes .notasModulo{
+  margin:0 auto!important;
+  padding-bottom:2px!important;
+}
+
+/* Linhas da moldura: mais presentes no aparelho real, mas continuam sendo
+   traços sólidos de 1px, sem halo, brilho ou drop-shadow. */
+#anotacoes .notasPergaminhoShell::before,
+#anotacoes .notasPergaminhoShell::after{
+  top:10.8%!important;
+  bottom:11.4%!important;
+  width:18px!important;
+  opacity:.78!important;
+  background-size:1px 42%,1px 42%,16px 16px!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+#anotacoes .notasPergaminhoShell::before{left:1.5%!important}
+#anotacoes .notasPergaminhoShell::after{right:1.5%!important}
+
+/* Mais área útil para o título sem alterar a aparência geral dos cards. */
+#anotacoes .topicoNotaHeader{
+  grid-template-columns:15px minmax(0,1fr) 25px 25px!important;
+  gap:2px!important;
+  padding-left:6px!important;
+  padding-right:2px!important;
+}
+#anotacoes .topicoNotaEditar,
+#anotacoes .topicoNotaRemover{
+  width:25px!important;
+  min-width:25px!important;
+  height:28px!important;
+}
+
+/* Mantém o botão flutuando à direita, porém acima da ilustração/rolo inferior. */
+#anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+  right:4.2%!important;
+  bottom:-10.8%!important;
+  width:42%!important;
+  max-width:184px!important;
+  min-height:39px!important;
+  padding:5px 8px!important;
+}
+
+@media (max-width:560px){
+  main.scrollPages #anotacoes,
+  #anotacoes{
+    width:100%!important;
+    max-width:none!important;
+    margin:0 auto!important;
+    padding:0!important;
+  }
+
+  #anotacoes .notasModulo{
+    padding-bottom:0!important;
+  }
+
+  #anotacoes .notasPergaminhoShell::before{left:2.1%!important}
+  #anotacoes .notasPergaminhoShell::after{right:2.1%!important}
+
+  #anotacoes .topicoNotaHeader{
+    grid-template-columns:13px minmax(0,1fr) 23px 23px!important;
+    gap:2px!important;
+    padding:4px 1px 4px 5px!important;
+  }
+  #anotacoes .topicoNotaSeta{
+    width:13px!important;
+    font-size:11px!important;
+  }
+  #anotacoes .topicoNotaTitulo{
+    font-size:13.5px!important;
+    letter-spacing:.05px!important;
+  }
+  #anotacoes .topicoNotaEditar,
+  #anotacoes .topicoNotaRemover{
+    width:23px!important;
+    min-width:23px!important;
+    height:26px!important;
+  }
+  #anotacoes .topicoNotaEditar .shinobiIcon,
+  #anotacoes .topicoNotaRemover .shinobiIcon{
+    --icon-size:14px;
+  }
+
+  #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+    right:4.5%!important;
+    bottom:-10.2%!important;
+    width:42%!important;
+    max-width:174px!important;
+    min-height:38px!important;
+    font-size:13.5px!important;
+  }
+}
+
+@media (max-width:370px){
+  #anotacoes .notasPergaminhoShell::before{left:2.6%!important}
+  #anotacoes .notasPergaminhoShell::after{right:2.6%!important}
+  #anotacoes .topicoNotaTitulo{font-size:12.8px!important}
+  #anotacoes .notasPergaminhoConteudo > .btnAdicionarTopicoNota{
+    right:4%!important;
+    bottom:-9.6%!important;
+    width:44%!important;
+  }
+}
