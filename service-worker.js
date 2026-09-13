@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.64 — roteamento online por área e atualização PWA.
+/* Ficha Ninja RPG 2.5.8.65 — roteamento online por área e atualização PWA.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.64";
+const APP_VERSION = "2.5.8.65";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -44,6 +44,7 @@ const APP_SHELL = [
   `./css/loja-v25843.css?v=${APP_VERSION}`,
   `./css/notas.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
+  `./js/19-realtime-fields-utils.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
@@ -63,6 +64,7 @@ const APP_SHELL = [
   `./js/17-dano-inteligente.js?v=${APP_VERSION}`,
   `./js/18-online-config.js?v=${APP_VERSION}`,
   `./js/19-online-core.js?v=${APP_VERSION}`,
+  `./js/19-realtime-sync-engine.js?v=${APP_VERSION}`,
   `./vendor/qrcode-local.js?v=${APP_VERSION}`,
   `./js/20-online-ui.js?v=${APP_VERSION}`,
   `./js/21-online-hooks.js?v=${APP_VERSION}`,
