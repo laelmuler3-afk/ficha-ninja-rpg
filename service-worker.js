@@ -285,35 +285,75 @@ async function instalarAppShell(){
 }
 
 async function limparCachesAntigos(){
-  const nomes=await caches.keys();
-  const atuais=new Set([SHELL_CACHE,RUNTIME_CACHE,FIREBASE_CACHE]);
-  await Promise.all(
-    nomes
-      .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-`)&&!atuais.has(nome))
-      .map(nome=>caches.delete(nome))
-  );
+  /* Recuperação 2.5.8.69: caches antigos são rollback de segurança.
+     Não apagamos nada durante install/activate. A limpeza volta a ser feita
+     somente depois de uma versão futura comprovar uma instalação saudável. */
+  return false;
+}
+
+async function buscarEmCachesShinobi(request){
+  const nomes=(await caches.keys())
+    .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-shell-`))
+    .reverse();
+  for(const nome of nomes){
+    try{
+      const cache=await caches.open(nome);
+      const resposta=await cache.match(request)
+        || await cache.match(request,{ignoreSearch:true});
+      if(resposta) return resposta;
+    }catch(_erro){}
+  }
+  return null;
+}
+
+async function buscarDaRedeESalvar(request,chaveAlternativa=null){
+  const requisicao=new Request(request.url||request,{
+    cache:"no-store",
+    credentials:"same-origin"
+  });
+  const response=await fetch(requisicao);
+  if(!respostaPodeSerSalva(response)){
+    throw new Error(`HTTP ${response?.status||0} em ${requisicao.url}`);
+  }
+  try{
+    const cache=await caches.open(SHELL_CACHE);
+    await cache.put(chaveAlternativa||request,response.clone());
+  }catch(_erro){}
+  return response;
 }
 
 async function buscarShellDaVersaoAtiva(request){
   const cache=await caches.open(SHELL_CACHE);
-
-  /* O worker ativo é dono de uma versão imutável do app shell. Enquanto ele
-     controla a página, jamais buscamos JS/CSS/JSON de uma publicação mais nova:
-     isso impede misturar arquivos de versões diferentes. */
-  const resposta=await cache.match(request)
+  const salva=await cache.match(request)
     || await cache.match(request,{ignoreSearch:true});
-  if(resposta) return resposta;
+  if(salva) return salva;
 
-  throw new Error(`Recurso ausente no shell instalado ${APP_VERSION}: ${request.url}`);
+  /* Se o cache atual estiver incompleto, recuperar pela rede em vez de derrubar
+     o app. Se a rede também falhar, uma versão anterior ainda pode servir de
+     rollback. */
+  try{
+    return await buscarDaRedeESalvar(request);
+  }catch(erroRede){
+    const anterior=await buscarEmCachesShinobi(request);
+    if(anterior) return anterior;
+    throw erroRede;
+  }
 }
 
-async function abrirPaginaDaVersaoAtiva(_request){
-  const cache=await caches.open(SHELL_CACHE);
-  const resposta=await cache.match(INDEX_URL)
-    || await cache.match(INDEX_URL,{ignoreSearch:true});
-  if(resposta) return resposta;
-
-  throw new Error(`Página principal ausente no shell instalado ${APP_VERSION}`);
+async function abrirPaginaDaVersaoAtiva(request){
+  /* Navegação é network-first durante a recuperação. Isso permite sair de um
+     cache quebrado sem apagar localStorage/IndexedDB nem exigir reinstalação. */
+  try{
+    return await buscarDaRedeESalvar(request,INDEX_URL);
+  }catch(erroRede){
+    const cache=await caches.open(SHELL_CACHE);
+    const atual=await cache.match(INDEX_URL)
+      || await cache.match(INDEX_URL,{ignoreSearch:true});
+    if(atual) return atual;
+    const anterior=await buscarEmCachesShinobi(INDEX_URL);
+    if(anterior) return anterior;
+    throw erroRede;
+  }
 }
 
 async function staleWhileRevalidate(request,event){
@@ -418,14 +458,16 @@ async function responderFirebase(request){
 }
 
 self.addEventListener("install",event=>{
-  event.waitUntil(Promise.all([
-    instalarAppShell(),
-    prepararCacheFirebase().catch(()=>{})
-  ]));
+  /* O worker de recuperação não depende do app conseguir abrir para clicar em
+     “Atualizar”. Ele assume imediatamente e não bloqueia a instalação fazendo
+     download de todo o shell. */
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate",event=>{
-  event.waitUntil(Promise.all([limparCachesAntigos(),self.clients.claim()]));
+  /* Preserva todos os caches anteriores como rollback e assume as abas abertas.
+     A navegação seguinte já poderá recuperar o index pela rede. */
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch",event=>{
