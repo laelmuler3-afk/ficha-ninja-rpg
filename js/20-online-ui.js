@@ -292,7 +292,7 @@
       return;
     }
     if(acao==="minimizar"){salvarPreferenciasPainel({modo:"minimizado"});renderPainelFlutuante();return;}
-    if(acao==="abrir-sala")return abrir();
+    if(acao==="abrir-sala")return abrir("sala-atual");
     if(acao==="turno-anterior")return executar(()=>window.ShinobiOnline.voltarTurno());
     if(acao==="proximo-turno")return executar(()=>window.ShinobiOnline.avancarTurno());
     if(acao==="iniciar-combate")return executar(()=>window.ShinobiOnline.iniciarCombate());
@@ -346,6 +346,15 @@
     return permitidos.has(valor)?valor:null;
   }
 
+  function destinoPadrao(st=obterEstado()){
+    // Nunca mais abrimos o antigo painel misto. Cada entrada deve cair na
+    // área responsável pelo contexto que provocou a abertura.
+    if(conflitoAtual)return "sincronizacao";
+    if(window.ShinobiOnline?.codigoDaUrl?.())return "entrar-sala";
+    if(st?.sala||sessaoLocal()?.roomId)return "sala-atual";
+    return st?.user?"sincronizacao":"login";
+  }
+
   function aplicarDestino(){
     if(!destinoAtual||!root)return;
     requestAnimationFrame(()=>{
@@ -395,7 +404,7 @@
   }
 
   function abrir(destino){
-    destinoAtual=normalizarDestino(destino);
+    destinoAtual=normalizarDestino(destino)||destinoPadrao();
     try{
       criarRoot();
       aberto=true;
@@ -1017,15 +1026,11 @@
       ${master?renderAdicionarNpc(st):""}
       ${renderEfeitos(st,master)}
       ${master?renderXp(st):""}
-      ${renderNuvem(st)}
       <section class="onlineCard onlineZonaPerigo">
         ${master?`<button class="onlineBtn perigo" data-action="close-room">Encerrar sala</button>`:`<button class="onlineBtn perigo" data-action="leave-room">Sair da sala</button>`}
       </section>`;
   }
 
-  function renderHome(st){
-    return `${cabecalhoConta(st)}${renderConflito()}<div class="onlineGridDois">${!st.user.anonymous?renderMestreHome(st):""}${renderEntradaSala(st)}</div>${renderNuvem(st)}`;
-  }
 
   function chaveFormulario(form,indice){
     return [form?.dataset?.form||"form",form?.dataset?.participantId||"",indice].join("::");
@@ -1095,17 +1100,20 @@
     if(st.carregando){conteudo.innerHTML='<div class="onlineLoading"><span></span><p>Conectando ao sistema online...</p></div>';return;}
     if(!st.configurado){conteudo.innerHTML=renderConfiguracao();return;}
     if(st.ultimoErro&&!st.iniciado){conteudo.innerHTML=`<section class="onlineCard"><h3>Falha ao iniciar</h3><p>${esc(st.ultimoErro)}</p><button type="button" class="onlineBtn primario" data-action="retry-online">Tentar novamente</button></section>`;return;}
-    const destinoHtml=destinoAtual?renderDestino(st):null;
+    if(!destinoAtual)destinoAtual=destinoPadrao(st);
+    let destinoHtml=renderDestino(st);
+    if(destinoHtml===null){
+      destinoAtual=destinoPadrao(st);
+      atualizarCabecalhoDestino();
+      destinoHtml=renderDestino(st);
+    }
     if(destinoHtml!==null){
       conteudo.innerHTML=destinoHtml;
       restaurarInteracao(conteudo,interacao);
       requestAnimationFrame(()=>{renderQr();aplicarDestino();});
       return;
     }
-    if(!st.user){conteudo.innerHTML=renderLogin();return;}
-    conteudo.innerHTML=st.sala?renderSala(st):renderHome(st);
-    restaurarInteracao(conteudo,interacao);
-    requestAnimationFrame(()=>{renderQr();});
+    conteudo.innerHTML=`<section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">NAVEGAÇÃO</span><h3>Área indisponível</h3><p>Não foi possível identificar a área online solicitada. Feche esta janela e tente novamente pelo menu lateral.</p></section>`;
   }
 
   function renderQr(){
@@ -1292,7 +1300,7 @@
     if(tipo==="create-campaign")return executar(async()=>{await window.ShinobiOnline.criarCampanha(dados.get("name"));form.reset();});
     if(tipo==="create-room")return executar(async()=>{
       await window.ShinobiOnline.criarSala({campaignId:dados.get("campaignId"),title:dados.get("title")});
-      destinoAtual="criar-sala";
+      destinoAtual="sala-atual";
     });
     if(tipo==="join-room")return (async()=>{
       const codigo=String(dados.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
@@ -1401,7 +1409,7 @@
       agendarRender();
     });
     window.ShinobiOnline.on("erro-sync",e=>{document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");console.warn(e.detail.mensagem);});
-    window.ShinobiOnline.on("conflito-ficha",e=>{conflitoAtual=e.detail;abrir();agendarRender();});
+    window.ShinobiOnline.on("conflito-ficha",e=>{conflitoAtual=e.detail;abrir("sincronizacao");agendarRender();});
     window.ShinobiOnline.on("xp-recebido",e=>{
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);
     });
@@ -1409,7 +1417,7 @@
     window.ShinobiOnline.on("nivel-recebido",e=>{
       const d=e.detail;avisar("Nível atualizado pelo mestre",`${d.character||"Sua ficha"}: nível ${d.before} → ${d.after}.${d.reason?`\n${d.reason}`:""}`);
     });
-    window.ShinobiOnline.on("convite-url",()=>{if(obterEstado().user)abrir();});
+    window.ShinobiOnline.on("convite-url",()=>{abrir("entrar-sala");});
     window.addEventListener("online",agendarRender,{passive:true});
     window.addEventListener("offline",agendarRender,{passive:true});
   }
