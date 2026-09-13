@@ -32,6 +32,7 @@
     syncTimers:new Map(),
     syncQueues:new Map(),
     dirtySheets:new Set(),
+    cloudQueue:Promise.resolve(),
     reconciliandoSync:false,
     processandoXp:false,
     deduplicandoEfeitos:false,
@@ -84,6 +85,92 @@
        outro aparelho antes de receber o mesmo sheetId da nuvem. */
     if(copia&&typeof copia==="object") delete copia.__online;
     return hashLeve(copia);
+  }
+
+  function nomeSemSufixoNuvem(valor){
+    return texto(valor).replace(/\s+nuvem(?:\s+\d+)?$/i,"").trim();
+  }
+
+  function chaveLogicaFicha(ficha){
+    const dados=ficha?.data&&typeof ficha.data==="object"?ficha.data:{};
+    /* O nome da ficha é o identificador lógico mais estável entre aparelhos.
+       O nome do personagem pode estar vazio numa cópia zerada ou mudar durante
+       a campanha. Sufixos "Nuvem 2/3/4" eram gerados pelo bug antigo. */
+    const base=texto(ficha?.name)||texto(dados.nome)||texto(ficha?.characterName)||"Ficha";
+    return nomeSemSufixoNuvem(base).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+  }
+
+  function ehNomeCopiaAutomatica(valor){
+    return /\s+nuvem(?:\s+\d+)?$/i.test(texto(valor));
+  }
+
+  function pontuacaoConteudoFicha(dados){
+    const raiz=dados&&typeof dados==="object"?dados:{};
+    let pontos=0,nos=0;
+    const visitar=(valor,chave="",profundidade=0)=>{
+      if(nos++>3500||profundidade>7||chave==="__online") return;
+      if(valor==null) return;
+      if(typeof valor==="string"){
+        const t=valor.trim();
+        if(!t||/^data:image\//i.test(t)) return;
+        pontos+=1;
+        if(t.length>24) pontos+=1;
+        return;
+      }
+      if(typeof valor==="number"){if(Number.isFinite(valor)&&Math.abs(valor)>0) pontos+=1;return;}
+      if(typeof valor==="boolean"){if(valor) pontos+=1;return;}
+      if(Array.isArray(valor)){
+        if(valor.length) pontos+=Math.min(4,valor.length);
+        valor.slice(0,60).forEach(item=>visitar(item,"",profundidade+1));
+        return;
+      }
+      if(typeof valor==="object"){
+        Object.entries(valor).slice(0,220).forEach(([k,v])=>visitar(v,k,profundidade+1));
+      }
+    };
+    visitar(raiz);
+    if(texto(raiz.nome)) pontos+=8;
+    if(Number(raiz.nivel||0)>1) pontos+=3;
+    ["pvMax","chakraMax","forca","destreza","constituicao","inteligencia","sabedoria","carisma"].forEach(k=>{
+      const v=Number(raiz[k]);if(Number.isFinite(v)&&v>0) pontos+=2;
+    });
+    return pontos;
+  }
+
+  function alteracaoPareceEsvaziamento(antes,depois){
+    const origem=pontuacaoConteudoFicha(antes);
+    const destino=pontuacaoConteudoFicha(depois);
+    if(origem<12) return false;
+    return destino<=Math.max(4,Math.floor(origem*0.35)) && destino<=origem-10;
+  }
+
+  function selecionarRegistroCanonico(itens){
+    const ordenados=[...(itens||[])].sort((a,b)=>{
+      const dataDiff=Number(b.cloud?.updatedAt||0)-Number(a.cloud?.updatedAt||0);
+      if(dataDiff) return dataDiff;
+      return Number(b.cloud?.revision||0)-Number(a.cloud?.revision||0);
+    });
+    const maisRecente=ordenados[0];
+    if(!maisRecente) return null;
+    const maisRico=[...ordenados].sort((a,b)=>pontuacaoConteudoFicha(b.cloud?.data)-pontuacaoConteudoFicha(a.cloud?.data))[0];
+    if(maisRico&&maisRico.sheetId!==maisRecente.sheetId&&alteracaoPareceEsvaziamento(maisRico.cloud?.data,maisRecente.cloud?.data)){
+      return maisRico;
+    }
+    return maisRecente;
+  }
+
+  function agruparRegistrosNuvem(valor){
+    const grupos=new Map();
+    Object.entries(valor||{}).forEach(([sheetId,cloud])=>{
+      if(!cloud||typeof cloud!=="object") return;
+      const chave=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data})||sheetId;
+      if(!grupos.has(chave)) grupos.set(chave,[]);
+      grupos.get(chave).push({sheetId,cloud});
+    });
+    return [...grupos.entries()].map(([chave,itens])=>{
+      const canonico=selecionarRegistroCanonico(itens);
+      return {chave,itens,canonico,duplicatas:itens.filter(item=>item.sheetId!==canonico?.sheetId)};
+    });
   }
   function lerJson(chave,padrao){
     try{const v=JSON.parse(localStorage.getItem(chave)||"");return v??padrao;}catch(_erro){return padrao;}
@@ -691,34 +778,120 @@
     if(!nomes.length){
       try{nomes=JSON.parse(localStorage.getItem("ficha_ninja_lista_v1")||'["Principal"]');}catch(_erro){nomes=["Principal"];}
     }
+    nomes=Array.from(new Set((Array.isArray(nomes)?nomes:["Principal"]).map(nome=>
+      typeof window.limparNomeFicha==="function"?window.limparNomeFicha(nome):texto(nome)||"Principal"
+    )));
+    const ativa=fichaAtivaNomeSeguro();
     const vistos=new Set();
-    return nomes.map(nome=>{
-      const nomeLimpo=typeof window.limparNomeFicha==="function"?window.limparNomeFicha(nome):texto(nome)||"Principal";
+    const fichasValidas=[];
+    const nomesValidos=[];
+
+    nomes.forEach(nomeLimpo=>{
       const chave=nomeLimpo==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${nomeLimpo}`;
-      let dados={};
-      try{dados=JSON.parse(localStorage.getItem(chave)||"{}");}catch(_erro){dados={};}
+      const bruto=localStorage.getItem(chave);
+      let dados=null;
+      let veioDoEstado=false;
       try{
-        if(nomeLimpo===fichaAtivaNomeSeguro()&&typeof window.estado!=="undefined"&&window.estado&&typeof window.estado==="object"){
-          dados=clonar(window.estado);
+        /* A listagem não deve transformar window.estado em fonte de gravação.
+           A versão persistida é a referência segura para sincronização; os
+           campos confirmados são gravados nela antes de qualquer envio. */
+        if(bruto!=null){
+          const lido=JSON.parse(bruto);
+          if(lido&&typeof lido==="object"&&!Array.isArray(lido)) dados=lido;
         }
-      }catch(_erro){}
+        if(!dados&&nomeLimpo===ativa&&typeof window.estado!=="undefined"&&window.estado&&typeof window.estado==="object"){
+          dados=clonar(window.estado);
+          veioDoEstado=true;
+        }
+      }catch(_erro){dados=null;}
+
+      /* Uma entrada antiga na lista sem dados reais não é uma ficha. Antes esta
+         situação criava um objeto vazio + novo sheetId e acabava enviando uma
+         "ficha fantasma" para o Firebase. */
+      if(!dados){
+        if(nomeLimpo===ativa){dados={};veioDoEstado=true;}
+        else return;
+      }
+
       dados=garantirMetadadosFichaLocal(nomeLimpo,dados);
-      while(vistos.has(dados.__online.sheetId)) dados.__online.sheetId=idAleatorio("sheet");
+      if(vistos.has(dados.__online.sheetId)){
+        /* Colisão local só pode acontecer com uma duplicação explícita/legada.
+           O segundo registro recebe uma identidade própria uma única vez. */
+        const anterior=dados.__online.sheetId;
+        dados.__online.sheetId=idAleatorio("sheet");
+        dados.__online.sourceSheetId=anterior;
+        dados.__online.userCopy=true;
+      }
       vistos.add(dados.__online.sheetId);
+      nomesValidos.push(nomeLimpo);
       try{
         localStorage.setItem(chave,JSON.stringify(dados));
-        const ativa=localStorage.getItem("ficha_ninja_ativa_v1")||"Principal";
         if(nomeLimpo===ativa&&typeof estado!=="undefined") estado.__online=clonar(dados.__online);
       }catch(_erro){}
-      return {
-        name:nomeLimpo,
-        key:chave,
-        sheetId:dados.__online.sheetId,
-        level:Number(dados.nivel||1),
-        characterName:texto(dados.nome)||nomeLimpo,
-        data:dados
-      };
+      fichasValidas.push({
+        name:nomeLimpo,key:chave,sheetId:dados.__online.sheetId,
+        level:Number(dados.nivel||1),characterName:texto(dados.nome)||nomeLimpo,
+        data:dados,storageExists:bruto!=null||veioDoEstado,
+        syncDisabled:Boolean(dados.__online?.syncDisabled)
+      });
     });
+
+    /* Remove somente referências fantasmas da lista. Nenhum conteúdo existente
+       é apagado aqui. */
+    try{
+      const listaAtual=lerJson("ficha_ninja_lista_v1",["Principal"]);
+      const filtrada=(Array.isArray(listaAtual)?listaAtual:[]).filter(nome=>{
+        const limpo=typeof window.limparNomeFicha==="function"?window.limparNomeFicha(nome):texto(nome);
+        return nomesValidos.includes(limpo)||limpo===ativa;
+      });
+      if(!filtrada.includes("Principal")) filtrada.unshift("Principal");
+      localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(Array.from(new Set(filtrada))));
+    }catch(_erro){}
+    return fichasValidas;
+  }
+
+  function prepararCopiasLocaisLegadas(){
+    const locais=listarFichasLocais();
+    const grupos=new Map();
+    locais.forEach(ficha=>{
+      const chave=chaveLogicaFicha(ficha)||ficha.sheetId;
+      if(!grupos.has(chave)) grupos.set(chave,[]);
+      grupos.get(chave).push(ficha);
+    });
+    const ativa=fichaAtivaNomeSeguro();
+    grupos.forEach(itens=>{
+      if(itens.length<2) return;
+      const suspeitas=itens.filter(item=>ehNomeCopiaAutomatica(item.name));
+      if(!suspeitas.length) return;
+      const normais=itens.filter(item=>!ehNomeCopiaAutomatica(item.name));
+      const candidatas=normais.length?normais:itens;
+      const principal=[...candidatas].sort((a,b)=>{
+        if(a.name===ativa&&b.name!==ativa) return -1;
+        if(b.name===ativa&&a.name!==ativa) return 1;
+        return pontuacaoConteudoFicha(b.data)-pontuacaoConteudoFicha(a.data);
+      })[0];
+      itens.forEach(item=>{
+        const deveDesativar=item!==principal&&ehNomeCopiaAutomatica(item.name);
+        const atual=Boolean(item.data?.__online?.syncDisabled);
+        if(atual===deveDesativar) return;
+        const data=clonar(item.data||{});
+        data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
+        if(deveDesativar){
+          data.__online.syncDisabled=true;
+          data.__online.legacyAutoCopy=true;
+        }else{
+          delete data.__online.syncDisabled;
+          delete data.__online.legacyAutoCopy;
+        }
+        localStorage.setItem(item.key,JSON.stringify(data));
+        if(item.name===ativa){try{if(typeof window.estado!=="undefined") window.estado.__online=clonar(data.__online);}catch(_erro){}}
+      });
+    });
+    return listarFichasLocais();
+  }
+
+  function listarFichasSincronizaveis(){
+    return prepararCopiasLocaisLegadas().filter(ficha=>!ficha.data?.__online?.syncDisabled);
   }
 
   function fichaAtualLocal(){
@@ -1571,7 +1744,7 @@
   function marcarFichaPendente(localSheetName,{motivo="alteracao",modo="imediato"}={}){
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return null;
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
-    if(!ficha) return null;
+    if(!ficha||ficha.data?.__online?.syncDisabled) return null;
     estadoOnline.dirtySheets.add(ficha.sheetId);
     limparAgendamentoSync(ficha.sheetId);
     return definirStatusSync(ficha.sheetId,0,"pending",{pendingMode:texto(modo)||"imediato",pendingReason:texto(motivo)});
@@ -1611,44 +1784,78 @@
     return limpar(`Nuvem ${Date.now().toString(36)}`);
   }
 
-  function vincularFichaAusenteDaNuvem(sheetId,cloud){
-    if(!cloud?.data) return false;
-    const locais=listarFichasLocais();
-    if(locais.some(f=>f.sheetId===sheetId)) return false;
+  function vincularFichaAusenteDaNuvem(sheetId,cloud,{groupIds=[]}={}){
+    if(!cloud?.data) return {linked:false};
+    const locais=prepararCopiasLocaisLegadas();
+    const existente=locais.find(f=>f.sheetId===sheetId);
+    if(existente) return {linked:true,localName:existente.name,reusedLocal:true,divergent:false,alreadyLinked:true};
 
-    const nomeCloud=texto(cloud.name)||texto(cloud.characterName)||"Ficha da nuvem";
-    const hashSemVinculoCloud=hashFichaSemVinculo(cloud.data);
-    const copiaIdentica=locais.find(local=>{
-      const mesmoNome=local.name===nomeCloud||texto(local.characterName)===texto(cloud.characterName);
-      return mesmoNome&&hashFichaSemVinculo(local.data)===hashSemVinculoCloud;
-    });
+    const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
+    const grupoIds=new Set(groupIds.map(texto));
+    const mesmaPersonagem=locais.filter(local=>chaveLogicaFicha(local)===chaveCloud);
+    let candidato=[...mesmaPersonagem].sort((a,b)=>{
+      const aDes=Boolean(a.data?.__online?.syncDisabled),bDes=Boolean(b.data?.__online?.syncDisabled);
+      if(aDes!==bDes) return Number(aDes)-Number(bDes);
+      const aNormal=!ehNomeCopiaAutomatica(a.name),bNormal=!ehNomeCopiaAutomatica(b.name);
+      if(aNormal!==bNormal) return Number(bNormal)-Number(aNormal);
+      const ativa=fichaAtivaNomeSeguro();
+      if(a.name===ativa&&b.name!==ativa) return -1;
+      if(b.name===ativa&&a.name!==ativa) return 1;
+      const aGrupo=grupoIds.has(texto(a.sheetId)),bGrupo=grupoIds.has(texto(b.sheetId));
+      if(aGrupo!==bGrupo) return Number(bGrupo)-Number(aGrupo);
+      return pontuacaoConteudoFicha(b.data)-pontuacaoConteudoFicha(a.data);
+    })[0];
 
-    if(copiaIdentica){
-      const data=clonar(copiaIdentica.data||{});
+    if(candidato){
+      const antigoId=candidato.sheetId;
+      const data=clonar(candidato.data||{});
       data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
       data.__online.sheetId=sheetId;
-      data.__online.name=copiaIdentica.name;
-      localStorage.setItem(copiaIdentica.key,JSON.stringify(data));
-      const ativa=fichaAtivaNomeSeguro()===copiaIdentica.name;
-      if(ativa){
-        try{if(typeof window.estado!=="undefined") window.estado.__online=clonar(data.__online);}catch(_erro){}
+      data.__online.name=candidato.name;
+      delete data.__online.syncDisabled;
+      delete data.__online.legacyAutoCopy;
+      localStorage.setItem(candidato.key,JSON.stringify(data));
+      const ativa=fichaAtivaNomeSeguro()===candidato.name;
+      if(ativa){try{if(typeof window.estado!=="undefined") window.estado.__online=clonar(data.__online);}catch(_erro){}}
+
+      const localHashSemVinculo=hashFichaSemVinculo(data);
+      const cloudHashSemVinculo=hashFichaSemVinculo(cloud.data);
+      const identica=localHashSemVinculo===cloudHashSemVinculo;
+      const sync=estadoSync();
+      const metaAntiga=sync[antigoId]||{};
+      if(antigoId!==sheetId) delete sync[antigoId];
+      if(identica){
+        sync[sheetId]={
+          ...metaAntiga,revision:Number(cloud.revision||0),
+          lastHash:texto(cloud.hash)||hashFicha(data),lastSyncedAt:Number(cloud.updatedAt||agora()),
+          deviceId:texto(cloud.deviceId),syncStatus:1,phase:"synced",pendingMode:"",pendingReason:"",statusUpdatedAt:agora()
+        };
+        estadoOnline.dirtySheets.delete(antigoId);
+        estadoOnline.dirtySheets.delete(sheetId);
+      }else{
+        sync[sheetId]={
+          ...metaAntiga,revision:0,lastHash:"",lastSyncedAt:Number(metaAntiga.lastSyncedAt||0),
+          syncStatus:0,phase:"pending",pendingMode:"imediato",pendingReason:"primeiro-vinculo",statusUpdatedAt:agora()
+        };
+        if(estadoOnline.dirtySheets.has(antigoId)) estadoOnline.dirtySheets.add(sheetId);
+        estadoOnline.dirtySheets.delete(antigoId);
       }
-      atualizarMetaSync(sheetId,cloud,texto(cloud.hash)||hashFicha(data));
+      gravarEstadoSync(sync);
       emitir("ficha-vinculada-nuvem",{
-        sheetId,
-        name:copiaIdentica.name,
-        characterName:texto(data.nome)||texto(cloud.characterName)||copiaIdentica.name,
-        revision:Number(cloud.revision||0),
-        reusedLocal:true
+        sheetId,name:candidato.name,characterName:texto(data.nome)||texto(cloud.characterName)||candidato.name,
+        revision:Number(cloud.revision||0),reusedLocal:true,divergent:!identica,oldSheetId:antigoId
       });
-      return true;
+      return {linked:true,localName:candidato.name,reusedLocal:true,divergent:!identica,oldSheetId:antigoId};
     }
 
     const data=clonar(cloud.data||{});
+    const nomeCloud=texto(cloud.name)||texto(cloud.characterName)||"Ficha da nuvem";
     const nome=nomeLocalDisponivel(nomeCloud);
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     data.__online.sheetId=sheetId;
     data.__online.name=nome;
+    delete data.__online.syncDisabled;
+    delete data.__online.legacyAutoCopy;
 
     const chave=nome==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${nome}`;
     localStorage.setItem(chave,JSON.stringify(data));
@@ -1661,13 +1868,10 @@
       if(typeof window.atualizarListaFichas==="function") window.atualizarListaFichas();
     }catch(_erro){}
     emitir("ficha-vinculada-nuvem",{
-      sheetId,
-      name:nome,
-      characterName:texto(data.nome)||texto(cloud.characterName)||nome,
-      revision:Number(cloud.revision||0),
-      reusedLocal:false
+      sheetId,name:nome,characterName:texto(data.nome)||texto(cloud.characterName)||nome,
+      revision:Number(cloud.revision||0),reusedLocal:false,divergent:false
     });
-    return true;
+    return {linked:true,localName:nome,reusedLocal:false,divergent:false};
   }
 
   function atualizarMetaSync(sheetId,cloud,dataHash){
@@ -1683,73 +1887,154 @@
     gravarEstadoSync(sync);
   }
 
-  function aplicarFichaDaNuvemNoLocal(sheetId,cloud,local){
+  async function aplicarFichaDaNuvemNoLocal(sheetId,cloud,local,{motivo="atualizacao-remota"}={}){
     if(!local||!cloud) return false;
+    if(alteracaoPareceEsvaziamento(local.data,cloud.data)){
+      definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:"protecao-contra-esvaziamento"});
+      emitir("conflito-ficha",{sheetId,local,cloud,reason:"incoming-data-loss"});
+      return false;
+    }
+
+    /* Antes de substituir uma versão local preenchida por uma revisão remota,
+       guarda a revisão anterior. Isso permite recuperação mesmo que o outro
+       dispositivo tenha enviado algo incorreto. */
+    if(pontuacaoConteudoFicha(local.data)>=8){
+      try{await criarBackupFicha(local,{reason:`antes-${motivo}`,revision:Number((estadoSync()[sheetId]||{}).revision||0)});}catch(_erro){}
+    }
+
     const data=clonar(cloud.data||{});
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     data.__online.sheetId=sheetId;
-    /* O nome local é preservado para não quebrar a chave usada pelo aplicativo.
-       O conteúdo da ficha, incluindo XP, inventário e jutsus, vem da nuvem. */
     data.__online.name=local.name;
+    delete data.__online.syncDisabled;
+    delete data.__online.legacyAutoCopy;
+    const ativa=fichaAtivaNomeSeguro()===local.name;
     localStorage.setItem(local.key,JSON.stringify(data));
     const hash=texto(cloud.hash)||hashFicha(data);
     atualizarMetaSync(sheetId,cloud,hash);
-    const ativa=fichaAtualLocal()?.sheetId===sheetId;
+    /* Não consulte fichaAtualLocal() entre gravar o remoto e atualizar o estado
+       global: essa função lê window.estado e, se ele ainda estiver antigo, pode
+       gravar a versão velha de volta por cima da versão recém-recebida. */
     if(ativa) aplicarEstadoGlobalDaFicha(local.name,local.key,data);
     emitir("ficha-atualizada-nuvem",{
-      sheetId,
-      name:local.name,
-      characterName:texto(data.nome)||local.characterName||local.name,
-      revision:Number(cloud.revision||0),
-      active:ativa
+      sheetId,name:local.name,characterName:texto(data.nome)||local.characterName||local.name,
+      revision:Number(cloud.revision||0),active:ativa
     });
     return true;
   }
 
-  function processarAtualizacoesNuvem(valor){
+  async function arquivarDuplicataNuvem(canonicoId,duplicata){
+    const api=estadoOnline.api,uid=estadoOnline.user?.uid;
+    if(!api||!uid||!duplicata?.sheetId||!duplicata?.cloud) return false;
+    const id=`${agora()}_duplicata_${slug(duplicata.sheetId).slice(-28)}`;
+    try{
+      await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${canonicoId}/${id}`),{
+        name:duplicata.cloud.name||"Ficha",characterName:duplicata.cloud.characterName||"",
+        revision:Number(duplicata.cloud.revision||0),createdAt:agora(),reason:"duplicata-automatica-legada",
+        sourceSheetId:duplicata.sheetId,data:duplicata.cloud.data||{}
+      });
+      await api.remove(api.ref(estadoOnline.db,`userSheets/${uid}/${duplicata.sheetId}`));
+      const sync=estadoSync();
+      delete sync[duplicata.sheetId];
+      gravarEstadoSync(sync);
+      estadoOnline.dirtySheets.delete(duplicata.sheetId);
+      limparAgendamentoSync(duplicata.sheetId);
+      emitir("duplicata-nuvem-arquivada",{sheetId:duplicata.sheetId,canonicalSheetId:canonicoId});
+      return true;
+    }catch(erro){
+      emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});
+      return false;
+    }
+  }
+
+  async function limparDuplicatasNuvemSeguras(grupos){
+    for(const grupo of grupos||[]){
+      const canonico=grupo.canonico;
+      if(!canonico) continue;
+      const hashCanonico=hashFichaSemVinculo(canonico.cloud?.data||{});
+      for(const duplicata of grupo.duplicatas||[]){
+        const hashDuplicata=hashFichaSemVinculo(duplicata.cloud?.data||{});
+        const identica=hashCanonico===hashDuplicata;
+        const muitoMaisVazia=alteracaoPareceEsvaziamento(canonico.cloud?.data,duplicata.cloud?.data);
+        if(!identica&&!muitoMaisVazia) continue;
+        await arquivarDuplicataNuvem(canonico.sheetId,duplicata);
+      }
+    }
+  }
+
+  async function processarAtualizacoesNuvem(valor){
     if(!estadoOnline.user||estadoOnline.user.anonymous) return;
-    let locais=listarFichasLocais();
+    let locais=prepararCopiasLocaisLegadas();
     const sync=estadoSync();
+    const grupos=agruparRegistrosNuvem(valor);
 
-    Object.entries(valor||{}).forEach(([sheetId,cloud])=>{
+    for(const grupo of grupos){
+      const registro=grupo.canonico;
+      if(!registro) continue;
+      const sheetId=registro.sheetId,cloud=registro.cloud;
       let local=locais.find(f=>f.sheetId===sheetId);
+      let vinculo=null;
 
-      /* Mesma Conta Google = mesmas fichas. Se esta ficha ainda não existe
-         neste aparelho, cria uma cópia local vinculada sem substituir uma
-         ficha de mesmo nome que já exista. Depois disso, as mudanças passam
-         a trafegar automaticamente nos dois sentidos. */
       if(!local){
-        if(vincularFichaAusenteDaNuvem(sheetId,cloud)){
-          locais=listarFichasLocais();
-          local=locais.find(f=>f.sheetId===sheetId);
-        }
-        if(!local) return;
+        vinculo=vincularFichaAusenteDaNuvem(sheetId,cloud,{groupIds:grupo.itens.map(item=>item.sheetId)});
+        locais=prepararCopiasLocaisLegadas();
+        local=locais.find(f=>f.sheetId===sheetId);
+        if(!local) continue;
       }
 
-      const meta=sync[sheetId]||{};
       const cloudRevision=Number(cloud?.revision||0);
-      const localRevision=Number(meta.revision||0);
-      if(cloudRevision<=localRevision) return;
-
       const localHash=hashFicha(local.data||{});
       const cloudHash=texto(cloud?.hash)||hashFicha(cloud?.data||{});
 
-      if(localHash===cloudHash||texto(cloud?.deviceId)===obterDeviceId()){
+      /* No primeiro encontro entre dois aparelhos, o mesmo personagem pode ter
+         sido editado antes de receber a identidade da nuvem. Em vez de criar
+         "Nuvem 2/3/4", vinculamos ao mesmo sheetId e só decidimos o conteúdo. */
+      if(vinculo?.divergent){
+        const pontosLocal=pontuacaoConteudoFicha(local.data);
+        const pontosCloud=pontuacaoConteudoFicha(cloud.data);
+        if(pontosLocal<=4&&pontosCloud>pontosLocal){
+          if(await aplicarFichaDaNuvemNoLocal(sheetId,cloud,local,{motivo:"primeiro-vinculo"})) marcarFichaLimpa(sheetId);
+        }else{
+          definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:"primeiro-vinculo-divergente"});
+          emitir("conflito-ficha",{sheetId,local,cloud,reason:alteracaoPareceEsvaziamento(cloud.data,local.data)?"cloud-data-loss":"first-link-divergent"});
+        }
+        continue;
+      }
+
+      const meta=sync[sheetId]||estadoSync()[sheetId]||{};
+      const localRevision=Number(meta.revision||0);
+      if(cloudRevision<=localRevision){
+        if(localHash===cloudHash){atualizarMetaSync(sheetId,cloud,cloudHash);marcarFichaLimpa(sheetId);}
+        continue;
+      }
+
+      if(localHash===cloudHash){
         atualizarMetaSync(sheetId,cloud,cloudHash);
         marcarFichaLimpa(sheetId);
-        return;
+        continue;
       }
 
       const baseHash=texto(meta.lastHash);
       const localFoiAlterado=Boolean(baseHash&&localHash!==baseHash);
       if(localFoiAlterado){
-        emitir("conflito-ficha",{sheetId,local,cloud});
-        return;
+        definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:"alteracoes-nos-dois-aparelhos"});
+        emitir("conflito-ficha",{sheetId,local,cloud,reason:"both-changed"});
+        continue;
       }
 
-      aplicarFichaDaNuvemNoLocal(sheetId,cloud,local);
-      marcarFichaLimpa(sheetId);
-    });
+      if(alteracaoPareceEsvaziamento(local.data,cloud.data)){
+        definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:"protecao-contra-esvaziamento"});
+        emitir("conflito-ficha",{sheetId,local,cloud,reason:"incoming-data-loss"});
+        continue;
+      }
+
+      if(await aplicarFichaDaNuvemNoLocal(sheetId,cloud,local)){
+        marcarFichaLimpa(sheetId);
+        locais=prepararCopiasLocaisLegadas();
+      }
+    }
+
+    await limparDuplicatasNuvemSeguras(grupos);
   }
 
   function observarFichasNuvem(){
@@ -1766,21 +2051,36 @@
       api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`),
       snap=>{
         const valor=snap.val()||{};
-        try{processarAtualizacoesNuvem(valor);}catch(erro){emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});}
-        const locaisAtualizados=listarFichasLocais();
-        estadoOnline.fichasNuvem=Object.entries(valor).map(([id,f])=>({
-          id,...f,data:undefined,
-          linked:locaisAtualizados.some(local=>local.sheetId===id)
-        })).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+        const uidObservado=texto(estadoOnline.user?.uid);
+        estadoOnline.cloudQueue=estadoOnline.cloudQueue.catch(()=>{}).then(async()=>{
+          if(!uidObservado||texto(estadoOnline.user?.uid)!==uidObservado) return;
+          await processarAtualizacoesNuvem(valor);
+          if(texto(estadoOnline.user?.uid)!==uidObservado) return;
+          const locaisAtualizados=prepararCopiasLocaisLegadas();
+          estadoOnline.fichasNuvem=Object.entries(valor).map(([id,f])=>({
+            id,...f,data:undefined,
+            linked:locaisAtualizados.some(local=>local.sheetId===id)
+          })).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
 
-        if(Object.keys(valor).length===0){
-          sincronizarTodasFichas().catch(erro=>emitir("erro-sync",{mensagem:erroAmigavel(erro),erro}));
-        }
-
-        emitir("fichas-nuvem",snapshot());
+          if(Object.keys(valor).length===0){
+            await sincronizarTodasFichas();
+          }
+          emitir("fichas-nuvem",snapshot());
+        }).catch(erro=>emitir("erro-sync",{mensagem:erroAmigavel(erro),erro}));
       },
       erro=>emitir("erro-sync",{mensagem:erroAmigavel(erro),erro})
     );
+  }
+
+  async function criarBackupRegistroNuvem(sheetId,cloud,{reason="antes-sobrescrever-nuvem"}={}){
+    if(!cloud?.data||!estadoOnline.user||estadoOnline.user.anonymous) return false;
+    const api=estadoOnline.api,uid=estadoOnline.user.uid;
+    const id=`${agora()}_${slug(reason)}`;
+    await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${sheetId}/${id}`),{
+      name:cloud.name||"Ficha",characterName:cloud.characterName||"",revision:Number(cloud.revision||0),
+      createdAt:agora(),reason,data:cloud.data,sourceDeviceId:texto(cloud.deviceId)
+    });
+    return true;
   }
 
   async function sincronizarFichaDireta(localSheetName,{force=false,backup=false,motivo="autosave"}={}){
@@ -1788,6 +2088,9 @@
     capturarEstadoAtualAntesDaSincronizacao(localSheetName);
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) throw new Error("Ficha local não encontrada.");
+    if(ficha.data?.__online?.syncDisabled){
+      return {skipped:true,legacyRecovery:true,reason:"copia-automatica-legada"};
+    }
     const api=estadoOnline.api,uid=estadoOnline.user.uid,sheetId=ficha.sheetId;
     definirStatusSync(sheetId,0,"syncing",{pendingReason:texto(motivo)});
     const sync=estadoSync(),meta=sync[sheetId]||{};
@@ -1798,12 +2101,22 @@
       return {skipped:true};
     }
     const refFicha=api.ref(estadoOnline.db,`userSheets/${uid}/${sheetId}`);
+    if(force){
+      try{
+        const antes=await api.get(refFicha);
+        if(antes.exists()) await criarBackupRegistroNuvem(sheetId,antes.val(),{reason:"antes-forcar-versao-local"});
+      }catch(_erro){}
+    }
     let conflito=null;
     const resultado=await api.runTransaction(refFicha,atual=>{
       const cloudRevision=Number(atual?.revision||0);
       const baseRevision=Number(meta.revision||0);
+      if(!force&&atual&&alteracaoPareceEsvaziamento(atual.data,data)){
+        conflito={cloudRevision,baseRevision,cloud:atual,reason:"outgoing-data-loss"};
+        return;
+      }
       if(!force&&atual&&cloudRevision>baseRevision&&atual.hash!==meta.lastHash){
-        conflito={cloudRevision,baseRevision,cloud:atual};
+        conflito={cloudRevision,baseRevision,cloud:atual,reason:"revision-conflict"};
         return;
       }
       const revision=Math.max(cloudRevision,baseRevision)+1;
@@ -1814,8 +2127,9 @@
     },{applyLocally:false});
     if(!resultado.committed){
       if(conflito){
-        definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:"conflito"});
-        emitir("conflito-ficha",{sheetId,local:ficha,cloud:conflito.cloud});
+        const motivoConflito=conflito.reason==="outgoing-data-loss"?"protecao-contra-esvaziamento":"conflito";
+        definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:motivoConflito});
+        emitir("conflito-ficha",{sheetId,local:ficha,cloud:conflito.cloud,reason:conflito.reason||"conflict"});
         return {conflict:true,...conflito};
       }
       definirStatusSync(sheetId,0,"pending",{pendingReason:"transacao-nao-concluida"});
@@ -1842,6 +2156,7 @@
     exigirContaGoogle();
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) return Promise.reject(new Error("Ficha local não encontrada."));
+    if(ficha.data?.__online?.syncDisabled) return Promise.resolve({skipped:true,legacyRecovery:true});
     const sheetId=ficha.sheetId;
     const anterior=estadoOnline.syncQueues.get(sheetId)||Promise.resolve();
     const tarefa=anterior.catch(()=>{}).then(()=>sincronizarFichaDireta(ficha.name,opcoes)).catch(erro=>{
@@ -1875,7 +2190,7 @@
   async function sincronizarTodasFichas(){
     exigirContaGoogle();
     const resultados=[];
-    for(const ficha of listarFichasLocais()){
+    for(const ficha of listarFichasSincronizaveis()){
       resultados.push(await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"sincronizacao-geral"}));
     }
     return resultados;
@@ -1887,15 +2202,31 @@
     const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}/${sheetId}`));
     if(!snap.exists()) throw new Error("Backup da nuvem não encontrado.");
     const cloud=snap.val(),data=clonar(cloud.data||{});
-    let nome=texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
-    const locais=listarFichasLocais();
-    if(asCopy||locais.some(f=>f.name===nome&&f.sheetId!==sheetId)){
-      let base=`${nome} Nuvem`,n=2,candidato=base;
-      while(locais.some(f=>f.name===candidato)){candidato=`${base} ${n++}`;}
+    const locais=prepararCopiasLocaisLegadas();
+    const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
+    const vinculada=locais.find(f=>f.sheetId===sheetId);
+    const mesmaPersonagem=locais.find(f=>chaveLogicaFicha(f)===chaveCloud&&!f.data?.__online?.syncDisabled);
+    let nome=vinculada?.name||mesmaPersonagem?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
+
+    if(asCopy){
+      const base=`${nome} Cópia`,nMax=1000;let n=2,candidato=base;
+      while(locais.some(f=>f.name===candidato)&&n<nMax){candidato=`${base} ${n++}`;}
       nome=candidato;
-      data.__online=data.__online||{};
-      data.__online.sheetId=asCopy?idAleatorio("sheet"):sheetId;
+      data.__online={};
+      data.__online.sheetId=idAleatorio("sheet");
+      data.__online.userCopy=true;
+      data.__online.sourceSheetId=sheetId;
+    }else{
+      const anterior=vinculada||mesmaPersonagem;
+      if(anterior&&pontuacaoConteudoFicha(anterior.data)>=8){
+        try{await criarBackupFicha(anterior,{reason:"antes-restaurar-nuvem",revision:Number((estadoSync()[anterior.sheetId]||{}).revision||0)});}catch(_erro){}
+      }
+      data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
+      data.__online.sheetId=sheetId;
+      delete data.__online.syncDisabled;
+      delete data.__online.legacyAutoCopy;
     }
+
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     const idFinal=texto(data.__online.sheetId)||sheetId;
     data.__online.sheetId=idFinal;
@@ -1908,11 +2239,12 @@
     aplicarEstadoGlobalDaFicha(nome,chave,data);
     const sync=estadoSync();
     sync[idFinal]={
-      revision:Number(cloud.revision||0),lastHash:texto(cloud.hash)||hashFicha(data),
-      lastSyncedAt:Number(cloud.updatedAt||agora()),deviceId:texto(cloud.deviceId)
+      revision:asCopy?0:Number(cloud.revision||0),lastHash:asCopy?"":(texto(cloud.hash)||hashFicha(data)),
+      lastSyncedAt:asCopy?0:Number(cloud.updatedAt||agora()),deviceId:asCopy?"":texto(cloud.deviceId),
+      syncStatus:asCopy?0:1,phase:asCopy?"pending":"synced",pendingMode:asCopy?"imediato":"",pendingReason:asCopy?"copia-explicita":""
     };
     gravarEstadoSync(sync);
-    emitir("ficha-restaurada",{name:nome,sheetId:idFinal});
+    emitir("ficha-restaurada",{name:nome,sheetId:idFinal,asCopy});
     return nome;
   }
 
@@ -1927,7 +2259,7 @@
 
   async function sincronizarPendenciasAgora({motivo="flush",incluirTurno=false}={}){
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return [];
-    const locais=listarFichasLocais();
+    const locais=listarFichasSincronizaveis();
     const sync=estadoSync();
     const alvos=new Map();
 
@@ -1962,10 +2294,10 @@
       const api=estadoOnline.api;
       const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`));
       const valor=snap.val()||{};
-      processarAtualizacoesNuvem(valor);
+      await processarAtualizacoesNuvem(valor);
 
       const sync=estadoSync();
-      for(const ficha of listarFichasLocais()){
+      for(const ficha of listarFichasSincronizaveis()){
         const meta=sync[ficha.sheetId]||{};
         const hashAtual=hashFicha(ficha.data||{});
         const cloud=valor[ficha.sheetId];
@@ -2001,7 +2333,7 @@
   function agendarSincronizacaoFicha(localSheetName,{imediata=false,motivo="autosave"}={}){
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return;
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
-    if(!ficha) return;
+    if(!ficha||ficha.data?.__online?.syncDisabled) return;
     const sheetId=ficha.sheetId;
     marcarFichaPendente(ficha.name,{motivo,modo:"imediato"});
     limparAgendamentoSync(sheetId);
@@ -2022,6 +2354,7 @@
     estadoOnline.syncTimers.clear();
     estadoOnline.syncQueues.clear();
     estadoOnline.dirtySheets.clear();
+    estadoOnline.cloudQueue=Promise.resolve();
     limparSessaoLocal();
     estadoOnline.campanhas=[];estadoOnline.fichasNuvem=[];
   }
@@ -2040,7 +2373,7 @@
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
     entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
-    sairDaSala,encerrarSala,listarFichasLocais,fichaAtualLocal,resumoBatalhaDaFicha,
+    sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,fichaAtualLocal,resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,

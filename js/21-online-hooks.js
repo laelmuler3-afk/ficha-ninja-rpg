@@ -117,12 +117,29 @@
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
 
     if(syncPorTurnoAtiva()){
+      /* O fechamento do turno continua sendo usado para a lógica da sala, mas
+         a nuvem da Conta Google não deve esperar o fim do turno. A mesma ficha
+         precisa aparecer atualizada no celular/tablet assim que a alteração é
+         confirmada em qualquer aparelho. */
       marcarTurnoLocalPendente();
       if(contaGoogleAtiva()){
         window.ShinobiOnline.marcarFichaPendente?.(nome,{
           motivo:texto(detalhe.motivo)||"alteracao-turno",
-          modo:"turno"
+          modo:"imediato"
         });
+        try{
+          await window.ShinobiOnline.sincronizarFicha(nome,{
+            force:false,
+            backup:false,
+            motivo:texto(detalhe.motivo)||"alteracao-turno",
+            modo:"imediato"
+          });
+        }catch(erro){
+          window.ShinobiOnline.marcarFichaPendente?.(nome,{motivo:"falha-envio-turno",modo:"imediato"});
+          window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
+            detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
+          }));
+        }
       }
       return;
     }
@@ -171,34 +188,31 @@
     document.addEventListener("visibilitychange",()=>{
       if(document.visibilityState==="hidden"){
         clearTimeout(timerResumo);
-        if(!syncPorTurnoAtiva()){
-          sincronizarResumoParticipante();
-          window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"app-em-segundo-plano"}).catch(()=>{});
-        }
+        if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
+        /* A nuvem pessoal permanece imediata mesmo durante combate. */
+        window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"app-em-segundo-plano"}).catch(()=>{});
       }else{
         window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
           motivo:"app-visivel",
-          somenteReceber:syncPorTurnoAtiva()
+          somenteReceber:false
         }).catch(()=>{});
       }
     });
     window.addEventListener("pagehide",()=>{
       clearTimeout(timerResumo);
-      if(!syncPorTurnoAtiva()){
-        sincronizarResumoParticipante();
-        window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"pagehide"}).catch(()=>{});
-      }
+      if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
+      window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"pagehide"}).catch(()=>{});
     });
     window.addEventListener("focus",()=>{
       window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
         motivo:"foco",
-        somenteReceber:syncPorTurnoAtiva()
+        somenteReceber:false
       }).catch(()=>{});
     });
     window.addEventListener("online",()=>{
       window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
         motivo:"rede-restaurada",
-        somenteReceber:syncPorTurnoAtiva()
+        somenteReceber:false
       }).catch(()=>{});
     });
   }

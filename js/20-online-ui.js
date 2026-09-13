@@ -722,7 +722,8 @@
   }
 
   function chaveVisualFicha(ficha){
-    return String(ficha?.characterName||ficha?.name||"Ficha")
+    return String(ficha?.name||ficha?.characterName||"Ficha")
+      .replace(/\s+nuvem(?:\s+\d+)?$/i,"")
       .trim().toLocaleLowerCase("pt-BR").replace(/\s+/g," ");
   }
 
@@ -786,7 +787,9 @@
   }
 
   function renderNuvem(st){
-    const locais=window.ShinobiOnline?.listarFichasLocais?.()||[];
+    const todasLocais=window.ShinobiOnline?.listarFichasLocais?.()||[];
+    const locais=window.ShinobiOnline?.listarFichasSincronizaveis?.()||todasLocais.filter(f=>!f?.data?.__online?.syncDisabled);
+    const recuperacoes=Math.max(0,todasLocais.length-locais.length);
     const nuvem=st.fichasNuvem||[];
 
     if(st.user?.anonymous){
@@ -817,18 +820,18 @@
 
       <div class="onlineSyncConta">
         <div><small>CONTA GOOGLE</small><strong>${esc(st.user?.email||"Conta Google")}</strong></div>
-        <span>${locais.length} ${locais.length===1?"ficha":"fichas"} neste aparelho</span>
+        <span>${locais.length} ${locais.length===1?"personagem":"personagens"} neste aparelho${recuperacoes?` • ${recuperacoes} ${recuperacoes===1?"cópia antiga preservada":"cópias antigas preservadas"}`:""}</span>
       </div>
 
       <div class="onlineSyncResumo">
         <div><b>${vinculadas.length}</b><span>sincronizadas</span></div>
         <div><b>${disponiveis.length}</b><span>disponíveis</span></div>
-        <div><b>${grupos.length}</b><span>personagens na nuvem</span></div>
+        <div><b>${grupos.length}</b><span>personagens</span></div>
       </div>
 
       ${grupos.length?`
         <div class="onlineSyncSecao">
-          <div class="onlineSyncSecaoTitulo"><span>SUAS FICHAS</span><small>Uma linha por personagem</small></div>
+          <div class="onlineSyncSecaoTitulo"><span>SEUS PERSONAGENS</span><small>Uma personagem é a mesma no celular, tablet e demais aparelhos</small></div>
           <div class="onlineListaNuvem onlineListaNuvemClean">${grupos.map(renderFichaNuvemGrupo).join("")}</div>
         </div>`:`<p class="onlineVazio">Nenhuma ficha na nuvem ainda. A ficha atual será enviada automaticamente na próxima alteração salva.</p>`}
 
@@ -845,14 +848,22 @@
   function renderConflito(){
     if(!conflitoAtual)return"";
     const nome=conflitoAtual.local?.characterName||conflitoAtual.local?.name||"Ficha";
+    const motivo=String(conflitoAtual.reason||"");
+    const protegido=["incoming-data-loss","outgoing-data-loss","cloud-data-loss"].includes(motivo);
+    const primeiroVinculo=motivo==="first-link-divergent";
+    const textoConflito=protegido
+      ? "A proteção contra perda de dados bloqueou uma versão muito mais vazia antes que ela substituísse sua ficha. Confira as duas versões e escolha qual deve continuar."
+      : primeiroVinculo
+        ? "Este personagem já existia neste aparelho e na nuvem antes de receber a mesma identidade. O app não criou outra cópia: ele parou para você escolher qual conteúdo deve prevalecer."
+        : "Existem alterações diferentes desta mesma ficha em dois aparelhos. Escolha qual versão deve ser mantida.";
     return `<section class="onlineCard onlineConflito">
-      <span class="onlineCardSelo">CONFLITO DE SINCRONIZAÇÃO</span>
+      <span class="onlineCardSelo">PROTEÇÃO DE SINCRONIZAÇÃO</span>
       <h3>${esc(nome)}</h3>
-      <p>Existe uma versão mais recente dessa ficha na nuvem. Escolha qual versão deve ser mantida.</p>
+      <p>${esc(textoConflito)}</p>
       <div class="onlineAcoesColuna">
         <button class="onlineBtn primario" data-action="resolve-conflict" data-choice="nuvem" data-sheet-id="${esc(conflitoAtual.sheetId)}">Usar versão da nuvem</button>
         <button class="onlineBtn secundario" data-action="resolve-conflict" data-choice="local" data-sheet-id="${esc(conflitoAtual.sheetId)}">Manter este aparelho</button>
-        <button class="onlineBtn texto" data-action="resolve-conflict" data-choice="copia" data-sheet-id="${esc(conflitoAtual.sheetId)}">Criar uma cópia das duas</button>
+        <button class="onlineBtn texto" data-action="resolve-conflict" data-choice="copia" data-sheet-id="${esc(conflitoAtual.sheetId)}">Manter as duas como cópias separadas</button>
       </div>
     </section>`;
   }

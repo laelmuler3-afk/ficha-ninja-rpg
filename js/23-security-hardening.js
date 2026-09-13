@@ -77,7 +77,19 @@
         const novoEstado=extrairEstadoBackup(dados);
         if(!confirm("Importar esta ficha vai substituir os dados salvos neste aparelho. Continuar?")) return;
 
-        estado=novoEstado;
+        /* Importar conteúdo não pode trocar silenciosamente a identidade de
+           sincronização da ficha atual. Preserva o sheetId já vinculado neste
+           aparelho; assim um backup antigo não cria outro personagem na nuvem. */
+        const importado=typeof structuredClone==="function"?structuredClone(novoEstado):JSON.parse(JSON.stringify(novoEstado));
+        const sheetIdAtual=String(estado?.__online?.sheetId||"").trim();
+        if(sheetIdAtual){
+          importado.__online=importado.__online&&typeof importado.__online==="object"?importado.__online:{};
+          importado.__online.sheetId=sheetIdAtual;
+          importado.__online.name=String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal");
+          delete importado.__online.syncDisabled;
+          delete importado.__online.legacyAutoCopy;
+        }
+        estado=importado;
         if(!persistirEstadoLocal()) throw new Error("O armazenamento local não aceitou os dados importados.");
         alert("Ficha importada com sucesso!");
         location.reload();
