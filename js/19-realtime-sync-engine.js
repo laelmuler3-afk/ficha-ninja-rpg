@@ -159,10 +159,15 @@
     return op;
   }
 
-  function atualizarUiCampo(campo,valor){
+  function atualizarUiCampos(campos,dados){
+    const lista=[...new Set((campos||[]).map(texto).filter(Boolean))];
+    if(!lista.length) return;
+    const conjunto=new Set(lista);
     try{
       document.querySelectorAll("[data-save]").forEach(el=>{
-        if(el.dataset.save!==campo||el.dataset.shinobiEdicaoPendente==="1") return;
+        const campo=texto(el.dataset.save);
+        if(!conjunto.has(campo)||el.dataset.shinobiEdicaoPendente==="1") return;
+        const valor=dados?.[campo];
         if(el.type==="checkbox") el.checked=Boolean(valor);
         else el.value=valor==null?"":String(valor);
         try{
@@ -174,74 +179,104 @@
     }catch(_e){}
 
     const chamar=nome=>{try{if(typeof window[nome]==="function") window[nome]();else if(typeof globalThis[nome]==="function") globalThis[nome]();}catch(_e){}};
-    if(campo==="notasTopicos"||campo==="notas") chamar("renderizarTopicosNotas");
-    if(campo==="inventarioItens"||campo==="inventario") chamar("renderizarInventario");
-    if(campo==="jutsus") chamar("renderizarJutsus");
-    if(campo==="armados") chamar("renderizarArmados");
-    if(campo==="naturezas") chamar("renderizarNaturezas");
-    if(campo==="kekkeiGenkai") chamar("renderizarKekkeiGenkai");
-    if(campo==="carteira"||campo==="carteiraHistorico") chamar("renderizarCarteira");
-    if(campo==="avatarNinjaId"||campo==="avatarNinja") chamar("carregarAvatarSalvo");
-    if(campo==="perfilFundoImagemId"||campo.startsWith("perfilFundo")) chamar("carregarFundoPerfilSalvo");
+    if(conjunto.has("notasTopicos")||conjunto.has("notas")) chamar("renderizarTopicosNotas");
+    if(conjunto.has("inventarioItens")||conjunto.has("inventario")) chamar("renderizarInventario");
+    if(conjunto.has("jutsus")) chamar("renderizarJutsus");
+    if(conjunto.has("armados")) chamar("renderizarArmados");
+    if(conjunto.has("naturezas")) chamar("renderizarNaturezas");
+    if(conjunto.has("kekkeiGenkai")) chamar("renderizarKekkeiGenkai");
+    if(conjunto.has("carteira")||conjunto.has("carteiraHistorico")) chamar("renderizarCarteira");
+    if(conjunto.has("avatarNinjaId")||conjunto.has("avatarNinja")) chamar("carregarAvatarSalvo");
+    if(lista.some(campo=>campo==="perfilFundoImagemId"||campo.startsWith("perfilFundo"))) chamar("carregarFundoPerfilSalvo");
 
     const atributosBase=["forca","destreza","constituicao","inteligencia","sabedoria","carisma"];
-    if(atributosBase.includes(campo)){
+    if(lista.some(campo=>atributosBase.includes(campo))){
       chamar("atualizarModificadoresBatalha");
       chamar("atualizarModsBatalhaComBonus");
       chamar("atualizarBonusPericias");
+    }else if(lista.some(campo=>campo.startsWith("p_")||campo==="proficiencia")){
+      chamar("atualizarBonusPericias");
     }
-    if(campo.startsWith("p_")||campo==="proficiencia") chamar("atualizarBonusPericias");
 
-    if(["pv","pvMax","chakra","chakraMax","ca","cd","bonusCA","destreza","proficiencia","xp","nivel","nome","rank"].includes(campo)){
+    if(lista.some(campo=>["pv","pvMax","chakra","chakraMax","ca","cd","bonusCA","destreza","proficiencia","xp","nivel","nome","rank"].includes(campo))){
       chamar("atualizarPlacar");
       chamar("atualizarHUD");
       chamar("atualizarPerfil");
-      chamar("atualizarCAAutomatica");
+      /* Não recalcular/persistir CA ao receber dados remotos. O campo derivado
+         chega pela própria sincronização; persistir aqui criaria eco de sync. */
       chamar("atualizarDefesasTotaisBatalha");
     }
   }
 
-  function aplicarRegistroRemoto(sheetId,campo,registro){
+  function aplicarRegistrosRemotos(sheetId,itens,{eventoConsolidado=true}={}){
     const uid=uidAtual();
-    if(!uid||!registro||!util.campoPermitido(campo)) return false;
-    if(texto(registro.name)!==campo) return false;
-    const aplicada=versaoAplicada(sheetId,campo,uid);
-    if(aplicada&&util.compararVersoes(registro,aplicada)<=0) return false;
-
-    const pendente=operacaoPendente(sheetId,campo,uid);
-    if(pendente){
-      const cmp=util.compararVersoes(registro,pendente);
-      if(cmp<0) return false;
-      if(cmp>=0) removerOutbox(pendente,uid);
-    }
-
+    if(!uid||!Array.isArray(itens)||!itens.length) return {aplicados:[],dados:null};
     const ficha=fichaPorId(sheetId);
-    if(!ficha) return false;
+    if(!ficha) return {aplicados:[],dados:null};
+
     const dados=dadosPersistidosDaFicha(ficha);
-    const localAtual=dados[campo];
-    if(registro.deleted===true) delete dados[campo];
-    else{
-      let valorRemoto;
-      try{valorRemoto=JSON.parse(String(registro.payload));}catch(_erroPayload){return false;}
-      dados[campo]=util.mesclarValorRemoto(campo,valorRemoto,localAtual);
+    const todasVersoes=versoes(uid);
+    todasVersoes[sheetId]=todasVersoes[sheetId]&&typeof todasVersoes[sheetId]==="object"?todasVersoes[sheetId]:{};
+    const todasPendencias=outbox(uid);
+    let alterouPendencias=false;
+    let maiorServerUpdatedAt=0;
+    const aplicados=[];
+
+    for(const item of itens){
+      const campo=texto(item?.campo);
+      const registro=item?.registro;
+      if(!registro||!util.campoPermitido(campo)||texto(registro.name)!==campo) continue;
+      const chaveCampo=util.campoParaChave(campo);
+      const aplicada=todasVersoes[sheetId]?.[chaveCampo]||null;
+      if(aplicada&&util.compararVersoes(registro,aplicada)<=0) continue;
+
+      const chavePendente=chaveOperacao(sheetId,campo);
+      const pendente=todasPendencias[chavePendente]||null;
+      if(pendente){
+        const cmp=util.compararVersoes(registro,pendente);
+        if(cmp<0) continue;
+        delete todasPendencias[chavePendente];
+        alterouPendencias=true;
+      }
+
+      if(registro.deleted===true){
+        delete dados[campo];
+      }else{
+        let valorRemoto;
+        try{valorRemoto=JSON.parse(String(registro.payload));}catch(_erroPayload){continue;}
+        dados[campo]=util.mesclarValorRemoto(campo,valorRemoto,dados[campo]);
+      }
+      todasVersoes[sheetId][chaveCampo]={editAt:Number(registro.editAt||0),opId:texto(registro.opId)};
+      maiorServerUpdatedAt=Math.max(maiorServerUpdatedAt,Number(registro.serverUpdatedAt||0));
+      aplicados.push(campo);
     }
 
-    try{localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){return false;}
-    registrarVersao(sheetId,campo,registro,uid);
+    if(!aplicados.length) return {aplicados:[],dados};
+    try{localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){return {aplicados:[],dados:null};}
+    salvarVersoes(todasVersoes,uid);
+    if(alterouPendencias) salvarOutbox(todasPendencias,uid);
 
     const ativa=texto(localStorage.getItem("ficha_ninja_ativa_v1")||"Principal");
     if(ativa===ficha.name){
       try{
         if(typeof estado!=="undefined"&&estado&&typeof estado==="object"){
-          if(registro.deleted===true) delete estado[campo];
-          else estado[campo]=clonar(dados[campo]);
+          aplicados.forEach(campo=>{
+            if(Object.prototype.hasOwnProperty.call(dados,campo)) estado[campo]=clonar(dados[campo]);
+            else delete estado[campo];
+          });
         }
       }catch(_e){}
-      atualizarUiCampo(campo,dados[campo]);
+      atualizarUiCampos(aplicados,dados);
     }
-    confirmarStatusSeLimpo(sheetId,dados,registro.serverUpdatedAt);
-    try{window.ShinobiOnline?.notificarEventoSync?.("ficha-atualizada-nuvem",{sheetId,name:ficha.name,campo,granular:true});}catch(_e){}
-    return true;
+    confirmarStatusSeLimpo(sheetId,dados,maiorServerUpdatedAt);
+    if(eventoConsolidado){
+      try{window.ShinobiOnline?.notificarEventoSync?.("ficha-atualizada-nuvem",{sheetId,name:ficha.name,campos:aplicados.slice(),campo:aplicados.length===1?aplicados[0]:"",granular:true,batch:aplicados.length>1});}catch(_e){}
+    }
+    return {aplicados,dados};
+  }
+
+  function aplicarRegistroRemoto(sheetId,campo,registro){
+    return aplicarRegistrosRemotos(sheetId,[{campo,registro}]).aplicados.length>0;
   }
 
   function ouvirCampo(sheetId,snapshot){
@@ -315,22 +350,57 @@
           };
         });
       }
-      observarFicha(ficha.sheetId);
+      await observarFicha(ficha.sheetId);
       return true;
     })().finally(()=>estadoRT.initPromises.delete(ficha.sheetId));
     estadoRT.initPromises.set(ficha.sheetId,promessa);
     return promessa;
   }
 
-  function observarFicha(sheetId){
+  async function observarFicha(sheetId){
     const uid=uidAtual(),db=banco();
     if(!uid||!db||!sheetId||estadoRT.listeners.has(sheetId)) return;
     const ref=db.ref(`sheetRealtime/${uid}/${sheetId}/fields`);
-    const onAdded=snap=>ouvirCampo(sheetId,snap);
-    const onChanged=snap=>ouvirCampo(sheetId,snap);
+    let emBootstrap=true;
+    const buffer=[];
+    const encaminhar=snap=>{
+      if(emBootstrap){buffer.push(snap);return;}
+      ouvirCampo(sheetId,snap);
+    };
+    const onAdded=snap=>encaminhar(snap);
+    const onChanged=snap=>encaminhar(snap);
     ref.on("child_added",onAdded,error=>console.warn("Realtime child_added",error));
     ref.on("child_changed",onChanged,error=>console.warn("Realtime child_changed",error));
     estadoRT.listeners.set(sheetId,{ref,onAdded,onChanged});
+
+    try{
+      /* child_added dispara uma vez para CADA campo já existente. Aplicar cada
+         callback individualmente regravava/renderizava a ficha inteira dezenas
+         de vezes ao abrir o app. O snapshot inicial é aplicado em um único lote;
+         eventos que chegarem durante o bootstrap ficam no buffer e são validados
+         pelas versões logo depois, sem perder alterações concorrentes. */
+      const snapshot=await ref.once("value");
+      const valor=snapshot?.val?.()||{};
+      const itens=Object.entries(valor).map(([chave,registro])=>({
+        campo:texto(registro?.name)||util.chaveParaCampo(chave),
+        registro
+      }));
+      aplicarRegistrosRemotos(sheetId,itens);
+    }catch(error){
+      console.warn("Falha no bootstrap realtime da ficha",error);
+    }finally{
+      emBootstrap=false;
+      const pendentes=buffer.splice(0).map(snap=>{
+        const registro=snap?.val?.();
+        if(!registro||typeof registro!=="object") return null;
+        return {campo:texto(registro.name)||util.chaveParaCampo(snap.key),registro};
+      }).filter(Boolean);
+      /* Os child_added iniciais também estão no buffer. Processá-los como um
+         segundo lote permite ignorar versões já aplicadas sem reler/regravar a
+         ficha uma vez por campo; se algo mudou durante o bootstrap, só a versão
+         realmente mais nova é aplicada. */
+      aplicarRegistrosRemotos(sheetId,pendentes);
+    }
   }
 
   async function garantirRegistroDescoberta(ficha){
