@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.61",
-  "name": "Sincronização automática — interface clean",
-  "notes": "Reorganiza a tela de sincronização para refletir o fluxo automático real do app, agrupa cópias antigas por personagem, remove ações manuais da área principal, adiciona verificação avançada opcional e harmoniza o visual com a identidade AMOLED/petróleo.",
+  "version": "2.5.8.62",
+  "name": "Sincronização multi-dispositivo sem duplicação",
+  "notes": "Corrige duplicação automática de fichas entre aparelhos, protege contra versões vazias sobrescrevendo dados, unifica a identidade da mesma ficha na nuvem e corrige a aplicação de atualizações remotas da ficha ativa.",
   "date": "2026-09-13"
 }
