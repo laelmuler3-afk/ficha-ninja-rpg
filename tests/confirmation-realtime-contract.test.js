@@ -9,7 +9,7 @@ assert(core.includes('"Confirmar alteração?"'), 'modal de confirmação de edi
 assert(core.includes('campo.dataset.shinobiValorConfirmado=novoSerializado'), 'valor confirmado não é registrado após Sim');
 assert(core.includes('confirmada:true'), 'persistência confirmada precisa carregar o marcador confirmada:true');
 assert(core.includes('campo:campo.dataset.save'), 'persistência confirmada precisa informar qual campo foi alterado');
-assert(hooks.includes('if(evento?.detail?.confirmada===false) return;'), 'hook realtime deve ignorar alteração não confirmada');
+assert(hooks.includes('if(evento?.detail?.confirmada!==true) return;'), 'hook realtime deve aceitar somente alteração explicitamente confirmada');
 assert(hooks.includes('camposGranulares.length&&window.ShinobiOnline.sincronizarCamposFicha'), 'hook realtime deve enviar somente campos confirmados');
 
 console.log('✓ confirmação do usuário é o ponto de commit para a sincronização realtime');

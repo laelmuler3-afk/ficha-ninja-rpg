@@ -11,6 +11,9 @@ function executar(comando,args,rotulo){
 }
 
 const etapas=[
+  [process.execPath,['tests/pwa-atomic-update.test.js'],'Atualização PWA atômica'],
+  [process.execPath,['tests/project-structure.test.js'],'Estrutura do projeto / Firebase'],
+  [process.execPath,['tests/confirmation-boundary.test.js'],'Limite explícito de confirmação'],
   [process.execPath,['tests/realtime-fields.test.js'],'Utilitários de campos'],
   [process.execPath,['tests/realtime-core-contract.test.js'],'Contrato estrutural realtime'],
   [process.execPath,['tests/backup-realtime-separation.test.js'],'Separação backup / realtime'],
