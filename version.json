@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.60",
-  "name": "Menu lateral — destinos funcionais",
-  "notes": "Liga cada item do menu lateral ao destino correto: Minha conta abre login, Conta conectada gerencia/troca o usuário, Criar sala abre o gerenciador com código e QR, Entrar em sala abre código + leitor QR e Sala atual abre somente a sala ativa. Corrige também o estado interno de destino do painel Online.",
+  "version": "2.5.8.61",
+  "name": "Sincronização automática — interface clean",
+  "notes": "Reorganiza a tela de sincronização para refletir o fluxo automático real do app, agrupa cópias antigas por personagem, remove ações manuais da área principal, adiciona verificação avançada opcional e harmoniza o visual com a identidade AMOLED/petróleo.",
   "date": "2026-09-13"
 }
