@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.65 — roteamento online por área e atualização PWA.
+/* Ficha Ninja RPG 2.5.8.66 — estabilidade do realtime granular e atualização PWA.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.65";
+const APP_VERSION = "2.5.8.66";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

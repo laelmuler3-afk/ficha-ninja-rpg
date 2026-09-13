@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.65",
-  "name": "Sincronização granular em tempo real",
-  "notes": "Atualiza somente os campos e áreas alterados da ficha entre aparelhos da mesma Conta Google, com fila offline persistente e latest-write-wins por campo.",
+  "version": "2.5.8.66",
+  "name": "Estabilidade do realtime no tablet",
+  "notes": "Consolida o bootstrap da sincronização granular em um único lote, evitando dezenas de regravações e atualizações de interface ao abrir a ficha.",
   "date": "2026-09-13"
 }
