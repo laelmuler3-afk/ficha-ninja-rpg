@@ -131,6 +131,50 @@ def verificar_padroes_de_risco() -> None:
             falhar(f"Interpolação escapada em contexto JavaScript inline: {arquivo.relative_to(ROOT)}")
 
 
+
+def verificar_estrutura_projeto() -> None:
+    firebase_json = ROOT / "firebase.json"
+    firebaserc = ROOT / ".firebaserc"
+    functions_dir = ROOT / "functions"
+    functions_caps = ROOT / "Functions"
+
+    if not firebase_json.exists():
+        falhar("firebase.json obrigatório está ausente.")
+    else:
+        try:
+            config = json.loads(firebase_json.read_text(encoding="utf-8"))
+            if config.get("functions", {}).get("source") != "functions":
+                falhar("firebase.json deve usar functions.source = 'functions'.")
+        except Exception as erro:  # noqa: BLE001
+            falhar(f"Não foi possível validar firebase.json — {erro}")
+
+    if not firebaserc.exists():
+        falhar(".firebaserc obrigatório está ausente.")
+    if not functions_dir.is_dir():
+        falhar("Pasta functions/ em minúsculas está ausente.")
+    for relativo in ("functions/index.js", "functions/package.json", "functions/lib/backup-builder.js"):
+        if not (ROOT / relativo).exists():
+            falhar(f"Arquivo obrigatório das Cloud Functions ausente: {relativo}")
+    if functions_caps.exists():
+        falhar("Pasta Functions/ com maiúscula não pode coexistir com functions/.")
+
+    duplicados_raiz = (
+        "realtime-two-devices.test.js",
+        "realtime-core-contract.test.js",
+        "backup-realtime-separation.test.js",
+        "confirmation-realtime-contract.test.js",
+        "auto-backup-server.test.js",
+        "auto-backup-function-contract.test.js",
+        "run-sync-suite.js",
+    )
+    for relativo in duplicados_raiz:
+        if (ROOT / relativo).exists():
+            falhar(f"Teste duplicado na raiz: {relativo}; mantenha apenas tests/{relativo}.")
+
+    if (ROOT / "css/efeitos-jutsus.json").exists():
+        falhar("Arquivo duplicado css/efeitos-jutsus.json deve ser removido; use data/efeitos-jutsus.json.")
+
+
 def verificar_duplicatas_exatas() -> None:
     grupos: dict[tuple[int, str], list[Path]] = {}
     for arquivo in ROOT.rglob("*"):
@@ -152,6 +196,7 @@ def main() -> int:
     verificar_versoes()
     verificar_dados()
     verificar_padroes_de_risco()
+    verificar_estrutura_projeto()
     verificar_duplicatas_exatas()
 
     for aviso in AVISOS:
