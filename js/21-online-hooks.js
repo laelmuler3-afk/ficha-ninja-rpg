@@ -153,7 +153,7 @@
        inclusive durante combate. Encerrar turno apenas libera a iniciativa e
        força o envio de qualquer operação granular que tenha ficado pendente. */
     window.addEventListener("shinobi:ficha-persistida",evento=>{
-      if(evento?.detail?.confirmada===false) return;
+      if(evento?.detail?.confirmada!==true) return;
       enviarAlteracaoConfirmada(evento?.detail||{}).catch(()=>{});
     });
 

@@ -37,6 +37,7 @@
   let timerRecarga=null;
   let tentativasPublicacao=0;
   let versaoRemotaConhecida="";
+  let versaoInstaladaConhecida=APP_VERSION;
   let ultimoErroInstalacao="";
 
   function compararVersoes(a,b){
@@ -53,7 +54,7 @@
   }
 
   function ehVersaoNova(versao){
-    return Boolean(versao&&compararVersoes(versao,APP_VERSION)>0);
+    return Boolean(versao&&compararVersoes(versao,versaoInstaladaConhecida)>0);
   }
 
   function limparMarcadorRecargaDaUrl(){
@@ -224,6 +225,11 @@
         resolve("");
       }
     });
+  }
+
+  async function obterVersaoInstaladaEfetiva(){
+    const versaoWorker=await obterVersaoWorker(navigator.serviceWorker.controller);
+    return String(versaoWorker||APP_VERSION).trim()||APP_VERSION;
   }
 
   async function anunciarWorkerEsperando(){
@@ -414,7 +420,12 @@
     try{
       const remota=await buscarVersaoRemota();
       versaoRemotaConhecida=remota;
-      if(ehVersaoNova(remota)){
+      const versaoInstalada=await obterVersaoInstaladaEfetiva();
+      versaoInstaladaConhecida=versaoInstalada;
+      const temAtualizacao=Boolean(remota&&compararVersoes(remota,versaoInstalada)>0);
+      const versaoPainel=document.getElementById("shinobiVersaoInstalada");
+      if(versaoPainel) versaoPainel.textContent=`v${versaoInstalada}`;
+      if(temAtualizacao){
         definirStatus(`Versão v${remota} encontrada. Preparando...`,"normal");
         mostrarAviso({
           titulo:`Nova versão v${remota}`,
@@ -442,7 +453,7 @@
         return;
       }
 
-      await solicitarAtualizacaoDoRegistro(APP_VERSION);
+      await solicitarAtualizacaoDoRegistro(versaoInstalada||APP_VERSION);
       const waiting=registroAtual?.waiting;
       if(waiting){
         const versaoWaiting=await obterVersaoWorker(waiting);
@@ -456,13 +467,14 @@
       }
       tentativasPublicacao=0;
       ocultarAviso();
-      definirStatus(`Você está na versão mais recente: v${APP_VERSION}.`,"pronto");
+      versaoInstaladaConhecida=await obterVersaoInstaladaEfetiva();
+      definirStatus(`Você está na versão mais recente: v${versaoInstaladaConhecida}.`,"pronto");
     }catch(erro){
       console.warn("Falha ao verificar atualização.",erro);
       definirStatus(
         manual
           ?"Não foi possível conferir agora. Verifique sua conexão e tente novamente."
-          :`Versão instalada: v${APP_VERSION}.`,
+          :`Versão instalada: v${versaoInstaladaConhecida}.`,
         manual?"erro":"normal"
       );
     }finally{
