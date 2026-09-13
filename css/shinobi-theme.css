@@ -1490,3 +1490,31 @@ html.shinobiTemAtualizacao .shinobiDrawerItemExpansivel[data-drawer-action="sett
 }
 @media(max-width:420px){.shinobiDrawerPainel{padding-left:max(14px,env(safe-area-inset-left));padding-right:14px}}
 @media(max-width:350px){.shinobiDrawerPainel{padding-left:max(11px,env(safe-area-inset-left));padding-right:11px}}
+
+
+/* ---------- 2.5.8.59 · EVENTOS E TRANSIÇÃO DO MENU LATERAL ---------- */
+.shinobiDrawerBackdrop{
+  z-index:0;
+  touch-action:manipulation;
+}
+.shinobiDrawerPainel{
+  z-index:1;
+  isolation:isolate;
+  touch-action:pan-y;
+}
+.shinobiDrawerPainel button{
+  touch-action:manipulation;
+}
+.shinobiDrawerAcaoCarregando{
+  pointer-events:none!important;
+  opacity:.72!important;
+}
+.shinobiDrawerAcaoCarregando .shinobiDrawerChevron{
+  animation:shinobiDrawerChevronCarregando .75s linear infinite;
+}
+@keyframes shinobiDrawerChevronCarregando{
+  to{transform:rotate(360deg)}
+}
+body.onlineAberto .shinobiNavDrawer{
+  pointer-events:none!important;
+}
