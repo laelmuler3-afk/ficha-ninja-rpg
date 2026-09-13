@@ -115,57 +115,41 @@
   async function enviarAlteracaoConfirmada(detalhe={}){
     if(!window.ShinobiOnline) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
+    const motivo=texto(detalhe.motivo)||"alteracao-confirmada";
+    const snapshotManual=motivo==="salvamento-manual";
+    const listaInformada=Array.isArray(detalhe.camposAlterados);
+    const camposGranulares=listaInformada
+      ? [...new Set(detalhe.camposAlterados.map(texto).filter(campo=>window.EkoRealtimeFields?.campoPermitido?.(campo)!==false&&campo))]
+      : [];
+    const emTurno=syncPorTurnoAtiva();
 
-    if(syncPorTurnoAtiva()){
-      /* O fechamento do turno continua sendo usado para a lógica da sala, mas
-         a nuvem da Conta Google não deve esperar o fim do turno. A mesma ficha
-         precisa aparecer atualizada no celular/tablet assim que a alteração é
-         confirmada em qualquer aparelho. */
-      marcarTurnoLocalPendente();
-      if(contaGoogleAtiva()){
-        window.ShinobiOnline.marcarFichaPendente?.(nome,{
-          motivo:texto(detalhe.motivo)||"alteracao-turno",
-          modo:"imediato"
-        });
-        try{
-          await window.ShinobiOnline.sincronizarFicha(nome,{
-            force:false,
-            backup:false,
-            motivo:texto(detalhe.motivo)||"alteracao-turno",
-            modo:"imediato"
-          });
-        }catch(erro){
-          window.ShinobiOnline.marcarFichaPendente?.(nome,{motivo:"falha-envio-turno",modo:"imediato"});
-          window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
-            detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
-          }));
-        }
-      }
-      return;
-    }
+    if(emTurno) marcarTurnoLocalPendente();
 
     if(!contaGoogleAtiva()){
-      await sincronizarResumoParticipante();
+      if(!emTurno) await sincronizarResumoParticipante();
       return;
     }
 
-    window.ShinobiOnline.marcarFichaPendente?.(nome,{
-      motivo:texto(detalhe.motivo)||"alteracao-confirmada",
-      modo:"imediato"
-    });
     try{
-      await window.ShinobiOnline.sincronizarFicha(nome,{
-        force:false,
-        backup:texto(detalhe.motivo)==="salvamento-manual",
-        motivo:texto(detalhe.motivo)||"alteracao-confirmada",
-        modo:"imediato"
-      });
-      await sincronizarResumoParticipante();
+      /* 2.5.8.65: o caminho normal envia apenas os campos/áreas alterados.
+         Full-sheet fica como compatibilidade para eventos antigos que não
+         informam camposAlterados e para operações explícitas de recuperação. */
+      if(listaInformada&&!snapshotManual&&window.ShinobiOnline.sincronizarCamposFicha){
+        if(camposGranulares.length){
+          await window.ShinobiOnline.sincronizarCamposFicha(nome,camposGranulares,{motivo});
+        }
+      }else{
+        window.ShinobiOnline.marcarFichaPendente?.(nome,{motivo,modo:"imediato"});
+        await window.ShinobiOnline.sincronizarFicha(nome,{
+          force:false,
+          backup:texto(detalhe.motivo)==="salvamento-manual",
+          motivo,
+          modo:"imediato"
+        });
+      }
+
+      if(!emTurno) await sincronizarResumoParticipante();
     }catch(erro){
-      window.ShinobiOnline.marcarFichaPendente?.(nome,{
-        motivo:"falha-envio-confirmado",
-        modo:"imediato"
-      });
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
         detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
       }));

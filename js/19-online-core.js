@@ -423,6 +423,11 @@
         if(user&&!user.isAnonymous){
           migrarEstadoSyncLegadoParaConta(user.uid);
           restaurarOutboxConta(user.uid);
+          /* A identidade precisa estar estável antes que o motor granular
+             receba o evento de autenticação; caso contrário um aparelho novo
+             pode publicar o sheetId aleatório legado antes da migração
+             determinística por Conta Google. */
+          prepararIdentidadesDaConta();
         }
         emitir("auth",snapshot());
         if(user){
@@ -1873,18 +1878,58 @@
     return sync[id];
   }
 
+  function registrarSyncGranularPendente(sheetId,motivo="alteracao-granular"){
+    const id=texto(sheetId);
+    if(!id) return null;
+    estadoOnline.dirtySheets.add(id);
+    limparAgendamentoSync(id);
+    return definirStatusSync(id,0,"pending",{
+      pendingMode:"granular",
+      pendingReason:texto(motivo)||"alteracao-granular"
+    });
+  }
+
+  function confirmarSyncGranular(sheetId,lastHash,lastSyncedAt=0){
+    const id=texto(sheetId);
+    if(!id) return null;
+    const sync=estadoSync();
+    const atual=sync[id]&&typeof sync[id]==="object"?sync[id]:{};
+    sync[id]={
+      ...atual,
+      lastHash:texto(lastHash)||texto(atual.lastHash),
+      lastSyncedAt:Number(lastSyncedAt)||agora(),
+      syncStatus:1,
+      phase:"synced",
+      pendingMode:"",
+      pendingReason:"",
+      statusUpdatedAt:agora()
+    };
+    gravarEstadoSync(sync);
+    limparAgendamentoSync(id);
+    estadoOnline.dirtySheets.delete(id);
+    removerOutbox(id,{somenteTipo:"upsert"});
+    emitir("status-sync",{sheetId:id,status:clonar(sync[id])});
+    emitir("ficha-sincronizada",{sheetId:id,granular:true,lastSyncedAt:sync[id].lastSyncedAt});
+    return sync[id];
+  }
+
+  function notificarEventoSync(tipo,detalhe={}){
+    emitir(texto(tipo)||"status",detalhe||{});
+  }
+
   function statusSincronizacaoAtual(){
     const ficha=fichaAtualLocal();
     if(!ficha) return {syncStatus:1,phase:"synced",sheetId:"",revision:0};
     const meta=estadoSync()[ficha.sheetId]||{};
     const hashAtual=hashFicha(ficha.data||{});
-    const sincronizado=Boolean(meta.lastHash&&meta.lastHash===hashAtual&&!estadoOnline.dirtySheets.has(ficha.sheetId));
+    const granularPendente=Boolean(window.EkoRealtimeSync?.temPendencias?.(ficha.sheetId));
+    const sincronizado=Boolean(meta.lastHash&&meta.lastHash===hashAtual&&!estadoOnline.dirtySheets.has(ficha.sheetId)&&!granularPendente);
     return {
       sheetId:ficha.sheetId,
       name:ficha.name,
       revision:Number(meta.revision||0),
       syncStatus:sincronizado?1:Number(meta.syncStatus||0),
-      phase:sincronizado?"synced":texto(meta.phase)||"pending",
+      phase:sincronizado?"synced":(granularPendente?"pending":texto(meta.phase)||"pending"),
       pendingMode:texto(meta.pendingMode),
       lastSyncedAt:Number(meta.lastSyncedAt||0),
       statusUpdatedAt:Number(meta.statusUpdatedAt||0)
@@ -2099,6 +2144,7 @@
         sourceSheetId:duplicata.sheetId,data:duplicata.cloud.data||{}
       });
       await api.remove(api.ref(estadoOnline.db,`userSheets/${uid}/${duplicata.sheetId}`));
+      try{if(window.EkoRealtimeSync?.excluirFichaRealtime) await window.EkoRealtimeSync.excluirFichaRealtime(duplicata.sheetId); }catch(_erroRealtime){}
       const sync=estadoSync();
       delete sync[duplicata.sheetId];
       gravarEstadoSync(sync);
@@ -2166,6 +2212,7 @@
         },{applyLocally:false});
         if(resultado.committed||jaExcluida){
           removerOutbox(sheetId,{},uid);
+          try{if(window.EkoRealtimeSync?.excluirFichaRealtime) await window.EkoRealtimeSync.excluirFichaRealtime(sheetId);}catch(_erroRealtime){}
           const sync=estadoSync(uid);delete sync[sheetId];gravarEstadoSync(sync,uid);
           estadoOnline.dirtySheets.delete(sheetId);
           resultados.push({sheetId,ok:true,alreadyDeleted:jaExcluida});
@@ -2205,6 +2252,7 @@
       removerOutbox(sheetId,{},uid);
       estadoOnline.dirtySheets.delete(sheetId);
       limparAgendamentoSync(sheetId);
+      try{Promise.resolve(window.EkoRealtimeSync?.excluirFichaRealtime?.(sheetId)).catch(()=>{});}catch(_erroRealtime){}
     });
     return alterou;
   }
@@ -2526,11 +2574,20 @@
 
   async function sincronizarPendenciasAgora({motivo="flush",incluirTurno=false}={}){
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return [];
+    const resultadosGranulares=[];
+    if(window.EkoRealtimeSync?.processarOutbox){
+      try{
+        const retorno=await window.EkoRealtimeSync.processarOutbox();
+        if(Array.isArray(retorno)) resultadosGranulares.push(...retorno);
+        else if(Array.isArray(retorno?.resultados)) resultadosGranulares.push(...retorno.resultados);
+      }catch(_erroGranular){}
+    }
     const locais=listarFichasSincronizaveis();
     const sync=estadoSync();
     const alvos=new Map();
 
     locais.forEach(ficha=>{
+      if(window.EkoRealtimeSync?.estaAtiva?.(ficha.sheetId)) return;
       const meta=sync[ficha.sheetId]||{};
       const hashAtual=hashFicha(ficha.data||{});
       const pendente=estadoOnline.dirtySheets.has(ficha.sheetId)||estadoOutbox()[ficha.sheetId]?.type==="upsert"||(meta.lastHash&&meta.lastHash!==hashAtual);
@@ -2550,7 +2607,7 @@
         emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});
       }
     }
-    return resultados;
+    return [...resultadosGranulares,...resultados];
   }
 
   async function reconciliarSincronizacaoConta({motivo="reconciliacao",somenteReceber=false}={}){
@@ -2558,6 +2615,9 @@
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.api||!estadoOnline.db) return {skipped:true};
     estadoOnline.reconciliandoSync=true;
     try{
+      if(window.EkoRealtimeSync?.reconciliar){
+        try{await window.EkoRealtimeSync.reconciliar();}catch(_erroGranular){}
+      }
       const api=estadoOnline.api;
       const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`));
       const valor=snap.val()||{};
@@ -2567,6 +2627,7 @@
 
       const sync=estadoSync();
       for(const ficha of listarFichasSincronizaveis()){
+        if(window.EkoRealtimeSync?.estaAtiva?.(ficha.sheetId)) continue;
         const meta=sync[ficha.sheetId]||{};
         const hashAtual=hashFicha(ficha.data||{});
         const cloud=valor[ficha.sheetId];
@@ -2648,6 +2709,7 @@
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,
+    registrarSyncGranularPendente,confirmarSyncGranular,notificarEventoSync,
     sincronizarPendenciasAgora,reconciliarSincronizacaoConta,resumoMudancasMeuTurno,finalizarMeuTurno,ehMeuTurno,chaveTurnoAtual,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };
