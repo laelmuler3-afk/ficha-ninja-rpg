@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.68 — backup automático diário no servidor, separado da sincronização realtime.
+/* Ficha Ninja RPG 2.5.8.69 — estabilização do PWA, Firebase e confirmação realtime.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.68";
+const APP_VERSION = "2.5.8.69";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -294,65 +294,26 @@ async function limparCachesAntigos(){
   );
 }
 
-async function buscarShellNoCache(request){
+async function buscarShellDaVersaoAtiva(request){
   const cache=await caches.open(SHELL_CACHE);
 
-  // Primeiro tenta a URL exata. Em seguida ignora a query string para aceitar
-  // o mesmo recurso solicitado como arquivo.png, arquivo.png?v=antiga ou
-  // arquivo.png?v=atual. Isso é essencial para o carregamento 100% offline.
+  /* O worker ativo é dono de uma versão imutável do app shell. Enquanto ele
+     controla a página, jamais buscamos JS/CSS/JSON de uma publicação mais nova:
+     isso impede misturar arquivos de versões diferentes. */
   const resposta=await cache.match(request)
     || await cache.match(request,{ignoreSearch:true});
   if(resposta) return resposta;
 
-  try{
-    const rede=await fetch(request);
-    if(respostaPodeSerSalva(rede)){
-      await cache.put(request,rede.clone());
-      const canonica=new URL(request.url);
-      canonica.search="";
-      canonica.hash="";
-      await cache.put(canonica.href,rede.clone());
-    }
-    return rede;
-  }catch(erro){
-    // Última tentativa: procura pelo pathname dentro dos caches atuais.
-    // Protege instalações antigas que só possuíam a entrada versionada.
-    const compat=await cache.match(request,{ignoreSearch:true});
-    if(compat) return compat;
-    throw erro;
-  }
+  throw new Error(`Recurso ausente no shell instalado ${APP_VERSION}: ${request.url}`);
 }
 
-// CSS, JavaScript e JSON mudam com frequência durante o desenvolvimento.
-// Busca a rede primeiro para evitar que um Service Worker antigo esconda alterações
-// recém-publicadas; o cache continua sendo usado quando o dispositivo está offline.
-async function buscarCodigoAtualizado(request){
+async function abrirPaginaDaVersaoAtiva(_request){
   const cache=await caches.open(SHELL_CACHE);
-  try{
-    const rede=await fetch(new Request(request,{cache:"no-cache"}));
-    if(respostaPodeSerSalva(rede)) await cache.put(request,rede.clone());
-    return rede;
-  }catch(erro){
-    const salva=await cache.match(request);
-    if(salva) return salva;
-    const compat=await cache.match(request,{ignoreSearch:true});
-    if(compat) return compat;
-    throw erro;
-  }
-}
+  const resposta=await cache.match(INDEX_URL)
+    || await cache.match(INDEX_URL,{ignoreSearch:true});
+  if(resposta) return resposta;
 
-async function abrirPaginaPrincipal(request){
-  const cache=await caches.open(SHELL_CACHE);
-
-  try{
-    const resposta=await fetch(new Request(request,{cache:"no-store"}));
-    if(respostaPodeSerSalva(resposta)) await cache.put(INDEX_URL,resposta.clone());
-    return resposta;
-  }catch(erro){
-    const fallback=await cache.match(INDEX_URL,{ignoreSearch:true});
-    if(fallback) return fallback;
-    throw erro;
-  }
+  throw new Error(`Página principal ausente no shell instalado ${APP_VERSION}`);
 }
 
 async function staleWhileRevalidate(request,event){
@@ -487,13 +448,12 @@ self.addEventListener("fetch",event=>{
 
   if(request.mode==="navigate"){
     event.waitUntil(self.registration.update().catch(()=>{}));
-    event.respondWith(abrirPaginaPrincipal(request));
+    event.respondWith(abrirPaginaDaVersaoAtiva(request));
     return;
   }
 
   if(SHELL_PATHS.has(url.pathname)){
-    const mutavel=/\.(?:css|js|json)$/i.test(url.pathname);
-    event.respondWith(mutavel?buscarCodigoAtualizado(request):buscarShellNoCache(request));
+    event.respondWith(buscarShellDaVersaoAtiva(request));
     return;
   }
 

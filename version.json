@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.68",
-  "name": "Backup automático diário no servidor",
-  "notes": "Mantém a sincronização realtime separada do backup e adiciona Cloud Function agendada às 03:00 (America/Sao_Paulo), que sobrescreve o único backup de cada ficha em userSheets/{uid}/{sheetId}.",
+  "version": "2.5.8.69",
+  "name": "Estabilização do PWA e sincronização",
+  "notes": "Atualização atômica do PWA, estrutura Firebase Functions corrigida, duplicatas removidas e realtime restrito a persistências explicitamente confirmadas.",
   "date": "2026-09-13"
 }
