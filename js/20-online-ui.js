@@ -13,6 +13,7 @@
   let ignorarCliquePainel=false;
   let campanhaMenuAberto=null;
   let destinoAtual=null;
+  let ultimaVerificacaoSync=0;
 
   const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
 
@@ -364,6 +365,35 @@
     });
   }
 
+  function atualizarCabecalhoDestino(){
+    if(!root)return;
+    const h2=root.querySelector(".shinobiOnlineHeader h2");
+    const eyebrow=root.querySelector(".shinobiOnlineHeader .shinobiOnlineEyebrow");
+    const mapa={
+      "login":["CONTA","Minha conta"],
+      "conta-conectada":["CONTA","Conta conectada"],
+      "sincronizacao":["NUVEM","Sincronização"],
+      "criar-sala":["SALA","Criar sala"],
+      "entrar-sala":["SALA","Entrar em sala"],
+      "sala-atual":["SALA","Sala atual"]
+    };
+    const [rotulo,titulo]=mapa[destinoAtual]||["FICHA NINJA","Mesa online"];
+    if(eyebrow)eyebrow.textContent=rotulo;
+    if(h2)h2.textContent=titulo;
+  }
+
+  function verificarSincronizacaoAoAbrir(){
+    if(destinoAtual!=="sincronizacao")return;
+    const st=obterEstado();
+    if(!st.user||st.user.anonymous)return;
+    const agora=Date.now();
+    if(agora-ultimaVerificacaoSync<5000)return;
+    ultimaVerificacaoSync=agora;
+    setTimeout(()=>{
+      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({motivo:"abrir-sincronizacao"}).catch(()=>{});
+    },80);
+  }
+
   function abrir(destino){
     destinoAtual=normalizarDestino(destino);
     try{
@@ -383,6 +413,8 @@
           conteudo.innerHTML=`<section class="onlineCard"><h3>Painel online</h3><p>O painel foi aberto, mas ocorreu um erro ao montar o conteúdo.</p><button type="button" class="onlineBtn primario" data-action="retry-online">Tentar novamente</button></section>`;
         }
       }
+
+      verificarSincronizacaoAoAbrir();
 
       // Reafirma a visibilidade no frame seguinte. Isso protege PWAs/WebViews
       // que recalculam a camada ao mesmo tempo em que o drawer lateral fecha.
@@ -689,38 +721,125 @@
     return null;
   }
 
+  function chaveVisualFicha(ficha){
+    return String(ficha?.characterName||ficha?.name||"Ficha")
+      .trim().toLocaleLowerCase("pt-BR").replace(/\s+/g," ");
+  }
+
+  function agruparFichasNuvem(nuvem,locais){
+    const grupos=new Map();
+    (nuvem||[]).forEach(ficha=>{
+      const chave=chaveVisualFicha(ficha);
+      const vinculada=(locais||[]).some(local=>local.sheetId===ficha.id);
+      const item={...ficha,vinculada};
+      if(!grupos.has(chave))grupos.set(chave,[]);
+      grupos.get(chave).push(item);
+    });
+    return [...grupos.values()].map(itens=>{
+      itens.sort((a,b)=>{
+        if(Boolean(b.vinculada)!==Boolean(a.vinculada))return Number(Boolean(b.vinculada))-Number(Boolean(a.vinculada));
+        const dataDiff=num(b.updatedAt)-num(a.updatedAt);
+        if(dataDiff)return dataDiff;
+        return num(b.revision)-num(a.revision);
+      });
+      const principal=itens[0];
+      return {principal,itens,duplicatas:itens.slice(1),vinculada:itens.some(item=>item.vinculada)};
+    }).sort((a,b)=>{
+      if(Boolean(b.vinculada)!==Boolean(a.vinculada))return Number(Boolean(b.vinculada))-Number(Boolean(a.vinculada));
+      return num(b.principal?.updatedAt)-num(a.principal?.updatedAt);
+    });
+  }
+
+  function textoStatusSync(st){
+    const sync=st?.syncAtual||{};
+    if(sync.phase==="conflict")return {classe:"conflito",rotulo:"Atenção necessária",detalhe:"Existe um conflito aguardando sua escolha."};
+    if(sync.phase==="syncing")return {classe:"sincronizando",rotulo:"Sincronizando…",detalhe:"Enviando as alterações desta ficha."};
+    if(sync.phase==="pending")return {classe:"pendente",rotulo:"Aguardando envio",detalhe:navigator.onLine===false?"Será enviada quando a internet voltar.":"A sincronização automática está preparando o envio."};
+    if(sync.syncStatus===1)return {classe:"ok",rotulo:"Tudo sincronizado",detalhe:"As alterações são enviadas e recebidas automaticamente."};
+    return {classe:"ok",rotulo:"Sincronização automática",detalhe:"As fichas desta conta são mantidas atualizadas entre seus aparelhos."};
+  }
+
+  function renderFichaNuvemGrupo(grupo){
+    const ficha=grupo.principal||{};
+    const antigas=grupo.duplicatas||[];
+    const nome=ficha.characterName||ficha.name||"Ficha";
+    const subtitulo=grupo.vinculada
+      ? `${ficha.name||nome} • neste aparelho`
+      : `${ficha.name||nome} • disponível na nuvem`;
+    const acao=grupo.vinculada
+      ? `<span class="onlineSyncBadge ok">Automática</span>`
+      : `<button type="button" class="onlineBtn secundario compacto" data-action="restore-cloud" data-sheet-id="${esc(ficha.id)}">Adicionar</button>`;
+    const duplicatas=antigas.length?`
+      <details class="onlineSyncDuplicatas">
+        <summary>${antigas.length} ${antigas.length===1?"cópia antiga oculta":"cópias antigas ocultas"}</summary>
+        <div class="onlineSyncDuplicatasLista">
+          ${antigas.map(item=>`<div class="onlineSyncDuplicata"><span><b>${esc(item.name||item.characterName||"Ficha")}</b><small>Revisão ${num(item.revision,1)}</small></span>${item.vinculada?`<span class="onlineSyncBadge neutro">Neste aparelho</span>`:`<button type="button" class="onlineBtn texto compacto" data-action="restore-cloud" data-sheet-id="${esc(item.id)}">Adicionar</button>`}</div>`).join("")}
+        </div>
+      </details>`:"";
+    return `<article class="onlineSyncFicha ${grupo.vinculada?"vinculada":"disponivel"}">
+      <div class="onlineSyncFichaTopo">
+        <div class="onlineSyncFichaTexto"><strong>${esc(nome)}</strong><small>${esc(subtitulo)}</small></div>
+        ${acao}
+      </div>
+      ${duplicatas}
+    </article>`;
+  }
+
   function renderNuvem(st){
     const locais=window.ShinobiOnline?.listarFichasLocais?.()||[];
     const nuvem=st.fichasNuvem||[];
 
     if(st.user?.anonymous){
-      return `<details class="onlineCard onlineDetails" data-online-detail="cloud" open>
-        <summary><span><b>Conta e sincronização</b><small>Nuvem desativada</small></span></summary>
-        <div class="onlineDetailsConteudo">
-          <p class="onlineAviso">Você entrou sem conta. Nesse modo, o Firebase cria apenas uma identificação temporária deste navegador. Ela não é um e-mail e não permite encontrar a ficha no celular, tablet ou depois de limpar os dados do aplicativo.</p>
-          <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google e ativar a nuvem</button>
-          <small class="onlineRodape">Você continuará podendo participar da sala. Depois do login, use “Sincronizar ficha atual” para enviar a ficha à sua conta.</small>
+      return `<section class="onlineCard onlineSyncPainel">
+        <div class="onlineSyncHero desligada">
+          <div class="onlineSyncIcone">☁</div>
+          <div><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Nuvem desativada</h3><p>Entre com Google para manter suas fichas iguais no celular, tablet e outros aparelhos.</p></div>
         </div>
-      </details>`;
+        <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google</button>
+      </section>`;
     }
 
-    return `<details class="onlineCard onlineDetails" data-online-detail="cloud" open>
-      <summary><span><b>Conta e sincronização</b><small>${nuvem.length} ficha(s) na nuvem</small></span></summary>
-      <div class="onlineDetailsConteudo">
-        <p class="onlineContaNuvem"><strong>${esc(st.user?.email||"Conta Google")}</strong><small>As fichas ficam vinculadas a esta conta.</small></p>
-        <div class="onlineAcoesLinha">
-          <button type="button" class="onlineBtn secundario" data-action="sync-current">Sincronizar ficha atual</button>
-          <button type="button" class="onlineBtn secundario" data-action="sync-all">Sincronizar todas</button>
+    const grupos=agruparFichasNuvem(nuvem,locais);
+    const vinculadas=grupos.filter(grupo=>grupo.vinculada);
+    const disponiveis=grupos.filter(grupo=>!grupo.vinculada);
+    const status=textoStatusSync(st);
+
+    return `<section class="onlineCard onlineSyncPainel">
+      <div class="onlineSyncHero">
+        <div class="onlineSyncIcone">↻</div>
+        <div class="onlineSyncHeroTexto">
+          <span class="onlineCardSelo">SINCRONIZAÇÃO AUTOMÁTICA</span>
+          <h3>${esc(status.rotulo)}</h3>
+          <p>${esc(status.detalhe)}</p>
         </div>
-        <div class="onlineListaNuvem">
-          ${nuvem.length?nuvem.map(f=>{
-            const vinculada=locais.some(local=>local.sheetId===f.id);
-            return `<article><div><strong>${esc(f.characterName||f.name)}</strong><small>${esc(f.name)} • revisão ${num(f.revision,1)}${vinculada?" • vinculada a este aparelho":""}</small></div><div class="onlineNuvemAcoes">${vinculada?`<span class="onlineStatusVinculo">Sincronização automática</span><button type="button" class="onlineBtn texto" data-action="restore-cloud" data-sheet-id="${esc(f.id)}" data-linked="true">Baixar novamente</button>`:`<button type="button" class="onlineBtn primario compacto" data-action="restore-cloud" data-sheet-id="${esc(f.id)}">Baixar neste aparelho</button>`}</div></article>`;
-          }).join(""):`<p class="onlineVazio">Nenhuma ficha foi enviada para esta Conta Google ainda. Toque em “Sincronizar ficha atual” no aparelho que já possui a ficha.</p>`}
-        </div>
-        <small class="onlineRodape">Entre com a mesma Conta Google nos seus aparelhos. As fichas da nuvem são vinculadas automaticamente e passam a receber alterações em tempo real. Se já existir uma ficha local diferente com o mesmo nome, ela é preservada e a versão da nuvem é criada separadamente para evitar perda de dados.</small>
+        <span class="onlineSyncIndicador ${esc(status.classe)}" aria-label="${esc(status.rotulo)}"></span>
       </div>
-    </details>`;
+
+      <div class="onlineSyncConta">
+        <div><small>CONTA GOOGLE</small><strong>${esc(st.user?.email||"Conta Google")}</strong></div>
+        <span>${locais.length} ${locais.length===1?"ficha":"fichas"} neste aparelho</span>
+      </div>
+
+      <div class="onlineSyncResumo">
+        <div><b>${vinculadas.length}</b><span>sincronizadas</span></div>
+        <div><b>${disponiveis.length}</b><span>disponíveis</span></div>
+        <div><b>${grupos.length}</b><span>personagens na nuvem</span></div>
+      </div>
+
+      ${grupos.length?`
+        <div class="onlineSyncSecao">
+          <div class="onlineSyncSecaoTitulo"><span>SUAS FICHAS</span><small>Uma linha por personagem</small></div>
+          <div class="onlineListaNuvem onlineListaNuvemClean">${grupos.map(renderFichaNuvemGrupo).join("")}</div>
+        </div>`:`<p class="onlineVazio">Nenhuma ficha na nuvem ainda. A ficha atual será enviada automaticamente na próxima alteração salva.</p>`}
+
+      <details class="onlineSyncAvancado">
+        <summary>Opções avançadas</summary>
+        <div>
+          <button type="button" class="onlineBtn secundario compacto" data-action="sync-check">Verificar sincronização agora</button>
+          <small>A sincronização normal é automática. Use esta opção apenas se quiser forçar uma verificação imediata.</small>
+        </div>
+      </details>
+    </section>`;
   }
 
   function renderConflito(){
@@ -957,6 +1076,7 @@
 
   function renderizar(){
     criarRoot();
+    atualizarCabecalhoDestino();
     const conteudo=document.getElementById("shinobiOnlineConteudo"),st=obterEstado();
     if(!conteudo)return;
     const interacao=capturarInteracao(conteudo);
@@ -1082,6 +1202,12 @@
     }
     if(acao==="copy-code")return copiar(obterEstado().sala?.code,"Código copiado.");
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
+    if(acao==="sync-check")return executar(async()=>{
+      try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
+      await window.ShinobiOnline.reconciliarSincronizacaoConta({motivo:"verificacao-manual"});
+      await window.ShinobiOnline.sincronizarPendenciasAgora?.({motivo:"verificacao-manual"});
+      await avisar("Sincronização verificada","As fichas vinculadas foram conferidas. A sincronização continuará automática em segundo plano.");
+    });
     if(acao==="sync-current")return executar(async()=>{
       try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
       await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:true,motivo:"manual"});
