@@ -4,7 +4,9 @@
 
   const CHAVE_SESSAO = "shinobi_online_session_v1";
   const CHAVE_DEVICE = "shinobi_device_id_v1";
-  const CHAVE_SYNC = "shinobi_sheet_sync_v1";
+  const CHAVE_SYNC_LEGADA = "shinobi_sheet_sync_v1";
+  const CHAVE_SYNC_BASE = "shinobi_sheet_sync_v2";
+  const CHAVE_OUTBOX_BASE = "shinobi_sheet_outbox_v1";
   const CHAVE_XP_PROCESSADO = "shinobi_xp_events_v1";
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -73,9 +75,10 @@
   }
   function hashFicha(valor){
     const copia=clonar(valor||{});
-    /* O nome interno depende da chave local usada em cada aparelho. Ele não
-       representa uma alteração real da personagem e não deve gerar conflito. */
-    if(copia?.__online&&typeof copia.__online==="object") delete copia.__online.name;
+    /* Metadados de transporte nunca fazem parte do conteúdo da personagem.
+       Isso evita conflitos falsos quando sheetId, ownerUid ou versão de
+       identidade mudam durante uma migração entre aparelhos. */
+    if(copia&&typeof copia==="object") delete copia.__online;
     return hashLeve(copia);
   }
 
@@ -88,7 +91,7 @@
   }
 
   function nomeSemSufixoNuvem(valor){
-    return texto(valor).replace(/\s+nuvem(?:\s+\d+)?$/i,"").trim();
+    return texto(valor).replace(/(?:\s+nuvem(?:\s+\d+)?)+$/i,"").trim();
   }
 
   function chaveLogicaFicha(ficha){
@@ -101,7 +104,7 @@
   }
 
   function ehNomeCopiaAutomatica(valor){
-    return /\s+nuvem(?:\s+\d+)?$/i.test(texto(valor));
+    return /(?:\s+nuvem(?:\s+\d+)?)+$/i.test(texto(valor));
   }
 
   function pontuacaoConteudoFicha(dados){
@@ -162,7 +165,7 @@
   function agruparRegistrosNuvem(valor){
     const grupos=new Map();
     Object.entries(valor||{}).forEach(([sheetId,cloud])=>{
-      if(!cloud||typeof cloud!=="object") return;
+      if(!cloud||typeof cloud!=="object"||cloud.deleted===true) return;
       const chave=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data})||sheetId;
       if(!grupos.has(chave)) grupos.set(chave,[]);
       grupos.get(chave).push({sheetId,cloud});
@@ -176,6 +179,38 @@
     try{const v=JSON.parse(localStorage.getItem(chave)||"");return v??padrao;}catch(_erro){return padrao;}
   }
   function salvarJson(chave,valor){localStorage.setItem(chave,JSON.stringify(valor));}
+
+  function uidContaAtiva(){
+    return texto(estadoOnline.user&&!estadoOnline.user.anonymous?estadoOnline.user.uid:"");
+  }
+
+  function chaveConta(base,uid=uidContaAtiva()){
+    const id=texto(uid);
+    return id?`${base}__${id}`:"";
+  }
+
+  function chaveIdentidadeFicha(nome){
+    return nomeSemSufixoNuvem(texto(nome)||"Principal")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+      .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"principal";
+  }
+
+  function sheetIdDeterministico(uid,nome){
+    const conta=texto(uid),chave=chaveIdentidadeFicha(nome);
+    const a=hashLeve(`eko:v2:${conta}:${chave}`);
+    const b=hashLeve(`${chave}:${conta}:personagem`);
+    return `sheet_${a}${b}`;
+  }
+
+  function descricaoDispositivo(){
+    const ua=String(navigator.userAgent||"");
+    if(/Android/i.test(ua)) return "Android";
+    if(/iPhone|iPad|iPod/i.test(ua)) return "iPhone/iPad";
+    if(/Windows/i.test(ua)) return "Windows";
+    if(/Macintosh|Mac OS X/i.test(ua)) return "macOS";
+    if(/Linux/i.test(ua)) return "Linux";
+    return "Dispositivo";
+  }
 
   function configuracaoValida(){
     const config=window.SHINOBI_FIREBASE_CONFIG||{};
@@ -380,14 +415,24 @@
       }
 
       api.onAuthStateChanged(estadoOnline.auth,async user=>{
+        const uidAnterior=texto(estadoOnline.user?.uid);
+        const uidNovo=texto(user?.uid);
+        if(uidAnterior&&uidNovo&&uidAnterior!==uidNovo) limparObservadoresConta();
         estadoOnline.user=normalizarUsuarioFirebase(user);
         estadoOnline.conectado=Boolean(user);
+        if(user&&!user.isAnonymous){
+          migrarEstadoSyncLegadoParaConta(user.uid);
+          restaurarOutboxConta(user.uid);
+        }
         emitir("auth",snapshot());
         if(user){
           await registrarPerfilUsuario().catch(()=>{});
           observarCampanhas();
           observarFichasNuvem();
-          setTimeout(()=>reconciliarSincronizacaoConta({motivo:"login"}).catch(()=>{}),180);
+          setTimeout(()=>{
+            reconciliarSincronizacaoConta({motivo:"login"}).catch(()=>{});
+            processarExclusoesPendentes().catch(()=>{});
+          },180);
           const sessao=lerJson(CHAVE_SESSAO,null);
           if(sessao?.roomId) observarSala(sessao.roomId,{restaurar:true}).catch(()=>limparSessaoLocal());
         }else{
@@ -555,7 +600,9 @@
        signOut antes do seletor: se a pessoa cancelar a escolha, a conta que já
        estava conectada continua ativa. A saída da sala, quando necessária, é
        tratada pela interface antes desta função. */
+    const uidAnterior=texto(estadoOnline.user?.uid);
     const resultado=await autenticarGooglePopup({tentativas:2});
+    if(uidAnterior&&uidAnterior!==texto(resultado.user?.uid)) limparObservadoresConta();
     estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
     estadoOnline.conectado=true;
     emitir("auth",snapshot());
@@ -571,14 +618,19 @@
 
   async function registrarPerfilUsuario(){
     exigirUsuario();
-    const api=estadoOnline.api;
-    await api.update(api.ref(estadoOnline.db,`users/${estadoOnline.user.uid}`),{
+    const api=estadoOnline.api,uid=estadoOnline.user.uid,deviceId=obterDeviceId();
+    await api.update(api.ref(estadoOnline.db,`users/${uid}`),{
       displayName:estadoOnline.user.displayName,
       email:estadoOnline.user.email,
       photoURL:estadoOnline.user.photoURL,
       anonymous:estadoOnline.user.anonymous,
-      lastSeen:api.serverTimestamp(),
-      deviceId:obterDeviceId()
+      lastSeen:api.serverTimestamp()
+    });
+    await api.update(api.ref(estadoOnline.db,`userDevices/${uid}/${deviceId}`),{
+      deviceId,
+      label:descricaoDispositivo(),
+      appVersion:texto(window.APP_VERSION),
+      lastSeen:api.serverTimestamp()
     });
   }
 
@@ -891,12 +943,58 @@
   }
 
   function listarFichasSincronizaveis(){
-    return prepararCopiasLocaisLegadas().filter(ficha=>!ficha.data?.__online?.syncDisabled);
+    const uid=uidContaAtiva();
+    return prepararCopiasLocaisLegadas().filter(ficha=>{
+      if(ficha.data?.__online?.syncDisabled) return false;
+      const ownerUid=texto(ficha.data?.__online?.ownerUid);
+      return !uid||!ownerUid||ownerUid===uid;
+    });
   }
 
   function fichaAtualLocal(){
     const atual=(()=>{try{return window.fichaAtual;}catch(_erro){return localStorage.getItem("ficha_ninja_ativa_v1")||"Principal";}})();
     return listarFichasLocais().find(f=>f.name===atual)||listarFichasLocais()[0];
+  }
+
+  function prepararIdentidadeFichaParaConta(nomeFicha){
+    const uid=uidContaAtiva();
+    if(!uid) return listarFichasLocais().find(f=>f.name===nomeFicha)||null;
+    const ficha=listarFichasLocais().find(f=>f.name===nomeFicha)||null;
+    if(!ficha) return null;
+    const ownerUid=texto(ficha.data?.__online?.ownerUid);
+    if(ownerUid&&ownerUid!==uid) return null;
+
+    const data=clonar(ficha.data||{});
+    data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
+    const idAntigo=texto(data.__online.sheetId)||idAleatorio("sheet");
+    const metaAntiga=estadoSync()[idAntigo]||{};
+    const jaSincronizada=Boolean(metaAntiga.lastHash||Number(metaAntiga.revision||0)>0);
+    const idNovo=!ownerUid&&!jaSincronizada?sheetIdDeterministico(uid,data.__online.name||ficha.name):idAntigo;
+
+    data.__online.sheetId=idNovo;
+    data.__online.ownerUid=uid;
+    data.__online.identityVersion=2;
+    data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(data.__online.name||ficha.name);
+    data.__online.name=ficha.name;
+    localStorage.setItem(ficha.key,JSON.stringify(data));
+    if(fichaAtivaNomeSeguro()===ficha.name){try{if(typeof window.estado!=="undefined") window.estado.__online=clonar(data.__online);}catch(_erro){}}
+
+    if(idNovo!==idAntigo){
+      const sync=estadoSync();
+      if(sync[idAntigo]&&!sync[idNovo]) sync[idNovo]=sync[idAntigo];
+      delete sync[idAntigo];
+      gravarEstadoSync(sync);
+      const outbox=estadoOutbox();
+      if(outbox[idAntigo]){outbox[idNovo]={...outbox[idAntigo],sheetId:idNovo};delete outbox[idAntigo];gravarOutbox(outbox);}
+      if(estadoOnline.dirtySheets.has(idAntigo)){estadoOnline.dirtySheets.delete(idAntigo);estadoOnline.dirtySheets.add(idNovo);}
+    }
+    return listarFichasLocais().find(f=>f.name===ficha.name)||null;
+  }
+
+  function prepararIdentidadesDaConta(){
+    if(!uidContaAtiva()) return [];
+    const nomes=listarFichasSincronizaveis().map(f=>f.name);
+    return nomes.map(nome=>prepararIdentidadeFichaParaConta(nome)).filter(Boolean);
   }
 
   function limparDadosParaSala(valor,profundidade=0){
@@ -1703,8 +1801,60 @@
     }
   }
 
-  function estadoSync(){return lerJson(CHAVE_SYNC,{})||{};}
-  function gravarEstadoSync(v){salvarJson(CHAVE_SYNC,v);}
+  function chaveSyncConta(uid=uidContaAtiva()){return chaveConta(CHAVE_SYNC_BASE,uid);}
+  function chaveOutboxConta(uid=uidContaAtiva()){return chaveConta(CHAVE_OUTBOX_BASE,uid);}
+
+  function migrarEstadoSyncLegadoParaConta(uid){
+    const chave=chaveSyncConta(uid);
+    if(!chave||localStorage.getItem(chave)!=null) return;
+    const legado=lerJson(CHAVE_SYNC_LEGADA,null);
+    if(legado&&typeof legado==="object"){
+      salvarJson(chave,legado);
+      localStorage.removeItem(CHAVE_SYNC_LEGADA);
+    }
+  }
+
+  function estadoSync(uid=uidContaAtiva()){
+    const chave=chaveSyncConta(uid);
+    return chave?(lerJson(chave,{})||{}):{};
+  }
+  function gravarEstadoSync(v,uid=uidContaAtiva()){
+    const chave=chaveSyncConta(uid);
+    if(chave) salvarJson(chave,v||{});
+  }
+
+  function estadoOutbox(uid=uidContaAtiva()){
+    const chave=chaveOutboxConta(uid);
+    return chave?(lerJson(chave,{})||{}):{};
+  }
+  function gravarOutbox(v,uid=uidContaAtiva()){
+    const chave=chaveOutboxConta(uid);
+    if(chave) salvarJson(chave,v||{});
+  }
+  function adicionarOutbox(sheetId,tipo="upsert",extra={},uid=uidContaAtiva()){
+    const id=texto(sheetId),conta=texto(uid);
+    if(!id||!conta) return;
+    const outbox=estadoOutbox(conta);
+    const anterior=outbox[id]&&typeof outbox[id]==="object"?outbox[id]:{};
+    outbox[id]={...anterior,...extra,type:tipo,sheetId:id,updatedAt:agora()};
+    gravarOutbox(outbox,conta);
+  }
+  function removerOutbox(sheetId,{somenteTipo=""}={},uid=uidContaAtiva()){
+    const id=texto(sheetId),conta=texto(uid);
+    if(!id||!conta) return;
+    const outbox=estadoOutbox(conta);
+    if(!outbox[id]) return;
+    if(somenteTipo&&texto(outbox[id].type)!==somenteTipo) return;
+    delete outbox[id];
+    gravarOutbox(outbox,conta);
+  }
+  function restaurarOutboxConta(uid=uidContaAtiva()){
+    estadoOnline.dirtySheets.clear();
+    const outbox=estadoOutbox(uid);
+    Object.values(outbox).forEach(op=>{
+      if(texto(op?.type)==="upsert"&&texto(op?.sheetId)) estadoOnline.dirtySheets.add(texto(op.sheetId));
+    });
+  }
 
   function definirStatusSync(sheetId,syncStatus,phase="pending",extra={}){
     const id=texto(sheetId);
@@ -1746,6 +1896,7 @@
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha||ficha.data?.__online?.syncDisabled) return null;
     estadoOnline.dirtySheets.add(ficha.sheetId);
+    adicionarOutbox(ficha.sheetId,"upsert",{name:ficha.name,reason:texto(motivo),mode:texto(modo)||"imediato"});
     limparAgendamentoSync(ficha.sheetId);
     return definirStatusSync(ficha.sheetId,0,"pending",{pendingMode:texto(modo)||"imediato",pendingReason:texto(motivo)});
   }
@@ -1763,6 +1914,7 @@
     if(!id) return;
     limparAgendamentoSync(id);
     estadoOnline.dirtySheets.delete(id);
+    removerOutbox(id,{somenteTipo:"upsert"});
     definirStatusSync(id,1,"synced",{pendingMode:"",pendingReason:""});
   }
 
@@ -1792,7 +1944,11 @@
 
     const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
     const grupoIds=new Set(groupIds.map(texto));
-    const mesmaPersonagem=locais.filter(local=>chaveLogicaFicha(local)===chaveCloud);
+    const uid=uidContaAtiva();
+    const mesmaPersonagem=locais.filter(local=>{
+      const ownerUid=texto(local.data?.__online?.ownerUid);
+      return chaveLogicaFicha(local)===chaveCloud&&(!ownerUid||ownerUid===uid);
+    });
     let candidato=[...mesmaPersonagem].sort((a,b)=>{
       const aDes=Boolean(a.data?.__online?.syncDisabled),bDes=Boolean(b.data?.__online?.syncDisabled);
       if(aDes!==bDes) return Number(aDes)-Number(bDes);
@@ -1811,6 +1967,9 @@
       const data=clonar(candidato.data||{});
       data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
       data.__online.sheetId=sheetId;
+      data.__online.ownerUid=uidContaAtiva();
+      data.__online.identityVersion=2;
+      data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(candidato.name);
       data.__online.name=candidato.name;
       delete data.__online.syncDisabled;
       delete data.__online.legacyAutoCopy;
@@ -1827,7 +1986,7 @@
       if(identica){
         sync[sheetId]={
           ...metaAntiga,revision:Number(cloud.revision||0),
-          lastHash:texto(cloud.hash)||hashFicha(data),lastSyncedAt:Number(cloud.updatedAt||agora()),
+          lastHash:hashFicha(data),lastSyncedAt:Number(cloud.updatedAt||agora()),
           deviceId:texto(cloud.deviceId),syncStatus:1,phase:"synced",pendingMode:"",pendingReason:"",statusUpdatedAt:agora()
         };
         estadoOnline.dirtySheets.delete(antigoId);
@@ -1853,6 +2012,9 @@
     const nome=nomeLocalDisponivel(nomeCloud);
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     data.__online.sheetId=sheetId;
+    data.__online.ownerUid=uidContaAtiva();
+    data.__online.identityVersion=2;
+    data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(nome);
     data.__online.name=nome;
     delete data.__online.syncDisabled;
     delete data.__online.legacyAutoCopy;
@@ -1862,7 +2024,7 @@
     const listaAtual=lerJson("ficha_ninja_lista_v1",["Principal"]);
     const lista=Array.from(new Set([...(Array.isArray(listaAtual)?listaAtual:["Principal"]),nome]));
     localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(lista));
-    atualizarMetaSync(sheetId,cloud,texto(cloud.hash)||hashFicha(data));
+    atualizarMetaSync(sheetId,cloud,hashFicha(data));
     try{
       if(Array.isArray(window.fichas)&&!window.fichas.includes(nome)) window.fichas.push(nome);
       if(typeof window.atualizarListaFichas==="function") window.atualizarListaFichas();
@@ -1879,7 +2041,7 @@
     sync[sheetId]={
       ...(sync[sheetId]||{}),
       revision:Number(cloud?.revision||0),
-      lastHash:texto(cloud?.hash)||dataHash||"",
+      lastHash:dataHash||hashFicha(cloud?.data||{}),
       lastSyncedAt:Number(cloud?.updatedAt||agora()),
       deviceId:texto(cloud?.deviceId),
       syncStatus:1,phase:"synced",pendingMode:"",pendingReason:"",statusUpdatedAt:agora()
@@ -1905,12 +2067,15 @@
     const data=clonar(cloud.data||{});
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     data.__online.sheetId=sheetId;
+    data.__online.ownerUid=uidContaAtiva();
+    data.__online.identityVersion=2;
+    data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(local.name);
     data.__online.name=local.name;
     delete data.__online.syncDisabled;
     delete data.__online.legacyAutoCopy;
     const ativa=fichaAtivaNomeSeguro()===local.name;
     localStorage.setItem(local.key,JSON.stringify(data));
-    const hash=texto(cloud.hash)||hashFicha(data);
+    const hash=hashFicha(data);
     atualizarMetaSync(sheetId,cloud,hash);
     /* Não consulte fichaAtualLocal() entre gravar o remoto e atualizar o estado
        global: essa função lê window.estado e, se ele ainda estiver antigo, pode
@@ -1956,14 +2121,97 @@
         const hashDuplicata=hashFichaSemVinculo(duplicata.cloud?.data||{});
         const identica=hashCanonico===hashDuplicata;
         const muitoMaisVazia=alteracaoPareceEsvaziamento(canonico.cloud?.data,duplicata.cloud?.data);
-        if(!identica&&!muitoMaisVazia) continue;
+        const copiaAutomatica=ehNomeCopiaAutomatica(duplicata.cloud?.name)||ehNomeCopiaAutomatica(canonico.cloud?.name);
+        if(!identica&&!muitoMaisVazia&&!copiaAutomatica) continue;
         await arquivarDuplicataNuvem(canonico.sheetId,duplicata);
       }
     }
   }
 
+  function registrarExclusaoLocal(nomeFicha,dados){
+    const data=dados&&typeof dados==="object"?dados:{};
+    const sheetId=texto(data?.__online?.sheetId);
+    const ownerUid=texto(data?.__online?.ownerUid)||uidContaAtiva();
+    if(!sheetId||!ownerUid) return false;
+    const meta=estadoSync(ownerUid)[sheetId]||{};
+    adicionarOutbox(sheetId,"delete",{
+      name:texto(nomeFicha)||texto(data?.__online?.name)||"Ficha",
+      characterName:texto(data?.nome),
+      baseRevision:Number(meta.revision||0),
+      requestedAt:agora()
+    },ownerUid);
+    if(ownerUid===uidContaAtiva()) setTimeout(()=>processarExclusoesPendentes().catch(()=>{}),0);
+    return true;
+  }
+
+  async function processarExclusoesPendentes(){
+    const uid=uidContaAtiva();
+    if(!uid||!estadoOnline.api||!estadoOnline.db) return [];
+    const api=estadoOnline.api,outbox=estadoOutbox(uid),resultados=[];
+    for(const op of Object.values(outbox)){
+      if(texto(op?.type)!=="delete"||!texto(op?.sheetId)) continue;
+      const sheetId=texto(op.sheetId);
+      try{
+        const refFicha=api.ref(estadoOnline.db,`userSheets/${uid}/${sheetId}`);
+        let jaExcluida=false;
+        const resultado=await api.runTransaction(refFicha,atual=>{
+          if(atual?.deleted===true){jaExcluida=true;return;}
+          const revision=atual?Number(atual.revision||0)+1:1;
+          return {
+            name:texto(atual?.name)||texto(op.name)||"Ficha",
+            characterName:texto(atual?.characterName)||texto(op.characterName),
+            revision,updatedAt:api.serverTimestamp(),deviceId:obterDeviceId(),
+            deleted:true,deletedAt:api.serverTimestamp(),appVersion:texto(window.APP_VERSION)
+          };
+        },{applyLocally:false});
+        if(resultado.committed||jaExcluida){
+          removerOutbox(sheetId,{},uid);
+          const sync=estadoSync(uid);delete sync[sheetId];gravarEstadoSync(sync,uid);
+          estadoOnline.dirtySheets.delete(sheetId);
+          resultados.push({sheetId,ok:true,alreadyDeleted:jaExcluida});
+        }
+      }catch(erro){
+        resultados.push({sheetId,ok:false,erro});
+        emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});
+      }
+    }
+    return resultados;
+  }
+
+  function aplicarExclusoesNuvem(valor){
+    const uid=uidContaAtiva();
+    if(!uid) return false;
+    let alterou=false;
+    Object.entries(valor||{}).forEach(([sheetId,cloud])=>{
+      if(cloud?.deleted!==true) return;
+      const local=listarFichasLocais().find(f=>f.sheetId===sheetId);
+      if(local&&local.name!=="Principal"){
+        try{localStorage.removeItem(local.key);}catch(_erro){}
+        try{
+          const lista=lerJson("ficha_ninja_lista_v1",["Principal"]);
+          const nova=(Array.isArray(lista)?lista:[]).filter(nome=>nome!==local.name);
+          if(!nova.includes("Principal")) nova.unshift("Principal");
+          localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(nova));
+          if(Array.isArray(window.fichas)) window.fichas=window.fichas.filter(nome=>nome!==local.name);
+          if(fichaAtivaNomeSeguro()===local.name){
+            localStorage.setItem("ficha_ninja_ativa_v1","Principal");
+            setTimeout(()=>location.reload(),80);
+          }else if(typeof window.atualizarListaFichas==="function") window.atualizarListaFichas();
+        }catch(_erro){}
+        alterou=true;
+      }
+      const sync=estadoSync(uid);
+      if(sync[sheetId]){delete sync[sheetId];gravarEstadoSync(sync,uid);}
+      removerOutbox(sheetId,{},uid);
+      estadoOnline.dirtySheets.delete(sheetId);
+      limparAgendamentoSync(sheetId);
+    });
+    return alterou;
+  }
+
   async function processarAtualizacoesNuvem(valor){
     if(!estadoOnline.user||estadoOnline.user.anonymous) return;
+    aplicarExclusoesNuvem(valor);
     let locais=prepararCopiasLocaisLegadas();
     const sync=estadoSync();
     const grupos=agruparRegistrosNuvem(valor);
@@ -1984,7 +2232,7 @@
 
       const cloudRevision=Number(cloud?.revision||0);
       const localHash=hashFicha(local.data||{});
-      const cloudHash=texto(cloud?.hash)||hashFicha(cloud?.data||{});
+      const cloudHash=hashFicha(cloud?.data||{});
 
       /* No primeiro encontro entre dois aparelhos, o mesmo personagem pode ter
          sido editado antes de receber a identidade da nuvem. Em vez de criar
@@ -2057,12 +2305,14 @@
           await processarAtualizacoesNuvem(valor);
           if(texto(estadoOnline.user?.uid)!==uidObservado) return;
           const locaisAtualizados=prepararCopiasLocaisLegadas();
-          estadoOnline.fichasNuvem=Object.entries(valor).map(([id,f])=>({
+          estadoOnline.fichasNuvem=Object.entries(valor).filter(([,f])=>f?.deleted!==true).map(([id,f])=>({
             id,...f,data:undefined,
             linked:locaisAtualizados.some(local=>local.sheetId===id)
           })).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
 
-          if(Object.keys(valor).length===0){
+          const ativas=Object.values(valor).filter(f=>f&&f.deleted!==true);
+          if(ativas.length===0){
+            prepararIdentidadesDaConta();
             await sincronizarTodasFichas();
           }
           emitir("fichas-nuvem",snapshot());
@@ -2086,8 +2336,11 @@
   async function sincronizarFichaDireta(localSheetName,{force=false,backup=false,motivo="autosave"}={}){
     exigirContaGoogle();
     capturarEstadoAtualAntesDaSincronizacao(localSheetName);
+    prepararIdentidadeFichaParaConta(localSheetName);
     const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) throw new Error("Ficha local não encontrada.");
+    const ownerUid=texto(ficha.data?.__online?.ownerUid);
+    if(ownerUid&&ownerUid!==uidContaAtiva()) throw new Error("Esta ficha local pertence a outra Conta Google neste aparelho.");
     if(ficha.data?.__online?.syncDisabled){
       return {skipped:true,legacyRecovery:true,reason:"copia-automatica-legada"};
     }
@@ -2111,18 +2364,23 @@
     const resultado=await api.runTransaction(refFicha,atual=>{
       const cloudRevision=Number(atual?.revision||0);
       const baseRevision=Number(meta.revision||0);
+      if(!force&&atual?.deleted===true){
+        conflito={cloudRevision,baseRevision,cloud:atual,reason:"deleted-remotely"};
+        return;
+      }
       if(!force&&atual&&alteracaoPareceEsvaziamento(atual.data,data)){
         conflito={cloudRevision,baseRevision,cloud:atual,reason:"outgoing-data-loss"};
         return;
       }
-      if(!force&&atual&&cloudRevision>baseRevision&&atual.hash!==meta.lastHash){
+      const hashCloudAtual=atual?.data?hashFicha(atual.data):"";
+      if(!force&&atual&&cloudRevision>baseRevision&&hashCloudAtual!==texto(meta.lastHash)){
         conflito={cloudRevision,baseRevision,cloud:atual,reason:"revision-conflict"};
         return;
       }
-      const revision=Math.max(cloudRevision,baseRevision)+1;
+      const revision=cloudRevision+1;
       return {
-        name:ficha.name,characterName:texto(data.nome)||ficha.name,revision,updatedAt:agora(),
-        deviceId:obterDeviceId(),hash:conteudoHash,appVersion:window.APP_VERSION||"",data
+        name:ficha.name,characterName:texto(data.nome)||ficha.name,revision,updatedAt:api.serverTimestamp(),
+        deviceId:obterDeviceId(),hash:conteudoHash,appVersion:window.APP_VERSION||"",deleted:false,data
       };
     },{applyLocally:false});
     if(!resultado.committed){
@@ -2142,7 +2400,7 @@
     }
     sync[sheetId]={
       ...(sync[sheetId]||{}),
-      revision:salvo.revision,lastHash:salvo.hash,lastSyncedAt:salvo.updatedAt,deviceId:salvo.deviceId,
+      revision:salvo.revision,lastHash:salvo.hash,lastSyncedAt:Number(salvo.updatedAt)||agora(),deviceId:salvo.deviceId,
       syncStatus:1,phase:"synced",pendingMode:"",pendingReason:"",statusUpdatedAt:agora()
     };
     gravarEstadoSync(sync);
@@ -2189,6 +2447,7 @@
 
   async function sincronizarTodasFichas(){
     exigirContaGoogle();
+    prepararIdentidadesDaConta();
     const resultados=[];
     for(const ficha of listarFichasSincronizaveis()){
       resultados.push(await sincronizarFicha(ficha.name,{force:false,backup:false,motivo:"sincronizacao-geral"}));
@@ -2201,11 +2460,16 @@
     const api=estadoOnline.api;
     const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}/${sheetId}`));
     if(!snap.exists()) throw new Error("Backup da nuvem não encontrado.");
-    const cloud=snap.val(),data=clonar(cloud.data||{});
+    const cloud=snap.val();
+    if(cloud?.deleted===true) throw new Error("Esta ficha foi excluída em outro aparelho e não pode ser restaurada como versão ativa.");
+    const data=clonar(cloud.data||{});
     const locais=prepararCopiasLocaisLegadas();
     const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
     const vinculada=locais.find(f=>f.sheetId===sheetId);
-    const mesmaPersonagem=locais.find(f=>chaveLogicaFicha(f)===chaveCloud&&!f.data?.__online?.syncDisabled);
+    const mesmaPersonagem=locais.find(f=>{
+      const ownerUid=texto(f.data?.__online?.ownerUid);
+      return chaveLogicaFicha(f)===chaveCloud&&!f.data?.__online?.syncDisabled&&(!ownerUid||ownerUid===uidContaAtiva());
+    });
     let nome=vinculada?.name||mesmaPersonagem?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
 
     if(asCopy){
@@ -2223,6 +2487,9 @@
       }
       data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
       data.__online.sheetId=sheetId;
+      data.__online.ownerUid=uidContaAtiva();
+      data.__online.identityVersion=2;
+      data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(nome);
       delete data.__online.syncDisabled;
       delete data.__online.legacyAutoCopy;
     }
@@ -2239,7 +2506,7 @@
     aplicarEstadoGlobalDaFicha(nome,chave,data);
     const sync=estadoSync();
     sync[idFinal]={
-      revision:asCopy?0:Number(cloud.revision||0),lastHash:asCopy?"":(texto(cloud.hash)||hashFicha(data)),
+      revision:asCopy?0:Number(cloud.revision||0),lastHash:asCopy?"":hashFicha(data),
       lastSyncedAt:asCopy?0:Number(cloud.updatedAt||agora()),deviceId:asCopy?"":texto(cloud.deviceId),
       syncStatus:asCopy?0:1,phase:asCopy?"pending":"synced",pendingMode:asCopy?"imediato":"",pendingReason:asCopy?"copia-explicita":""
     };
@@ -2266,7 +2533,7 @@
     locais.forEach(ficha=>{
       const meta=sync[ficha.sheetId]||{};
       const hashAtual=hashFicha(ficha.data||{});
-      const pendente=estadoOnline.dirtySheets.has(ficha.sheetId)||(meta.lastHash&&meta.lastHash!==hashAtual);
+      const pendente=estadoOnline.dirtySheets.has(ficha.sheetId)||estadoOutbox()[ficha.sheetId]?.type==="upsert"||(meta.lastHash&&meta.lastHash!==hashAtual);
       if(!pendente) return;
       if(!incluirTurno&&texto(meta.pendingMode)==="turno") return;
       alvos.set(ficha.sheetId,ficha);
@@ -2295,6 +2562,8 @@
       const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`));
       const valor=snap.val()||{};
       await processarAtualizacoesNuvem(valor);
+      await processarExclusoesPendentes();
+      prepararIdentidadesDaConta();
 
       const sync=estadoSync();
       for(const ficha of listarFichasSincronizaveis()){
@@ -2303,14 +2572,15 @@
         const cloud=valor[ficha.sheetId];
         const pendenteDeTurno=texto(meta.pendingMode)==="turno";
 
+        if(cloud?.deleted===true) continue;
         if(!cloud){
-          if(!somenteReceber&&!pendenteDeTurno&&(estadoOnline.dirtySheets.has(ficha.sheetId)||meta.lastHash)){
+          if(!somenteReceber&&!pendenteDeTurno&&(estadoOnline.dirtySheets.has(ficha.sheetId)||estadoOutbox()[ficha.sheetId]?.type==="upsert"||meta.lastHash)){
             await sincronizarFicha(ficha.name,{motivo,modo:"imediato"});
           }
           continue;
         }
 
-        const cloudHash=texto(cloud.hash)||hashFicha(cloud.data||{});
+        const cloudHash=hashFicha(cloud.data||{});
         if(hashAtual===cloudHash){
           atualizarMetaSync(ficha.sheetId,cloud,cloudHash);
           marcarFichaLimpa(ficha.sheetId);
@@ -2377,7 +2647,7 @@
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
-    restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,statusSincronizacaoAtual,
+    restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,
     sincronizarPendenciasAgora,reconciliarSincronizacaoConta,resumoMudancasMeuTurno,finalizarMeuTurno,ehMeuTurno,chaveTurnoAtual,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };

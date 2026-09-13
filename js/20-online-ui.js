@@ -579,7 +579,7 @@
   function renderMinhaConta(st){
     if(!st.user){
       return `<div class="onlineDestinoPagina" data-online-destino="login">
-        <div class="onlineDestinoTitulo"><span class="onlineCardSelo">MINHA CONTA</span><h3>Login</h3><p>Entre para ativar a nuvem e usar a mesma ficha em outros aparelhos.</p></div>
+        <div class="onlineDestinoTitulo"><span class="onlineCardSelo">MINHA CONTA</span><h3>Login</h3><p>Entre com a mesma Conta Google usada nos seus outros aparelhos para manter a mesma ficha sincronizada.</p></div>
         ${renderLogin()}
       </div>`;
     }
@@ -705,7 +705,7 @@
   function renderSincronizacaoDestino(st){
     if(!st.user){
       return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">
-        <section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Entre para ativar a nuvem</h3><p>A sincronização entre dispositivos precisa de uma Conta Google.</p><button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button></section>
+        <section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Entre para ativar a nuvem</h3><p>A sincronização entre dispositivos usa a mesma Conta Google em todos os seus aparelhos.</p><button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button></section>
       </div>`;
     }
     return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">${cabecalhoConta(st)}${renderConflito()}${renderNuvem(st)}</div>`;
@@ -723,7 +723,7 @@
 
   function chaveVisualFicha(ficha){
     return String(ficha?.name||ficha?.characterName||"Ficha")
-      .replace(/\s+nuvem(?:\s+\d+)?$/i,"")
+      .replace(/(?:\s+nuvem(?:\s+\d+)?)+$/i,"")
       .trim().toLocaleLowerCase("pt-BR").replace(/\s+/g," ");
   }
 
@@ -764,9 +764,10 @@
     const ficha=grupo.principal||{};
     const antigas=grupo.duplicatas||[];
     const nome=ficha.characterName||ficha.name||"Ficha";
+    const nomeFicha=String(ficha.name||nome).replace(/(?:\s+nuvem(?:\s+\d+)?)+$/i,"").trim()||nome;
     const subtitulo=grupo.vinculada
-      ? `${ficha.name||nome} • neste aparelho`
-      : `${ficha.name||nome} • disponível na nuvem`;
+      ? `${nomeFicha} • neste aparelho`
+      : `${nomeFicha} • disponível na nuvem`;
     const acao=grupo.vinculada
       ? `<span class="onlineSyncBadge ok">Automática</span>`
       : `<button type="button" class="onlineBtn secundario compacto" data-action="restore-cloud" data-sheet-id="${esc(ficha.id)}">Adicionar</button>`;
@@ -796,7 +797,7 @@
       return `<section class="onlineCard onlineSyncPainel">
         <div class="onlineSyncHero desligada">
           <div class="onlineSyncIcone">☁</div>
-          <div><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Nuvem desativada</h3><p>Entre com Google para manter suas fichas iguais no celular, tablet e outros aparelhos.</p></div>
+          <div><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Nuvem desativada</h3><p>Use a mesma Conta Google no celular, tablet e outros aparelhos para manter suas fichas iguais em todos eles.</p></div>
         </div>
         <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google</button>
       </section>`;

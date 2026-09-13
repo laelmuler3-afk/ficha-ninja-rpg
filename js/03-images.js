@@ -149,8 +149,9 @@
     return JSON.parse(JSON.stringify(estado || {}));
   }
 
-  function estadoParaLocalStorage(){
-    const copia = copiarEstado();
+  function estadoParaLocalStorage(origem){
+    const fonte = origem && typeof origem === "object" ? origem : estado;
+    const copia = JSON.parse(JSON.stringify(fonte || {}));
 
     (copia.jutsus || []).forEach(jutsu=>{
       if(jutsu && jutsu.imagemId){
@@ -167,24 +168,11 @@
     return copia;
   }
 
-  /* A função original salvava todo o Base64 das imagens dentro da ficha.
-     Daqui em diante, salva apenas os IDs das imagens. */
-  window.persistirEstadoLocal = function(){
-    try{
-      localStorage.setItem(CHAVE, JSON.stringify(estadoParaLocalStorage()));
-      try{ avisoArmazenamentoExibido = false; }catch(err){}
-      return true;
-    }catch(erro){
-      try{
-        if(!avisoArmazenamentoExibido){
-          avisoArmazenamentoExibido = true;
-          avisar("Armazenamento cheio", "Não foi possível salvar os dados da ficha. Tente executar a opção de otimizar armazenamento no menu de configurações.");
-        }
-      }catch(err){
-        alert("Não foi possível salvar os dados da ficha.");
-      }
-      return false;
-    }
+  /* A persistência principal pertence ao core. Este módulo apenas prepara uma
+     cópia leve do estado, removendo Base64/blob URLs sem quebrar eventos de
+     autosave, contexto de confirmação ou a fila de sincronização online. */
+  window.shinobiPrepararEstadoPersistencia = function(valor){
+    return estadoParaLocalStorage(valor);
   };
 
   async function otimizarArquivoParaBlob(arquivo, opcoes){
