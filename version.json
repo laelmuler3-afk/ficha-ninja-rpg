@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.66",
-  "name": "Estabilidade do realtime no tablet",
-  "notes": "Consolida o bootstrap da sincronização granular em um único lote, evitando dezenas de regravações e atualizações de interface ao abrir a ficha.",
+  "version": "2.5.8.68",
+  "name": "Backup automático diário no servidor",
+  "notes": "Mantém a sincronização realtime separada do backup e adiciona Cloud Function agendada às 03:00 (America/Sao_Paulo), que sobrescreve o único backup de cada ficha em userSheets/{uid}/{sheetId}.",
   "date": "2026-09-13"
 }
