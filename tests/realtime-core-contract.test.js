@@ -16,7 +16,8 @@ assert(engine.includes('window.ShinobiOnline.sincronizarCamposFicha'), 'API gran
 assert(core.includes('EkoRealtimeSync'), 'core não delega status/reconciliação granular');
 assert(hooks.includes('camposAlterados'), 'hook não consome camposAlterados');
 assert(hooks.includes('sincronizarCamposFicha'), 'hook não usa sync granular');
-assert(hooks.includes('const snapshotManual=motivo==="salvamento-manual"'), 'salvamento manual deve preservar snapshot/backup legado');
+assert(!hooks.includes('snapshotManual'), 'salvamento local manual não deve disparar backup completo');
+assert(core.includes('salvarBackupFicha'), 'API explícita de backup completo ausente');
 assert(rules.includes('"sheetRealtime"'), 'regras sheetRealtime ausentes');
 assert(engine.includes('excluirFichaRealtime'), 'limpeza da árvore realtime na exclusão ausente');
 assert(engine.includes('evento?.detail?.granular'), 'evento granular confirmado não deve reagendar bootstrap completo');

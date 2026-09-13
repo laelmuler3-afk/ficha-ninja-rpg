@@ -151,9 +151,10 @@ function createDevice(label, db, existingStorage=null){
   const tablet=createDevice('tablet',db);
   await phone.context.EkoRealtimeSync.garantirConta();
   await tablet.context.EkoRealtimeSync.garantirConta();
-  const discovery=getAt(db.data,`userSheets/uid_same/${phone.sheetId}`);
-  assert(discovery && discovery.data, 'ficha nova deve criar registro de descoberta em userSheets');
-  assert.strictEqual(discovery.revision,1,'registro inicial de descoberta deve começar na revisão 1');
+  const backupCriadoPeloRealtime=getAt(db.data,`userSheets/uid_same/${phone.sheetId}`);
+  assert.strictEqual(backupCriadoPeloRealtime,undefined,'realtime não pode criar backup completo automaticamente');
+  const realtimeRoot=getAt(db.data,`sheetRealtime/uid_same/${phone.sheetId}`);
+  assert(realtimeRoot && realtimeRoot.fields,'realtime deve inicializar sua própria árvore de campos');
 
   const p=phone.data(); p.pv='82'; phone.setData(p);
   await phone.context.ShinobiOnline.sincronizarCamposFicha('Principal',['pv'],{motivo:'teste-pv'});
