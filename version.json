@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.59",
-  "name": "Menu lateral — correção de resposta ao toque",
-  "notes": "Corrige a navegação do menu lateral: abre Conta/Sincronização/Salas antes de fechar o drawer, protege eventos touch/pointer contra ghost taps, mantém Configurações no próprio menu e torna a API Online disponível mesmo se a inicialização parcial falhar.",
+  "version": "2.5.8.60",
+  "name": "Menu lateral — destinos funcionais",
+  "notes": "Liga cada item do menu lateral ao destino correto: Minha conta abre login, Conta conectada gerencia/troca o usuário, Criar sala abre o gerenciador com código e QR, Entrar em sala abre código + leitor QR e Sala atual abre somente a sala ativa. Corrige também o estado interno de destino do painel Online.",
   "date": "2026-09-13"
 }
