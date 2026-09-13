@@ -13,6 +13,7 @@ function executar(comando,args,rotulo){
 const etapas=[
   [process.execPath,['tests/realtime-fields.test.js'],'Utilitários de campos'],
   [process.execPath,['tests/realtime-core-contract.test.js'],'Contrato estrutural realtime'],
+  [process.execPath,['tests/realtime-bootstrap-batching.test.js'],'Bootstrap realtime consolidado'],
   [process.execPath,['tests/realtime-two-devices.test.js'],'Simulação de dois dispositivos']
 ];
 
