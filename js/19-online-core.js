@@ -457,6 +457,24 @@
     }
   }
 
+  async function trocarContaGoogle(){
+    await iniciar();exigirFirebase();
+    if(navigator.onLine===false){
+      const erro=new Error("Sem conexão com a internet para trocar a Conta Google.");
+      erro.code="auth/network-request-failed";
+      throw erro;
+    }
+    /* signInWithPopup pode substituir o usuário atual diretamente. Não fazemos
+       signOut antes do seletor: se a pessoa cancelar a escolha, a conta que já
+       estava conectada continua ativa. A saída da sala, quando necessária, é
+       tratada pela interface antes desta função. */
+    const resultado=await autenticarGooglePopup({tentativas:2});
+    estadoOnline.user=normalizarUsuarioFirebase(resultado.user);
+    estadoOnline.conectado=true;
+    emitir("auth",snapshot());
+    return snapshot();
+  }
+
   async function sair(){
     if(estadoOnline.salaId) await sairDaSala({silencioso:true}).catch(()=>{});
     if(estadoOnline.auth) await estadoOnline.api.signOut(estadoOnline.auth);
@@ -2021,7 +2039,7 @@
 
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
-    entrarAnonimo,entrarGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
+    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,fichaAtualLocal,resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,

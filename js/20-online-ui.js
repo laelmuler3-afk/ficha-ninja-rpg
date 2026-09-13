@@ -12,6 +12,7 @@
   let arrastoPainel=null;
   let ignorarCliquePainel=false;
   let campanhaMenuAberto=null;
+  let destinoAtual=null;
 
   const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
 
@@ -339,36 +340,27 @@
 
   function normalizarDestino(destino){
     const valor=String(destino||"").trim().toLowerCase();
-    const permitidos=new Set(["conta","login","sincronizacao","criar-sala","entrar-sala","sala-atual"]);
+    if(valor==="conta")return "conta-conectada"; // compatibilidade com atalhos antigos
+    const permitidos=new Set(["login","conta-conectada","sincronizacao","criar-sala","entrar-sala","sala-atual"]);
     return permitidos.has(valor)?valor:null;
-  }
-
-  function seletorDestino(destino,st){
-    if(destino==="entrar-sala") return 'form[data-form="join-room"]';
-    if(destino==="criar-sala"){
-      if(!st?.user||st.user.anonymous) return '.onlineGridDois';
-      return st.campanhas?.length?'form[data-form="create-room"]':'form[data-form="create-campaign"]';
-    }
-    if(destino==="sala-atual") return st?.sala?'.onlineSalaTopo':'form[data-form="join-room"]';
-    if(destino==="sincronizacao") return st?.user&&!st.user.anonymous?'.onlineContaNuvem,.onlineConta':'.onlineConta,.onlineGridDois';
-    if(destino==="conta"||destino==="login") return st?.user?'.onlineConta':'.onlineGridDois';
-    return null;
   }
 
   function aplicarDestino(){
     if(!destinoAtual||!root)return;
-    const st=obterEstado();
-    const seletor=seletorDestino(destinoAtual,st);
-    if(!seletor)return;
     requestAnimationFrame(()=>{
-      const alvo=root.querySelector(seletor);
+      const mapa={
+        "login":"[data-online-destino=\"login\"]",
+        "conta-conectada":"[data-online-destino=\"conta-conectada\"]",
+        "sincronizacao":"[data-online-destino=\"sincronizacao\"]",
+        "criar-sala":"[data-online-destino=\"criar-sala\"]",
+        "entrar-sala":"form[data-form=\"join-room\"]",
+        "sala-atual":".onlineSalaTopo,[data-online-destino=\"sala-atual\"]"
+      };
+      const alvo=root.querySelector(mapa[destinoAtual]||"");
       if(!alvo)return;
-      const destaque=alvo.matches('form')?(alvo.closest('.onlineCard')||alvo):alvo;
-      root.querySelectorAll('.onlineDestinoDestaque').forEach(el=>el.classList.remove('onlineDestinoDestaque'));
-      destaque.classList.add('onlineDestinoDestaque');
-      alvo.scrollIntoView({behavior:'smooth',block:'start'});
-      if(destinoAtual==='entrar-sala') setTimeout(()=>alvo.querySelector('input[name="code"]')?.focus({preventScroll:true}),260);
-      setTimeout(()=>destaque.classList.remove('onlineDestinoDestaque'),1800);
+      if(destinoAtual==="entrar-sala"){
+        setTimeout(()=>alvo.querySelector('input[name="code"]')?.focus({preventScroll:true}),180);
+      }
     });
   }
 
@@ -410,7 +402,7 @@
       return false;
     }
   }
-  function fechar(){aberto=false;pararScanner();if(root){root.hidden=true;root.setAttribute("aria-hidden","true");}document.body.classList.remove("onlineAberto");}
+  function fechar(){aberto=false;destinoAtual=null;pararScanner();if(root){root.hidden=true;root.setAttribute("aria-hidden","true");}document.body.classList.remove("onlineAberto");}
 
   function atualizarIndicadores(){
     const st=obterEstado();
@@ -550,6 +542,151 @@
         <button class="onlineBtn primario" type="submit">Criar sala e QR Code</button>
       </form>`:`<p class="onlineVazio">Crie a primeira campanha para abrir uma sala.</p>`}
     </section>`;
+  }
+
+  function renderMinhaConta(st){
+    if(!st.user){
+      return `<div class="onlineDestinoPagina" data-online-destino="login">
+        <div class="onlineDestinoTitulo"><span class="onlineCardSelo">MINHA CONTA</span><h3>Login</h3><p>Entre para ativar a nuvem e usar a mesma ficha em outros aparelhos.</p></div>
+        ${renderLogin()}
+      </div>`;
+    }
+    if(st.user.anonymous){
+      return `<div class="onlineDestinoPagina" data-online-destino="login">
+        ${cabecalhoConta(st)}
+        <section class="onlineCard onlineContaGerenciar">
+          <span class="onlineCardSelo">MINHA CONTA</span><h3>Você está usando uma sessão temporária</h3>
+          <p>Entre com Google para vincular as fichas a uma conta e recuperá-las em celular, tablet ou outro aparelho.</p>
+          <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google</button>
+        </section>
+      </div>`;
+    }
+    return `<div class="onlineDestinoPagina" data-online-destino="login">
+      ${cabecalhoConta(st)}
+      <section class="onlineCard onlineContaGerenciar">
+        <span class="onlineCardSelo">MINHA CONTA</span><h3>Login ativo</h3>
+        <p>Esta conta já está autenticada. Para selecionar outro usuário Google, abra <b>Conta conectada</b> no menu lateral.</p>
+      </section>
+    </div>`;
+  }
+
+  function renderContaConectada(st){
+    if(!st.user){
+      return `<div class="onlineDestinoPagina" data-online-destino="conta-conectada">
+        <section class="onlineCard onlineEstadoVazio">
+          <span class="onlineCardSelo">CONTA CONECTADA</span><h3>Nenhum usuário conectado</h3>
+          <p>Faça login primeiro. Depois você poderá voltar aqui para trocar o usuário conectado.</p>
+          <button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button>
+        </section>
+      </div>`;
+    }
+    if(st.user.anonymous){
+      return `<div class="onlineDestinoPagina" data-online-destino="conta-conectada">
+        ${cabecalhoConta(st)}
+        <section class="onlineCard onlineContaGerenciar">
+          <span class="onlineCardSelo">CONTA CONECTADA</span><h3>Sessão temporária</h3>
+          <p>Esta sessão não representa uma Conta Google. Conecte uma conta para poder alternar entre usuários do navegador.</p>
+          <button type="button" class="onlineBtn primario" data-action="login-google">Conectar Conta Google</button>
+        </section>
+      </div>`;
+    }
+    return `<div class="onlineDestinoPagina" data-online-destino="conta-conectada">
+      ${cabecalhoConta(st)}
+      <section class="onlineCard onlineContaGerenciar">
+        <span class="onlineCardSelo">CONTA CONECTADA</span><h3>Trocar usuário</h3>
+        <p>Usuário atual: <strong>${esc(st.user.email||st.user.displayName||"Conta Google")}</strong></p>
+        <p>Ao tocar em trocar usuário, o seletor de contas do Google será aberto para você escolher outra conta disponível neste aparelho.</p>
+        <div class="onlineAcoesLinha">
+          <button type="button" class="onlineBtn primario" data-action="switch-google-account">Trocar usuário</button>
+          <button type="button" class="onlineBtn secundario" data-action="logout">Desconectar</button>
+        </div>
+      </section>
+    </div>`;
+  }
+
+  function renderCriarSalaDestino(st){
+    if(!st.user||st.user.anonymous){
+      return `<div class="onlineDestinoPagina" data-online-destino="criar-sala">
+        ${st.user?cabecalhoConta(st):""}
+        <section class="onlineCard onlineEstadoVazio">
+          <span class="onlineCardSelo">CRIAR SALA</span><h3>Entre com Google para ser mestre</h3>
+          <p>A criação e o gerenciamento das salas ficam vinculados à sua conta.</p>
+          <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google</button>
+        </section>
+      </div>`;
+    }
+    if(st.sala){
+      const master=ehMestre(st);
+      return `<div class="onlineDestinoPagina" data-online-destino="criar-sala">
+        ${cabecalhoConta(st)}
+        <section class="onlineCard onlineSalaGerenciador">
+          <span class="onlineCardSelo">${master?"GERENCIADOR DA SALA":"SALA ATIVA"}</span>
+          <h3>${esc(st.sala.title||"Sala atual")}</h3>
+          ${master?`<p>Compartilhe o código ou o QR Code com os jogadores.</p>${qrHtml(st)}`:`<p>Você já está conectado à sala <strong>${esc(st.sala.code||"")}</strong>. Saia dela antes de criar uma sala como mestre.</p>`}
+          <button type="button" class="onlineBtn secundario" data-action="open-current-room">Abrir sala atual</button>
+        </section>
+      </div>`;
+    }
+    return `<div class="onlineDestinoPagina" data-online-destino="criar-sala">
+      ${cabecalhoConta(st)}
+      ${renderMestreHome(st)}
+    </div>`;
+  }
+
+  function renderEntrarSalaDestino(st){
+    const aviso=!st.user
+      ? `<p class="onlineAviso">Você pode entrar sem cadastro. O aplicativo criará uma sessão temporária automaticamente.</p>`
+      : st.sala
+        ? `<p class="onlineAviso">Você está na sala ${esc(st.sala.code||"")}. Ao entrar em outro código, o aplicativo pedirá confirmação para trocar de sala.</p>`
+        : "";
+    return `<div class="onlineDestinoPagina" data-online-destino="entrar-sala">
+      ${st.user?cabecalhoConta(st):""}
+      ${aviso}
+      ${renderEntradaSala(st)}
+    </div>`;
+  }
+
+  function renderSalaAtualDestino(st){
+    if(st.sala)return `<div class="onlineDestinoPagina" data-online-destino="sala-atual">${renderSala(st)}</div>`;
+    const sessao=sessaoLocal();
+    if(sessao?.roomId){
+      return `<div class="onlineDestinoPagina" data-online-destino="sala-atual">
+        <section class="onlineCard onlineEstadoVazio">
+          <span class="onlineCardSelo">SALA ATUAL</span><h3>Reconectando à sala...</h3>
+          <p>Existe uma sala salva neste aparelho, mas a conexão ainda não foi restaurada.</p>
+          <button type="button" class="onlineBtn primario" data-action="reconnect-current-room">Tentar reconectar</button>
+        </section>
+      </div>`;
+    }
+    return `<div class="onlineDestinoPagina" data-online-destino="sala-atual">
+      <section class="onlineCard onlineEstadoVazio">
+        <span class="onlineCardSelo">SALA ATUAL</span><h3>Nenhuma sala ativa</h3>
+        <p>Entre em uma sala existente ou crie uma nova mesa como mestre.</p>
+        <div class="onlineAcoesLinha">
+          <button type="button" class="onlineBtn primario" data-action="go-join-room">Entrar em sala</button>
+          ${st.user&&!st.user.anonymous?`<button type="button" class="onlineBtn secundario" data-action="go-create-room">Criar sala</button>`:""}
+        </div>
+      </section>
+    </div>`;
+  }
+
+  function renderSincronizacaoDestino(st){
+    if(!st.user){
+      return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">
+        <section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Entre para ativar a nuvem</h3><p>A sincronização entre dispositivos precisa de uma Conta Google.</p><button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button></section>
+      </div>`;
+    }
+    return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">${cabecalhoConta(st)}${renderConflito()}${renderNuvem(st)}</div>`;
+  }
+
+  function renderDestino(st){
+    if(destinoAtual==="login")return renderMinhaConta(st);
+    if(destinoAtual==="conta-conectada")return renderContaConectada(st);
+    if(destinoAtual==="criar-sala")return renderCriarSalaDestino(st);
+    if(destinoAtual==="entrar-sala")return renderEntrarSalaDestino(st);
+    if(destinoAtual==="sala-atual")return renderSalaAtualDestino(st);
+    if(destinoAtual==="sincronizacao")return renderSincronizacaoDestino(st);
+    return null;
   }
 
   function renderNuvem(st){
@@ -826,10 +963,17 @@
     if(st.carregando){conteudo.innerHTML='<div class="onlineLoading"><span></span><p>Conectando ao sistema online...</p></div>';return;}
     if(!st.configurado){conteudo.innerHTML=renderConfiguracao();return;}
     if(st.ultimoErro&&!st.iniciado){conteudo.innerHTML=`<section class="onlineCard"><h3>Falha ao iniciar</h3><p>${esc(st.ultimoErro)}</p><button type="button" class="onlineBtn primario" data-action="retry-online">Tentar novamente</button></section>`;return;}
-    if(!st.user){conteudo.innerHTML=renderLogin();aplicarDestino();return;}
+    const destinoHtml=destinoAtual?renderDestino(st):null;
+    if(destinoHtml!==null){
+      conteudo.innerHTML=destinoHtml;
+      restaurarInteracao(conteudo,interacao);
+      requestAnimationFrame(()=>{renderQr();aplicarDestino();});
+      return;
+    }
+    if(!st.user){conteudo.innerHTML=renderLogin();return;}
     conteudo.innerHTML=st.sala?renderSala(st):renderHome(st);
     restaurarInteracao(conteudo,interacao);
-    requestAnimationFrame(()=>{renderQr();aplicarDestino();});
+    requestAnimationFrame(()=>{renderQr();});
   }
 
   function renderQr(){
@@ -874,6 +1018,31 @@
     if(acao==="login-google")return executar(()=>window.ShinobiOnline.entrarGoogle());
     if(acao==="login-anonymous")return executar(()=>window.ShinobiOnline.entrarAnonimo());
     if(acao==="logout")return executar(()=>window.ShinobiOnline.sair());
+    if(acao==="go-login"){destinoAtual="login";renderizar();return;}
+    if(acao==="go-join-room"){destinoAtual="entrar-sala";renderizar();return;}
+    if(acao==="go-create-room"){destinoAtual="criar-sala";renderizar();return;}
+    if(acao==="open-current-room"){destinoAtual="sala-atual";renderizar();return;}
+    if(acao==="switch-google-account")return (async()=>{
+      const st=obterEstado();
+      if(st.sala){
+        const ok=await confirmar("Trocar usuário",`Você está conectado à sala ${st.sala.code||"atual"}. Para trocar a Conta Google, este usuário será desconectado da sala. Continuar?`);
+        if(!ok)return;
+      }
+      return executar(async()=>{
+        if(obterEstado().sala)await window.ShinobiOnline.sairDaSala({silencioso:true});
+        await window.ShinobiOnline.trocarContaGoogle();
+        destinoAtual="conta-conectada";
+      });
+    })();
+    if(acao==="reconnect-current-room")return executar(async()=>{
+      const sessao=sessaoLocal();
+      await window.ShinobiOnline.iniciar();
+      const st=obterEstado();
+      if(!sessao?.roomId)throw new Error("Não existe uma sala salva neste aparelho.");
+      if(!st.user)throw new Error("A sessão da conta ainda não foi restaurada. Abra Minha conta e faça login novamente.");
+      await window.ShinobiOnline.observarSala(sessao.roomId,{restaurar:true});
+      destinoAtual="sala-atual";
+    });
     if(acao==="scan-qr")return iniciarScanner();
     if(acao==="toggle-campaign-menu"){
       const id=el.dataset.campaignId;
@@ -983,8 +1152,26 @@
     const form=evento.target.closest("form[data-form]");if(!form)return;evento.preventDefault();
     const dados=new FormData(form),tipo=form.dataset.form;
     if(tipo==="create-campaign")return executar(async()=>{await window.ShinobiOnline.criarCampanha(dados.get("name"));form.reset();});
-    if(tipo==="create-room")return executar(()=>window.ShinobiOnline.criarSala({campaignId:dados.get("campaignId"),title:dados.get("title")}));
-    if(tipo==="join-room")return executar(()=>window.ShinobiOnline.entrarSala({code:dados.get("code"),localSheetName:dados.get("localSheetName")}));
+    if(tipo==="create-room")return executar(async()=>{
+      await window.ShinobiOnline.criarSala({campaignId:dados.get("campaignId"),title:dados.get("title")});
+      destinoAtual="criar-sala";
+    });
+    if(tipo==="join-room")return (async()=>{
+      const codigo=String(dados.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+      const st=obterEstado();
+      if(st.sala){
+        const atual=String(st.sala.code||"").toUpperCase();
+        if(codigo===atual){destinoAtual="sala-atual";renderizar();return;}
+        const ok=await confirmar("Trocar de sala",`Você está na sala ${atual||"atual"}. Deseja sair dela e entrar na sala ${codigo||"informada"}?`);
+        if(!ok)return;
+      }
+      return executar(async()=>{
+        if(obterEstado().sala)await window.ShinobiOnline.sairDaSala({silencioso:true});
+        await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:dados.get("localSheetName")});
+        pararScanner();
+        destinoAtual="sala-atual";
+      });
+    })();
     if(tipo==="import-npc")return executar(async()=>{await window.ShinobiOnline.importarFichaComoNpc(dados.get("localSheetName"),{displayName:dados.get("displayName")});form.reset();});
     if(tipo==="quick-npc")return executar(async()=>{await window.ShinobiOnline.criarNpcRapido(Object.fromEntries(dados.entries()));form.reset();});
     if(tipo==="add-effect")return executar(async()=>{await window.ShinobiOnline.adicionarEfeito({participantId:dados.get("participantId"),name:dados.get("name"),duration:num(dados.get("duration"),1)});form.reset();});

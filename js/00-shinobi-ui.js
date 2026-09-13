@@ -71,6 +71,9 @@
     const online=window.ShinobiOnline?.snapshot?.()||{};
     const usuario=online.user||null;
     const sala=online.sala||null;
+    let sessaoSala=null;
+    try{sessaoSala=JSON.parse(localStorage.getItem("shinobi_online_session_v1")||"null");}catch(_erro){}
+    const temSala=Boolean(sala||online.salaId||sessaoSala?.roomId);
     const mestre=Boolean(usuario&&sala&&sala.masterUid===usuario.uid);
     let syncTexto="Somente neste aparelho",syncEstado="local";
     if(navigator.onLine===false){syncTexto="Offline · alterações locais";syncEstado="offline";}
@@ -79,8 +82,9 @@
       if(status?.syncStatus===1||status?.phase==="synced"){syncTexto="Dados atualizados";syncEstado="ok";}
       else {syncTexto="Sincronização disponível";syncEstado="pending";}
     }else if(usuario?.anonymous){syncTexto="Sessão local ativa";syncEstado="local";}
-    const salaTexto=sala?.code?`Sala ${String(sala.code).toUpperCase()}`:"Nenhuma sala ativa";
-    return {nome,nivel,rank,avatarSrc,usuario,sala,mestre,syncTexto,syncEstado,salaTexto};
+    const salaTexto=sala?.code?`Sala ${String(sala.code).toUpperCase()}`:temSala?"Reconectando à sala...":"Nenhuma sala ativa";
+    const contaTexto=usuario&&!usuario.anonymous?(usuario.email||usuario.displayName||"Conta Google"):usuario?.anonymous?"Sessão temporária":"Nenhuma conta conectada";
+    return {nome,nivel,rank,avatarSrc,usuario,sala,mestre,temSala,syncTexto,syncEstado,salaTexto,contaTexto};
   }
 
   function atualizarDrawerContexto(){
@@ -95,7 +99,8 @@
     const sync=drawer.querySelector("[data-drawer-sync-text]");
     const syncCard=drawer.querySelector("[data-drawer-sync]");
     const sala=drawer.querySelector("[data-drawer-room-current]");
-    const login=drawer.querySelector("[data-drawer-login-text]");
+    const contaConectada=drawer.querySelector("[data-drawer-connected-account-meta]");
+    const salaAtualBtn=drawer.querySelector('[data-drawer-action="current-room"]');
     if(nome)nome.textContent=st.nome;
     if(meta)meta.textContent=`Nível ${st.nivel} · ${st.rank}`;
     if(papel)papel.textContent=st.mestre?"Mestre":"Jogador";
@@ -106,7 +111,12 @@
     if(sync)sync.textContent=st.syncTexto;
     if(syncCard)syncCard.dataset.syncState=st.syncEstado;
     if(sala)sala.textContent=st.salaTexto;
-    if(login)login.textContent=st.usuario&&!st.usuario.anonymous?"Conta conectada":"Login / Conta";
+    if(contaConectada)contaConectada.textContent=st.contaTexto;
+    if(salaAtualBtn){
+      salaAtualBtn.disabled=!st.temSala;
+      salaAtualBtn.setAttribute("aria-disabled",st.temSala?"false":"true");
+      salaAtualBtn.title=st.temSala?"Abrir a sala atual":"Você ainda não está em uma sala";
+    }
   }
 
   function fecharShinobiDrawer(){
@@ -256,12 +266,12 @@
           <h3>CONTA</h3>
           <button type="button" class="shinobiDrawerItem" data-drawer-action="account">
             <span class="shinobiDrawerItemIcon">${iconHTML("profile")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Minha conta</b><small>Perfil e acesso à nuvem</small></span>
+            <span class="shinobiDrawerItemTexto"><b>Minha conta</b><small>Login e autenticação</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
           <button type="button" class="shinobiDrawerItem" data-drawer-action="login">
             <span class="shinobiDrawerItemIcon">${iconHTML("sync")}</span>
-            <span class="shinobiDrawerItemTexto"><b data-drawer-login-text>Login / Conta</b><small>Gerenciar sessão</small></span>
+            <span class="shinobiDrawerItemTexto"><b>Conta conectada</b><small data-drawer-connected-account-meta>Nenhuma conta conectada</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
         </div>
@@ -363,8 +373,8 @@
 
       const acao=botao.dataset.drawerAction;
       if(acao==="sync"){void abrirPainelOnline("sincronizacao",botao);return;}
-      if(acao==="account"){void abrirPainelOnline("conta",botao);return;}
-      if(acao==="login"){void abrirPainelOnline("login",botao);return;}
+      if(acao==="account"){void abrirPainelOnline("login",botao);return;}
+      if(acao==="login"){void abrirPainelOnline("conta-conectada",botao);return;}
       if(acao==="create-room"){void abrirPainelOnline("criar-sala",botao);return;}
       if(acao==="join-room"){void abrirPainelOnline("entrar-sala",botao);return;}
       if(acao==="current-room"){void abrirPainelOnline("sala-atual",botao);return;}
