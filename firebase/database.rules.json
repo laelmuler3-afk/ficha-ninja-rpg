@@ -10,19 +10,13 @@
     },
     "userSheets": {
       "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
         "$sheetId": {
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && auth.uid === $uid",
-          ".validate": "newData.hasChildren(['name','revision','updatedAt','data'])",
-          "revision": {
-            ".validate": "newData.isNumber() && newData.val() >= 1"
-          },
-          "updatedAt": {
-            ".validate": "newData.isNumber()"
-          }
-        },
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+          ".validate": "!newData.exists() || ((newData.child('revision').isNumber() && newData.child('revision').val() === (data.exists() ? data.child('revision').val() + 1 : 1)) && newData.child('updatedAt').isNumber() && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 80 && (!newData.child('characterName').exists() || (newData.child('characterName').isString() && newData.child('characterName').val().length <= 120)) && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && ((newData.child('deleted').val() === true && newData.child('deletedAt').isNumber() && !newData.child('data').exists()) || (newData.child('deleted').val() !== true && newData.child('hash').isString() && newData.child('hash').val().length > 0 && newData.child('hash').val().length <= 128 && newData.child('data').exists())) )"
+        }
       }
     },
     "sheetBackups": {
@@ -117,6 +111,15 @@
               ".validate": "!newData.exists() || (newData.hasChildren(['connected','lastSeen','deviceId','participantId']) && newData.child('connected').val() === true && newData.child('lastSeen').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val() === $deviceId && newData.child('deviceId').val().length <= 100 && newData.child('participantId').isString() && newData.child('participantId').val().length <= 100 && (newData.child('participantId').val() === '' || root.child('rooms').child($roomId).child('participants').child(newData.child('participantId').val()).child('ownerUid').val() === auth.uid))"
             }
           }
+        }
+      }
+    },
+    "userDevices": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$deviceId": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "!newData.exists() || (newData.hasChildren(['deviceId','label','lastSeen']) && newData.child('deviceId').isString() && newData.child('deviceId').val() === $deviceId && newData.child('deviceId').val().length <= 100 && newData.child('label').isString() && newData.child('label').val().length <= 80 && newData.child('lastSeen').isNumber() && (!newData.child('appVersion').exists() || (newData.child('appVersion').isString() && newData.child('appVersion').val().length <= 40)))"
         }
       }
     }
