@@ -1518,3 +1518,15 @@ html.shinobiTemAtualizacao .shinobiDrawerItemExpansivel[data-drawer-action="sett
 body.onlineAberto .shinobiNavDrawer{
   pointer-events:none!important;
 }
+
+/* v2.5.8.60 — estados funcionais do menu lateral */
+.shinobiDrawerItem:disabled,
+.shinobiDrawerItem[aria-disabled="true"]{
+  opacity:.42;
+  cursor:not-allowed;
+  filter:saturate(.55);
+}
+.shinobiDrawerItem:disabled::before,
+.shinobiDrawerItem[aria-disabled="true"]::before{display:none}
+.shinobiDrawerItem:disabled:hover,
+.shinobiDrawerItem[aria-disabled="true"]:hover{background:transparent}
