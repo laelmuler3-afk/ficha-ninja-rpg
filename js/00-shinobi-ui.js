@@ -117,22 +117,67 @@
   }
   window.fecharShinobiDrawer=fecharShinobiDrawer;
 
-  function executarAposFecharDrawer(callback){
-    fecharShinobiDrawer();
-    // O clique que vem de dentro do drawer ainda está no mesmo ciclo de evento.
-    // Adiar a abertura impede que listeners globais de "clique fora" fechem
-    // imediatamente o painel que acabamos de abrir.
-    requestAnimationFrame(()=>setTimeout(callback,0));
+  function onlineUIDisponivel(){
+    return typeof window.ShinobiOnlineUI?.abrir==="function";
   }
 
-  function abrirPainelOnline(destino){
-    executarAposFecharDrawer(()=>{
-      if(typeof window.ShinobiOnlineUI?.abrir==="function"){
-        window.ShinobiOnlineUI.abrir(destino);
-        return;
-      }
-      if(typeof window.avisoShinobi==="function")window.avisoShinobi("Recursos online","O painel de conta, sincronização e salas ainda está carregando.");
+  function aguardarOnlineUI(timeout=1800){
+    if(onlineUIDisponivel()) return Promise.resolve(window.ShinobiOnlineUI);
+    return new Promise(resolve=>{
+      let finalizado=false;
+      const concluir=()=>{
+        if(finalizado)return;
+        finalizado=true;
+        window.removeEventListener("shinobi:online-ui-ready",aoPronto);
+        resolve(onlineUIDisponivel()?window.ShinobiOnlineUI:null);
+      };
+      const aoPronto=()=>concluir();
+      window.addEventListener("shinobi:online-ui-ready",aoPronto,{once:true});
+      const inicio=performance.now();
+      const verificar=()=>{
+        if(onlineUIDisponivel())return concluir();
+        if(performance.now()-inicio>=timeout)return concluir();
+        setTimeout(verificar,60);
+      };
+      verificar();
     });
+  }
+
+  async function abrirPainelOnline(destino,botaoOrigem){
+    // Em aparelhos móveis, fechar o drawer antes de abrir a próxima camada
+    // podia deixar apenas a ficha visível caso o módulo Online ainda estivesse
+    // terminando a inicialização. Agora o destino abre primeiro e o drawer só
+    // fecha depois que a abertura foi confirmada.
+    const botao=botaoOrigem||null;
+    botao?.classList.add("shinobiDrawerAcaoCarregando");
+    botao?.setAttribute("aria-busy","true");
+
+    try{
+      const ui=onlineUIDisponivel()?window.ShinobiOnlineUI:await aguardarOnlineUI();
+      if(!ui){
+        if(typeof window.avisoShinobi==="function"){
+          await window.avisoShinobi("Recursos online","O painel de conta, sincronização e salas não terminou de carregar. Tente novamente em instantes.");
+        }
+        return false;
+      }
+
+      const aberto=ui.abrir(destino);
+      if(aberto===false)throw new Error("O painel online recusou a abertura.");
+
+      // O overlay Online possui z-index próprio e já está visível neste ponto.
+      // Fechar no frame seguinte evita o efeito visual de "voltar para a Home".
+      requestAnimationFrame(()=>fecharShinobiDrawer());
+      return true;
+    }catch(erro){
+      console.error("Falha ao abrir destino do menu lateral:",destino,erro);
+      if(typeof window.avisoShinobi==="function"){
+        await window.avisoShinobi("Não foi possível abrir",erro?.message||"O recurso selecionado não pôde ser aberto.");
+      }
+      return false;
+    }finally{
+      botao?.classList.remove("shinobiDrawerAcaoCarregando");
+      botao?.removeAttribute("aria-busy");
+    }
   }
 
 
@@ -291,22 +336,38 @@
     migrarConfiguracoesLegadas(drawer);
     drawer.querySelector('[data-drawer-action="settings"]')?.classList.toggle("temAtualizacao",document.documentElement.classList.contains("shinobiTemAtualizacao"));
 
-    drawer.querySelector(".shinobiDrawerBackdrop")?.addEventListener("click",fecharShinobiDrawer);
-    drawer.querySelector(".shinobiDrawerFechar")?.addEventListener("click",fecharShinobiDrawer);
-    drawer.addEventListener("click",event=>{
-      const botao=event.target.closest("[data-drawer-action]");
-      if(!botao)return;
-      // Evita que o mesmo toque chegue ao listener global que fecha menus ao
-      // detectar um clique fora da área de configurações.
+    const backdrop=drawer.querySelector(".shinobiDrawerBackdrop");
+    const painel=drawer.querySelector(".shinobiDrawerPainel");
+    backdrop?.addEventListener("click",event=>{
       event.preventDefault();
       event.stopPropagation();
+      fecharShinobiDrawer();
+    });
+    drawer.querySelector(".shinobiDrawerFechar")?.addEventListener("click",event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      fecharShinobiDrawer();
+    });
+
+    // O painel é uma superfície interativa própria. Impedir que pointer/touch
+    // escapem daqui evita "ghost taps" no conteúdo da ficha que fica atrás.
+    ["pointerdown","pointerup","touchstart","touchend"].forEach(tipo=>{
+      painel?.addEventListener(tipo,event=>event.stopPropagation(),{passive:true});
+    });
+
+    painel?.addEventListener("click",event=>{
+      const botao=event.target.closest("[data-drawer-action]");
+      if(!botao||!painel.contains(botao))return;
+      event.preventDefault();
+      event.stopPropagation();
+
       const acao=botao.dataset.drawerAction;
-      if(acao==="sync"){abrirPainelOnline("sincronizacao");return;}
-      if(acao==="account"){abrirPainelOnline("conta");return;}
-      if(acao==="login"){abrirPainelOnline("login");return;}
-      if(acao==="create-room"){abrirPainelOnline("criar-sala");return;}
-      if(acao==="join-room"){abrirPainelOnline("entrar-sala");return;}
-      if(acao==="current-room"){abrirPainelOnline("sala-atual");return;}
+      if(acao==="sync"){void abrirPainelOnline("sincronizacao",botao);return;}
+      if(acao==="account"){void abrirPainelOnline("conta",botao);return;}
+      if(acao==="login"){void abrirPainelOnline("login",botao);return;}
+      if(acao==="create-room"){void abrirPainelOnline("criar-sala",botao);return;}
+      if(acao==="join-room"){void abrirPainelOnline("entrar-sala",botao);return;}
+      if(acao==="current-room"){void abrirPainelOnline("sala-atual",botao);return;}
       if(acao==="settings"){alternarConfiguracoesDrawer();return;}
       if(acao==="themes"){avisoEmBreve("Loja de temas");return;}
       if(acao==="personalization"){avisoEmBreve("Personalização");return;}

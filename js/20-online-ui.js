@@ -374,22 +374,41 @@
 
   function abrir(destino){
     destinoAtual=normalizarDestino(destino);
-    criarRoot();
-    aberto=true;
-    root.hidden=false;
-    root.removeAttribute("hidden");
-    root.setAttribute("aria-hidden","false");
-    document.body.classList.add("onlineAberto");
-    renderizar();
-    // Uma segunda confirmação no frame seguinte evita que transições/fechamento
-    // do drawer deixem o overlay atrás da ficha em alguns navegadores móveis.
-    requestAnimationFrame(()=>{
-      if(!aberto||!root)return;
+    try{
+      criarRoot();
+      aberto=true;
       root.hidden=false;
       root.removeAttribute("hidden");
-      aplicarDestino();
-    });
-    return true;
+      root.setAttribute("aria-hidden","false");
+      document.body.classList.add("onlineAberto");
+
+      try{
+        renderizar();
+      }catch(erroRender){
+        console.error("Falha ao renderizar o painel Online:",erroRender);
+        const conteudo=document.getElementById("shinobiOnlineConteudo");
+        if(conteudo){
+          conteudo.innerHTML=`<section class="onlineCard"><h3>Painel online</h3><p>O painel foi aberto, mas ocorreu um erro ao montar o conteúdo.</p><button type="button" class="onlineBtn primario" data-action="retry-online">Tentar novamente</button></section>`;
+        }
+      }
+
+      // Reafirma a visibilidade no frame seguinte. Isso protege PWAs/WebViews
+      // que recalculam a camada ao mesmo tempo em que o drawer lateral fecha.
+      requestAnimationFrame(()=>{
+        if(!aberto||!root)return;
+        root.hidden=false;
+        root.removeAttribute("hidden");
+        root.setAttribute("aria-hidden","false");
+        document.body.classList.add("onlineAberto");
+        aplicarDestino();
+      });
+      return true;
+    }catch(erro){
+      aberto=false;
+      document.body.classList.remove("onlineAberto");
+      console.error("Falha ao abrir o painel Online:",erro);
+      return false;
+    }
   }
   function fechar(){aberto=false;pararScanner();if(root){root.hidden=true;root.setAttribute("aria-hidden","true");}document.body.classList.remove("onlineAberto");}
 
@@ -1070,9 +1089,24 @@
     window.addEventListener("offline",agendarRender,{passive:true});
   }
 
-  function iniciar(){criarRoot();instalarBotao();instalarEventos();agendarRender();}
+  function iniciar(){
+    try{
+      criarRoot();
+      instalarBotao();
+      instalarEventos();
+      agendarRender();
+      return true;
+    }catch(erro){
+      console.error("Falha ao inicializar a interface Online:",erro);
+      return false;
+    }
+  }
+
+  // Expõe a API ANTES da inicialização. Assim o menu lateral sempre possui
+  // um destino válido mesmo se algum recurso secundário do Online falhar.
+  window.ShinobiOnlineUI={abrir,fechar,renderizar,renderPainelFlutuante,iniciar};
+  window.dispatchEvent(new CustomEvent("shinobi:online-ui-ready"));
+
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar,{once:true});else iniciar();
   window.addEventListener("pageshow",()=>setTimeout(iniciar,120));
-
-  window.ShinobiOnlineUI={abrir,fechar,renderizar,renderPainelFlutuante};
 })();
