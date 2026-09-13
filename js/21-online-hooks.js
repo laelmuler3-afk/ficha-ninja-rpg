@@ -116,11 +116,10 @@
     if(!window.ShinobiOnline) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
     const motivo=texto(detalhe.motivo)||"alteracao-confirmada";
-    const snapshotManual=motivo==="salvamento-manual";
-    const listaInformada=Array.isArray(detalhe.camposAlterados);
-    const camposGranulares=listaInformada
-      ? [...new Set(detalhe.camposAlterados.map(texto).filter(campo=>window.EkoRealtimeFields?.campoPermitido?.(campo)!==false&&campo))]
-      : [];
+    const informados=Array.isArray(detalhe.camposAlterados)
+      ? detalhe.camposAlterados
+      : (texto(detalhe.campo)?[texto(detalhe.campo)]:[]);
+    const camposGranulares=[...new Set(informados.map(texto).filter(campo=>window.EkoRealtimeFields?.campoPermitido?.(campo)!==false&&campo))];
     const emTurno=syncPorTurnoAtiva();
 
     if(emTurno) marcarTurnoLocalPendente();
@@ -131,23 +130,12 @@
     }
 
     try{
-      /* 2.5.8.65: o caminho normal envia apenas os campos/áreas alterados.
-         Full-sheet fica como compatibilidade para eventos antigos que não
-         informam camposAlterados e para operações explícitas de recuperação. */
-      if(listaInformada&&!snapshotManual&&window.ShinobiOnline.sincronizarCamposFicha){
-        if(camposGranulares.length){
-          await window.ShinobiOnline.sincronizarCamposFicha(nome,camposGranulares,{motivo});
-        }
-      }else{
-        window.ShinobiOnline.marcarFichaPendente?.(nome,{motivo,modo:"imediato"});
-        await window.ShinobiOnline.sincronizarFicha(nome,{
-          force:false,
-          backup:texto(detalhe.motivo)==="salvamento-manual",
-          motivo,
-          modo:"imediato"
-        });
+      /* 2.5.8.67: confirmação do usuário envia SOMENTE os campos realmente
+         alterados. Backup completo é uma ação separada da tela de nuvem e
+         jamais é disparado por persistência, foco, turno ou autosave. */
+      if(camposGranulares.length&&window.ShinobiOnline.sincronizarCamposFicha){
+        await window.ShinobiOnline.sincronizarCamposFicha(nome,camposGranulares,{motivo});
       }
-
       if(!emTurno) await sincronizarResumoParticipante();
     }catch(erro){
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
@@ -160,10 +148,10 @@
     if(window.__shinobiOnlinePersistListener) return;
     window.__shinobiOnlinePersistListener=true;
 
-    /* 2.5.8.8: a confirmação do usuário é o ponto de commit.
-       Fora do turno, persistir = enviar imediatamente. Durante o próprio
-       turno, a cópia local fica segura e a nuvem recebe um único pacote ao
-       confirmar o encerramento do turno. */
+    /* 2.5.8.67: a confirmação do usuário é o ponto de commit.
+       Toda alteração confirmada é enviada imediatamente pelo realtime granular,
+       inclusive durante combate. Encerrar turno apenas libera a iniciativa e
+       força o envio de qualquer operação granular que tenha ficado pendente. */
     window.addEventListener("shinobi:ficha-persistida",evento=>{
       if(evento?.detail?.confirmada===false) return;
       enviarAlteracaoConfirmada(evento?.detail||{}).catch(()=>{});
@@ -202,8 +190,8 @@
   }
 
   function instalarBackupManual(){
-    /* O evento shinobi:ficha-persistida já trata o salvamento manual e cria
-       backup após a confirmação do Firebase. Mantido como ponto de extensão. */
+    /* Backup completo é deliberadamente explícito na tela de sincronização.
+       Salvar a ficha local não altera o backup da nuvem. */
   }
 
   function participanteVinculado(sessao,online){

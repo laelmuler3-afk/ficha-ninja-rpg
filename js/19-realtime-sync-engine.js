@@ -306,25 +306,17 @@
     if(estadoRT.listeners.has(ficha.sheetId)) return true;
     if(estadoRT.initPromises.has(ficha.sheetId)) return estadoRT.initPromises.get(ficha.sheetId);
     const promessa=(async()=>{
-      let cloudDescoberta=null;
-      try{cloudDescoberta=await garantirRegistroDescoberta(ficha);}catch(error){console.warn("Falha ao garantir registro de descoberta da ficha",ficha.name,error);}
-      if(cloudDescoberta?.deleted===true){
-        await excluirFichaRealtime(ficha.sheetId).catch(()=>{});
-        return false;
-      }
+      /* 2.5.8.67: realtime e backup são camadas independentes.
+         A árvore de sincronização nasce exclusivamente da ficha local e nunca
+         cria, lê ou altera userSheets. userSheets fica reservado ao backup
+         completo explícito feito pelo usuário. */
       const raizRef=db.ref(`sheetRealtime/${uid}/${ficha.sheetId}`);
       const existente=await raizRef.once("value");
       const existenteValor=existente.val();
       if(!existente.exists()||Number(existenteValor?.schemaVersion||0)<SCHEMA_VERSION){
-        let fonte=dadosPersistidosDaFicha(ficha),sourceRevision=0,baseEditAt=timestampEdicao();
-        try{
-          const cloud=cloudDescoberta;
-          if(cloud?.deleted!==true&&cloud?.data&&typeof cloud.data==="object"){
-            fonte=cloud.data;
-            sourceRevision=Number(cloud.revision||0);
-            if(Number.isFinite(Number(cloud.updatedAt))&&Number(cloud.updatedAt)>0) baseEditAt=Number(cloud.updatedAt);
-          }
-        }catch(_e){}
+        const fonte=dadosPersistidosDaFicha(ficha);
+        const sourceRevision=0;
+        const baseEditAt=timestampEdicao();
         const fields={};
         Object.keys(fonte||{}).filter(util.campoPermitido).forEach(campo=>{
           const chave=util.campoParaChave(campo);
@@ -346,6 +338,8 @@
             initializedAt:window.firebase.database.ServerValue.TIMESTAMP,
             initializedBy:deviceId(),
             sourceRevision,
+            sheetName:texto(ficha.name)||"Ficha",
+            characterName:texto(fonte?.nome)||texto(ficha.name)||"Ficha",
             fields:{...fields,...(atual?.fields||{})}
           };
         });
@@ -401,32 +395,6 @@
          realmente mais nova é aplicada. */
       aplicarRegistrosRemotos(sheetId,pendentes);
     }
-  }
-
-  async function garantirRegistroDescoberta(ficha){
-    const uid=uidAtual(),db=banco();
-    if(!uid||!db||!ficha?.sheetId) return null;
-    const ref=db.ref(`userSheets/${uid}/${ficha.sheetId}`);
-    const snapshot=await ref.once("value");
-    if(snapshot.exists()) return snapshot.val();
-
-    const data=dadosPersistidosDaFicha(ficha);
-    const registro={
-      name:texto(ficha.name)||"Ficha",
-      characterName:texto(data?.nome)||texto(ficha.name)||"Ficha",
-      revision:1,
-      updatedAt:window.firebase.database.ServerValue.TIMESTAMP,
-      deviceId:deviceId(),
-      hash:hashFicha(data),
-      appVersion:texto(window.APP_VERSION),
-      deleted:false,
-      data
-    };
-    const resultado=await ref.transaction(atual=>{
-      if(atual) return;
-      return registro;
-    });
-    return resultado.snapshot?.val?.()||null;
   }
 
   async function garantirConta(){

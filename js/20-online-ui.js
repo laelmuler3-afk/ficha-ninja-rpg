@@ -714,7 +714,7 @@
   function renderSincronizacaoDestino(st){
     if(!st.user){
       return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">
-        <section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Entre para ativar a nuvem</h3><p>A sincronização entre dispositivos usa a mesma Conta Google em todos os seus aparelhos.</p><button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button></section>
+        <section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Entre para conectar seus aparelhos</h3><p>A mesma Conta Google ativa a sincronização em tempo real e dá acesso aos seus backups na nuvem.</p><button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button></section>
       </div>`;
     }
     return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">${cabecalhoConta(st)}${renderConflito()}${renderNuvem(st)}</div>`;
@@ -774,17 +774,18 @@
     const antigas=grupo.duplicatas||[];
     const nome=ficha.characterName||ficha.name||"Ficha";
     const nomeFicha=String(ficha.name||nome).replace(/(?:\s+nuvem(?:\s+\d+)?)+$/i,"").trim()||nome;
+    const quando=num(ficha.updatedAt)>0?new Date(num(ficha.updatedAt)).toLocaleString("pt-BR"):"data não disponível";
     const subtitulo=grupo.vinculada
-      ? `${nomeFicha} • neste aparelho`
-      : `${nomeFicha} • disponível na nuvem`;
+      ? `${nomeFicha} • backup atualizado em ${quando}`
+      : `${nomeFicha} • backup disponível para restaurar`;
     const acao=grupo.vinculada
-      ? `<span class="onlineSyncBadge ok">Automática</span>`
-      : `<button type="button" class="onlineBtn secundario compacto" data-action="restore-cloud" data-sheet-id="${esc(ficha.id)}">Adicionar</button>`;
+      ? `<span class="onlineSyncBadge ok">Backup salvo</span>`
+      : `<button type="button" class="onlineBtn secundario compacto" data-action="restore-cloud" data-sheet-id="${esc(ficha.id)}">Restaurar</button>`;
     const duplicatas=antigas.length?`
       <details class="onlineSyncDuplicatas">
-        <summary>${antigas.length} ${antigas.length===1?"cópia antiga oculta":"cópias antigas ocultas"}</summary>
+        <summary>${antigas.length} ${antigas.length===1?"backup antigo preservado":"backups antigos preservados"}</summary>
         <div class="onlineSyncDuplicatasLista">
-          ${antigas.map(item=>`<div class="onlineSyncDuplicata"><span><b>${esc(item.name||item.characterName||"Ficha")}</b><small>Revisão ${num(item.revision,1)}</small></span>${item.vinculada?`<span class="onlineSyncBadge neutro">Neste aparelho</span>`:`<button type="button" class="onlineBtn texto compacto" data-action="restore-cloud" data-sheet-id="${esc(item.id)}">Adicionar</button>`}</div>`).join("")}
+          ${antigas.map(item=>`<div class="onlineSyncDuplicata"><span><b>${esc(item.name||item.characterName||"Ficha")}</b><small>Revisão ${num(item.revision,1)}</small></span>${item.vinculada?`<span class="onlineSyncBadge neutro">Neste aparelho</span>`:`<button type="button" class="onlineBtn texto compacto" data-action="restore-cloud" data-sheet-id="${esc(item.id)}">Restaurar</button>`}</div>`).join("")}
         </div>
       </details>`:"";
     return `<article class="onlineSyncFicha ${grupo.vinculada?"vinculada":"disponivel"}">
@@ -806,22 +807,20 @@
       return `<section class="onlineCard onlineSyncPainel">
         <div class="onlineSyncHero desligada">
           <div class="onlineSyncIcone">☁</div>
-          <div><span class="onlineCardSelo">SINCRONIZAÇÃO</span><h3>Nuvem desativada</h3><p>Use a mesma Conta Google no celular, tablet e outros aparelhos para manter suas fichas iguais em todos eles.</p></div>
+          <div><span class="onlineCardSelo">SINCRONIZAÇÃO ENTRE DISPOSITIVOS</span><h3>Conta Google necessária</h3><p>Use a mesma Conta Google no celular, tablet e outros aparelhos para receber alterações confirmadas em tempo real.</p></div>
         </div>
         <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google</button>
       </section>`;
     }
 
     const grupos=agruparFichasNuvem(nuvem,locais);
-    const vinculadas=grupos.filter(grupo=>grupo.vinculada);
-    const disponiveis=grupos.filter(grupo=>!grupo.vinculada);
     const status=textoStatusSync(st);
 
     return `<section class="onlineCard onlineSyncPainel">
       <div class="onlineSyncHero">
         <div class="onlineSyncIcone">↻</div>
         <div class="onlineSyncHeroTexto">
-          <span class="onlineCardSelo">SINCRONIZAÇÃO AUTOMÁTICA</span>
+          <span class="onlineCardSelo">SINCRONIZAÇÃO ENTRE DISPOSITIVOS</span>
           <h3>${esc(status.rotulo)}</h3>
           <p>${esc(status.detalhe)}</p>
         </div>
@@ -833,25 +832,22 @@
         <span>${locais.length} ${locais.length===1?"personagem":"personagens"} neste aparelho${recuperacoes?` • ${recuperacoes} ${recuperacoes===1?"cópia antiga preservada":"cópias antigas preservadas"}`:""}</span>
       </div>
 
-      <div class="onlineSyncResumo">
-        <div><b>${vinculadas.length}</b><span>sincronizadas</span></div>
-        <div><b>${disponiveis.length}</b><span>disponíveis</span></div>
-        <div><b>${grupos.length}</b><span>personagens</span></div>
+      <div class="onlineSyncSecao">
+        <div class="onlineSyncSecaoTitulo"><span>TEMPO REAL</span><small>Somente alterações confirmadas são enviadas</small></div>
+        <p class="onlineSyncExplicacao">Ao confirmar uma mudança de PV, EKO, perícia, atributo, nota ou outro campo sincronizável, apenas aquela área é enviada e os outros aparelhos desta conta recebem a atualização automaticamente.</p>
+        <button type="button" class="onlineBtn secundario compacto" data-action="sync-check">Verificar conexão agora</button>
       </div>
 
-      ${grupos.length?`
-        <div class="onlineSyncSecao">
-          <div class="onlineSyncSecaoTitulo"><span>SEUS PERSONAGENS</span><small>Uma personagem é a mesma no celular, tablet e demais aparelhos</small></div>
-          <div class="onlineListaNuvem onlineListaNuvemClean">${grupos.map(renderFichaNuvemGrupo).join("")}</div>
-        </div>`:`<p class="onlineVazio">Nenhuma ficha na nuvem ainda. A ficha atual será enviada automaticamente na próxima alteração salva.</p>`}
-
-      <details class="onlineSyncAvancado">
-        <summary>Opções avançadas</summary>
-        <div>
-          <button type="button" class="onlineBtn secundario compacto" data-action="sync-check">Verificar sincronização agora</button>
-          <small>A sincronização normal é automática. Use esta opção apenas se quiser forçar uma verificação imediata.</small>
+      <div class="onlineSyncSecao">
+        <div class="onlineSyncSecaoTitulo"><span>BACKUP NA NUVEM</span><small>Cópia completa para recuperação</small></div>
+        <p class="onlineSyncExplicacao">O backup não participa da sincronização em tempo real. O servidor atualiza automaticamente uma cópia completa por ficha todos os dias às 03:00 (horário de Brasília), sempre substituindo o backup anterior. Você também pode atualizar essa mesma cópia manualmente quando quiser.</p>
+        <div class="onlineAcoesLinha">
+          <button type="button" class="onlineBtn primario compacto" data-action="backup-current">Fazer backup agora</button>
         </div>
-      </details>
+        ${grupos.length?`
+          <div class="onlineListaNuvem onlineListaNuvemClean">${grupos.map(renderFichaNuvemGrupo).join("")}</div>
+        `:`<p class="onlineVazio">Nenhum backup salvo ainda. A sincronização entre dispositivos continua funcionando normalmente.</p>`}
+      </div>
     </section>`;
   }
 
@@ -961,7 +957,7 @@
         ${combat.started?`<button class="onlineBtn secundario" data-action="prev-turn">Turno anterior</button><button class="onlineBtn primario" data-action="next-turn">Próximo turno</button>`:`<button class="onlineBtn primario" data-action="start-combat">Iniciar combate</button>`}
       </div>`:`<div class="onlineTurnoJogador">
         <p class="onlineAvisoTurno">${minhaVez?"É o seu turno.":atual?`Turno de ${esc(atual.displayName)}.`:"O mestre ainda não iniciou o combate."}</p>
-        ${minhaVez?`<button type="button" class="onlineBtn ${turnoConfirmado?"secundario":"primario"} onlineEncerrarTurno" data-action="finish-my-turn" ${turnoConfirmado?"disabled":""}>${turnoConfirmado?"✓ Turno sincronizado":"Encerrar meu turno"}</button><small>${turnoConfirmado?"O mestre já pode avançar a iniciativa.":"Ao confirmar, todas as alterações deste turno serão enviadas em um único pacote."}</small>`:""}
+        ${minhaVez?`<button type="button" class="onlineBtn ${turnoConfirmado?"secundario":"primario"} onlineEncerrarTurno" data-action="finish-my-turn" ${turnoConfirmado?"disabled":""}>${turnoConfirmado?"✓ Turno encerrado":"Encerrar meu turno"}</button><small>${turnoConfirmado?"O mestre já pode avançar a iniciativa.":"As alterações confirmadas já são sincronizadas em tempo real; encerrar o turno apenas libera a iniciativa."}</small>`:""}
       </div>`}
     </section>`;
   }
@@ -1223,25 +1219,31 @@
     if(acao==="copy-code")return copiar(obterEstado().sala?.code,"Código copiado.");
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
     if(acao==="sync-check")return executar(async()=>{
-      try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
       await window.ShinobiOnline.reconciliarSincronizacaoConta({motivo:"verificacao-manual"});
       await window.ShinobiOnline.sincronizarPendenciasAgora?.({motivo:"verificacao-manual"});
-      await avisar("Sincronização verificada","As fichas vinculadas foram conferidas. A sincronização continuará automática em segundo plano.");
+      await avisar("Sincronização verificada","As alterações confirmadas pendentes foram conferidas. O tempo real continuará automático em segundo plano.");
+    });
+    if(acao==="backup-current")return executar(async()=>{
+      const ficha=window.ShinobiOnline.fichaAtualLocal?.();
+      if(!ficha)throw new Error("Ficha atual não encontrada.");
+      await window.ShinobiOnline.salvarBackupFicha(ficha.name,{motivo:"manual"});
+      await avisar("Backup atualizado","A cópia completa desta ficha foi salva na nuvem e substituiu o backup anterior da mesma ficha.");
     });
     if(acao==="sync-current")return executar(async()=>{
-      try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
-      await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:true,motivo:"manual"});
-      await avisar("Ficha completa sincronizada","Notas, inventário, carteira, jutsus e demais dados da ficha foram enviados para a nuvem.");
+      const ficha=window.ShinobiOnline.fichaAtualLocal?.();
+      if(!ficha)throw new Error("Ficha atual não encontrada.");
+      await window.ShinobiOnline.salvarBackupFicha(ficha.name,{motivo:"compatibilidade-manual"});
+      await avisar("Backup atualizado","A cópia completa desta ficha foi atualizada na nuvem.");
     });
-    if(acao==="sync-all")return executar(async()=>{await window.ShinobiOnline.sincronizarTodasFichas();await avisar("Sincronização concluída","Todas as fichas deste aparelho foram verificadas.");});
+    if(acao==="sync-all")return executar(async()=>{await window.ShinobiOnline.salvarBackupTodasFichas();await avisar("Backups atualizados","Os backups completos das fichas deste aparelho foram substituídos pelas versões atuais.");});
     if(acao==="restore-cloud")return executar(async()=>{
       const vinculada=el.dataset.linked==="true";
       const mensagem=vinculada
-        ? "A versão local desta ficha será atualizada com os dados atuais da nuvem."
-        : "A ficha será baixada e ficará vinculada à mesma versão da nuvem neste aparelho.";
+        ? "A versão local desta ficha será substituída pelo backup completo salvo na nuvem."
+        : "O backup completo será restaurado neste aparelho e ficará vinculado à mesma ficha para a sincronização em tempo real.";
       if(await confirmar(vinculada?"Baixar novamente":"Baixar ficha",mensagem)){
         await window.ShinobiOnline.restaurarFichaDaNuvem(el.dataset.sheetId,{asCopy:false});
-        await avisar("Ficha completa baixada","A ficha foi aberta neste aparelho com notas, inventário, carteira, jutsus e demais dados da nuvem.");
+        await avisar("Backup restaurado","A ficha completa foi restaurada neste aparelho. A partir daqui, novas alterações confirmadas serão sincronizadas em tempo real.");
       }
     });
     if(acao==="resolve-conflict")return executar(async()=>{await window.ShinobiOnline.resolverConflito(el.dataset.sheetId,el.dataset.choice);conflitoAtual=null;});
@@ -1254,8 +1256,8 @@
       const chave=window.ShinobiOnline?.chaveTurnoAtual?.(combat)||`${Math.max(1,num(combat.round,1))}:${Math.max(0,num(combat.turnIndex))}:${atual?.id||""}`;
       if(atual?.type==="player"&&atual.turnReadyKey!==chave){
         const ok=await confirmar(
-          "Turno ainda não sincronizado",
-          `${atual.displayName||"O jogador"} ainda não confirmou o encerramento deste turno. Se você avançar agora, o aplicativo tentará sincronizar automaticamente no aparelho dele para evitar perda de dados.\n\nAvançar mesmo assim?`
+          "Turno ainda não encerrado",
+          `${atual.displayName||"O jogador"} ainda não marcou este turno como concluído. As alterações confirmadas da ficha continuam sincronizando em tempo real.\n\nAvançar mesmo assim?`
         );
         if(!ok)return;
       }
@@ -1263,14 +1265,14 @@
     });
     if(acao==="prev-turn")return executar(()=>window.ShinobiOnline.voltarTurno());
     if(acao==="finish-my-turn"){
-      const resumo=window.ShinobiOnline?.resumoMudancasMeuTurno?.()||{lines:["Alterações do turno serão sincronizadas."]};
+      const resumo=window.ShinobiOnline?.resumoMudancasMeuTurno?.()||{lines:["Alterações confirmadas já são sincronizadas em tempo real."]};
       const linhas=(resumo.lines||[]).join("\n");
       const stAtual=obterEstado();
       const mensagemDestino=stAtual?.user?.anonymous
-        ? "Ao confirmar, o estado consolidado será enviado para a sala. Para sincronizar a ficha entre aparelhos, entre com Google."
-        : "Ao confirmar, a ficha será salva na nuvem e os outros dispositivos receberão esta versão.";
+        ? "Ao confirmar, o estado do participante será enviado para a sala. Para sincronizar a ficha entre aparelhos, entre com Google."
+        : "As mudanças confirmadas já foram enviadas campo a campo aos seus outros dispositivos. Encerrar o turno apenas libera a iniciativa para o mestre.";
       const ok=await confirmar(
-        "Encerrar e sincronizar turno?",
+        "Encerrar turno?",
         `${linhas}\n\n${mensagemDestino}`
       );
       if(!ok)return;
@@ -1283,14 +1285,14 @@
         if(resultado?.anonymous){
           await avisar("Turno atualizado","As alterações foram enviadas para a sala. Para sincronizar a ficha entre aparelhos, entre com Google.");
         }else{
-          await avisar("Turno sincronizado","As alterações deste turno foram confirmadas pelo Firebase. O mestre já pode avançar.");
+          await avisar("Turno encerrado","As alterações confirmadas continuam sincronizadas em tempo real. O mestre já pode avançar.");
         }
       });
     }
     if(acao==="end-effect")return executar(()=>window.ShinobiOnline.encerrarEfeito(el.dataset.effectId));
     if(acao==="remove-participant")return executar(async()=>{const p=obterEstado().sala?.participants?.[el.dataset.participantId];if(await confirmar("Remover participante",`Remover ${p?.displayName||"este participante"} da sala?`))await window.ShinobiOnline.removerParticipante(el.dataset.participantId);});
     if(acao==="edit-npc")return editarNpc(el.dataset.participantId);
-    if(acao==="leave-room")return executar(async()=>{if(await confirmar("Sair da sala","A ficha continuará salva neste aparelho e na nuvem."))await window.ShinobiOnline.sairDaSala();});
+    if(acao==="leave-room")return executar(async()=>{if(await confirmar("Sair da sala","A ficha continuará salva neste aparelho. Qualquer backup já feito na nuvem também será preservado."))await window.ShinobiOnline.sairDaSala();});
     if(acao==="close-room")return executar(async()=>{if(await confirmar("Encerrar sala","Jogadores não poderão entrar novamente com este código.")){await window.ShinobiOnline.encerrarSala();await window.ShinobiOnline.sairDaSala({silencioso:true});}});
   }
 
@@ -1413,7 +1415,7 @@
     window.ShinobiOnline.on("xp-recebido",e=>{
       const d=e.detail;avisar("XP recebido",`${d.amount>0?"+":""}${d.amount} XP\n${d.before} → ${d.after}${d.reason?`\n${d.reason}`:""}`);
     });
-    window.addEventListener("shinobi:turno-auto-sincronizado",()=>{avisar("Turno sincronizado automaticamente","O mestre avançou a iniciativa antes da confirmação. As alterações locais foram enviadas para evitar perda de dados.");});
+    window.addEventListener("shinobi:turno-auto-sincronizado",()=>{avisar("Turno encerrado automaticamente","O mestre avançou a iniciativa antes da confirmação do turno. As alterações já confirmadas continuam protegidas pela sincronização em tempo real.");});
     window.ShinobiOnline.on("nivel-recebido",e=>{
       const d=e.detail;avisar("Nível atualizado pelo mestre",`${d.character||"Sua ficha"}: nível ${d.before} → ${d.after}.${d.reason?`\n${d.reason}`:""}`);
     });
