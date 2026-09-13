@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.63",
-  "name": "Fundação de sincronização por conta e dispositivo",
-  "notes": "Separa o estado de sincronização por Conta Google, identifica cada aparelho por deviceId, corrige o autosave substituído pelo módulo de imagens, adiciona fila persistente de alterações, tombstones de exclusão, identidade determinística no primeiro vínculo e consolidação segura de cópias automáticas antigas.",
+  "version": "2.5.8.64",
+  "name": "Separação definitiva das áreas online",
+  "notes": "Isola Sincronização, Criar sala, Entrar em sala e Sala atual. Remove o painel misto, direciona conflitos e convites para a área correta e impede que a área de sala exiba o painel de nuvem.",
   "date": "2026-09-13"
 }
