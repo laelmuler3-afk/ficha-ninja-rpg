@@ -112,35 +112,38 @@
     return Boolean(st?.user&&!st.user.anonymous);
   }
 
+  function valorAtualDoCampo(nomeFicha,campo,detalhe={}){
+    if(Object.prototype.hasOwnProperty.call(detalhe,"depois")) return detalhe.depois;
+    try{
+      const ficha=(window.ShinobiOnline?.listarFichasLocais?.()||[]).find(f=>f.name===nomeFicha)
+        ||window.ShinobiOnline?.fichaAtualLocal?.();
+      return ficha?.data?.[campo];
+    }catch(_erro){return undefined;}
+  }
+
   async function enviarAlteracaoConfirmada(detalhe={}){
     if(!window.ShinobiOnline) return;
-    if(detalhe.confirmadaExplicita!==true) return;
-
+    const campo=texto(detalhe.campo);
+    if(!detalhe.confirmada||!campo)return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
-    const motivo=texto(detalhe.motivo)||"alteracao-confirmada";
-    const campos=Array.isArray(detalhe.camposAlterados)
-      ? [...new Set(detalhe.camposAlterados.map(texto).filter(campo=>campo&&window.EkoRealtimeFields?.campoPermitido?.(campo)!==false))]
-      : [];
-    const emTurno=syncPorTurnoAtiva();
 
-    if(emTurno) marcarTurnoLocalPendente();
+    if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
     if(!contaGoogleAtiva()){
-      if(!emTurno) await sincronizarResumoParticipante();
+      if(!syncPorTurnoAtiva()) await sincronizarResumoParticipante();
       return;
     }
 
-    if(!campos.length) return;
-
+    const valor=valorAtualDoCampo(nome,campo,detalhe);
     try{
-      if(!window.ShinobiOnline.sincronizarCamposFicha){
-        throw new Error("Motor de sincronização granular indisponível.");
-      }
-      await window.ShinobiOnline.sincronizarCamposFicha(nome,campos,{motivo});
-      if(!emTurno) await sincronizarResumoParticipante();
+      await window.ShinobiOnline.sincronizarCampoConfirmado?.(nome,campo,valor,{
+        motivo:texto(detalhe.motivo)||"alteracao-confirmada",
+        origem:texto(detalhe.origem)||"campo"
+      });
+      if(!syncPorTurnoAtiva()) await sincronizarResumoParticipante();
     }catch(erro){
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
-        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
+        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||"A alteração ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível."}
       }));
     }
   }
@@ -149,44 +152,27 @@
     if(window.__shinobiOnlinePersistListener) return;
     window.__shinobiOnlinePersistListener=true;
 
-    /* 2.5.8.8: a confirmação do usuário é o ponto de commit.
-       Fora do turno, persistir = enviar imediatamente. Durante o próprio
-       turno, a cópia local fica segura e a nuvem recebe um único pacote ao
-       confirmar o encerramento do turno. */
+    /* Realtime só recebe commits explícitos de um campo/área. Persistências
+       internas, renderização, pagehide e migrações locais não são transmitidas. */
     window.addEventListener("shinobi:ficha-persistida",evento=>{
-      if(evento?.detail?.confirmadaExplicita!==true) return;
-      enviarAlteracaoConfirmada(evento?.detail||{}).catch(()=>{});
+      const detalhe=evento?.detail||{};
+      const campo=texto(detalhe.campo);
+      if(!detalhe.confirmada||!campo)return;
+      enviarAlteracaoConfirmada(detalhe).catch(()=>{});
     });
 
     document.addEventListener("visibilitychange",()=>{
       if(document.visibilityState==="hidden"){
         clearTimeout(timerResumo);
         if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
-        /* A nuvem pessoal permanece imediata mesmo durante combate. */
-        window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"app-em-segundo-plano"}).catch(()=>{});
-      }else{
-        window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
-          motivo:"app-visivel",
-          somenteReceber:false
-        }).catch(()=>{});
       }
     });
     window.addEventListener("pagehide",()=>{
       clearTimeout(timerResumo);
       if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
-      window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"pagehide"}).catch(()=>{});
-    });
-    window.addEventListener("focus",()=>{
-      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
-        motivo:"foco",
-        somenteReceber:false
-      }).catch(()=>{});
     });
     window.addEventListener("online",()=>{
-      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
-        motivo:"rede-restaurada",
-        somenteReceber:false
-      }).catch(()=>{});
+      window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
     });
   }
 
@@ -536,10 +522,9 @@
   window.addEventListener("pageshow",()=>{
     setTimeout(()=>{
       iniciar();
-      window.ShinobiOnline?.reconciliarSincronizacaoConta?.({
-        motivo:"pageshow",
-        somenteReceber:syncPorTurnoAtiva()
-      }).catch(()=>{});
+      /* pageshow não reconcilia fichas completas. Apenas tenta reenviar
+         operações granulares que já estavam confirmadas e pendentes. */
+      window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
     },120);
   });
 })();
