@@ -23,7 +23,7 @@
   const SW_URL_BASE="./service-worker.js";
   const swUrl=(versao=APP_VERSION)=>`${SW_URL_BASE}?v=${encodeURIComponent(String(versao||APP_VERSION))}`;
   const VERSION_URL="./version.json";
-  const INTERVALO_PERIODICO=5*60*1000;
+  const INTERVALO_PERIODICO=15*60*1000;
   const INTERVALO_MINIMO=15*1000;
   const LIMITE_REPETICOES_PUBLICACAO=8;
 
@@ -547,12 +547,11 @@
     definirStatus(`Você está na versão mais recente: v${APP_VERSION}.`,"pronto");
   });
 
-  document.addEventListener("visibilitychange",()=>{
-    if(document.visibilityState==="visible") verificarAtualizacao({forcar:true});
-  });
-  window.addEventListener("focus",()=>verificarAtualizacao({forcar:true}));
-  window.addEventListener("online",()=>verificarAtualizacao({forcar:true}));
-  window.addEventListener("pageshow",()=>verificarAtualizacao({forcar:true}));
+  let timerReconexao=null;
+  window.addEventListener("online",()=>{
+    clearTimeout(timerReconexao);
+    timerReconexao=setTimeout(()=>verificarAtualizacao(),5000);
+  },{passive:true});
 
   window.ShinobiAtualizacao={
     verificar:()=>verificarAtualizacao({manual:true,forcar:true}),
@@ -560,5 +559,19 @@
     versao:APP_VERSION
   };
 
-  iniciar();
+  function iniciarDepoisDaRenderizacao(){
+    try{
+      const resultado=iniciar();
+      if(resultado&&typeof resultado.catch==="function")resultado.catch(()=>{});
+    }catch(erro){
+      console.warn("Atualizador não iniciou. A ficha continua funcionando.",erro);
+    }
+  }
+  if(window.ShinobiAppReady?.executar){
+    window.ShinobiAppReady.executar(iniciarDepoisDaRenderizacao);
+  }else if(document.readyState==="complete"){
+    setTimeout(iniciarDepoisDaRenderizacao,1200);
+  }else{
+    window.addEventListener("load",()=>setTimeout(iniciarDepoisDaRenderizacao,1200),{once:true});
+  }
 })();

@@ -517,14 +517,24 @@
     },700);
   }
 
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",iniciar,{once:true});
-  else iniciar();
+  function executarDepoisDaRenderizacao(fn){
+    if(window.ShinobiAppReady?.executar){
+      window.ShinobiAppReady.executar(fn);
+      return;
+    }
+    if(document.readyState==="complete")setTimeout(fn,1200);
+    else window.addEventListener("load",()=>setTimeout(fn,1200),{once:true});
+  }
+
+  executarDepoisDaRenderizacao(iniciar);
   window.addEventListener("pageshow",()=>{
-    setTimeout(()=>{
-      iniciar();
-      /* pageshow não reconcilia fichas completas. Apenas tenta reenviar
-         operações granulares que já estavam confirmadas e pendentes. */
-      window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
-    },120);
+    executarDepoisDaRenderizacao(()=>{
+      setTimeout(()=>{
+        iniciar();
+        /* pageshow não reconcilia fichas completas. Apenas tenta reenviar
+           operações granulares que já estavam confirmadas e pendentes. */
+        window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
+      },180);
+    });
   });
 })();

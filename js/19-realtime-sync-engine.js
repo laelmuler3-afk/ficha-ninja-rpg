@@ -1,4 +1,4 @@
-/* EKO 2.5.8.73 — realtime lazy, por campo e fora do caminho de boot. */
+/* EKO 2.5.8.74 — realtime lazy, por campo e fora do caminho de boot. */
 (function(root,factory){
   const emNode=typeof module!=="undefined"&&module.exports;
   const util=emNode?require("./19-realtime-fields-utils.js"):root?.EkoRealtimeFields;
@@ -208,6 +208,25 @@
       }
     }
 
+    let camposUiPendentes=new Set();
+    let dadosUiPendentes=null;
+    let frameUiPendente=0;
+    function agendarAtualizacaoUi(campos,dados){
+      (campos||[]).forEach(campo=>{const nome=texto(campo);if(nome)camposUiPendentes.add(nome);});
+      dadosUiPendentes=dados;
+      if(frameUiPendente)return;
+      const executar=()=>{
+        frameUiPendente=0;
+        const lista=[...camposUiPendentes];
+        camposUiPendentes.clear();
+        const snapshot=dadosUiPendentes;
+        dadosUiPendentes=null;
+        if(lista.length)atualizarUi(lista,snapshot);
+      };
+      if(typeof root.requestAnimationFrame==="function")frameUiPendente=root.requestAnimationFrame(executar);
+      else frameUiPendente=root.setTimeout(executar,16);
+    }
+
     function aplicarSnapshotCampos(sheetId,valor){
       const uid=uidAtual();
       const fichaBase=obterFichaAtiva(false);
@@ -239,7 +258,7 @@
       }
       if(aplicados.length){
         try{root.localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){}
-        atualizarUi(aplicados,dados);
+        agendarAtualizacaoUi(aplicados,dados);
         try{root.dispatchEvent(new CustomEvent("shinobi:realtime-aplicado",{detail:{sheetId,campos:aplicados}}));}catch(_e){}
       }
       return aplicados;
@@ -383,9 +402,14 @@
     root.addEventListener("online",()=>{if(estadoRT.bootLiberado)reconciliar().catch(()=>{});},{passive:true});
     root.addEventListener("pagehide",()=>{desconectarListener();});
 
-    const depoisDoLoad=()=>setTimeout(liberarBoot,1100);
-    if(root.document.readyState==="complete")depoisDoLoad();
-    else root.addEventListener("load",depoisDoLoad,{once:true});
+    const liberarDepoisDaRenderizacao=()=>setTimeout(liberarBoot,120);
+    if(root.ShinobiAppReady?.executar){
+      root.ShinobiAppReady.executar(liberarDepoisDaRenderizacao);
+    }else if(root.document.readyState==="complete"){
+      setTimeout(liberarDepoisDaRenderizacao,1200);
+    }else{
+      root.addEventListener("load",()=>setTimeout(liberarDepoisDaRenderizacao,1200),{once:true});
+    }
     return true;
   }
 

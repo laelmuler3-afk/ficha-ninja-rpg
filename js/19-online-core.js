@@ -2723,8 +2723,20 @@
     setTimeout(()=>iniciar().catch(erro=>{
       /* O online nunca é requisito para a ficha abrir. */
       console.warn("Modo online indisponível após a abertura do app.",erro);
-    }),900);
+    }),80);
   }
-  if(document.readyState==="complete") iniciarOnlineDepoisDaAbertura();
-  else window.addEventListener("load",iniciarOnlineDepoisDaAbertura,{once:true});
+  function agendarInicioOnlineSeguro(){
+    if(window.ShinobiAppReady?.executar){
+      window.ShinobiAppReady.executar(iniciarOnlineDepoisDaAbertura);
+    }else if(document.readyState==="complete"){
+      setTimeout(iniciarOnlineDepoisDaAbertura,1200);
+    }else{
+      window.addEventListener("load",()=>setTimeout(iniciarOnlineDepoisDaAbertura,1200),{once:true});
+    }
+  }
+  if(window.__shinobiOnlineStackLoading){
+    window.addEventListener("shinobi:online-stack-ready",agendarInicioOnlineSeguro,{once:true});
+  }else{
+    agendarInicioOnlineSeguro();
+  }
 })();

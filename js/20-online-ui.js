@@ -1437,6 +1437,18 @@
   window.ShinobiOnlineUI={abrir,fechar,renderizar,renderPainelFlutuante,iniciar};
   window.dispatchEvent(new CustomEvent("shinobi:online-ui-ready"));
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniciar,{once:true});else iniciar();
-  window.addEventListener("pageshow",()=>setTimeout(iniciar,120));
+  function iniciarDepoisDaRenderizacao(){
+    if(window.ShinobiAppReady?.executar){
+      window.ShinobiAppReady.executar(iniciar);
+    }else if(document.readyState==="complete"){
+      setTimeout(iniciar,1200);
+    }else{
+      window.addEventListener("load",()=>setTimeout(iniciar,1200),{once:true});
+    }
+  }
+  iniciarDepoisDaRenderizacao();
+  window.addEventListener("pageshow",()=>{
+    if(window.ShinobiAppReady?.executar)window.ShinobiAppReady.executar(()=>setTimeout(iniciar,180));
+    else setTimeout(iniciar,1200);
+  });
 })();
