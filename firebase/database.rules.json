@@ -21,14 +21,8 @@
     },
     "sheetBackups": {
       "$uid": {
-        "$sheetId": {
-          "$backupId": {
-            ".read": "auth != null && auth.uid === $uid",
-            ".write": "auth != null && auth.uid === $uid"
-          }
-        },
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        ".write": false
       }
     },
     "campaigns": {
@@ -120,6 +114,39 @@
         "$deviceId": {
           ".write": "auth != null && auth.uid === $uid",
           ".validate": "!newData.exists() || (newData.hasChildren(['deviceId','label','lastSeen']) && newData.child('deviceId').isString() && newData.child('deviceId').val() === $deviceId && newData.child('deviceId').val().length <= 100 && newData.child('label').isString() && newData.child('label').val().length <= 80 && newData.child('lastSeen').isNumber() && (!newData.child('appVersion').exists() || (newData.child('appVersion').isString() && newData.child('appVersion').val().length <= 40)))"
+        }
+      }
+    },
+    "sheetRealtime": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$sheetId": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          "schemaVersion": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10"
+          },
+          "initializedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "initializedBy": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+          },
+          "sourceRevision": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "sheetName": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80"
+          },
+          "characterName": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 120"
+          },
+          "fields": {
+            "$fieldKey": {
+              ".validate": "newData.hasChildren(['name','deleted','editAt','serverUpdatedAt','deviceId','opId']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 120 && newData.child('deleted').isBoolean() && newData.child('editAt').isNumber() && newData.child('editAt').val() > 0 && newData.child('serverUpdatedAt').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && newData.child('opId').isString() && newData.child('opId').val().length > 0 && newData.child('opId').val().length <= 180 && ((newData.child('deleted').val() === true && !newData.child('payload').exists()) || (newData.child('deleted').val() !== true && newData.child('payload').isString() && newData.child('payload').val().length <= 5000000))"
+            }
+          }
         }
       }
     }
