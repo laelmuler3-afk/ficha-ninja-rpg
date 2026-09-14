@@ -115,29 +115,57 @@
   async function enviarAlteracaoConfirmada(detalhe={}){
     if(!window.ShinobiOnline) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
-    const motivo=texto(detalhe.motivo)||"alteracao-confirmada";
-    const informados=Array.isArray(detalhe.camposAlterados)
-      ? detalhe.camposAlterados
-      : (texto(detalhe.campo)?[texto(detalhe.campo)]:[]);
-    const camposGranulares=[...new Set(informados.map(texto).filter(campo=>window.EkoRealtimeFields?.campoPermitido?.(campo)!==false&&campo))];
-    const emTurno=syncPorTurnoAtiva();
 
-    if(emTurno) marcarTurnoLocalPendente();
-
-    if(!contaGoogleAtiva()){
-      if(!emTurno) await sincronizarResumoParticipante();
+    if(syncPorTurnoAtiva()){
+      /* O fechamento do turno continua sendo usado para a lógica da sala, mas
+         a nuvem da Conta Google não deve esperar o fim do turno. A mesma ficha
+         precisa aparecer atualizada no celular/tablet assim que a alteração é
+         confirmada em qualquer aparelho. */
+      marcarTurnoLocalPendente();
+      if(contaGoogleAtiva()){
+        window.ShinobiOnline.marcarFichaPendente?.(nome,{
+          motivo:texto(detalhe.motivo)||"alteracao-turno",
+          modo:"imediato"
+        });
+        try{
+          await window.ShinobiOnline.sincronizarFicha(nome,{
+            force:false,
+            backup:false,
+            motivo:texto(detalhe.motivo)||"alteracao-turno",
+            modo:"imediato"
+          });
+        }catch(erro){
+          window.ShinobiOnline.marcarFichaPendente?.(nome,{motivo:"falha-envio-turno",modo:"imediato"});
+          window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
+            detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
+          }));
+        }
+      }
       return;
     }
 
+    if(!contaGoogleAtiva()){
+      await sincronizarResumoParticipante();
+      return;
+    }
+
+    window.ShinobiOnline.marcarFichaPendente?.(nome,{
+      motivo:texto(detalhe.motivo)||"alteracao-confirmada",
+      modo:"imediato"
+    });
     try{
-      /* 2.5.8.67: confirmação do usuário envia SOMENTE os campos realmente
-         alterados. Backup completo é uma ação separada da tela de nuvem e
-         jamais é disparado por persistência, foco, turno ou autosave. */
-      if(camposGranulares.length&&window.ShinobiOnline.sincronizarCamposFicha){
-        await window.ShinobiOnline.sincronizarCamposFicha(nome,camposGranulares,{motivo});
-      }
-      if(!emTurno) await sincronizarResumoParticipante();
+      await window.ShinobiOnline.sincronizarFicha(nome,{
+        force:false,
+        backup:texto(detalhe.motivo)==="salvamento-manual",
+        motivo:texto(detalhe.motivo)||"alteracao-confirmada",
+        modo:"imediato"
+      });
+      await sincronizarResumoParticipante();
     }catch(erro){
+      window.ShinobiOnline.marcarFichaPendente?.(nome,{
+        motivo:"falha-envio-confirmado",
+        modo:"imediato"
+      });
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
         detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
       }));
@@ -148,12 +176,12 @@
     if(window.__shinobiOnlinePersistListener) return;
     window.__shinobiOnlinePersistListener=true;
 
-    /* 2.5.8.67: a confirmação do usuário é o ponto de commit.
-       Toda alteração confirmada é enviada imediatamente pelo realtime granular,
-       inclusive durante combate. Encerrar turno apenas libera a iniciativa e
-       força o envio de qualquer operação granular que tenha ficado pendente. */
+    /* 2.5.8.8: a confirmação do usuário é o ponto de commit.
+       Fora do turno, persistir = enviar imediatamente. Durante o próprio
+       turno, a cópia local fica segura e a nuvem recebe um único pacote ao
+       confirmar o encerramento do turno. */
     window.addEventListener("shinobi:ficha-persistida",evento=>{
-      if(evento?.detail?.confirmada!==true) return;
+      if(evento?.detail?.confirmada===false) return;
       enviarAlteracaoConfirmada(evento?.detail||{}).catch(()=>{});
     });
 
@@ -190,8 +218,8 @@
   }
 
   function instalarBackupManual(){
-    /* Backup completo é deliberadamente explícito na tela de sincronização.
-       Salvar a ficha local não altera o backup da nuvem. */
+    /* O evento shinobi:ficha-persistida já trata o salvamento manual e cria
+       backup após a confirmação do Firebase. Mantido como ponto de extensão. */
   }
 
   function participanteVinculado(sessao,online){
