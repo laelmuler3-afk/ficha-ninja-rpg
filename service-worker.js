@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.69 — estabilização do PWA, Firebase e confirmação realtime.
+/* Ficha Ninja RPG 2.5.8.63 — sincronização multi-dispositivo segura e atualização PWA.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.69";
+const APP_VERSION = "2.5.8.63";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -44,7 +44,6 @@ const APP_SHELL = [
   `./css/loja-v25843.css?v=${APP_VERSION}`,
   `./css/notas.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
-  `./js/19-realtime-fields-utils.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
@@ -64,7 +63,6 @@ const APP_SHELL = [
   `./js/17-dano-inteligente.js?v=${APP_VERSION}`,
   `./js/18-online-config.js?v=${APP_VERSION}`,
   `./js/19-online-core.js?v=${APP_VERSION}`,
-  `./js/19-realtime-sync-engine.js?v=${APP_VERSION}`,
   `./vendor/qrcode-local.js?v=${APP_VERSION}`,
   `./js/20-online-ui.js?v=${APP_VERSION}`,
   `./js/21-online-hooks.js?v=${APP_VERSION}`,
@@ -285,74 +283,73 @@ async function instalarAppShell(){
 }
 
 async function limparCachesAntigos(){
-  /* Recuperação 2.5.8.69: caches antigos são rollback de segurança.
-     Não apagamos nada durante install/activate. A limpeza volta a ser feita
-     somente depois de uma versão futura comprovar uma instalação saudável. */
-  return false;
+  const nomes=await caches.keys();
+  const atuais=new Set([SHELL_CACHE,RUNTIME_CACHE,FIREBASE_CACHE]);
+  await Promise.all(
+    nomes
+      .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-`)&&!atuais.has(nome))
+      .map(nome=>caches.delete(nome))
+  );
 }
 
-async function buscarEmCachesShinobi(request){
-  const nomes=(await caches.keys())
-    .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-shell-`))
-    .reverse();
-  for(const nome of nomes){
-    try{
-      const cache=await caches.open(nome);
-      const resposta=await cache.match(request)
-        || await cache.match(request,{ignoreSearch:true});
-      if(resposta) return resposta;
-    }catch(_erro){}
-  }
-  return null;
-}
-
-async function buscarDaRedeESalvar(request,chaveAlternativa=null){
-  const requisicao=new Request(request.url||request,{
-    cache:"no-store",
-    credentials:"same-origin"
-  });
-  const response=await fetch(requisicao);
-  if(!respostaPodeSerSalva(response)){
-    throw new Error(`HTTP ${response?.status||0} em ${requisicao.url}`);
-  }
-  try{
-    const cache=await caches.open(SHELL_CACHE);
-    await cache.put(chaveAlternativa||request,response.clone());
-  }catch(_erro){}
-  return response;
-}
-
-async function buscarShellDaVersaoAtiva(request){
+async function buscarShellNoCache(request){
   const cache=await caches.open(SHELL_CACHE);
-  const salva=await cache.match(request)
-    || await cache.match(request,{ignoreSearch:true});
-  if(salva) return salva;
 
-  /* Se o cache atual estiver incompleto, recuperar pela rede em vez de derrubar
-     o app. Se a rede também falhar, uma versão anterior ainda pode servir de
-     rollback. */
+  // Primeiro tenta a URL exata. Em seguida ignora a query string para aceitar
+  // o mesmo recurso solicitado como arquivo.png, arquivo.png?v=antiga ou
+  // arquivo.png?v=atual. Isso é essencial para o carregamento 100% offline.
+  const resposta=await cache.match(request)
+    || await cache.match(request,{ignoreSearch:true});
+  if(resposta) return resposta;
+
   try{
-    return await buscarDaRedeESalvar(request);
-  }catch(erroRede){
-    const anterior=await buscarEmCachesShinobi(request);
-    if(anterior) return anterior;
-    throw erroRede;
+    const rede=await fetch(request);
+    if(respostaPodeSerSalva(rede)){
+      await cache.put(request,rede.clone());
+      const canonica=new URL(request.url);
+      canonica.search="";
+      canonica.hash="";
+      await cache.put(canonica.href,rede.clone());
+    }
+    return rede;
+  }catch(erro){
+    // Última tentativa: procura pelo pathname dentro dos caches atuais.
+    // Protege instalações antigas que só possuíam a entrada versionada.
+    const compat=await cache.match(request,{ignoreSearch:true});
+    if(compat) return compat;
+    throw erro;
   }
 }
 
-async function abrirPaginaDaVersaoAtiva(request){
-  /* Navegação é network-first durante a recuperação. Isso permite sair de um
-     cache quebrado sem apagar localStorage/IndexedDB nem exigir reinstalação. */
+// CSS, JavaScript e JSON mudam com frequência durante o desenvolvimento.
+// Busca a rede primeiro para evitar que um Service Worker antigo esconda alterações
+// recém-publicadas; o cache continua sendo usado quando o dispositivo está offline.
+async function buscarCodigoAtualizado(request){
+  const cache=await caches.open(SHELL_CACHE);
   try{
-    return await buscarDaRedeESalvar(request,INDEX_URL);
-  }catch(erroRede){
-    const cache=await caches.open(SHELL_CACHE);
-    const atual=await cache.match(INDEX_URL)
-      || await cache.match(INDEX_URL,{ignoreSearch:true});
-    if(atual) return atual;
-    const anterior=await buscarEmCachesShinobi(INDEX_URL);
-    if(anterior) return anterior;
-    throw erroRede;
+    const rede=await fetch(new Request(request,{cache:"no-cache"}));
+    if(respostaPodeSerSalva(rede)) await cache.put(request,rede.clone());
+    return rede;
+  }catch(erro){
+    const salva=await cache.match(request);
+    if(salva) return salva;
+    const compat=await cache.match(request,{ignoreSearch:true});
+    if(compat) return compat;
+    throw erro;
+  }
+}
+
+async function abrirPaginaPrincipal(request){
+  const cache=await caches.open(SHELL_CACHE);
+
+  try{
+    const resposta=await fetch(new Request(request,{cache:"no-store"}));
+    if(respostaPodeSerSalva(resposta)) await cache.put(INDEX_URL,resposta.clone());
+    return resposta;
+  }catch(erro){
+    const fallback=await cache.match(INDEX_URL,{ignoreSearch:true});
+    if(fallback) return fallback;
+    throw erro;
   }
 }
 
@@ -458,16 +455,14 @@ async function responderFirebase(request){
 }
 
 self.addEventListener("install",event=>{
-  /* O worker de recuperação não depende do app conseguir abrir para clicar em
-     “Atualizar”. Ele assume imediatamente e não bloqueia a instalação fazendo
-     download de todo o shell. */
-  event.waitUntil(self.skipWaiting());
+  event.waitUntil(Promise.all([
+    instalarAppShell(),
+    prepararCacheFirebase().catch(()=>{})
+  ]));
 });
 
 self.addEventListener("activate",event=>{
-  /* Preserva todos os caches anteriores como rollback e assume as abas abertas.
-     A navegação seguinte já poderá recuperar o index pela rede. */
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(Promise.all([limparCachesAntigos(),self.clients.claim()]));
 });
 
 self.addEventListener("fetch",event=>{
@@ -490,12 +485,13 @@ self.addEventListener("fetch",event=>{
 
   if(request.mode==="navigate"){
     event.waitUntil(self.registration.update().catch(()=>{}));
-    event.respondWith(abrirPaginaDaVersaoAtiva(request));
+    event.respondWith(abrirPaginaPrincipal(request));
     return;
   }
 
   if(SHELL_PATHS.has(url.pathname)){
-    event.respondWith(buscarShellDaVersaoAtiva(request));
+    const mutavel=/\.(?:css|js|json)$/i.test(url.pathname);
+    event.respondWith(mutavel?buscarCodigoAtualizado(request):buscarShellNoCache(request));
     return;
   }
 

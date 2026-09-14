@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.69",
-  "name": "Estabilização do PWA e sincronização",
-  "notes": "Atualização atômica do PWA, estrutura Firebase Functions corrigida, duplicatas removidas e realtime restrito a persistências explicitamente confirmadas.",
+  "version": "2.5.8.63",
+  "name": "Fundação de sincronização por conta e dispositivo",
+  "notes": "Separa o estado de sincronização por Conta Google, identifica cada aparelho por deviceId, corrige o autosave substituído pelo módulo de imagens, adiciona fila persistente de alterações, tombstones de exclusão, identidade determinística no primeiro vínculo e consolidação segura de cópias automáticas antigas.",
   "date": "2026-09-13"
 }
