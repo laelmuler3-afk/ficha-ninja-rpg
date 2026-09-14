@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.72",
-  "name": "Realtime lazy após a abertura do app",
-  "notes": "Mantém o boot estável da 2.5.8.63, inicia Firebase/realtime somente após a abertura, observa apenas a ficha ativa e envia somente campos/áreas explicitamente confirmados. userSheets deixa de participar da sincronização automática.",
+  "version": "2.5.8.73",
+  "name": "Realtime — áreas editáveis confirmadas",
+  "notes": "Amplia a sincronização granular para jutsus, ataques, Kekkei Genkai, naturezas, resistências, inventário/carteira, efeitos de batalha e progressão. Apenas alterações explicitamente confirmadas geram operações realtime; persistências internas continuam locais.",
   "date": "2026-09-14"
 }
