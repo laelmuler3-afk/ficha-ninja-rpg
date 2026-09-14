@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.75",
-  "name": "CharacterId permanente",
-  "notes": "Adiciona identidade permanente por personagem sem alterar o caminho realtime já em uso; renomear a ficha não muda a sincronização e outra Conta Google não herda a identidade anterior.",
+  "version": "2.5.8.76",
+  "name": "Limpeza segura de cópias legadas",
+  "notes": "Simplifica a exclusão de fichas e adiciona limpeza em lote somente para duplicatas legadas marcadas e idênticas; cópias do usuário, Principal e versões com conteúdo diferente são preservadas.",
   "date": "2026-09-14"
 }
