@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.63",
-  "name": "Fundação de sincronização por conta e dispositivo",
-  "notes": "Separa o estado de sincronização por Conta Google, identifica cada aparelho por deviceId, corrige o autosave substituído pelo módulo de imagens, adiciona fila persistente de alterações, tombstones de exclusão, identidade determinística no primeiro vínculo e consolidação segura de cópias automáticas antigas.",
-  "date": "2026-09-13"
+  "version": "2.5.8.71",
+  "name": "Sincronização realtime segura — base 2.5.8.63",
+  "notes": "Sincronização granular por campo entre dispositivos da mesma Conta Google, outbox offline persistente, latest-write-wins e separação entre realtime e backup, preservando o atualizador e a estratégia de Service Worker da base estável 2.5.8.63.",
+  "date": "2026-09-14"
 }
