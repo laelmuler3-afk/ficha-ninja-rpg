@@ -171,7 +171,48 @@ async function shinobiConfirmarEdicaoCampo(evento){
   }
 }
 
-const CHAVE_BASE="ficha_ninja_app_v2",CHAVE_LISTA="ficha_ninja_lista_v1",CHAVE_ATIVA="ficha_ninja_ativa_v1";function limparNomeFicha(nome){return String(nome||"Principal").trim().replace(/[^\w\-À-ÿ ]+/g,"").slice(0,32)||"Principal"}function lerListaFichas(){let lista=["Principal"];try{const salva=JSON.parse(localStorage.getItem(CHAVE_LISTA)||'["Principal"]');Array.isArray(salva)&&salva.length&&(lista=salva)}catch(e){lista=["Principal"]}try{Object.keys(localStorage).forEach(k=>{if(k.startsWith(CHAVE_BASE+"__")){const nome=k.replace(CHAVE_BASE+"__","");nome&&!lista.includes(nome)&&lista.push(nome)}})}catch(e){}return lista=[...new Set(lista.map(limparNomeFicha))],lista.includes("Principal")||lista.unshift("Principal"),localStorage.setItem(CHAVE_LISTA,JSON.stringify(lista)),lista}let fichas=lerListaFichas(),fichaAtual=limparNomeFicha(localStorage.getItem(CHAVE_ATIVA)||"Principal");function chaveFicha(nome=fichaAtual){const ficha=limparNomeFicha(nome);return"Principal"===ficha?CHAVE_BASE:CHAVE_BASE+"__"+ficha}fichas.includes(fichaAtual)||(fichas.push(fichaAtual),localStorage.setItem(CHAVE_LISTA,JSON.stringify(fichas)));let CHAVE=chaveFicha(),estado=lerEstadoFichaSeguro(CHAVE),camposSalvaveisCache=null,timerSalvar=null,avisoArmazenamentoExibido=!1;function obterCamposSalvaveis(){const campos=Array.from(document.querySelectorAll("[data-save]"));return camposSalvaveisCache&&camposSalvaveisCache.length===campos.length||(camposSalvaveisCache=campos),camposSalvaveisCache}function prepararEstadoParaPersistenciaLocal(valor){let saida=valor;try{if(typeof window.shinobiPrepararEstadoPersistencia==="function"){const preparado=window.shinobiPrepararEstadoPersistencia(valor);preparado&&typeof preparado==="object"&&!Array.isArray(preparado)&&(saida=preparado)}}catch(_erroPreparacao){}return saida}function persistirEstadoLocal(contexto={}){try{const estadoPersistido=prepararEstadoParaPersistenciaLocal(estado);localStorage.setItem(CHAVE,JSON.stringify(estadoPersistido));if(contexto.emitir!==false){try{window.dispatchEvent(new CustomEvent("shinobi:ficha-persistida",{detail:{sheetName:String(fichaAtual||"Principal"),savedAt:Date.now(),confirmada:contexto.confirmada!==false,origem:String(contexto.origem||"acao"),campo:String(contexto.campo||""),antes:contexto.antes,depois:contexto.depois,motivo:String(contexto.motivo||"persistencia")}}))}catch(_erroEvento){}}return!0}catch(erro){return avisoArmazenamentoExibido||(avisoArmazenamentoExibido=!0,alert("O armazenamento da ficha está cheio. Remova algumas imagens de fundo dos jutsus ou use imagens menores para continuar salvando.")),!1}}function sincronizarEstadoDosCampos(opcoes={}){const incluirPendentes=opcoes.incluirPendentes===true;obterCamposSalvaveis().forEach(c=>{if(!incluirPendentes&&c.dataset.shinobiEdicaoPendente==="1")return;estado[c.dataset.save]="checkbox"===c.type?c.checked:c.value})}function atualizarValoresConfirmadosDosCampos(){obterCamposSalvaveis().forEach(c=>{if(c.dataset.shinobiEdicaoPendente==="1")return;c.dataset.shinobiValorConfirmado=shinobiSerializarValorCampo(shinobiValorCampo(c));c.dataset.shinobiEdicaoPendente="0"})}function salvar(contexto={}){timerSalvar&&(clearTimeout(timerSalvar),timerSalvar=null),sincronizarEstadoDosCampos(),persistirEstadoLocal(contexto),atualizarValoresConfirmadosDosCampos(),atualizarPlacar(),atualizarPerfil()}function salvarAgendado(){timerSalvar&&clearTimeout(timerSalvar),timerSalvar=setTimeout(()=>{timerSalvar=null;shinobiAtualizarVisualSemSalvar()},180)}function salvarManual(){salvar({confirmada:true,origem:"manual",motivo:"salvamento-manual"}),alert("Ficha salva!")}function carregar(){obterCamposSalvaveis().forEach(c=>{void 0!==estado[c.dataset.save]&&("checkbox"===c.type?c.checked=estado[c.dataset.save]:c.value=estado[c.dataset.save]),c.dataset.shinobiValorConfirmado=shinobiSerializarValorCampo(shinobiValorCampo(c)),c.dataset.shinobiEdicaoPendente="0",c.dataset.saveListener||(c.dataset.saveListener="1",c.addEventListener("input",shinobiRegistrarEdicaoCampo),c.addEventListener("change",shinobiConfirmarEdicaoCampo))}),renderizarJutsus(),renderizarArmados(),renderizarNaturezas(),renderizarKekkeiGenkai(),renderizarInventario(),atualizarPlacar(),atualizarPerfil(),carregarAvatarSalvo(),carregarFundoPerfilSalvo()}function abrirPagina(id,botao){const pagina=document.getElementById(id);if(!pagina)return;document.querySelectorAll(".pagina").forEach(p=>p.classList.remove("ativa")),pagina.classList.add("ativa");const botoes=Array.from(document.querySelectorAll(".menu button"));botoes.forEach(b=>b.classList.remove("ativo"));const botaoFinal=botao||botoes.find(b=>{const onclick=b.getAttribute("onclick")||"";return onclick.includes("'"+id+"'")||onclick.includes('"'+id+'"')});if(botaoFinal&&botaoFinal.classList.add("ativo"),window.abasSwipe){const idx=window.abasSwipe.indexOf(id);idx>=0&&(window.abaSwipeAtual=idx)}}function atualizarPlacar(){let pv=document.getElementById("pv")?.value||0,chakra=document.getElementById("chakra")?.value||0;const pvView=document.getElementById("pvView"),chakraView=document.getElementById("chakraView");pvView&&(pvView.textContent=pv),chakraView&&(chakraView.textContent=chakra),atualizarHUD(),atualizarModificadoresBatalha()}function alterarValor(id,valor){const c=document.getElementById(id);if(!c)return;const atual=Number(c.value||0),delta=Number(valor);c.value=Math.max(0,(Number.isFinite(atual)?atual:0)+(Number.isFinite(delta)?delta:0)),c.dispatchEvent(new Event("input",{bubbles:!0}))}function log(txt){const l=document.getElementById("log");if(!l)return;"Nada aconteceu ainda."===l.textContent.trim()&&(l.innerHTML=""),l.innerHTML="• "+escaparHtmlShinobi(txt)+"<br>"+l.innerHTML}function registrarLog(txt){log(txt)}async function aplicarDano(){
+const CHAVE_BASE="ficha_ninja_app_v2",CHAVE_LISTA="ficha_ninja_lista_v1",CHAVE_ATIVA="ficha_ninja_ativa_v1";function limparNomeFicha(nome){return String(nome||"Principal").trim().replace(/[^\w\-À-ÿ ]+/g,"").slice(0,32)||"Principal"}function lerListaFichas(){let lista=["Principal"];try{const salva=JSON.parse(localStorage.getItem(CHAVE_LISTA)||'["Principal"]');Array.isArray(salva)&&salva.length&&(lista=salva)}catch(e){lista=["Principal"]}try{Object.keys(localStorage).forEach(k=>{if(k.startsWith(CHAVE_BASE+"__")){const nome=k.replace(CHAVE_BASE+"__","");nome&&!lista.includes(nome)&&lista.push(nome)}})}catch(e){}return lista=[...new Set(lista.map(limparNomeFicha))],lista.includes("Principal")||lista.unshift("Principal"),localStorage.setItem(CHAVE_LISTA,JSON.stringify(lista)),lista}let fichas=lerListaFichas(),fichaAtual=limparNomeFicha(localStorage.getItem(CHAVE_ATIVA)||"Principal");function chaveFicha(nome=fichaAtual){const ficha=limparNomeFicha(nome);return"Principal"===ficha?CHAVE_BASE:CHAVE_BASE+"__"+ficha}fichas.includes(fichaAtual)||(fichas.push(fichaAtual),localStorage.setItem(CHAVE_LISTA,JSON.stringify(fichas)));let CHAVE=chaveFicha(),estado=lerEstadoFichaSeguro(CHAVE),camposSalvaveisCache=null,timerSalvar=null,avisoArmazenamentoExibido=!1;function obterCamposSalvaveis(){const campos=Array.from(document.querySelectorAll("[data-save]"));return camposSalvaveisCache&&camposSalvaveisCache.length===campos.length||(camposSalvaveisCache=campos),camposSalvaveisCache}function prepararEstadoParaPersistenciaLocal(valor){let saida=valor;try{if(typeof window.shinobiPrepararEstadoPersistencia==="function"){const preparado=window.shinobiPrepararEstadoPersistencia(valor);preparado&&typeof preparado==="object"&&!Array.isArray(preparado)&&(saida=preparado)}}catch(_erroPreparacao){}return saida}function persistirEstadoLocal(contexto={}){
+  try{
+    let estadoAnterior={};
+    try{
+      const brutoAnterior=localStorage.getItem(CHAVE);
+      const lidoAnterior=brutoAnterior?JSON.parse(brutoAnterior):{};
+      if(lidoAnterior&&typeof lidoAnterior==="object"&&!Array.isArray(lidoAnterior)) estadoAnterior=lidoAnterior;
+    }catch(_erroAnterior){}
+    const estadoPersistido=prepararEstadoParaPersistenciaLocal(estado);
+    let camposAlterados=[];
+    try{
+      if(window.EkoRealtimeFields?.camposAlterados){
+        camposAlterados=window.EkoRealtimeFields.camposAlterados(estadoAnterior,estadoPersistido);
+      }
+    }catch(_erroDiff){}
+    localStorage.setItem(CHAVE,JSON.stringify(estadoPersistido));
+    if(contexto.emitir!==false){
+      try{
+        window.dispatchEvent(new CustomEvent("shinobi:ficha-persistida",{detail:{
+          sheetName:String(fichaAtual||"Principal"),
+          savedAt:Date.now(),
+          confirmada:contexto.confirmada!==false,
+          confirmadaExplicita:contexto.confirmada===true,
+          origem:String(contexto.origem||"acao"),
+          campo:String(contexto.campo||""),
+          camposAlterados,
+          antes:contexto.antes,
+          depois:contexto.depois,
+          motivo:String(contexto.motivo||"persistencia")
+        }}));
+      }catch(_erroEvento){}
+    }
+    return true;
+  }catch(erro){
+    if(!avisoArmazenamentoExibido){
+      avisoArmazenamentoExibido=true;
+      alert("O armazenamento da ficha está cheio. Remova algumas imagens de fundo dos jutsus ou use imagens menores para continuar salvando.");
+    }
+    return false;
+  }
+}
+function sincronizarEstadoDosCampos(opcoes={}){const incluirPendentes=opcoes.incluirPendentes===true;obterCamposSalvaveis().forEach(c=>{if(!incluirPendentes&&c.dataset.shinobiEdicaoPendente==="1")return;estado[c.dataset.save]="checkbox"===c.type?c.checked:c.value})}function atualizarValoresConfirmadosDosCampos(){obterCamposSalvaveis().forEach(c=>{if(c.dataset.shinobiEdicaoPendente==="1")return;c.dataset.shinobiValorConfirmado=shinobiSerializarValorCampo(shinobiValorCampo(c));c.dataset.shinobiEdicaoPendente="0"})}function salvar(contexto={}){timerSalvar&&(clearTimeout(timerSalvar),timerSalvar=null),sincronizarEstadoDosCampos(),persistirEstadoLocal(contexto),atualizarValoresConfirmadosDosCampos(),atualizarPlacar(),atualizarPerfil()}function salvarAgendado(){timerSalvar&&clearTimeout(timerSalvar),timerSalvar=setTimeout(()=>{timerSalvar=null;shinobiAtualizarVisualSemSalvar()},180)}function salvarManual(){salvar({confirmada:true,origem:"manual",motivo:"salvamento-manual"}),alert("Ficha salva!")}function carregar(){obterCamposSalvaveis().forEach(c=>{void 0!==estado[c.dataset.save]&&("checkbox"===c.type?c.checked=estado[c.dataset.save]:c.value=estado[c.dataset.save]),c.dataset.shinobiValorConfirmado=shinobiSerializarValorCampo(shinobiValorCampo(c)),c.dataset.shinobiEdicaoPendente="0",c.dataset.saveListener||(c.dataset.saveListener="1",c.addEventListener("input",shinobiRegistrarEdicaoCampo),c.addEventListener("change",shinobiConfirmarEdicaoCampo))}),renderizarJutsus(),renderizarArmados(),renderizarNaturezas(),renderizarKekkeiGenkai(),renderizarInventario(),atualizarPlacar(),atualizarPerfil(),carregarAvatarSalvo(),carregarFundoPerfilSalvo()}function abrirPagina(id,botao){const pagina=document.getElementById(id);if(!pagina)return;document.querySelectorAll(".pagina").forEach(p=>p.classList.remove("ativa")),pagina.classList.add("ativa");const botoes=Array.from(document.querySelectorAll(".menu button"));botoes.forEach(b=>b.classList.remove("ativo"));const botaoFinal=botao||botoes.find(b=>{const onclick=b.getAttribute("onclick")||"";return onclick.includes("'"+id+"'")||onclick.includes('"'+id+'"')});if(botaoFinal&&botaoFinal.classList.add("ativo"),window.abasSwipe){const idx=window.abasSwipe.indexOf(id);idx>=0&&(window.abaSwipeAtual=idx)}}function atualizarPlacar(){let pv=document.getElementById("pv")?.value||0,chakra=document.getElementById("chakra")?.value||0;const pvView=document.getElementById("pvView"),chakraView=document.getElementById("chakraView");pvView&&(pvView.textContent=pv),chakraView&&(chakraView.textContent=chakra),atualizarHUD(),atualizarModificadoresBatalha()}function alterarValor(id,valor){const c=document.getElementById(id);if(!c)return;const atual=Number(c.value||0),delta=Number(valor);c.value=Math.max(0,(Number.isFinite(atual)?atual:0)+(Number.isFinite(delta)?delta:0)),c.dispatchEvent(new Event("input",{bubbles:!0}))}function log(txt){const l=document.getElementById("log");if(!l)return;"Nada aconteceu ainda."===l.textContent.trim()&&(l.innerHTML=""),l.innerHTML="• "+escaparHtmlShinobi(txt)+"<br>"+l.innerHTML}function registrarLog(txt){log(txt)}async function aplicarDano(){
   const dano=Number(document.getElementById("danoBatalha").value||0);
   const pv=document.getElementById("pv");
   const atual=Number(pv?.value||0);
@@ -181,7 +222,7 @@ const CHAVE_BASE="ficha_ninja_app_v2",CHAVE_LISTA="ficha_ninja_lista_v1",CHAVE_A
   if(!ok)return;
 
   if(pv)pv.value=novo;
-  salvar();
+  salvar({confirmada:true,origem:"batalha",motivo:"acao-confirmada"});
   log("Dano recebido: "+dano);
 }
 
@@ -195,7 +236,7 @@ async function gastarChakra(){
   if(!ok)return;
 
   if(ch)ch.value=novo;
-  salvar();
+  salvar({confirmada:true,origem:"batalha",motivo:"acao-confirmada"});
   log("Chakra gasto: "+custo);
 }
 
@@ -210,7 +251,7 @@ async function curarPV(v){
   if(!ok)return;
 
   if(pv)pv.value=novo;
-  salvar();
+  salvar({confirmada:true,origem:"batalha",motivo:"acao-confirmada"});
   log("Recuperou "+v+" PV");
 }
 
@@ -225,7 +266,7 @@ async function recuperarChakra(v){
   if(!ok)return;
 
   if(ch)ch.value=novo;
-  salvar();
+  salvar({confirmada:true,origem:"batalha",motivo:"acao-confirmada"});
   log("Recuperou "+v+" chakra");
 }
 
@@ -249,7 +290,7 @@ async function resetarBatalha(){
   if(custo)custo.value=1;
   if(logBox)logBox.innerHTML="Nada aconteceu ainda.";
 
-  salvar();
+  salvar({confirmada:true,origem:"batalha",motivo:"acao-confirmada"});
 
   document.querySelectorAll("[data-bonus-batalha]").forEach(input=>input.value=0);
   if(typeof bonusBatalhaAtributos!=="undefined"){
@@ -429,7 +470,7 @@ function salvarTopicosNotas(){
   garantirTopicosNotas();
 
   if(typeof persistirEstadoLocal === "function"){
-    persistirEstadoLocal();
+    persistirEstadoLocal({confirmada:true,origem:"notas",motivo:"notas-confirmadas"});
     return;
   }
 

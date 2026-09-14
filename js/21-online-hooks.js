@@ -114,58 +114,31 @@
 
   async function enviarAlteracaoConfirmada(detalhe={}){
     if(!window.ShinobiOnline) return;
-    const nome=texto(detalhe.sheetName)||fichaAtualNome();
+    if(detalhe.confirmadaExplicita!==true) return;
 
-    if(syncPorTurnoAtiva()){
-      /* O fechamento do turno continua sendo usado para a lógica da sala, mas
-         a nuvem da Conta Google não deve esperar o fim do turno. A mesma ficha
-         precisa aparecer atualizada no celular/tablet assim que a alteração é
-         confirmada em qualquer aparelho. */
-      marcarTurnoLocalPendente();
-      if(contaGoogleAtiva()){
-        window.ShinobiOnline.marcarFichaPendente?.(nome,{
-          motivo:texto(detalhe.motivo)||"alteracao-turno",
-          modo:"imediato"
-        });
-        try{
-          await window.ShinobiOnline.sincronizarFicha(nome,{
-            force:false,
-            backup:false,
-            motivo:texto(detalhe.motivo)||"alteracao-turno",
-            modo:"imediato"
-          });
-        }catch(erro){
-          window.ShinobiOnline.marcarFichaPendente?.(nome,{motivo:"falha-envio-turno",modo:"imediato"});
-          window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
-            detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
-          }));
-        }
-      }
-      return;
-    }
+    const nome=texto(detalhe.sheetName)||fichaAtualNome();
+    const motivo=texto(detalhe.motivo)||"alteracao-confirmada";
+    const campos=Array.isArray(detalhe.camposAlterados)
+      ? [...new Set(detalhe.camposAlterados.map(texto).filter(campo=>campo&&window.EkoRealtimeFields?.campoPermitido?.(campo)!==false))]
+      : [];
+    const emTurno=syncPorTurnoAtiva();
+
+    if(emTurno) marcarTurnoLocalPendente();
 
     if(!contaGoogleAtiva()){
-      await sincronizarResumoParticipante();
+      if(!emTurno) await sincronizarResumoParticipante();
       return;
     }
 
-    window.ShinobiOnline.marcarFichaPendente?.(nome,{
-      motivo:texto(detalhe.motivo)||"alteracao-confirmada",
-      modo:"imediato"
-    });
+    if(!campos.length) return;
+
     try{
-      await window.ShinobiOnline.sincronizarFicha(nome,{
-        force:false,
-        backup:texto(detalhe.motivo)==="salvamento-manual",
-        motivo:texto(detalhe.motivo)||"alteracao-confirmada",
-        modo:"imediato"
-      });
-      await sincronizarResumoParticipante();
+      if(!window.ShinobiOnline.sincronizarCamposFicha){
+        throw new Error("Motor de sincronização granular indisponível.");
+      }
+      await window.ShinobiOnline.sincronizarCamposFicha(nome,campos,{motivo});
+      if(!emTurno) await sincronizarResumoParticipante();
     }catch(erro){
-      window.ShinobiOnline.marcarFichaPendente?.(nome,{
-        motivo:"falha-envio-confirmado",
-        modo:"imediato"
-      });
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
         detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}
       }));
@@ -181,7 +154,7 @@
        turno, a cópia local fica segura e a nuvem recebe um único pacote ao
        confirmar o encerramento do turno. */
     window.addEventListener("shinobi:ficha-persistida",evento=>{
-      if(evento?.detail?.confirmada===false) return;
+      if(evento?.detail?.confirmadaExplicita!==true) return;
       enviarAlteracaoConfirmada(evento?.detail||{}).catch(()=>{});
     });
 
