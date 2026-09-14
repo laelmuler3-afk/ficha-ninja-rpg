@@ -2362,14 +2362,24 @@
     if(!dados) return null;
     dados=garantirMetadadosFichaLocal(nome,dados);
     dados.__online=dados.__online&&typeof dados.__online==="object"?dados.__online:{};
-    const donoRealtime=texto(dados.__online.realtimeOwnerUid);
-    let realtimeId=texto(dados.__online.realtimeId);
-    if(!realtimeId||donoRealtime!==uid){
-      realtimeId=sheetIdDeterministico(uid,nome).replace(/^sheet_/,"rt_");
-    }
+    const resolvedor=window.EkoCharacterIdentity?.resolveCharacterIdentity;
+    const resolvida=typeof resolvedor==="function"?resolvedor({
+      uid,
+      name:nome,
+      characterId:texto(dados.__online.characterId),
+      characterOwnerUid:texto(dados.__online.characterOwnerUid),
+      realtimeId:texto(dados.__online.realtimeId),
+      realtimeOwnerUid:texto(dados.__online.realtimeOwnerUid),
+      deterministicId:(conta,nomeFicha)=>sheetIdDeterministico(conta,nomeFicha).replace(/^sheet_/,"rt_")
+    }):null;
+    const realtimeId=texto(resolvida?.realtimeId)||texto(dados.__online.realtimeId)||sheetIdDeterministico(uid,nome).replace(/^sheet_/,"rt_");
+    const characterId=texto(resolvida?.characterId)||realtimeId;
+    dados.__online.characterId=characterId;
+    dados.__online.characterOwnerUid=uid;
+    dados.__online.characterIdentityVersion=1;
     dados.__online.realtimeId=realtimeId;
     dados.__online.realtimeOwnerUid=uid;
-    dados.__online.realtimeIdentityVersion=1;
+    dados.__online.realtimeIdentityVersion=2;
     try{
       localStorage.setItem(chave,JSON.stringify(dados));
       if(nome===ativo&&typeof window.estado!=="undefined"&&window.estado&&typeof window.estado==="object"){
@@ -2377,7 +2387,7 @@
       }
     }catch(_erro){}
     return {
-      name:nome,key:chave,sheetId:texto(dados.__online.sheetId),realtimeId,
+      name:nome,key:chave,sheetId:texto(dados.__online.sheetId),characterId,realtimeId,
       level:Number(dados.nivel||1),characterName:texto(dados.nome)||nome,
       data:dados,storageExists:true,syncDisabled:Boolean(dados.__online?.syncDisabled)
     };

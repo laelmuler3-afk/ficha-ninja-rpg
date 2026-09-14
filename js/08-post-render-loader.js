@@ -1,10 +1,10 @@
-/* EKO 2.5.8.74 — carrega atualização e online somente após a ficha estar utilizável. */
+/* EKO 2.5.8.75 — carrega atualização e online somente após a ficha estar utilizável. */
 (function(){
   "use strict";
-  if(window.__shinobiPostRenderLoaderV25874) return;
-  window.__shinobiPostRenderLoaderV25874=true;
+  if(window.__shinobiPostRenderLoaderV25875) return;
+  window.__shinobiPostRenderLoaderV25875=true;
 
-  var versao=String(document.documentElement.getAttribute("data-app-version")||window.APP_VERSION||"2.5.8.74");
+  var versao=String(document.documentElement.getAttribute("data-app-version")||window.APP_VERSION||"2.5.8.75");
 
   function url(caminho){
     return caminho+"?v="+encodeURIComponent(versao);
@@ -50,6 +50,7 @@
     window.__shinobiOnlineStackLoading=true;
     var arquivos=[
       "js/18-online-config.js",
+      "js/19-character-identity.js",
       "js/19-online-core.js",
       "js/19-realtime-fields-utils.js",
       "js/19-realtime-sync-engine.js",

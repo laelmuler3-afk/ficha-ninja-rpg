@@ -1,4 +1,4 @@
-/* EKO 2.5.8.74 — realtime lazy, por campo e fora do caminho de boot. */
+/* EKO 2.5.8.75 — realtime lazy, por campo e fora do caminho de boot. */
 (function(root,factory){
   const emNode=typeof module!=="undefined"&&module.exports;
   const util=emNode?require("./19-realtime-fields-utils.js"):root?.EkoRealtimeFields;
@@ -31,6 +31,9 @@
   function campoParaChave(campo){return util?.campoParaChave?util.campoParaChave(campo):encodeURIComponent(texto(campo)).replace(/\./g,"%2E");}
   function campoPermitido(campo){return util?.campoPermitido?util.campoPermitido(campo):Boolean(texto(campo));}
   function normalizarValor(campo,valor){return util?.normalizarValorParaNuvem?util.normalizarValorParaNuvem(campo,valor):clonar(valor);}
+  function realtimeIdDaFicha(ficha){
+    return texto(ficha?.characterId||ficha?.data?.__online?.characterId||ficha?.realtimeId||ficha?.data?.__online?.realtimeId||"");
+  }
   function criarOperacaoPura({sheetId,sheetName,campo,valor,editAt,deviceId,opId,uid=""}){
     const nome=texto(campo);
     const deleted=valor===undefined;
@@ -42,7 +45,7 @@
     return op;
   }
 
-  const test={compararRegistros,registroMaisNovo,criarOperacaoPura};
+  const test={compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha};
 
   function install(){
     if(!root||!root.document||root.__ekoRealtimeLazyV2)return false;
@@ -100,10 +103,6 @@
         return atual;
       }catch(_e){return null;}
     }
-    function realtimeIdDaFicha(ficha){
-      return texto(ficha?.realtimeId||ficha?.data?.__online?.realtimeId||"");
-    }
-
     function registrarVersao(sheetId,campo,registro,uid=uidAtual()){
       if(!uid||!sheetId||!campo||!registro)return;
       const todos=lerVersoes(uid);
