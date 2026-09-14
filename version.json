@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.73",
-  "name": "Realtime — áreas editáveis confirmadas",
-  "notes": "Amplia a sincronização granular para jutsus, ataques, Kekkei Genkai, naturezas, resistências, inventário/carteira, efeitos de batalha e progressão. Apenas alterações explicitamente confirmadas geram operações realtime; persistências internas continuam locais.",
+  "version": "2.5.8.74",
+  "name": "Estabilidade multi-dispositivo pós-render",
+  "notes": "Adia atualizador, Firebase e realtime até a ficha estar renderizada; reduz o precache obrigatório, remove verificação de update durante navegação e agrupa renderizações remotas para aparelhos mais lentos.",
   "date": "2026-09-14"
 }

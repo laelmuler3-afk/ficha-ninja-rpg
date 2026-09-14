@@ -1,12 +1,12 @@
-/* Ficha Ninja RPG 2.5.8.73 — sincronização multi-dispositivo segura e atualização PWA.
+/* Ficha Ninja RPG 2.5.8.74 — sincronização multi-dispositivo segura e atualização PWA.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.73";
+const APP_VERSION = "2.5.8.74";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
 const FIREBASE_CACHE = `${CACHE_PREFIX}-firebase-${APP_VERSION}`;
-const LIMITE_DOWNLOADS_SIMULTANEOS = 5;
+const LIMITE_DOWNLOADS_SIMULTANEOS = 1;
 
 const FIREBASE_VERSION = "12.16.0";
 const FIREBASE_GSTATIC_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
@@ -53,6 +53,7 @@ const APP_SHELL = [
   `./js/06-inventory.js?v=${APP_VERSION}`,
   `./js/07-profile.js?v=${APP_VERSION}`,
   `./js/08-update.js?v=${APP_VERSION}`,
+  `./js/08-post-render-loader.js?v=${APP_VERSION}`,
   `./js/10-regras-natureza.js?v=${APP_VERSION}`,
   `./js/11-batalha-ui.js?v=${APP_VERSION}`,
   `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
@@ -74,89 +75,6 @@ const APP_SHELL = [
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
-  `./assets/ui-background-main.jpg?v=${APP_VERSION}`,
-  `./assets/ui-notes-scroll.webp?v=${APP_VERSION}`,
-  `./assets/icons/attributes.svg?v=${APP_VERSION}`,
-  `./assets/icons/attributes-reference.png?v=${APP_VERSION}`,
-  `./assets/icons/jutsu-reference.png?v=${APP_VERSION}`,
-  `./assets/icons/speed-reference.png?v=${APP_VERSION}`,
-  `./assets/icons/battle.svg?v=${APP_VERSION}`,
-  `./assets/icons/bonus.svg?v=${APP_VERSION}`,
-  `./assets/icons/book.svg?v=${APP_VERSION}`,
-  `./assets/icons/chakra.svg?v=${APP_VERSION}`,
-  `./assets/icons/chevron-down.svg?v=${APP_VERSION}`,
-  `./assets/icons/chevron-up.svg?v=${APP_VERSION}`,
-  `./assets/icons/close.svg?v=${APP_VERSION}`,
-  `./assets/icons/cloud.svg?v=${APP_VERSION}`,
-  `./assets/icons/dna.svg?v=${APP_VERSION}`,
-  `./assets/icons/download.svg?v=${APP_VERSION}`,
-  `./assets/icons/duplicate.svg?v=${APP_VERSION}`,
-  `./assets/icons/earth.svg?v=${APP_VERSION}`,
-  `./assets/icons/edit.svg?v=${APP_VERSION}`,
-  `./assets/icons/eye.svg?v=${APP_VERSION}`,
-  `./assets/icons/fist.svg?v=${APP_VERSION}`,
-  `./assets/icons/heal.svg?v=${APP_VERSION}`,
-  `./assets/icons/heart.svg?v=${APP_VERSION}`,
-  `./assets/icons/image.svg?v=${APP_VERSION}`,
-  `./assets/icons/initiative.svg?v=${APP_VERSION}`,
-  `./assets/icons/inventory.svg?v=${APP_VERSION}`,
-  `./assets/icons/jutsu.svg?v=${APP_VERSION}`,
-  `./assets/icons/leaf.svg?v=${APP_VERSION}`,
-  `./assets/icons/lightning.svg?v=${APP_VERSION}`,
-  `./assets/icons/menu.svg?v=${APP_VERSION}`,
-  `./assets/icons/more.svg?v=${APP_VERSION}`,
-  `./assets/icons/notes.svg?v=${APP_VERSION}`,
-  `./assets/icons/plus.svg?v=${APP_VERSION}`,
-  `./assets/icons/profile.svg?v=${APP_VERSION}`,
-  `./assets/icons/save.svg?v=${APP_VERSION}`,
-  `./assets/icons/settings.svg?v=${APP_VERSION}`,
-  `./assets/icons/shield.svg?v=${APP_VERSION}`,
-  `./assets/icons/shuriken.svg?v=${APP_VERSION}`,
-  `./assets/icons/store.svg?v=${APP_VERSION}`,
-  `./assets/icons/sword.svg?v=${APP_VERSION}`,
-  `./assets/icons/sync.svg?v=${APP_VERSION}`,
-  `./assets/icons/target.svg?v=${APP_VERSION}`,
-  `./assets/icons/trash.svg?v=${APP_VERSION}`,
-  `./assets/icons/upload.svg?v=${APP_VERSION}`,
-  `./assets/icons/wallet.svg?v=${APP_VERSION}`,
-  `./assets/icons/water.svg?v=${APP_VERSION}`,
-  `./assets/icons/wind.svg?v=${APP_VERSION}`,
-  `./assets/icons/wing.svg?v=${APP_VERSION}`,
-  `./assets/inventory-agulhas.webp?v=${APP_VERSION}`,
-  `./assets/inventory-comida.webp?v=${APP_VERSION}`,
-  `./assets/inventory-esfera.webp?v=${APP_VERSION}`,
-  `./assets/inventory-fio-de-nilon.webp?v=${APP_VERSION}`,
-  `./assets/inventory-kunai.webp?v=${APP_VERSION}`,
-  `./assets/inventory-moeda-de-bronze.webp?v=${APP_VERSION}`,
-  `./assets/inventory-moeda-de-platina.webp?v=${APP_VERSION}`,
-  `./assets/inventory-moeda-de-ouro.webp?v=${APP_VERSION}`,
-  `./assets/inventory-moeda-de-prata.webp?v=${APP_VERSION}`,
-  `./assets/inventory-papel-bomba.webp?v=${APP_VERSION}`,
-  `./assets/inventory-pedra-da-familia.webp?v=${APP_VERSION}`,
-  `./assets/inventory-pergaminho-de-selamento.webp?v=${APP_VERSION}`,
-  `./assets/inventory-pilula-de-chakra.webp?v=${APP_VERSION}`,
-  `./assets/inventory-repelente.webp?v=${APP_VERSION}`,
-  `./assets/inventory-shuriken.webp?v=${APP_VERSION}`,
-  `./assets/inventory-foice-curta.webp?v=${APP_VERSION}`,
-  `./assets/inventory-bastao.webp?v=${APP_VERSION}`,
-  `./assets/inventory-zarabatana.webp?v=${APP_VERSION}`,
-  `./assets/inventory-balista.webp?v=${APP_VERSION}`,
-  `./assets/inventory-funda.webp?v=${APP_VERSION}`,
-  `./assets/inventory-arco-composto.webp?v=${APP_VERSION}`,
-  `./assets/inventory-arco-longo.webp?v=${APP_VERSION}`,
-  `./assets/inventory-arco-curto.webp?v=${APP_VERSION}`,
-  `./assets/inventory-shuriken-de-vento.webp?v=${APP_VERSION}`,
-  `./assets/inventory-tanto.webp?v=${APP_VERSION}`,
-  `./assets/inventory-dispositivo-de-disparo.webp?v=${APP_VERSION}`,
-  `./assets/inventory-wakizaki.webp?v=${APP_VERSION}`,
-  `./assets/inventory-nunchaku.webp?v=${APP_VERSION}`,
-  `./assets/inventory-katana.webp?v=${APP_VERSION}`,
-  `./assets/inventory-corrente.webp?v=${APP_VERSION}`,
-  `./assets/inventory-chicote.webp?v=${APP_VERSION}`,
-  `./assets/inventory-lanca.webp?v=${APP_VERSION}`,
-  `./assets/inventory-kit-medico.webp?v=${APP_VERSION}`,
-  `./icon_192x192.png?v=${APP_VERSION}`,
-  `./icon_512x512.png?v=${APP_VERSION}`
 ];
 
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
@@ -457,10 +375,9 @@ async function responderFirebase(request){
 }
 
 self.addEventListener("install",event=>{
-  event.waitUntil(Promise.all([
-    instalarAppShell(),
-    prepararCacheFirebase().catch(()=>{})
-  ]));
+  /* Instala somente o shell de código. Firebase e assets pesados entram sob demanda,
+     depois que o aplicativo já está utilizável. */
+  event.waitUntil(instalarAppShell());
 });
 
 self.addEventListener("activate",event=>{
@@ -486,7 +403,6 @@ self.addEventListener("fetch",event=>{
   if(url.pathname.endsWith("/version.json")) return;
 
   if(request.mode==="navigate"){
-    event.waitUntil(self.registration.update().catch(()=>{}));
     event.respondWith(abrirPaginaPrincipal(request));
     return;
   }

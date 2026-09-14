@@ -1,70 +1,93 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-app-version="2.5.8.73">
+<html lang="pt-BR" data-app-version="2.5.8.74">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Ficha Ninja RPG</title>
-<link rel="manifest" href="manifest.json?v=2.5.8.73">
+<link rel="manifest" href="manifest.json?v=2.5.8.74">
 <meta name="theme-color" content="#000000">
 <script>
 window.APP_VERSION=document.documentElement.dataset.appVersion;
-/* Bootstrap mínimo fora do cache dos módulos: ao receber um index novo,
-   registra explicitamente o worker daquela versão. Isso evita que um PWA
-   instalado fique preso a um service-worker.js antigo em alguns navegadores. */
-if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>{
-    const v=encodeURIComponent(String(window.APP_VERSION||""));
-    navigator.serviceWorker.register(`./service-worker.js?v=${v}`,{scope:"./",updateViaCache:"none"}).catch(()=>{});
-  },{once:true});
-}
+/* Gate único de prontidão: todos os dispositivos seguem a mesma regra.
+   A ficha termina de carregar/pintar antes de atualização, Firebase ou realtime. */
+(function(){
+  if(window.ShinobiAppReady) return;
+  var pronto=false, fila=[], agendado=false;
+  function executar(fn){
+    if(typeof fn!=="function") return;
+    if(pronto){ setTimeout(fn,0); return; }
+    fila.push(fn);
+  }
+  function liberar(){
+    if(pronto) return;
+    pronto=true;
+    var pendentes=fila.splice(0);
+    pendentes.forEach(function(fn){ try{ fn(); }catch(erro){ console.warn("Tarefa pós-render falhou sem bloquear a ficha.",erro); } });
+    try{ window.dispatchEvent(new CustomEvent("shinobi:app-pronto")); }catch(_erro){}
+  }
+  function aposPintura(){
+    var raf=window.requestAnimationFrame||function(cb){ return setTimeout(cb,16); };
+    raf(function(){
+      raf(function(){
+        if(typeof window.requestIdleCallback==="function"){
+          window.requestIdleCallback(liberar,{timeout:2500});
+        }else{
+          setTimeout(liberar,700);
+        }
+      });
+    });
+  }
+  function agendar(){
+    if(agendado) return;
+    agendado=true;
+    var iniciar=function(){ setTimeout(aposPintura,350); };
+    if(document.readyState==="complete") iniciar();
+    else window.addEventListener("load",iniciar,{once:true});
+  }
+  window.ShinobiAppReady={executar:executar,isReady:function(){return pronto;}};
+  agendar();
+})();
 </script>
-<link rel="stylesheet" href="css/app.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/carteira-v233.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/update.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/catalogo.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/regras-natureza.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/batalha-viva.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/level-up.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/pericias.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/online.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/organizacao-retratil.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/shinobi-theme.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/design-system-eko.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/perfil-home.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/cabecalho-navegacao-passo3.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/status.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/combate.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/jutsus.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/loja-v25843.css?v=2.5.8.73">
-<link rel="stylesheet" href="css/notas.css?v=2.5.8.73">
-<script defer src="js/00-shinobi-ui.js?v=2.5.8.73"></script>
-<script defer src="js/08-update.js?v=2.5.8.73"></script>
-<script defer src="js/01-core.js?v=2.5.8.73"></script>
-<script defer src="js/02-runtime.js?v=2.5.8.73"></script>
-<script defer src="js/03-images.js?v=2.5.8.73"></script>
-<script defer src="js/04-jutsus.js?v=2.5.8.73"></script>
-<script defer src="js/09-catalogo.js?v=2.5.8.73"></script>
-<script defer src="js/05-battle.js?v=2.5.8.73"></script>
-<script defer src="js/06-inventory.js?v=2.5.8.73"></script>
-<script defer src="js/07-profile.js?v=2.5.8.73"></script>
-<script defer src="js/10-regras-natureza.js?v=2.5.8.73"></script>
-<script defer src="js/11-batalha-ui.js?v=2.5.8.73"></script>
-<script defer src="js/12-efeitos-jutsus.js?v=2.5.8.73"></script>
-<script defer src="js/13-motor-universal.js?v=2.5.8.73"></script>
-<script defer src="js/14-level-up.js?v=2.5.8.73"></script>
-<script defer src="js/15-testes-resistencia.js?v=2.5.8.73"></script>
-<script defer src="js/16-pericias.js?v=2.5.8.73"></script>
-<script defer src="js/17-dano-inteligente.js?v=2.5.8.73"></script>
-<script defer src="js/18-online-config.js?v=2.5.8.73"></script>
-<script defer src="js/19-online-core.js?v=2.5.8.73"></script>
-<script defer src="js/19-realtime-fields-utils.js?v=2.5.8.73"></script>
-<script defer src="js/19-realtime-sync-engine.js?v=2.5.8.73"></script>
-<script defer src="vendor/qrcode-local.js?v=2.5.8.73"></script>
-<script defer src="js/20-online-ui.js?v=2.5.8.73"></script>
-<script defer src="js/21-online-hooks.js?v=2.5.8.73"></script>
-<script defer src="js/22-organizacao-retratil.js?v=2.5.8.73"></script>
-<script defer src="js/23-security-hardening.js?v=2.5.8.73"></script>
-<script defer src="js/24-terminologia-eko.js?v=2.5.8.73"></script>
+<link rel="stylesheet" href="css/app.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/carteira-v233.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/update.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/catalogo.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/regras-natureza.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/batalha-viva.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/level-up.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/pericias.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/online.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/organizacao-retratil.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/shinobi-theme.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/design-system-eko.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/perfil-home.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/cabecalho-navegacao-passo3.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/status.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/combate.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/jutsus.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/loja-v25843.css?v=2.5.8.74">
+<link rel="stylesheet" href="css/notas.css?v=2.5.8.74">
+<script defer src="js/00-shinobi-ui.js?v=2.5.8.74"></script>
+<script defer src="js/01-core.js?v=2.5.8.74"></script>
+<script defer src="js/02-runtime.js?v=2.5.8.74"></script>
+<script defer src="js/03-images.js?v=2.5.8.74"></script>
+<script defer src="js/04-jutsus.js?v=2.5.8.74"></script>
+<script defer src="js/09-catalogo.js?v=2.5.8.74"></script>
+<script defer src="js/05-battle.js?v=2.5.8.74"></script>
+<script defer src="js/06-inventory.js?v=2.5.8.74"></script>
+<script defer src="js/07-profile.js?v=2.5.8.74"></script>
+<script defer src="js/10-regras-natureza.js?v=2.5.8.74"></script>
+<script defer src="js/11-batalha-ui.js?v=2.5.8.74"></script>
+<script defer src="js/12-efeitos-jutsus.js?v=2.5.8.74"></script>
+<script defer src="js/13-motor-universal.js?v=2.5.8.74"></script>
+<script defer src="js/14-level-up.js?v=2.5.8.74"></script>
+<script defer src="js/15-testes-resistencia.js?v=2.5.8.74"></script>
+<script defer src="js/16-pericias.js?v=2.5.8.74"></script>
+<script defer src="js/17-dano-inteligente.js?v=2.5.8.74"></script>
+<script defer src="js/22-organizacao-retratil.js?v=2.5.8.74"></script>
+<script defer src="js/23-security-hardening.js?v=2.5.8.74"></script>
+<script defer src="js/24-terminologia-eko.js?v=2.5.8.74"></script>
+<script defer src="js/08-post-render-loader.js?v=2.5.8.74"></script>
 </head>
 <body>
   <div class="app">
@@ -101,7 +124,7 @@ if("serviceWorker" in navigator){
       <section id="shinobiAtualizacaoPainel" class="shinobiAtualizacaoPainel" aria-label="Atualização do aplicativo">
         <div class="shinobiAtualizacaoPainel__linha">
           <span class="shinobiAtualizacaoPainel__rotulo">Versão instalada</span>
-          <strong id="shinobiVersaoInstalada" class="shinobiAtualizacaoPainel__versao">v2.5.8.73</strong>
+          <strong id="shinobiVersaoInstalada" class="shinobiAtualizacaoPainel__versao">v2.5.8.74</strong>
         </div>
         <div id="shinobiStatusAtualizacao" class="shinobiAtualizacaoPainel__status" role="status" aria-live="polite">Iniciando verificação...</div>
         <button id="shinobiVerificarAtualizacao" class="shinobiAtualizacaoPainel__botao" type="button">Verificar atualização</button>
