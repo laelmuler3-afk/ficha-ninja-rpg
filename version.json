@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.74",
-  "name": "Estabilidade multi-dispositivo pós-render",
-  "notes": "Adia atualizador, Firebase e realtime até a ficha estar renderizada; reduz o precache obrigatório, remove verificação de update durante navegação e agrupa renderizações remotas para aparelhos mais lentos.",
+  "version": "2.5.8.75",
+  "name": "CharacterId permanente",
+  "notes": "Adiciona identidade permanente por personagem sem alterar o caminho realtime já em uso; renomear a ficha não muda a sincronização e outra Conta Google não herda a identidade anterior.",
   "date": "2026-09-14"
 }
