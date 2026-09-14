@@ -203,10 +203,10 @@
     return /(?:^|:)\s*Kai(?:\s|\(|$)/i.test(nome);
   }
 
-  function persistirEstadoSeguro(){
+  function persistirEstadoSeguro(contexto={}){
     try{
-      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal();
-      if(typeof window.persistirEstadoLocal === "function") return window.persistirEstadoLocal();
+      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal(contexto);
+      if(typeof window.persistirEstadoLocal === "function") return window.persistirEstadoLocal(contexto);
       if(typeof CHAVE !== "undefined"){
         localStorage.setItem(CHAVE, JSON.stringify(estado));
         return true;
@@ -685,22 +685,37 @@
     });
   }
 
-  function definirAtributoConjuracaoNaturezaComRegras(atributoId){
+  async function definirAtributoConjuracaoNaturezaComRegras(atributoId){
     const id = String(atributoId || "").trim();
-    estado.atributoConjuracaoNatureza = ATRIBUTO_POR_ID.has(id) ? id : "";
-    persistirEstadoSeguro();
+    const novo=ATRIBUTO_POR_ID.has(id) ? id : "";
+    const atual=String(estado.atributoConjuracaoNatureza||"");
+    if(novo===atual) return;
+    const rotuloNovo=ATRIBUTO_POR_ID.get(novo)?.nome||novo||"Automático";
+    const rotuloAtual=ATRIBUTO_POR_ID.get(atual)?.nome||atual||"Automático";
+    const confirmado=typeof modalShinobi==="function"
+      ? await modalShinobi("Confirmar alteração?",`Atributo de conjuração: ${rotuloAtual} → ${rotuloNovo}`)
+      : confirm(`Atributo de conjuração: ${rotuloAtual} → ${rotuloNovo}`);
+    if(!confirmado) return;
+    estado.atributoConjuracaoNatureza = novo;
+    persistirEstadoSeguro({confirmada:true,origem:"natureza",campo:"atributoConjuracaoNatureza",motivo:"alteracao-confirmada"});
     agendarAtualizacaoCompleta();
   }
 
-  function definirNaturezaComRegras(id, nivel){
+  async function definirNaturezaComRegras(id, nivel){
     if(!NATUREZA_POR_ID.has(id)) return;
     const nivelClicado = limitarNivel(nivel);
     const nivelAtual = nivelNatureza(id);
     const nivelFinal = nivelAtual === nivelClicado ? 0 : nivelClicado;
+    if(nivelFinal===nivelAtual) return;
+    const natureza=NATUREZA_POR_ID.get(id);
+    const confirmado=typeof modalShinobi==="function"
+      ? await modalShinobi("Confirmar alteração?",`${natureza?.nome||id}: nível ${nivelAtual} → ${nivelFinal}`)
+      : confirm(`${natureza?.nome||id}: nível ${nivelAtual} → ${nivelFinal}`);
+    if(!confirmado) return;
 
     estado[id] = nivelFinal;
     if(nivelFinal >= 5) aplicarNivel5NaNatureza(id, {persistir:false});
-    persistirEstadoSeguro();
+    persistirEstadoSeguro({confirmada:true,origem:"natureza",campos:[id,"jutsus"],motivo:"alteracao-confirmada"});
     agendarAtualizacaoCompleta();
   }
 
@@ -814,8 +829,8 @@
       chakra.value = Math.max(0, chakraAtual - Math.max(0, custoNumero));
     }
 
-    if(typeof salvar === "function") salvar();
-    else persistirEstadoSeguro();
+    if(typeof salvar === "function") salvar({confirmada:true,origem:"jutsu",campo:"chakra",antes:chakraAtual,depois:chakra?Number(chakra.value):chakraAtual,motivo:"alteracao-confirmada"});
+    else persistirEstadoSeguro({confirmada:true,origem:"jutsu",campo:"chakra",motivo:"alteracao-confirmada"});
 
     const danoLog = danoTotal && danoTotal !== "—" ? ` | Dano: ${danoTotal}` : "";
     const custoLog = custoNumero !== null && custoNumero > 0 ? ` | Chakra: -${custoNumero}` : "";

@@ -1,4 +1,4 @@
-/* EKO 2.5.8.72 — realtime lazy, por campo e fora do caminho de boot. */
+/* EKO 2.5.8.73 — realtime lazy, por campo e fora do caminho de boot. */
 (function(root,factory){
   const emNode=typeof module!=="undefined"&&module.exports;
   const util=emNode?require("./19-realtime-fields-utils.js"):root?.EkoRealtimeFields;
@@ -178,10 +178,24 @@
       }catch(_e){}
       const chamar=nome=>{try{if(typeof root[nome]==="function")root[nome]();}catch(_e){}};
       if(conjunto.has("notasTopicos")||conjunto.has("notas"))chamar("renderizarTopicosNotas");
-      if(conjunto.has("inventarioItens")||conjunto.has("inventario"))chamar("renderizarInventario");
+      if(conjunto.has("inventarioItens")||conjunto.has("inventario")||conjunto.has("carteira")||conjunto.has("carteiraHistorico"))chamar("renderizarInventario");
       if(conjunto.has("jutsus"))chamar("renderizarJutsus");
       if(conjunto.has("armados"))chamar("renderizarArmados");
       if(conjunto.has("kekkeiGenkai"))chamar("renderizarKekkeiGenkai");
+      if(conjunto.has("resistenciasEscolhidas"))chamar("renderizarResistenciasBatalha");
+      if(conjunto.has("bonusAtivos")||conjunto.has("bonusCA"))chamar("atualizarBonusGeralRealtime");
+      if(conjunto.has("efeitosBatalhaAtivos")){
+        try{root.EfeitosJutsuShinobi?.atualizar?.();}catch(_e){}
+        chamar("atualizarHUD");
+        chamar("atualizarDefesasTotaisBatalha");
+      }
+      if(conjunto.has("progressaoFixa")){try{root.shinobiLevelUp?.refresh?.();}catch(_e){}}
+      if(lista.some(c=>["katon","raiton","fuuton","suiton","doton","yin","yang","atributoConjuracaoNatureza"].includes(c))){
+        chamar("renderizarNaturezas");
+        chamar("renderizarJutsus");
+        chamar("renderizarResistenciasBatalha");
+        chamar("atualizarPerfil");
+      }
       if(lista.some(c=>["forca","destreza","constituicao","inteligencia","sabedoria","carisma","ca","cd","proficiencia"].includes(c)||c.startsWith("p_"))){
         chamar("atualizarModificadoresBatalha");
         chamar("atualizarBonusPericias");

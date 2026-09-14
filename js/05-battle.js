@@ -214,10 +214,10 @@
 
   const NOMES=new Map(GRUPOS.flatMap(grupo=>grupo.itens.map(item=>[item.id,item.nome])));
 
-  function salvar(){
+  function salvar(contexto={}){
     try{
       if(typeof sincronizarEstadoDosCampos==="function") sincronizarEstadoDosCampos();
-      if(typeof persistirEstadoLocal==="function") return persistirEstadoLocal();
+      if(typeof persistirEstadoLocal==="function") return persistirEstadoLocal(contexto);
       if(typeof CHAVE!=="undefined"){
         localStorage.setItem(CHAVE,JSON.stringify(estado));
         return true;
@@ -260,11 +260,18 @@
     return painel;
   }
 
-  window.toggleResistenciaBatalha=function(id){
+  window.toggleResistenciaBatalha=async function(id){
     if(!NOMES.has(id)) return;
     const resistencias=obterEstado();
-    resistencias[id]?delete resistencias[id]:resistencias[id]=true;
-    salvar();
+    const estavaAtiva=Boolean(resistencias[id]);
+    const acao=estavaAtiva?"Remover":"Adicionar";
+    const mensagem=`${acao} ${NOMES.get(id)} nas resistências da ficha?`;
+    const confirmado=typeof modalShinobi==="function"
+      ? await modalShinobi("Confirmar alteração?",mensagem)
+      : confirm(mensagem);
+    if(!confirmado) return;
+    estavaAtiva?delete resistencias[id]:resistencias[id]=true;
+    salvar({confirmada:true,origem:"resistencias",campo:"resistenciasEscolhidas",motivo:"alteracao-confirmada"});
     window.renderizarResistenciasBatalha();
   };
 

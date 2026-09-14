@@ -456,8 +456,8 @@
     });
   }
 
-  function persistirSeguro(){
-    if(typeof persistirEstadoLocal==="function") return persistirEstadoLocal();
+  function persistirSeguro(contexto={}){
+    if(typeof persistirEstadoLocal==="function") return persistirEstadoLocal(contexto);
     try{
       localStorage.setItem(CHAVE,JSON.stringify(estado));
       return true;
@@ -1044,7 +1044,7 @@
         if(campoProf) campoProf.value=String(depois.proficiencia);
       }
 
-      if(!persistirSeguro()) throw new Error("Não foi possível salvar a evolução.");
+      if(!persistirSeguro({confirmada:true,origem:"level-up",campos:["nivel","proficiencia","pv","pvMax","chakra","chakraMax","progressaoFixa"],motivo:"alteracao-confirmada"})) throw new Error("Não foi possível salvar a evolução.");
       fecharModal();
       atualizarIntegracoes();
       const mensagem=inicial
@@ -1089,7 +1089,7 @@
         appliedAt:instante,
         resources:{status:"preserved-existing",snapshot:recursosAtuais()}
       });
-      if(!persistirSeguro()) throw new Error("Falha ao salvar.");
+      if(!persistirSeguro({confirmada:true,origem:"level-up",campo:"progressaoFixa",motivo:"alteracao-confirmada"})) throw new Error("Falha ao salvar.");
       fecharModal();
       atualizarIntegracoes();
       if(typeof avisoShinobi==="function") avisoShinobi("Valores preservados","O histórico de PV e Chakra começará no próximo Level Up.");
@@ -1131,7 +1131,7 @@
       garantirEstruturaProgressao();
       estado.progressaoFixa.choices[id]=selecionada;
       estado.progressaoFixa.history.push({type:"completed-choice",level:inteiro(escolha?.level,nivelAtual()),choice:{id,value:selecionada},appliedAt:new Date().toISOString()});
-      if(!persistirSeguro()) throw new Error("Falha ao salvar.");
+      if(!persistirSeguro({confirmada:true,origem:"level-up",campo:"progressaoFixa",motivo:"alteracao-confirmada"})) throw new Error("Falha ao salvar.");
       fecharModal();
       atualizarIntegracoes();
       if(escolhasPendentesAte(nivelAtual()).length) abrirEscolhasPendentes();
@@ -1263,7 +1263,7 @@
   function confirmarRevisaoRetroativa(){
     garantirEstruturaProgressao();
     estado.progressaoFixa.retroactiveReviewPending=false;
-    persistirSeguro();
+    persistirSeguro({confirmada:true,origem:"level-up",campo:"progressaoFixa",motivo:"alteracao-confirmada"});
     fecharModal();
     atualizarIntegracoes();
     if(escolhasPendentesAte(nivelAtual()).length) abrirEscolhasPendentes();

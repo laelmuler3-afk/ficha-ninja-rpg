@@ -214,10 +214,11 @@
 
     jutsu.elemento = novoElemento;
 
+    const contexto={confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"};
     if(typeof persistirSemRender === "function"){
-      persistirSemRender();
+      persistirSemRender(contexto);
     }else if(typeof persistirEstadoLocal === "function"){
-      persistirEstadoLocal();
+      persistirEstadoLocal(contexto);
     }
 
     if(typeof renderizarJutsus === "function"){

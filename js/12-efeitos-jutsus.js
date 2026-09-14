@@ -144,10 +144,10 @@
     catch(_erro){return valor;}
   }
 
-  function salvarEstado(){
+  function salvarEstado(contexto={}){
     try{
-      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal();
-      if(typeof persistirSemRender === "function") return persistirSemRender();
+      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal(contexto);
+      if(typeof persistirSemRender === "function") return persistirSemRender(contexto);
       if(typeof CHAVE !== "undefined"){
         localStorage.setItem(CHAVE, JSON.stringify(estado));
         return true;
@@ -1119,7 +1119,7 @@
         renovado=true;
       }else lista.push(item);
       itemAtivo=item;
-      salvarEstado();
+      salvarEstado({confirmada:true,origem:"efeitos-jutsu",campo:CHAVE_ESTADO,motivo:"alteracao-confirmada"});
       atualizarTudo();
     }
 
@@ -1154,7 +1154,7 @@
       : confirm(`Encerrar ${item.nome}?`);
     if(!ok) return;
     lista.splice(indice,1);
-    salvarEstado();
+    salvarEstado({confirmada:true,origem:"efeitos-jutsu",campo:CHAVE_ESTADO,motivo:"alteracao-confirmada"});
     atualizarTudo();
     if(typeof log==="function") log(`Efeito encerrado: ${item.nome}`);
   };
@@ -1216,7 +1216,7 @@
     }else{
       alert("Opção inválida.");return;
     }
-    salvarEstado();
+    salvarEstado({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"});
     if(typeof renderizarJutsus==="function") renderizarJutsus();
   };
 
@@ -1293,7 +1293,8 @@
       document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(input=>{input.value=0;});
       if(typeof bonusBatalhaAtributos!=="undefined") Object.keys(bonusBatalhaAtributos).forEach(chave=>{bonusBatalhaAtributos[chave]=0;});
       estado[CHAVE_ESTADO]=[];
-      if(typeof salvar==="function") salvar(); else salvarEstado();
+      const contextoReset={confirmada:true,origem:"batalha",campos:["pv","chakra",CHAVE_ESTADO],motivo:"alteracao-confirmada"};
+      if(typeof salvar==="function") salvar(contextoReset); else salvarEstado(contextoReset);
       if(typeof atualizarModsBatalhaComBonus==="function") atualizarModsBatalhaComBonus();
       if(typeof atualizarPainelBatalhaVivo==="function") atualizarPainelBatalhaVivo();
       atualizarTudo();

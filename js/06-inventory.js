@@ -312,9 +312,9 @@
     estado.carteiraHistorico = estado.carteiraHistorico.slice(0,40);
   }
 
-  function persistirEstadoSeguro(){
+  function persistirEstadoSeguro(contexto={}){
     try{
-      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal()!==false;
+      if(typeof persistirEstadoLocal === "function") return persistirEstadoLocal(contexto)!==false;
       localStorage.setItem(CHAVE,JSON.stringify(estado));
       return true;
     }catch(erro){
@@ -407,21 +407,33 @@
     renderizarInventario();
   };
 
-  window.ajustarQtdItemInventario = function(indice,delta){
+  window.ajustarQtdItemInventario = async function(indice,delta){
     garantirInventarioItens();
     const item = estado.inventarioItens[indice];
     if(!item) return;
-    item.quantidade = Math.max(0,quantidadeInventarioVisual(item)+Number(delta||0));
-    persistirEstadoSeguro();
+    const atual=quantidadeInventarioVisual(item);
+    const nova=Math.max(0,atual+Number(delta||0));
+    if(nova===atual) return;
+    const mensagem=`${item.nome||"Item"}: ${atual} → ${nova}`;
+    const confirmado=typeof modalShinobi==="function"?await modalShinobi("Confirmar alteração?",mensagem):confirm(mensagem);
+    if(!confirmado) return;
+    item.quantidade = nova;
+    persistirEstadoSeguro({confirmada:true,origem:"inventario",campo:"inventarioItens",motivo:"alteracao-confirmada"});
     renderizarInventario();
   };
 
-  window.confirmarQtdItemInventarioVisual = function(indice,valor){
+  window.confirmarQtdItemInventarioVisual = async function(indice,valor){
     garantirInventarioItens();
     const item = estado.inventarioItens[indice];
     if(!item) return;
-    item.quantidade = Math.max(0,Number.parseInt(valor,10)||0);
-    persistirEstadoSeguro();
+    const atual=quantidadeInventarioVisual(item);
+    const nova=Math.max(0,Number.parseInt(valor,10)||0);
+    if(nova===atual){renderizarInventario();return;}
+    const mensagem=`${item.nome||"Item"}: ${atual} → ${nova}`;
+    const confirmado=typeof modalShinobi==="function"?await modalShinobi("Confirmar alteração?",mensagem):confirm(mensagem);
+    if(!confirmado){renderizarInventario();return;}
+    item.quantidade = nova;
+    persistirEstadoSeguro({confirmada:true,origem:"inventario",campo:"inventarioItens",motivo:"alteracao-confirmada"});
     renderizarInventario();
   };
 
@@ -449,7 +461,7 @@
     const novo = prompt("Nome do item:",String(item.nome||""));
     if(novo===null||!novo.trim()) return;
     item.nome = novo.trim();
-    persistirEstadoSeguro();
+    persistirEstadoSeguro({confirmada:true,origem:"inventario",campo:"inventarioItens",motivo:"alteracao-confirmada"});
     fecharEstadoItemInventario(indice);
     renderizarInventario();
   };
@@ -466,7 +478,7 @@
     const indiceAtual = estado.inventarioItens.indexOf(item);
     if(indiceAtual<0) return;
     estado.inventarioItens.splice(indiceAtual,1);
-    persistirEstadoSeguro();
+    persistirEstadoSeguro({confirmada:true,origem:"inventario",campo:"inventarioItens",motivo:"alteracao-confirmada"});
     fecharEstadoItemInventario();
     renderizarInventario();
   };
@@ -593,20 +605,31 @@
     `;
   }
 
-  window.definirMoedaCarteira=function(chave,valor){
+  window.definirMoedaCarteira=async function(chave,valor){
     if(!FATOR_MOEDA[chave]) return;
     const carteira=garantirCarteira();
-    carteira[chave]=inteiroSeguro(valor);
-    persistirEstadoSeguro();
+    const atual=inteiroSeguro(carteira[chave]),novo=inteiroSeguro(valor);
+    if(novo===atual){renderizarCarteira();return;}
+    const mensagem=`${String(chave).toUpperCase()}: ${atual} → ${novo}`;
+    const confirmado=typeof modalShinobi==="function"?await modalShinobi("Confirmar alteração?",mensagem):confirm(mensagem);
+    if(!confirmado){renderizarCarteira();return;}
+    carteira[chave]=novo;
+    persistirEstadoSeguro({confirmada:true,origem:"carteira",campo:"carteira",motivo:"alteracao-confirmada"});
     renderizarCarteira();
     renderizarSaldoLoja();
   };
 
-  window.ajustarMoedaCarteira=function(chave,delta){
+  window.ajustarMoedaCarteira=async function(chave,delta){
     if(!FATOR_MOEDA[chave]) return;
     const carteira=garantirCarteira();
-    carteira[chave]=Math.max(0,inteiroSeguro(carteira[chave])+Number(delta||0));
-    persistirEstadoSeguro();
+    const atual=inteiroSeguro(carteira[chave]);
+    const novo=Math.max(0,atual+Number(delta||0));
+    if(novo===atual) return;
+    const mensagem=`${String(chave).toUpperCase()}: ${atual} → ${novo}`;
+    const confirmado=typeof modalShinobi==="function"?await modalShinobi("Confirmar alteração?",mensagem):confirm(mensagem);
+    if(!confirmado) return;
+    carteira[chave]=novo;
+    persistirEstadoSeguro({confirmada:true,origem:"carteira",campo:"carteira",motivo:"alteracao-confirmada"});
     renderizarCarteira();
     renderizarSaldoLoja();
   };
@@ -621,7 +644,7 @@
     }
     estado.carteira=depois;
     registrarHistoricoCarteira({tipo:"conversao",titulo:"Moedas organizadas",detalhe:`${formatarCarteira(antes)} → ${formatarCarteira(depois)}`});
-    persistirEstadoSeguro();
+    persistirEstadoSeguro({confirmada:true,origem:"carteira",campos:["carteira","carteiraHistorico"],motivo:"alteracao-confirmada"});
     renderizarCarteira();
     renderizarSaldoLoja();
   };
@@ -850,7 +873,7 @@
         titulo:`Compra: ${item.nome}`,
         detalhe:`-${formatarPreco(item.preco,quantidade)} · ${quantidade} ${item.preco.por==="metro"?"m":"un."}`
       });
-      if(!persistirEstadoSeguro()) throw new Error("A compra não pôde ser salva no aparelho.");
+      if(!persistirEstadoSeguro({confirmada:true,origem:"loja",campos:["carteira","carteiraHistorico","inventarioItens"],motivo:"alteracao-confirmada"})) throw new Error("A compra não pôde ser salva no aparelho.");
       fecharCompraLoja();
       renderizarInventario();
       if(typeof registrarLog==="function") registrarLog(`Comprou ${quantidade}x ${item.nome} por ${formatarPreco(item.preco,quantidade)}.`);

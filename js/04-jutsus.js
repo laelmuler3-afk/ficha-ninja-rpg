@@ -19,13 +19,14 @@
   ];
 
   function salvarOrganizacaoJutsus(){
+    const contexto={confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"};
     if(typeof persistirSemRender === "function"){
-      persistirSemRender();
+      persistirSemRender(contexto);
       return;
     }
 
     if(typeof persistirEstadoLocal === "function"){
-      persistirEstadoLocal();
+      persistirEstadoLocal(contexto);
       return;
     }
 
@@ -167,10 +168,10 @@
  let aplicandoBonus=false;
  let migracaoAlterouEstado=false;
 
- function salvarSeguro(){
+ function salvarSeguro(contexto={}){
    try{
-     if(typeof persistirSemRender==="function")persistirSemRender();
-     else if(typeof persistirEstadoLocal==="function")persistirEstadoLocal();
+     if(typeof persistirSemRender==="function")persistirSemRender(contexto);
+     else if(typeof persistirEstadoLocal==="function")persistirEstadoLocal(contexto);
      else if(typeof CHAVE!=="undefined")localStorage.setItem(CHAVE,JSON.stringify(estado));
    }catch(e){console.warn("Não foi possível salvar os bônus.",e)}
  }
@@ -357,6 +358,8 @@
    }
  }
 
+ window.atualizarBonusGeralRealtime=function(){ aplicar(); };
+
  function norm(x){
    x=String(x||"").trim().toLowerCase();
    return {"inic":"iniciativa","iniciativa":"iniciativa","prof":"proficiencia","prof.":"proficiencia","proficiência":"proficiencia","proficiencia":"proficiencia","vel":"velocidade","velocidade":"velocidade","ca":"ca","cd":"cd","for":"forca","força":"forca","forca":"forca","des":"destreza","destreza":"destreza","con":"constituicao","constituição":"constituicao","constituicao":"constituicao","int":"inteligencia","inteligência":"inteligencia","inteligencia":"inteligencia","sab":"sabedoria","sabedoria":"sabedoria","car":"carisma","carisma":"carisma"}[x]||x;
@@ -372,7 +375,7 @@
    const vt=prompt("Valor do bônus. Ex: 5 ou -2:","1"); if(vt===null)return;
    const valor=num(vt); if(!valor){alert("Digite um valor diferente de zero.");return}
    normalizarListaBonus().push({nome:String(nome||"Bônus").trim()||"Bônus",alvo,valor});
-   salvarSeguro();
+   salvarSeguro({confirmada:true,origem:"bonus",campo:"bonusAtivos",motivo:"alteracao-confirmada"});
    aplicar();
  }
 
@@ -390,7 +393,7 @@
    const idx=parseInt(esc,10)-1;
    if(idx<0||idx>=lista.length){alert("Número inválido.");return}
    lista.splice(idx,1);
-   salvarSeguro();
+   salvarSeguro({confirmada:true,origem:"bonus",campo:"bonusAtivos",motivo:"alteracao-confirmada"});
    aplicar();
  }
 
@@ -403,7 +406,7 @@
    else if(e==="4"&&confirm("Remover todos os bônus ativos?")){
      estado.bonusAtivos=[];
      estado.bonusCA="0";
-     salvarSeguro();
+     salvarSeguro({confirmada:true,origem:"bonus",campos:["bonusAtivos","bonusCA"],motivo:"alteracao-confirmada"});
      aplicar();
    }else if(e!=="4")alert("Opção inválida.");
  };
@@ -554,10 +557,11 @@
   let inicioY = 0;
 
   function salvarMove(){
+    const contexto={confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"};
     try{
-      if(typeof persistirSemRender === "function") persistirSemRender();
-      else if(typeof salvar === "function") salvar();
-      else if(typeof persistirEstadoLocal === "function") persistirEstadoLocal();
+      if(typeof persistirSemRender === "function") persistirSemRender(contexto);
+      else if(typeof salvar === "function") salvar(contexto);
+      else if(typeof persistirEstadoLocal === "function") persistirEstadoLocal(contexto);
       else if(typeof CHAVE !== "undefined") localStorage.setItem(CHAVE, JSON.stringify(estado));
     }catch(e){ console.warn(e); }
   }

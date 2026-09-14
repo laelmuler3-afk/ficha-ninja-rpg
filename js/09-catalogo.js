@@ -708,10 +708,11 @@
       estado.jutsusAbertos[indice] = true;
     });
 
+    const contexto={confirmada:true,origem:"catalogo-jutsus",campo:"jutsus",motivo:"alteracao-confirmada"};
     if(typeof persistirEstadoLocal === "function"){
-      persistirEstadoLocal();
+      persistirEstadoLocal(contexto);
     }else if(typeof persistirSemRender === "function"){
-      persistirSemRender();
+      persistirSemRender(contexto);
     }
 
     if(typeof renderizarJutsus === "function"){

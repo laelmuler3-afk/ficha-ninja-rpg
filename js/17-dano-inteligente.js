@@ -185,7 +185,7 @@
     if(!ok) return;
 
     if(pv) pv.value = String(novo);
-    if(typeof window.salvar === "function") window.salvar();
+    if(typeof window.salvar === "function") window.salvar({confirmada:true,origem:"dano-inteligente",campo:"pv",antes:atual,depois:novo,motivo:"alteracao-confirmada"});
 
     const sufixo = resultado.regra === "resistencia"
       ? " (resistência)"
