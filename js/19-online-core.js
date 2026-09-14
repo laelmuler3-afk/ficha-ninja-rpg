@@ -941,6 +941,48 @@
     return listarFichasLocais();
   }
 
+  function listarCopiasLegadasLocaisSeguras(){
+    const locais=prepararCopiasLocaisLegadas();
+    const grupos=new Map();
+    locais.forEach(ficha=>{
+      const chave=chaveLogicaFicha(ficha)||ficha.sheetId;
+      if(!grupos.has(chave)) grupos.set(chave,[]);
+      grupos.get(chave).push(ficha);
+    });
+
+    const seguras=[],revisar=[];
+    locais.forEach(ficha=>{
+      const marcada=window.EkoSheetManager?.ehCopiaLegadaMarcada
+        ? window.EkoSheetManager.ehCopiaLegadaMarcada(ficha)
+        : Boolean(
+            ficha?.name!=="Principal"&&
+            ficha?.data?.__online?.legacyAutoCopy===true&&
+            ficha?.data?.__online?.syncDisabled===true&&
+            ficha?.data?.__online?.userCopy!==true
+          );
+      if(!marcada) return;
+
+      const chave=chaveLogicaFicha(ficha)||ficha.sheetId;
+      const grupo=grupos.get(chave)||[];
+      const canonicos=grupo.filter(item=>
+        item!==ficha&&
+        item.name!==ficha.name&&
+        item.data?.__online?.legacyAutoCopy!==true&&
+        item.data?.__online?.syncDisabled!==true
+      );
+      const canonico=[...canonicos].sort((a,b)=>pontuacaoConteudoFicha(b.data)-pontuacaoConteudoFicha(a.data))[0];
+      if(!canonico){revisar.push(clonar(ficha));return;}
+
+      /* Limpeza automática só remove duplicata byte-logicamente equivalente
+         quando ignoramos __online. Se houver qualquer diferença de conteúdo,
+         preservamos para revisão/exclusão individual. */
+      const equivalente=hashFichaSemVinculo(ficha.data)===hashFichaSemVinculo(canonico.data);
+      if(equivalente) seguras.push(clonar(ficha));
+      else revisar.push(clonar(ficha));
+    });
+    return {seguras,revisar};
+  }
+
   function listarFichasSincronizaveis(){
     const uid=uidContaAtiva();
     return prepararCopiasLocaisLegadas().filter(ficha=>{
@@ -2714,7 +2756,7 @@
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
     entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
-    sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,fichaAtualLocal,resumoBatalhaDaFicha,
+    sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
