@@ -2338,6 +2338,35 @@
     await limparDuplicatasNuvemSeguras(grupos);
   }
 
+  function mapearFichasNuvem(valor){
+    const locais=listarFichasLocais();
+    return Object.entries(valor||{})
+      .filter(([,f])=>f?.deleted!==true&&f?.data&&typeof f.data==="object")
+      .map(([id,f])=>{
+        const characterId=texto(f?.characterId)||texto(f?.data?.__online?.characterId)||texto(f?.data?.__online?.realtimeId)||id;
+        return {
+          id,
+          characterId,
+          name:f?.name||f?.characterName||f?.data?.nome||"Ficha",
+          characterName:f?.characterName||f?.data?.nome||"",
+          revision:Number(f?.revision||0),
+          updatedAt:Number(f?.updatedAt||0),
+          deviceId:texto(f?.deviceId),
+          linked:locais.some(local=>local.sheetId===id||texto(local?.data?.__online?.characterId)===characterId)
+        };
+      })
+      .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  }
+
+  async function listarFichasNuvemAgora(){
+    exigirContaGoogle();
+    const api=estadoOnline.api;
+    const snap=await api.get(api.ref(estadoOnline.db,`userSheets/${estadoOnline.user.uid}`));
+    estadoOnline.fichasNuvem=mapearFichasNuvem(snap.val()||{});
+    emitir("fichas-nuvem",snapshot());
+    return clonar(estadoOnline.fichasNuvem);
+  }
+
   function observarFichasNuvem(){
     if(!estadoOnline.user) return;
     estadoOnline.unsubscribeFichas?.();
@@ -2356,19 +2385,7 @@
            backups; nunca aplica, reconcilia ou envia fichas automaticamente. */
         if(!uidObservado||texto(estadoOnline.user?.uid)!==uidObservado) return;
         const valor=snap.val()||{};
-        const locais=listarFichasLocais();
-        estadoOnline.fichasNuvem=Object.entries(valor)
-          .filter(([,f])=>f?.deleted!==true)
-          .map(([id,f])=>({
-            id,
-            name:f?.name||f?.characterName||"Ficha",
-            characterName:f?.characterName||"",
-            revision:Number(f?.revision||0),
-            updatedAt:Number(f?.updatedAt||0),
-            deviceId:texto(f?.deviceId),
-            linked:locais.some(local=>local.sheetId===id)
-          }))
-          .sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+        estadoOnline.fichasNuvem=mapearFichasNuvem(valor);
         emitir("fichas-nuvem",snapshot());
       },
       erro=>emitir("erro-sync",{mensagem:erroAmigavel(erro),erro})
@@ -2575,56 +2592,69 @@
     if(!snap.exists()) throw new Error("Backup da nuvem não encontrado.");
     const cloud=snap.val();
     if(cloud?.deleted===true) throw new Error("Esta ficha foi excluída em outro aparelho e não pode ser restaurada como versão ativa.");
-    const data=clonar(cloud.data||{});
+    if(!cloud?.data||typeof cloud.data!=="object"||Array.isArray(cloud.data)) throw new Error("O backup da nuvem está incompleto.");
+
     const locais=prepararCopiasLocaisLegadas();
-    const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
-    const vinculada=locais.find(f=>f.sheetId===sheetId);
-    const mesmaPersonagem=locais.find(f=>{
-      const ownerUid=texto(f.data?.__online?.ownerUid);
-      return chaveLogicaFicha(f)===chaveCloud&&!f.data?.__online?.syncDisabled&&(!ownerUid||ownerUid===uidContaAtiva());
-    });
-    let nome=vinculada?.name||mesmaPersonagem?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
+    let nome="",data=null,idFinal="",anteriorSheetId="";
 
     if(asCopy){
-      const base=`${nome} Cópia`,nMax=1000;let n=2,candidato=base;
+      data=clonar(cloud.data||{});
+      const baseNome=texto(cloud.name)||texto(cloud.characterName)||texto(data.nome)||"Ficha restaurada";
+      const base=`${baseNome} Cópia`,nMax=1000;let n=2,candidato=base;
       while(locais.some(f=>f.name===candidato)&&n<nMax){candidato=`${base} ${n++}`;}
       nome=candidato;
       data.__online={};
       data.__online.sheetId=idAleatorio("sheet");
       data.__online.userCopy=true;
       data.__online.sourceSheetId=sheetId;
+      idFinal=data.__online.sheetId;
+      data.__online.name=nome;
+      const chave=nome==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${nome}`;
+      localStorage.setItem(chave,JSON.stringify(data));
+      const lista=Array.from(new Set([...locais.map(f=>f.name),nome]));
+      localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(lista));
+      localStorage.setItem("ficha_ninja_ativa_v1",nome);
+      aplicarEstadoGlobalDaFicha(nome,chave,data);
     }else{
-      const anterior=vinculada||mesmaPersonagem;
+      const gerenciador=window.EkoSheetManager;
+      if(!gerenciador?.aplicarImportacaoNuvemLocal||!gerenciador?.resolverDestinoImportacaoNuvem){
+        throw new Error("O gerenciador local de fichas ainda não está disponível.");
+      }
+
+      const destino=gerenciador.resolverDestinoImportacaoNuvem({cloudId:sheetId,cloud,locais});
+      const anterior=destino?.existing||locais.find(f=>f.sheetId===sheetId)||null;
+      anteriorSheetId=texto(anterior?.sheetId);
       if(anterior&&pontuacaoConteudoFicha(anterior.data)>=8){
         try{await criarBackupFicha(anterior,{reason:"antes-restaurar-nuvem",revision:Number((estadoSync()[anterior.sheetId]||{}).revision||0)});}catch(_erro){}
       }
-      data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
-      data.__online.sheetId=sheetId;
-      data.__online.ownerUid=uidContaAtiva();
-      data.__online.identityVersion=2;
-      data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(nome);
-      delete data.__online.syncDisabled;
-      delete data.__online.legacyAutoCopy;
+
+      const importado=gerenciador.aplicarImportacaoNuvemLocal({
+        cloudId:sheetId,
+        cloud,
+        ownerUid:uidContaAtiva()
+      });
+      nome=importado.name;
+      data=importado.data;
+      idFinal=texto(importado.sheetId)||sheetId;
+      aplicarEstadoGlobalDaFicha(nome,importado.key,data);
     }
 
-    data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
-    const idFinal=texto(data.__online.sheetId)||sheetId;
-    data.__online.sheetId=idFinal;
-    data.__online.name=nome;
-    const chave=nome==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${nome}`;
-    localStorage.setItem(chave,JSON.stringify(data));
-    const lista=Array.from(new Set([...locais.map(f=>f.name),nome]));
-    localStorage.setItem("ficha_ninja_lista_v1",JSON.stringify(lista));
-    localStorage.setItem("ficha_ninja_ativa_v1",nome);
-    aplicarEstadoGlobalDaFicha(nome,chave,data);
     const sync=estadoSync();
+    if(!asCopy&&anteriorSheetId&&anteriorSheetId!==idFinal){
+      delete sync[anteriorSheetId];
+      removerOutbox(anteriorSheetId,{},uidContaAtiva());
+      estadoOnline.dirtySheets.delete(anteriorSheetId);
+      limparAgendamentoSync(anteriorSheetId);
+    }
     sync[idFinal]={
       revision:asCopy?0:Number(cloud.revision||0),lastHash:asCopy?"":hashFicha(data),
       lastSyncedAt:asCopy?0:Number(cloud.updatedAt||agora()),deviceId:asCopy?"":texto(cloud.deviceId),
       syncStatus:asCopy?0:1,phase:asCopy?"pending":"synced",pendingMode:asCopy?"imediato":"",pendingReason:asCopy?"copia-explicita":""
     };
     gravarEstadoSync(sync);
-    emitir("ficha-restaurada",{name:nome,sheetId:idFinal,asCopy});
+    emitir("ficha-restaurada",{
+      name:nome,sheetId:idFinal,characterId:texto(data?.__online?.characterId),asCopy
+    });
     return nome;
   }
 
@@ -2761,7 +2791,7 @@
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,
-    sincronizarPendenciasAgora,reconciliarSincronizacaoConta,ativarBackupsNuvem,garantirIdentidadeFichaRealtime,
+    sincronizarPendenciasAgora,reconciliarSincronizacaoConta,ativarBackupsNuvem,listarFichasNuvemAgora,garantirIdentidadeFichaRealtime,
     resumoMudancasMeuTurno,finalizarMeuTurno,ehMeuTurno,chaveTurnoAtual,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };
