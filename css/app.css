@@ -2699,23 +2699,3 @@ body.compraLojaAberta{
     font-size:13px;
   }
 }
-
-/* EKO 2.5.8.80 — seletor seguro de importação local/nuvem. */
-.ekoImportBox{width:min(94vw,520px)}
-.ekoImportSourceGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 14px}
-.ekoImportSource{min-height:126px;padding:15px;border:1px solid rgba(255,177,90,.24);background:linear-gradient(180deg,rgba(55,35,20,.88),rgba(16,12,9,.96));color:#fff4dc;text-align:left;display:flex;flex-direction:column;gap:7px;justify-content:center}
-.ekoImportSource.destaque{border-color:rgba(255,177,90,.52);background:linear-gradient(180deg,rgba(111,55,18,.88),rgba(31,17,8,.97))}
-.ekoImportSource .shinobiIcon{width:25px;height:25px;opacity:.96}
-.ekoImportSource strong{font-size:17px;color:#ffd08a}
-.ekoImportSource small{font-size:12px;line-height:1.35;color:#e3d2b5}
-.ekoImportCancelRow{margin-top:4px}
-.ekoImportCloudBox{max-height:min(82vh,680px);display:flex;flex-direction:column}
-.ekoImportCloudList{display:grid;gap:8px;overflow:auto;min-height:0;margin:2px 0 14px;padding-right:2px}
-.ekoImportCloudItem{width:100%;padding:12px 13px;border:1px solid rgba(255,177,90,.22);background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.025));color:#fff4dc;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
-.ekoImportCloudItem:active{transform:translateY(1px)}
-.ekoImportCloudMain,.ekoImportCloudMeta{display:flex;flex-direction:column;gap:4px;min-width:0}
-.ekoImportCloudMain strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
-.ekoImportCloudMain small,.ekoImportCloudMeta small{color:#cdbd9f;font-size:11px}
-.ekoImportCloudMeta{align-items:flex-end;flex:0 0 auto}
-.ekoImportCloudBadge{font-size:10px;font-weight:1000;letter-spacing:.25px;text-transform:uppercase;color:#ffe2ad;border:1px solid rgba(255,177,90,.36);background:rgba(255,122,24,.14);padding:4px 7px;border-radius:999px}
-@media (max-width:520px){.ekoImportSourceGrid{grid-template-columns:1fr}.ekoImportSource{min-height:92px}.ekoImportCloudItem{align-items:flex-start}.ekoImportCloudMeta small{max-width:104px;text-align:right}}
