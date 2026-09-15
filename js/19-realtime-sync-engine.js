@@ -1,4 +1,4 @@
-/* EKO 2.5.8.75 — realtime lazy, por campo e fora do caminho de boot. */
+/* EKO 2.5.8.78 — realtime lazy com isolamento de cópias legadas. */
 (function(root,factory){
   const emNode=typeof module!=="undefined"&&module.exports;
   const util=emNode?require("./19-realtime-fields-utils.js"):root?.EkoRealtimeFields;
@@ -34,6 +34,11 @@
   function realtimeIdDaFicha(ficha){
     return texto(ficha?.characterId||ficha?.data?.__online?.characterId||ficha?.realtimeId||ficha?.data?.__online?.realtimeId||"");
   }
+  function fichaPodeUsarRealtime(ficha){
+    if(!ficha)return false;
+    const online=ficha?.data?.__online&&typeof ficha.data.__online==="object"?ficha.data.__online:{};
+    return online.syncDisabled!==true&&online.legacyAutoCopy!==true;
+  }
   function criarOperacaoPura({sheetId,sheetName,campo,valor,editAt,deviceId,opId,uid=""}){
     const nome=texto(campo);
     const deleted=valor===undefined;
@@ -45,7 +50,7 @@
     return op;
   }
 
-  const test={compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha};
+  const test={compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime};
 
   function install(){
     if(!root||!root.document||root.__ekoRealtimeLazyV2)return false;
@@ -95,8 +100,12 @@
 
     function obterFichaAtiva(preparar=false){
       try{
-        const atual=root.ShinobiOnline?.fichaAtualLocal?.();
+        let atual=root.ShinobiOnline?.fichaAtualLocal?.();
+        const nomeAtivo=texto(root.localStorage?.getItem("ficha_ninja_ativa_v1")||atual?.name||"Principal");
+        const gerenciada=root.EkoSheetManager?.obterFichaPorNome?.(nomeAtivo);
+        if(gerenciada?.physicalKeys?.length) atual=gerenciada;
         if(!atual)return null;
+        if(!fichaPodeUsarRealtime(atual))return atual;
         if(preparar&&uidAtual()){
           return root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(atual.name)||atual;
         }
@@ -229,8 +238,9 @@
     function aplicarSnapshotCampos(sheetId,valor){
       const uid=uidAtual();
       const fichaBase=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(fichaBase))return [];
       const ficha=fichaBase?root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(fichaBase.name)||fichaBase:null;
-      if(!uid||!ficha||realtimeIdDaFicha(ficha)!==texto(sheetId))return [];
+      if(!uid||!ficha||!fichaPodeUsarRealtime(ficha)||realtimeIdDaFicha(ficha)!==texto(sheetId))return [];
       let dados={};
       try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
       if(!dados||typeof dados!=="object"||Array.isArray(dados))dados={};
@@ -290,9 +300,11 @@
       const user=usuarioAtual(),db=banco();
       if(!user||!db){desconectarListener();return {skipped:true,reason:"conta-ou-firebase-indisponivel"};}
       observarOffset(db);
+      const fichaBase=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(fichaBase)){desconectarListener();return {skipped:true,reason:"ficha-legada-ou-desativada"};}
       const ficha=obterFichaAtiva(true);
       const realtimeId=realtimeIdDaFicha(ficha);
-      if(!realtimeId){desconectarListener();return {skipped:true,reason:"ficha-sem-identidade-realtime"};}
+      if(!fichaPodeUsarRealtime(ficha)||!realtimeId){desconectarListener();return {skipped:true,reason:"ficha-sem-identidade-realtime"};}
       const uid=texto(user.uid),sheetId=realtimeId;
       if(estadoRT.listener&&estadoRT.listener.uid===uid&&estadoRT.listener.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
@@ -363,9 +375,11 @@
       if(!campoPermitido(nome))return {skipped:true,reason:"campo-invalido"};
       const user=usuarioAtual();
       if(!user)return {skipped:true,reason:"sem-conta-google"};
+      const base=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(base))return {skipped:true,reason:"ficha-legada-ou-desativada"};
       const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(localSheetName)||obterFichaAtiva(true);
       const realtimeId=realtimeIdDaFicha(ficha);
-      if(!realtimeId||ficha?.data?.__online?.syncDisabled)return {skipped:true,reason:"ficha-indisponivel"};
+      if(!realtimeId||!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-indisponivel"};
       const uid=texto(user.uid);
       const op=criarOperacaoPura({
         uid,sheetId:realtimeId,sheetName:ficha.name,campo:nome,valor,

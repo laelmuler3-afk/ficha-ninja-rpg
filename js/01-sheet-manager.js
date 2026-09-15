@@ -1,4 +1,4 @@
-/* EKO 2.5.8.77 — exclusão local confiável e limpeza de cópias legadas. */
+/* EKO 2.5.8.78 — reparo robusto da biblioteca local de fichas legadas. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module!=="undefined"&&module.exports) module.exports=api;
@@ -12,28 +12,21 @@
   const CHAVE_BASE="ficha_ninja_app_v2";
   const CHAVE_LISTA="ficha_ninja_lista_v1";
   const CHAVE_ATIVA="ficha_ninja_ativa_v1";
+  const PREFIXO=`${CHAVE_BASE}__`;
 
   function texto(valor){return String(valor==null?"":valor).trim();}
 
-  function ehNomeCopiaAutomatica(nome){
-    return /(?:\s+nuvem(?:\s+\d+)?)+$/i.test(texto(nome));
+  function limparNome(nome){
+    if(typeof root.limparNomeFicha==="function") return root.limparNomeFicha(nome);
+    return texto(nome||"Principal").replace(/[^\w\-À-ÿ ]+/g,"").slice(0,32)||"Principal";
   }
 
-  function ehCopiaLegadaMarcada(ficha){
-    const nome=texto(ficha?.name);
-    const online=ficha?.data?.__online&&typeof ficha.data.__online==="object"?ficha.data.__online:{};
-    /*
-     * O bug antigo podia marcar uma cópia automática como userCopy ao resolver
-     * colisões de sheetId. Esse userCopy contaminado não pode anular os sinais
-     * explícitos de legado (legacyAutoCopy/syncDisabled). Esses marcadores eram
-     * exclusivos do mecanismo automático antigo, então também cobrem nomes
-     * anômalos gerados por ele (ex.: "Nuvem abc123"). Um nome contendo
-     * "Nuvem" sem esses sinais nunca é suficiente para apagar.
-     */
-    return Boolean(
-      nome&&nome!=="Principal"&&
-      (online.legacyAutoCopy===true||online.syncDisabled===true)
-    );
+  function ehNomeCopiaAutomatica(nome){
+    const valor=texto(nome);
+    if(/(?:\s+nuvem(?:\s+\d+)?)+$/i.test(valor)) return true;
+    /* O sistema antigo usava `Nuvem ${Date.now().toString(36)}` quando os
+       sufixos normais já estavam ocupados. */
+    return /^nuvem\s+[a-z0-9]{6,}$/i.test(valor);
   }
 
   function lerJson(chave,padrao){
@@ -43,42 +36,164 @@
     }catch(_erro){return padrao;}
   }
 
-  function limparNome(nome){
-    if(typeof root.limparNomeFicha==="function") return root.limparNomeFicha(nome);
-    return texto(nome||"Principal").slice(0,32)||"Principal";
-  }
-
-  function chaveFicha(nome){
-    const limpo=limparNome(nome);
-    return limpo==="Principal"?CHAVE_BASE:`${CHAVE_BASE}__${limpo}`;
-  }
-
-  function lerDadosFicha(nome){
+  function lerDadosPorChave(chave){
     try{
-      const valor=JSON.parse(root.localStorage.getItem(chaveFicha(nome))||"{}");
+      const valor=JSON.parse(root.localStorage.getItem(chave)||"{}");
       return valor&&typeof valor==="object"&&!Array.isArray(valor)?valor:{};
     }catch(_erro){return {};}
   }
 
-  function listarFichasLocais(){
+  function chaveFicha(nome){
+    const limpo=limparNome(nome);
+    return limpo==="Principal"?CHAVE_BASE:`${PREFIXO}${limpo}`;
+  }
+
+  function chavesStorage(){
+    const saida=new Set();
+    try{
+      const total=Number(root.localStorage?.length||0);
+      for(let i=0;i<total;i++){
+        const chave=root.localStorage.key?.(i);
+        if(chave)saida.add(String(chave));
+      }
+    }catch(_erro){}
+    try{Object.keys(root.localStorage||{}).forEach(chave=>saida.add(String(chave)));}catch(_erro){}
+    return [...saida];
+  }
+
+  function listarRegistrosFisicos(){
+    const registros=[];
+    for(const chave of chavesStorage()){
+      if(chave!==CHAVE_BASE&&!chave.startsWith(PREFIXO))continue;
+      const rawName=chave===CHAVE_BASE?"Principal":chave.slice(PREFIXO.length);
+      registros.push({
+        key:chave,
+        rawName,
+        name:limparNome(rawName),
+        data:lerDadosPorChave(chave)
+      });
+    }
+    return registros;
+  }
+
+  function nomesDaLista(){
     let lista=lerJson(CHAVE_LISTA,["Principal"]);
-    if(!Array.isArray(lista)) lista=["Principal"];
-    const nomes=Array.from(new Set(lista.map(limparNome)));
-    if(!nomes.includes("Principal")) nomes.unshift("Principal");
-    return nomes.map(nome=>({
-      name:nome,
-      key:chaveFicha(nome),
-      data:lerDadosFicha(nome)
-    }));
+    if(!Array.isArray(lista))lista=["Principal"];
+    const nomes=lista.map(limparNome).filter(Boolean);
+    if(!nomes.includes("Principal"))nomes.unshift("Principal");
+    return Array.from(new Set(nomes));
+  }
+
+  function agruparRegistrosFisicos(){
+    const grupos=new Map();
+    for(const registro of listarRegistrosFisicos()){
+      if(!grupos.has(registro.name))grupos.set(registro.name,[]);
+      grupos.get(registro.name).push(registro);
+    }
+    return grupos;
+  }
+
+  function escolherRegistroPrincipal(registros,nome){
+    const canonica=chaveFicha(nome);
+    return (registros||[]).find(item=>item.key===canonica)||(registros||[])[0]||null;
+  }
+
+  function listarFichasLocais(){
+    const grupos=agruparRegistrosFisicos();
+    const nomes=Array.from(new Set([...nomesDaLista(),...grupos.keys()]));
+    if(!nomes.includes("Principal"))nomes.unshift("Principal");
+    return nomes.map(nome=>{
+      const fisicos=grupos.get(nome)||[];
+      const principal=escolherRegistroPrincipal(fisicos,nome);
+      return {
+        name:nome,
+        key:principal?.key||chaveFicha(nome),
+        data:principal?.data||{},
+        rawName:principal?.rawName||nome,
+        physicalKeys:fisicos.map(item=>item.key),
+        physicalRecords:fisicos
+      };
+    });
+  }
+
+  function obterFichaPorNome(nome){
+    const alvo=limparNome(nome);
+    return listarFichasLocais().find(ficha=>ficha.name===alvo)||null;
+  }
+
+  function onlineDaFicha(data){
+    return data?.__online&&typeof data.__online==="object"?data.__online:{};
+  }
+
+  function identidadesDaFicha(data){
+    const online=onlineDaFicha(data);
+    return new Set([
+      texto(online.characterId),texto(online.realtimeId),texto(online.sheetId),
+      texto(online.sourceSheetId),texto(online.originSheetId)
+    ].filter(Boolean));
+  }
+
+  function compartilhaIdentidade(dataA,dataB){
+    const a=identidadesDaFicha(dataA),b=identidadesDaFicha(dataB);
+    for(const id of a)if(b.has(id))return true;
+    return false;
+  }
+
+  function normalizarConteudoComparacao(valor){
+    if(Array.isArray(valor))return valor.map(normalizarConteudoComparacao);
+    if(!valor||typeof valor!=="object")return valor;
+    const saida={};
+    Object.keys(valor).sort().forEach(chave=>{
+      if(chave==="__online")return;
+      saida[chave]=normalizarConteudoComparacao(valor[chave]);
+    });
+    return saida;
+  }
+
+  function conteudoEquivalente(dataA,dataB){
+    try{return JSON.stringify(normalizarConteudoComparacao(dataA))===JSON.stringify(normalizarConteudoComparacao(dataB));}
+    catch(_erro){return false;}
+  }
+
+  function classificarRegistroLegado(registro,principalData){
+    const online=onlineDaFicha(registro?.data);
+    const explicitamenteLegado=online.legacyAutoCopy===true||online.syncDisabled===true;
+    const nomeGerado=ehNomeCopiaAutomatica(registro?.rawName)||ehNomeCopiaAutomatica(registro?.name);
+    const mesmaIdentidade=compartilhaIdentidade(registro?.data,principalData);
+    const igualPrincipal=conteudoEquivalente(registro?.data,principalData);
+    const copiaUsuario=online.userCopy===true;
+
+    if(explicitamenteLegado)return "segura";
+    if(nomeGerado&&mesmaIdentidade)return "segura";
+    if(nomeGerado&&igualPrincipal&&!copiaUsuario)return "segura";
+    if(nomeGerado||mesmaIdentidade)return "revisar";
+    return "normal";
+  }
+
+  function ehCopiaLegadaMarcada(ficha){
+    if(!ficha||limparNome(ficha.name)==="Principal")return false;
+    const principal=obterFichaPorNome("Principal");
+    const registros=ficha.physicalRecords?.length?ficha.physicalRecords:[{
+      name:ficha.name,rawName:ficha.rawName||ficha.name,data:ficha.data||{}
+    }];
+    return registros.length>0&&registros.every(registro=>classificarRegistroLegado(registro,principal?.data||{})==="segura");
   }
 
   function listarCopiasLegadasLocais(){
-    const seguras=[];
-    const revisar=[];
-    for(const ficha of listarFichasLocais()){
-      if(ficha.name==="Principal") continue;
-      if(ehCopiaLegadaMarcada(ficha)) seguras.push(ficha);
-      else if(ehNomeCopiaAutomatica(ficha.name)) revisar.push(ficha);
+    const fichas=listarFichasLocais();
+    const principal=fichas.find(ficha=>ficha.name==="Principal");
+    const seguras=[],revisar=[];
+
+    for(const ficha of fichas){
+      if(ficha.name==="Principal")continue;
+      const registros=ficha.physicalRecords||[];
+      if(!registros.length){
+        if(ehNomeCopiaAutomatica(ficha.name))revisar.push(ficha);
+        continue;
+      }
+      const classes=registros.map(registro=>classificarRegistroLegado(registro,principal?.data||{}));
+      if(classes.every(classe=>classe==="segura"))seguras.push(ficha);
+      else if(classes.some(classe=>classe!=="normal")||ehNomeCopiaAutomatica(ficha.name))revisar.push(ficha);
     }
     return {seguras,revisar};
   }
@@ -86,52 +201,74 @@
   function atualizarListaAposExclusao(nomesExcluidos){
     const excluir=new Set((nomesExcluidos||[]).map(limparNome));
     let lista=lerJson(CHAVE_LISTA,["Principal"]);
-    if(!Array.isArray(lista)) lista=["Principal"];
+    if(!Array.isArray(lista))lista=["Principal"];
     lista=lista.map(limparNome).filter(nome=>!excluir.has(nome));
     lista=Array.from(new Set(lista));
-    if(!lista.includes("Principal")) lista.unshift("Principal");
+    if(!lista.includes("Principal"))lista.unshift("Principal");
     root.localStorage.setItem(CHAVE_LISTA,JSON.stringify(lista));
 
     const ativa=limparNome(root.localStorage.getItem(CHAVE_ATIVA)||"Principal");
-    if(excluir.has(ativa)) root.localStorage.setItem(CHAVE_ATIVA,"Principal");
+    if(excluir.has(ativa))root.localStorage.setItem(CHAVE_ATIVA,"Principal");
+    try{
+      if(Array.isArray(root.fichas))root.fichas=root.fichas.filter(nome=>!excluir.has(limparNome(nome)));
+    }catch(_erro){}
     return lista;
+  }
+
+  function chavesFisicasDaFicha(nome){
+    const alvo=limparNome(nome);
+    const chaves=new Set([chaveFicha(alvo)]);
+    for(const registro of listarRegistrosFisicos()){
+      if(registro.name===alvo)chaves.add(registro.key);
+    }
+    return [...chaves];
   }
 
   function removerFichaLocal(nome){
     const limpo=limparNome(nome);
-    if(!limpo||limpo==="Principal") return false;
-    try{root.localStorage.removeItem(chaveFicha(limpo));}catch(_erro){}
+    if(!limpo||limpo==="Principal")return false;
+
+    const ativa=limparNome(root.localStorage.getItem(CHAVE_ATIVA)||"Principal");
+    if(ativa===limpo)root.localStorage.setItem(CHAVE_ATIVA,"Principal");
+
+    let removeuAlgo=false;
+    for(const chave of chavesFisicasDaFicha(limpo)){
+      try{
+        if(root.localStorage.getItem(chave)!==null)removeuAlgo=true;
+        root.localStorage.removeItem(chave);
+      }catch(_erro){}
+    }
+
+    const listaAntes=nomesDaLista();
     atualizarListaAposExclusao([limpo]);
-    return true;
+    if(listaAntes.includes(limpo))removeuAlgo=true;
+    return removeuAlgo;
   }
 
   async function excluirFichaMelhorada(){
-    try{root.salvar?.();}catch(_erro){}
     const nome=limparNome(root.localStorage.getItem(CHAVE_ATIVA)||"Principal");
     if(nome==="Principal"){
-      if(typeof root.avisoShinobi==="function") await root.avisoShinobi("Ficha protegida","A ficha Principal não pode ser excluída.");
+      if(typeof root.avisoShinobi==="function")await root.avisoShinobi("Ficha protegida","A ficha Principal não pode ser excluída.");
       else root.alert?.("A ficha Principal não pode ser excluída.");
       return false;
     }
 
-    const lista=lerJson(CHAVE_LISTA,["Principal"]);
-    if(Array.isArray(lista)&&lista.length<=1){
-      root.alert?.("Você precisa manter pelo menos uma ficha.");
-      return false;
+    const confirmar=typeof root.modalShinobi==="function"
+      ? await root.modalShinobi("Excluir ficha?",`Excluir “${nome}”? A ficha Principal será mantida. A exclusão é somente deste aparelho; backups da nuvem não serão apagados.`)
+      : root.confirm?.(`Excluir "${nome}" deste aparelho?`);
+    if(!confirmar)return false;
+
+    /* Não chamamos salvar() aqui: em aliases antigos cujo nome foi truncado,
+       salvar antes da exclusão podia criar uma NOVA chave canônica e manter a
+       chave física antiga viva. */
+    const removeu=removerFichaLocal(nome);
+    if(!removeu){
+      if(typeof root.avisoShinobi==="function")await root.avisoShinobi("Ficha não encontrada","A entrada já não possui dados locais. A lista será reparada ao recarregar.");
+      atualizarListaAposExclusao([nome]);
     }
 
-    const confirmar=typeof root.modalShinobi==="function"
-      ? await root.modalShinobi("Excluir ficha?",`Excluir “${nome}”? A ficha Principal será mantida.`)
-      : root.confirm?.(`Excluir "${nome}"?`);
-    if(!confirmar) return false;
-
-    /* A exclusão da ficha local não depende mais da identidade antiga no
-       Firebase. Backups da nuvem serão administrados separadamente pelo futuro
-       gerenciador de backups. */
-    const removeu=removerFichaLocal(nome);
-    if(!removeu) return false;
-
-    root.alert?.("Ficha excluída.");
+    try{await root.EkoRealtimeSync?.ativarFichaAtual?.();}catch(_erro){}
+    root.alert?.("Ficha excluída deste aparelho.");
     try{root.location.reload();}catch(_erro){}
     return true;
   }
@@ -141,43 +278,37 @@
   }
 
   async function limparCopiasAntigas(){
-    /* Se a pilha online já estiver carregada, permitimos que ela faça apenas a
-       normalização LOCAL dos marcadores legados. A limpeza não depende disso,
-       não aguarda rede e não registra exclusões no Firebase. */
-    try{root.ShinobiOnline?.listarCopiasLegadasLocaisSeguras?.();}catch(_erro){}
-
     const analise=listarCopiasLegadasLocais();
     const seguras=analise.seguras;
     const revisar=analise.revisar;
 
     if(!seguras.length){
       const complemento=revisar.length
-        ? ` Existem ${revisar.length} ficha(s) com nome do padrão antigo, mas sem marcação segura de cópia automática; elas foram preservadas.`
+        ? ` Existem ${revisar.length} entrada(s) suspeita(s), mas sem evidência suficiente para exclusão automática; elas foram preservadas.`
         : "";
-      if(typeof root.avisoShinobi==="function") await root.avisoShinobi("Nenhuma cópia antiga marcada",`Não encontrei cópias automáticas antigas que possam ser removidas com segurança.${complemento}`);
-      else root.alert?.(`Nenhuma cópia antiga marcada para remover.${complemento}`);
+      if(typeof root.avisoShinobi==="function")await root.avisoShinobi("Nenhuma cópia segura para limpar",`Não encontrei cópias antigas que possam ser removidas automaticamente.${complemento}`);
+      else root.alert?.(`Nenhuma cópia segura para remover.${complemento}`);
       return {removidas:0,revisar:revisar.length};
     }
 
     const nomes=nomesParaMensagem(seguras);
-    const avisoRevisao=revisar.length?` ${revisar.length} ficha(s) sem marcação segura serão mantidas.`:"";
+    const avisoRevisao=revisar.length?` ${revisar.length} entrada(s) duvidosa(s) serão mantidas.`:"";
     const ok=typeof root.modalShinobi==="function"
       ? await root.modalShinobi(
           "Limpar cópias antigas?",
-          `Serão removidas ${seguras.length} cópia(s) automáticas antigas: ${nomes}. A ficha Principal será mantida.${avisoRevisao}`
+          `Serão removidas ${seguras.length} entrada(s) antigas deste aparelho: ${nomes}. A ficha Principal e os dados online dela serão mantidos.${avisoRevisao}`
         )
-      : root.confirm?.(`Excluir ${seguras.length} cópia(s) automáticas antigas? ${nomes}`);
-    if(!ok) return {removidas:0,revisar:revisar.length};
+      : root.confirm?.(`Excluir ${seguras.length} cópia(s) antigas deste aparelho? ${nomes}`);
+    if(!ok)return {removidas:0,revisar:revisar.length};
 
     const removidas=[];
     for(const ficha of seguras){
-      if(!ehCopiaLegadaMarcada(ficha)) continue;
-      try{root.localStorage.removeItem(ficha.key||chaveFicha(ficha.name));}catch(_erroStorage){continue;}
-      removidas.push(limparNome(ficha.name));
+      if(!ehCopiaLegadaMarcada(ficha))continue;
+      if(removerFichaLocal(ficha.name))removidas.push(limparNome(ficha.name));
     }
-    atualizarListaAposExclusao(removidas);
 
-    root.alert?.(`${removidas.length} cópia(s) antiga(s) removida(s).${revisar.length?` ${revisar.length} foram preservadas por segurança.`:""}`);
+    try{await root.EkoRealtimeSync?.ativarFichaAtual?.();}catch(_erro){}
+    root.alert?.(`${removidas.length} cópia(s) antiga(s) removida(s) deste aparelho.${revisar.length?` ${revisar.length} foram preservadas por segurança.`:""}`);
     try{root.location.reload();}catch(_erro){}
     return {removidas:removidas.length,revisar:revisar.length};
   }
@@ -188,8 +319,13 @@
   }
 
   return {
+    ehNomeCopiaAutomatica,
     ehCopiaLegadaMarcada,
+    listarRegistrosFisicos,
+    listarFichasLocais,
+    obterFichaPorNome,
     listarCopiasLegadasLocais,
+    chavesFisicasDaFicha,
     excluirFichaMelhorada,
     limparCopiasAntigas,
     removerFichaLocal,
