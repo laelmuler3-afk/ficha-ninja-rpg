@@ -2577,13 +2577,18 @@
     if(cloud?.deleted===true) throw new Error("Esta ficha foi excluída em outro aparelho e não pode ser restaurada como versão ativa.");
     const data=clonar(cloud.data||{});
     const locais=prepararCopiasLocaisLegadas();
+    const uid=uidContaAtiva();
+    const identidadeApi=window.EkoCharacterIdentity;
     const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
     const vinculada=locais.find(f=>f.sheetId===sheetId);
+    const mesmaIdentidade=!asCopy&&typeof identidadeApi?.sameCharacterIdentity==="function"
+      ?locais.find(f=>!f.data?.__online?.syncDisabled&&identidadeApi.sameCharacterIdentity(f.data?.__online||{},data.__online||{},uid))
+      :null;
     const mesmaPersonagem=locais.find(f=>{
       const ownerUid=texto(f.data?.__online?.ownerUid);
-      return chaveLogicaFicha(f)===chaveCloud&&!f.data?.__online?.syncDisabled&&(!ownerUid||ownerUid===uidContaAtiva());
+      return chaveLogicaFicha(f)===chaveCloud&&!f.data?.__online?.syncDisabled&&(!ownerUid||ownerUid===uid);
     });
-    let nome=vinculada?.name||mesmaPersonagem?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
+    let nome=vinculada?.name||mesmaIdentidade?.name||mesmaPersonagem?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
 
     if(asCopy){
       const base=`${nome} Cópia`,nMax=1000;let n=2,candidato=base;
@@ -2594,13 +2599,27 @@
       data.__online.userCopy=true;
       data.__online.sourceSheetId=sheetId;
     }else{
-      const anterior=vinculada||mesmaPersonagem;
+      const anterior=vinculada||mesmaIdentidade||mesmaPersonagem;
       if(anterior&&pontuacaoConteudoFicha(anterior.data)>=8){
         try{await criarBackupFicha(anterior,{reason:"antes-restaurar-nuvem",revision:Number((estadoSync()[anterior.sheetId]||{}).revision||0)});}catch(_erro){}
       }
       data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
+      if(typeof identidadeApi?.resolveCloudCharacterIdentity==="function"){
+        const identidade=identidadeApi.resolveCloudCharacterIdentity({
+          uid,name:nome,online:data.__online,
+          deterministicId:(conta,nomeFicha)=>sheetIdDeterministico(conta,nomeFicha).replace(/^sheet_/,"rt_")
+        });
+        if(texto(identidade?.characterId)){
+          data.__online.characterId=identidade.characterId;
+          data.__online.characterOwnerUid=uid;
+          data.__online.characterIdentityVersion=1;
+          data.__online.realtimeId=identidade.realtimeId||identidade.characterId;
+          data.__online.realtimeOwnerUid=uid;
+          data.__online.realtimeIdentityVersion=2;
+        }
+      }
       data.__online.sheetId=sheetId;
-      data.__online.ownerUid=uidContaAtiva();
+      data.__online.ownerUid=uid;
       data.__online.identityVersion=2;
       data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(nome);
       delete data.__online.syncDisabled;

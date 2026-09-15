@@ -81,10 +81,25 @@
            sincronização da ficha atual. Preserva o sheetId já vinculado neste
            aparelho; assim um backup antigo não cria outro personagem na nuvem. */
         const importado=typeof structuredClone==="function"?structuredClone(novoEstado):JSON.parse(JSON.stringify(novoEstado));
-        const sheetIdAtual=String(estado?.__online?.sheetId||"").trim();
-        if(sheetIdAtual){
+        const onlineAtual=estado?.__online&&typeof estado.__online==="object"?estado.__online:{};
+        const sheetIdAtual=String(onlineAtual.sheetId||"").trim();
+        const characterIdAtual=String(onlineAtual.characterId||"").trim();
+        const realtimeIdAtual=String(onlineAtual.realtimeId||characterIdAtual||"").trim();
+        if(sheetIdAtual||characterIdAtual||realtimeIdAtual){
           importado.__online=importado.__online&&typeof importado.__online==="object"?importado.__online:{};
-          importado.__online.sheetId=sheetIdAtual;
+          if(sheetIdAtual) importado.__online.sheetId=sheetIdAtual;
+          if(onlineAtual.ownerUid) importado.__online.ownerUid=onlineAtual.ownerUid;
+          if(onlineAtual.identityVersion) importado.__online.identityVersion=onlineAtual.identityVersion;
+          if(characterIdAtual){
+            importado.__online.characterId=characterIdAtual;
+            importado.__online.characterOwnerUid=onlineAtual.characterOwnerUid||onlineAtual.ownerUid||"";
+            importado.__online.characterIdentityVersion=onlineAtual.characterIdentityVersion||1;
+          }
+          if(realtimeIdAtual){
+            importado.__online.realtimeId=realtimeIdAtual;
+            importado.__online.realtimeOwnerUid=onlineAtual.realtimeOwnerUid||onlineAtual.characterOwnerUid||onlineAtual.ownerUid||"";
+            importado.__online.realtimeIdentityVersion=onlineAtual.realtimeIdentityVersion||2;
+          }
           importado.__online.name=String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal");
           delete importado.__online.syncDisabled;
           delete importado.__online.legacyAutoCopy;
@@ -103,6 +118,72 @@
     leitor.readAsText(arquivo);
   }
 
+
+  function escolherOrigemImportacao(){
+    return new Promise(resolve=>{
+      const overlay=document.createElement("div");
+      overlay.className="modalShinobiOverlay";
+      overlay.innerHTML=`
+        <div class="modalShinobiBox" role="dialog" aria-modal="true" aria-labelledby="ekoImportarTitulo">
+          <h3 id="ekoImportarTitulo" class="modalShinobiTitulo">Importar ficha</h3>
+          <p class="modalShinobiTexto">Escolha de onde deseja trazer a ficha.</p>
+          <div class="modalShinobiAcoes" style="grid-template-columns:1fr;">
+            <button type="button" class="modalShinobiBtn confirmar" data-origem-importacao="dispositivo">Do dispositivo</button>
+            <button type="button" class="modalShinobiBtn" data-origem-importacao="nuvem">Da nuvem</button>
+            <button type="button" class="modalShinobiBtn cancelar" data-origem-importacao="cancelar">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const concluir=origem=>{
+        overlay.remove();
+        resolve(origem);
+      };
+      overlay.querySelectorAll("[data-origem-importacao]").forEach(botao=>{
+        botao.addEventListener("click",()=>concluir(botao.dataset.origemImportacao||"cancelar"));
+      });
+      overlay.addEventListener("click",evento=>{if(evento.target===overlay)concluir("cancelar");});
+    });
+  }
+
+  function aguardarPainelNuvem(limiteMs=6000){
+    if(window.ShinobiOnlineUI?.abrir) return Promise.resolve(true);
+    return new Promise(resolve=>{
+      let finalizado=false;
+      const concluir=valor=>{
+        if(finalizado)return;
+        finalizado=true;
+        clearTimeout(timer);
+        window.removeEventListener("shinobi:online-stack-ready",aoCarregar);
+        resolve(valor);
+      };
+      const aoCarregar=()=>setTimeout(()=>concluir(Boolean(window.ShinobiOnlineUI?.abrir)),0);
+      const timer=setTimeout(()=>concluir(Boolean(window.ShinobiOnlineUI?.abrir)),limiteMs);
+      window.addEventListener("shinobi:online-stack-ready",aoCarregar,{once:true});
+    });
+  }
+
+  async function abrirImportarFichaSeguro(){
+    const origem=await escolherOrigemImportacao();
+    if(origem==="dispositivo"){
+      const input=document.getElementById("importarFichaInput");
+      input?.click();
+      return;
+    }
+    if(origem!=="nuvem") return;
+
+    const disponivel=await aguardarPainelNuvem();
+    if(!disponivel){
+      if(typeof window.avisoShinobi==="function"){
+        await window.avisoShinobi("Nuvem indisponível","A ficha continua funcionando normalmente, mas o módulo online não pôde ser carregado agora.");
+      }else{
+        alert("O módulo online não pôde ser carregado agora.");
+      }
+      return;
+    }
+    window.ShinobiOnlineUI?.abrir?.("sincronizacao");
+  }
+
+  window.abrirImportarFicha=abrirImportarFichaSeguro;
   window.importarFicha=importarFichaSegura;
   window.validarBackupFicha=extrairEstadoBackup;
 })();
