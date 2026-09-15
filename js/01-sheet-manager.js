@@ -1,4 +1,4 @@
-/* EKO 2.5.8.80 — exclusão protegida + importação completa por characterId. */
+/* EKO 2.5.8.79 — exclusão individual protegida contra salvamento no pagehide. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module!=="undefined"&&module.exports) module.exports=api;
@@ -137,83 +137,6 @@
     const a=identidadesDaFicha(dataA),b=identidadesDaFicha(dataB);
     for(const id of a)if(b.has(id))return true;
     return false;
-  }
-
-  function characterIdDaFicha(data,fallback=""){
-    const online=onlineDaFicha(data);
-    return texto(online.characterId)||texto(online.realtimeId)||texto(online.sheetId)||texto(fallback);
-  }
-
-  function resolverDestinoImportacaoNuvem({cloudId="",cloud={},locais=[]}={}){
-    const data=cloud?.data&&typeof cloud.data==="object"&&!Array.isArray(cloud.data)?cloud.data:{};
-    const characterId=texto(cloud?.characterId)||characterIdDaFicha(data,cloudId);
-    const fichas=Array.isArray(locais)?locais:[];
-    let vinculada=characterId?fichas.find(ficha=>characterIdDaFicha(ficha?.data)===characterId):null;
-    if(!vinculada&&texto(cloudId)){
-      vinculada=fichas.find(ficha=>texto(onlineDaFicha(ficha?.data).sheetId)===texto(cloudId))||null;
-    }
-
-    if(vinculada){
-      return {name:limparNome(vinculada.name),mode:"replace",characterId,existing:vinculada};
-    }
-
-    const base=limparNome(cloud?.name||cloud?.characterName||data?.nome||"Ficha importada");
-    const usados=new Set(fichas.map(ficha=>limparNome(ficha?.name)).filter(Boolean));
-    let name=base;
-    let numero=2;
-    while(usados.has(name)&&numero<1000) name=limparNome(`${base} ${numero++}`);
-    return {name,mode:"create",characterId,existing:null};
-  }
-
-  function aplicarImportacaoNuvemLocal({cloudId="",cloud={},ownerUid=""}={}){
-    if(!cloud?.data||typeof cloud.data!=="object"||Array.isArray(cloud.data)){
-      throw new Error("Backup da nuvem inválido ou incompleto.");
-    }
-
-    const locais=listarFichasLocais();
-    const destino=resolverDestinoImportacaoNuvem({cloudId,cloud,locais});
-    const data=JSON.parse(JSON.stringify(cloud.data));
-    data.__online=data.__online&&typeof data.__online==="object"&&!Array.isArray(data.__online)?data.__online:{};
-
-    const characterId=texto(destino.characterId)||texto(cloudId);
-    if(characterId){
-      data.__online.characterId=characterId;
-      data.__online.realtimeId=characterId;
-      data.__online.characterIdentityVersion=1;
-      data.__online.realtimeIdentityVersion=2;
-    }
-
-    const uid=texto(ownerUid);
-    if(uid){
-      data.__online.characterOwnerUid=uid;
-      data.__online.realtimeOwnerUid=uid;
-      data.__online.ownerUid=uid;
-      data.__online.identityVersion=2;
-    }
-
-    data.__online.sheetId=texto(data.__online.sheetId)||texto(cloud?.sheetId)||texto(cloudId)||characterId;
-    data.__online.name=destino.name;
-    delete data.__online.syncDisabled;
-    delete data.__online.legacyAutoCopy;
-
-    const key=chaveFicha(destino.name);
-    root.localStorage.setItem(key,JSON.stringify(data));
-
-    const lista=nomesDaLista();
-    if(!lista.includes(destino.name))lista.push(destino.name);
-    root.localStorage.setItem(CHAVE_LISTA,JSON.stringify(Array.from(new Set(lista))));
-    root.localStorage.setItem(CHAVE_ATIVA,destino.name);
-
-    try{
-      if(Array.isArray(root.fichas)&&!root.fichas.includes(destino.name))root.fichas.push(destino.name);
-      if(typeof root.fichaAtual!=="undefined")root.fichaAtual=destino.name;
-      if(typeof root.CHAVE!=="undefined")root.CHAVE=key;
-    }catch(_erro){}
-
-    return {
-      name:destino.name,key,mode:destino.mode,characterId,
-      sheetId:texto(data.__online.sheetId),data
-    };
   }
 
   function normalizarConteudoComparacao(valor){
@@ -448,8 +371,6 @@
   return {
     ehNomeCopiaAutomatica,
     ehCopiaLegadaMarcada,
-    resolverDestinoImportacaoNuvem,
-    aplicarImportacaoNuvemLocal,
     listarRegistrosFisicos,
     listarFichasLocais,
     obterFichaPorNome,

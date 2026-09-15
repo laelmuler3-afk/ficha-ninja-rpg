@@ -755,15 +755,12 @@
   }
 
   function textoStatusSync(st){
-    const rt=window.EkoRealtimeSync?.status?.()||{};
-    const pendentes=Math.max(0,Number(rt.pending||0));
-    if(rt.lastError)return {classe:"conflito",rotulo:"Falha na sincronização",detalhe:rt.lastError};
-    if(rt.online===false)return {classe:"pendente",rotulo:pendentes?"Alterações aguardando internet":"Sem conexão",detalhe:pendentes?`${pendentes} alteração(ões) da ficha ativa serão reenviadas quando a internet voltar.`:"O realtime será retomado automaticamente quando a conexão voltar."};
-    if(pendentes)return {classe:"sincronizando",rotulo:"Sincronizando…",detalhe:`${pendentes} alteração(ões) confirmada(s) ainda estão na fila realtime.`};
-    if(rt.connected&&rt.sheetId)return {classe:"ok",rotulo:"Tudo sincronizado",detalhe:"A ficha ativa está conectada ao realtime e não possui alterações pendentes."};
     const sync=st?.syncAtual||{};
     if(sync.phase==="conflict")return {classe:"conflito",rotulo:"Atenção necessária",detalhe:"Existe um conflito aguardando sua escolha."};
-    return {classe:"ok",rotulo:"Sincronização disponível",detalhe:"A ficha ativa será conectada ao realtime após a Conta Google e a identidade do personagem estarem prontas."};
+    if(sync.phase==="syncing")return {classe:"sincronizando",rotulo:"Sincronizando…",detalhe:"Enviando as alterações desta ficha."};
+    if(sync.phase==="pending")return {classe:"pendente",rotulo:"Aguardando envio",detalhe:navigator.onLine===false?"Será enviada quando a internet voltar.":"A sincronização automática está preparando o envio."};
+    if(sync.syncStatus===1)return {classe:"ok",rotulo:"Tudo sincronizado",detalhe:"As alterações são enviadas e recebidas automaticamente."};
+    return {classe:"ok",rotulo:"Sincronização entre dispositivos",detalhe:"Alterações confirmadas da ficha ativa são enviadas e recebidas por campo."};
   }
 
   function renderFichaNuvemGrupo(grupo){
@@ -809,20 +806,16 @@
       </section>`;
     }
 
+    const grupos=agruparFichasNuvem(nuvem,locais);
+    const vinculadas=grupos.filter(grupo=>grupo.vinculada);
+    const disponiveis=grupos.filter(grupo=>!grupo.vinculada);
     const status=textoStatusSync(st);
-    const rt=window.EkoRealtimeSync?.status?.()||{};
-    const atual=window.ShinobiOnline?.fichaAtualLocal?.();
-    const nomeAtual=atual?.characterName||atual?.data?.nome||atual?.name||"Ficha ativa";
-    const pendentes=Math.max(0,Number(rt.pending||0));
-    const detalheFila=pendentes
-      ? `${pendentes} pendente(s) • ${Number(rt.notePending||0)} de notas`
-      : "Nenhuma alteração pendente";
 
     return `<section class="onlineCard onlineSyncPainel">
       <div class="onlineSyncHero">
         <div class="onlineSyncIcone">↻</div>
         <div class="onlineSyncHeroTexto">
-          <span class="onlineCardSelo">REALTIME DA FICHA ATIVA</span>
+          <span class="onlineCardSelo">SINCRONIZAÇÃO ENTRE DISPOSITIVOS</span>
           <h3>${esc(status.rotulo)}</h3>
           <p>${esc(status.detalhe)}</p>
         </div>
@@ -830,18 +823,27 @@
       </div>
 
       <div class="onlineSyncConta">
-        <div><small>PERSONAGEM ATIVO</small><strong>${esc(nomeAtual)}</strong></div>
-        <span>${esc(detalheFila)}</span>
+        <div><small>CONTA GOOGLE</small><strong>${esc(st.user?.email||"Conta Google")}</strong></div>
+        <span>${locais.length} ${locais.length===1?"personagem":"personagens"} neste aparelho${recuperacoes?` • ${recuperacoes} ${recuperacoes===1?"cópia antiga preservada":"cópias antigas preservadas"}`:""}</span>
       </div>
 
-      <button type="button" class="onlineBtn primario" data-action="sync-check">↻ Sincronizar agora</button>
-      <small>Força o reenvio das pendências realtime e baixa novamente o estado atual da ficha ativa. Não cria backup e não sincroniza fichas inteiras.</small>
+      <div class="onlineSyncResumo">
+        <div><b>${vinculadas.length}</b><span>sincronizadas</span></div>
+        <div><b>${disponiveis.length}</b><span>disponíveis</span></div>
+        <div><b>${grupos.length}</b><span>personagens</span></div>
+      </div>
+
+      ${grupos.length?`
+        <div class="onlineSyncSecao">
+          <div class="onlineSyncSecaoTitulo"><span>SEUS PERSONAGENS</span><small>Uma personagem é a mesma no celular, tablet e demais aparelhos</small></div>
+          <div class="onlineListaNuvem onlineListaNuvemClean">${grupos.map(renderFichaNuvemGrupo).join("")}</div>
+        </div>`:`<p class="onlineVazio">Nenhum backup da ficha foi encontrado na nuvem. A sincronização entre dispositivos funciona separadamente, por alteração confirmada.</p>`}
 
       <details class="onlineSyncAvancado">
-        <summary>Backups e recuperação</summary>
+        <summary>Opções avançadas</summary>
         <div>
-          <p>${nuvem.length} ${nuvem.length===1?"backup completo encontrado":"backups completos encontrados"} nesta Conta Google${recuperacoes?` • ${recuperacoes} ${recuperacoes===1?"cópia antiga local preservada":"cópias antigas locais preservadas"}`:""}.</p>
-          <small>Backups completos ficam separados do realtime. Para baixar outra ficha, use o botão <b>Importar ficha → Nuvem</b>.</small>
+          <button type="button" class="onlineBtn secundario compacto" data-action="sync-check">Verificar sincronização agora</button>
+          <small>As alterações confirmadas são enviadas automaticamente. Use esta opção apenas para reenviar pendências da ficha ativa.</small>
         </div>
       </details>
     </section>`;
@@ -1216,16 +1218,9 @@
     if(acao==="copy-code")return copiar(obterEstado().sala?.code,"Código copiado.");
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
     if(acao==="sync-check")return executar(async()=>{
-      const resultado=await window.EkoRealtimeSync?.forcarSincronizacaoAtual?.();
-      if(!resultado||resultado.skipped)throw new Error("O realtime da ficha ativa ainda não está disponível para esta conta.");
-      const pendentes=Number(resultado.pendingAfter||0);
-      if(pendentes>0){
-        await avisar("Sincronização ainda pendente",`${pendentes} alteração(ões) continuam aguardando envio. Confira a conexão e tente novamente.`);
-        return;
-      }
-      const enviados=Number(resultado.enviados||0);
-      const recebidos=Number(resultado.camposRecebidos||0)+Number(resultado.notasRecebidas||0);
-      await avisar("Sincronização concluída",`Fila realtime zerada. ${enviados} envio(s) processado(s) e ${recebidos} atualização(ões) remota(s) conferida(s).`);
+      try{window.ShinobiOnline?.ativarBackupsNuvem?.();}catch(_erro){}
+      await window.EkoRealtimeSync?.reconciliar?.();
+      await avisar("Sincronização verificada","As alterações confirmadas da ficha ativa foram conferidas. O backup na nuvem permanece separado.");
     });
     if(acao==="sync-current")return executar(async()=>{
       try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
@@ -1405,7 +1400,6 @@
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
     ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
-    window.addEventListener("shinobi:realtime-status",agendarRender);
     window.ShinobiOnline.on("erro",e=>{
       document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");
       console.warn("Modo online indisponível:",e.detail.mensagem);
