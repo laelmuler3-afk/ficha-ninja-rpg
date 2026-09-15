@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.80",
-  "name": "Importar ficha completa da nuvem",
-  "notes": "O botão Importar ficha agora permite escolher entre arquivo do dispositivo e backup completo da Conta Google. A restauração usa characterId para substituir a mesma personagem sem criar duplicatas e preserva o realtime separado por campos confirmados.",
+  "version": "2.5.8.81",
+  "name": "Notas realtime por item",
+  "notes": "Notas agora possuem IDs permanentes e sincronizam individualmente em sheetRealtime/collections/notas. Criar, editar e excluir um tópico não substitui mais o array inteiro; alterações offline continuam em fila e o estado visual aberto/fechado permanece local.",
   "date": "2026-09-15"
 }
