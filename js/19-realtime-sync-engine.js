@@ -10,6 +10,7 @@
 
   const CHAVE_OUTBOX_BASE="shinobi_field_outbox_v2";
   const CHAVE_VERSOES_BASE="shinobi_field_versions_v2";
+  const CHAVE_OUTBOX_COLECOES_BASE="shinobi_collection_outbox_v1";
   const CHAVE_SERVER_OFFSET="shinobi_server_time_offset_v2";
   const CHAVE_DEVICE="shinobi_device_id_v1";
 
@@ -49,8 +50,21 @@
     if(!deleted)op.payload=JSON.stringify(normalizarValor(nome,valor));
     return op;
   }
+  function criarOperacaoColecaoPura({sheetId,sheetName,collection,itemId,valor,deleted=false,editAt,deviceId,opId,uid=""}){
+    const colecao=texto(collection),id=texto(itemId);
+    const op={
+      kind:"collection-item",uid:texto(uid),sheetId:texto(sheetId),sheetName:texto(sheetName)||"Principal",
+      collection:colecao,itemId:id,deleted:deleted===true,editAt:Number(editAt||agora()),
+      deviceId:texto(deviceId),opId:texto(opId)||idAleatorio("item")
+    };
+    if(!op.deleted){
+      const normalizado=colecao==="notas"&&util?.normalizarItemNotaParaNuvem?util.normalizarItemNotaParaNuvem(valor):clonar(valor);
+      op.payload=JSON.stringify(normalizado);
+    }
+    return op;
+  }
 
-  const test={compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime};
+  const test={compararRegistros,registroMaisNovo,criarOperacaoPura,criarOperacaoColecaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime};
 
   function install(){
     if(!root||!root.document||root.__ekoRealtimeLazyV2)return false;
@@ -93,6 +107,8 @@
     function salvarJson(chave,valor){if(!chave)return;try{root.localStorage.setItem(chave,JSON.stringify(valor));}catch(_e){}}
     function lerOutbox(uid=uidAtual()){return lerJson(chaveConta(CHAVE_OUTBOX_BASE,uid),{});}
     function salvarOutbox(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_OUTBOX_BASE,uid),valor||{});}
+    function lerOutboxColecoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_OUTBOX_COLECOES_BASE,uid),{});}
+    function salvarOutboxColecoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_OUTBOX_COLECOES_BASE,uid),valor||{});}
     function lerVersoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_VERSOES_BASE,uid),{});}
     function salvarVersoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_VERSOES_BASE,uid),valor||{});}
     function chaveOperacao(sheetId,campo){return `${texto(sheetId)}::${campoParaChave(campo)}`;}
@@ -141,9 +157,27 @@
     function operacaoPendente(sheetId,campo,uid=uidAtual()){
       return lerOutbox(uid)?.[chaveOperacao(sheetId,campo)]||null;
     }
+    function chaveOperacaoColecao(sheetId,collection,itemId){return `${texto(sheetId)}::${texto(collection)}::${campoParaChave(itemId)}`;}
+    function adicionarOutboxColecao(op,uid=uidAtual()){
+      if(!uid||!op?.sheetId||texto(op?.collection)!=="notas"||!texto(op?.itemId))return;
+      const todos=lerOutboxColecoes(uid),chave=chaveOperacaoColecao(op.sheetId,op.collection,op.itemId);
+      const anterior=todos[chave];
+      if(!anterior||compararRegistros(op,anterior)>=0)todos[chave]=op;
+      salvarOutboxColecoes(todos,uid);
+    }
+    function removerOutboxColecao(op,uid=uidAtual()){
+      const todos=lerOutboxColecoes(uid),chave=chaveOperacaoColecao(op?.sheetId,op?.collection,op?.itemId),atual=todos[chave];
+      if(!atual)return;
+      if(op?.opId&&texto(atual.opId)!==texto(op.opId))return;
+      delete todos[chave];salvarOutboxColecoes(todos,uid);
+    }
+    function operacaoColecaoPendente(sheetId,collection,itemId,uid=uidAtual()){
+      return lerOutboxColecoes(uid)?.[chaveOperacaoColecao(sheetId,collection,itemId)]||null;
+    }
     function temPendencias(sheetId="",uid=uidAtual()){
       const id=texto(sheetId);
-      return Object.values(lerOutbox(uid)).some(op=>!id||texto(op?.sheetId)===id);
+      return Object.values(lerOutbox(uid)).some(op=>!id||texto(op?.sheetId)===id)
+        ||Object.values(lerOutboxColecoes(uid)).some(op=>!id||texto(op?.sheetId)===id);
     }
 
     function registroParaFirebase(op){
@@ -249,6 +283,7 @@
       for(const [chave,registro] of Object.entries(registros)){
         const campo=texto(registro?.name)||(util?.chaveParaCampo?util.chaveParaCampo(chave):"");
         if(!registro||!campoPermitido(campo)||texto(registro.name)!==campo)continue;
+        if(campo==="notasTopicos")continue; /* notas usam collections/notas por item desde 2.5.8.81 */
         const anterior=versaoAplicada(sheetId,campo,uid);
         if(anterior&&compararRegistros(registro,anterior)<=0)continue;
         const pendente=operacaoPendente(sheetId,campo,uid);
@@ -273,9 +308,51 @@
       return aplicados;
     }
 
+    function aplicarSnapshotNotas(sheetId,valor){
+      const uid=uidAtual(),ficha=obterFichaAtiva(false);
+      if(!uid||!ficha||realtimeIdDaFicha(ficha)!==texto(sheetId))return [];
+      let dados={};
+      try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
+      if(!dados||typeof dados!=="object"||Array.isArray(dados))dados={};
+      let notas=Array.isArray(dados.notasTopicos)?dados.notasTopicos:[];
+      const aplicados=[];
+      for(const [chave,registro] of Object.entries(valor&&typeof valor==="object"?valor:{})){
+        const itemId=texto(registro?.id||registro?.itemId||(util?.chaveParaCampo?util.chaveParaCampo(chave):""));
+        if(!registro||!itemId)continue;
+        const versaoCampo=`@notas:${itemId}`;
+        const anterior=versaoAplicada(sheetId,versaoCampo,uid);
+        if(anterior&&compararRegistros(registro,anterior)<=0)continue;
+        const pendente=operacaoColecaoPendente(sheetId,"notas",itemId,uid);
+        if(pendente&&compararRegistros(pendente,registro)>0)continue;
+        if(pendente&&compararRegistros(registro,pendente)>=0)removerOutboxColecao(pendente,uid);
+        let item={id:itemId};
+        if(registro.deleted!==true){
+          try{item=JSON.parse(String(registro.payload||"{}"));}catch(_e){continue;}
+          if(!item||typeof item!=="object"||Array.isArray(item))continue;
+          item.id=itemId;
+        }
+        notas=util?.aplicarItemNotaRemoto?util.aplicarItemNotaRemoto(notas,item,registro.deleted===true):notas;
+        registrarVersao(sheetId,versaoCampo,registro,uid);
+        aplicados.push(itemId);
+      }
+      if(aplicados.length){
+        dados.notasTopicos=notas;
+        try{root.localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){}
+        try{
+          if(typeof estado!=="undefined"&&estado&&typeof estado==="object")estado.notasTopicos=clonar(notas);
+        }catch(_e){}
+        agendarAtualizacaoUi(["notasTopicos"],dados);
+        try{root.dispatchEvent(new CustomEvent("shinobi:realtime-colecao-aplicada",{detail:{sheetId,collection:"notas",itemIds:aplicados}}));}catch(_e){}
+      }
+      return aplicados;
+    }
+
     function desconectarListener(){
       const atual=estadoRT.listener;
-      if(atual){try{atual.ref.off("value",atual.callback);}catch(_e){}}
+      if(atual){
+        try{atual.ref.off("value",atual.callback);}catch(_e){}
+        try{atual.notasRef?.off("value",atual.notasCallback);}catch(_e){}
+      }
       estadoRT.listener=null;
     }
 
@@ -319,7 +396,27 @@
         console.warn("Realtime da ficha ativa indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização em tempo real indisponível. A ficha local continua funcionando."}}));}catch(_e){}
       });
-      estadoRT.listener={uid,sheetId,ref,callback};
+      const notasRef=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/notas`);
+      const notasCallback=snap=>{
+        try{aplicarSnapshotNotas(sheetId,snap.val()||{});}catch(erro){console.warn("Falha ao aplicar notas realtime.",erro);}
+      };
+      notasRef.on("value",notasCallback,()=>{});
+      estadoRT.listener={uid,sheetId,ref,callback,notasRef,notasCallback};
+
+      try{
+        const snapNotas=await notasRef.once("value");
+        const remotas=snapNotas.val()&&typeof snapNotas.val()==="object"?snapNotas.val():{};
+        const fichaLocal=obterFichaAtiva(false);
+        const notas=Array.isArray(fichaLocal?.data?.notasTopicos)?fichaLocal.data.notasTopicos:[];
+        notas.forEach((item,indice)=>{
+          const itemId=texto(item?.id);
+          if(!itemId||Object.prototype.hasOwnProperty.call(remotas,campoParaChave(itemId)))return;
+          adicionarOutboxColecao(criarOperacaoColecaoPura({
+            uid,sheetId,sheetName:fichaLocal.name,collection:"notas",itemId,valor:item,
+            editAt:timestampEdicao()+indice,deviceId:deviceId(),opId:idAleatorio("note-seed")
+          }),uid);
+        });
+      }catch(_e){}
       await processarOutbox().catch(()=>{});
       return {ok:true,sheetId};
     }
@@ -350,6 +447,30 @@
       return {ok:true,record:salvo};
     }
 
+    async function enviarOperacaoColecao(op){
+      const uid=uidAtual(),db=banco();
+      if(!uid||!db||texto(op?.uid)!==uid)throw new Error("Conta Google indisponível para sincronização realtime.");
+      if(texto(op?.collection)!=="notas"||!texto(op?.itemId))throw new Error("Operação de coleção inválida.");
+      const ref=db.ref(`sheetRealtime/${uid}/${op.sheetId}/collections/notas/${campoParaChave(op.itemId)}`);
+      let registroAtual=null;
+      const resultado=await ref.transaction(atual=>{
+        if(atual&&compararRegistros(op,atual)<=0){registroAtual=atual;return;}
+        const registro=registroParaFirebase(op);
+        registro.id=op.itemId;
+        return registro;
+      });
+      if(!resultado.committed){
+        removerOutboxColecao(op,uid);
+        const atual=registroAtual||resultado.snapshot?.val?.();
+        if(atual&&estadoRT.listener?.sheetId===op.sheetId)aplicarSnapshotNotas(op.sheetId,{[campoParaChave(op.itemId)]:atual});
+        return {ok:true,obsolete:true};
+      }
+      const salvo=resultado.snapshot?.val?.();
+      removerOutboxColecao(op,uid);
+      if(salvo)registrarVersao(op.sheetId,`@notas:${op.itemId}`,salvo,uid);
+      return {ok:true,record:salvo};
+    }
+
     async function processarOutbox(){
       if(estadoRT.processando){estadoRT.reprocessar=true;return {busy:true};}
       const uid=uidAtual(),db=banco();
@@ -361,6 +482,12 @@
         pendentes.sort((a,b)=>compararRegistros(a,b));
         for(const op of pendentes){
           try{resultados.push(await enviarOperacao(op));}
+          catch(erro){resultados.push({ok:false,error:erro,op});}
+        }
+        const itens=Object.values(lerOutboxColecoes(uid)).filter(op=>op?.sheetId&&texto(op?.collection)==="notas"&&texto(op?.itemId));
+        itens.sort((a,b)=>compararRegistros(a,b));
+        for(const op of itens){
+          try{resultados.push(await enviarOperacaoColecao(op));}
           catch(erro){resultados.push({ok:false,error:erro,op});}
         }
       }finally{
@@ -392,6 +519,26 @@
       return {...resultado,op};
     }
 
+    async function sincronizarItemColecaoConfirmado(localSheetName,collection,itemId,valor,meta={}){
+      const colecao=texto(collection),id=texto(itemId);
+      if(colecao!=="notas"||!id)return {skipped:true,reason:"colecao-ou-item-invalido"};
+      const user=usuarioAtual();
+      if(!user)return {skipped:true,reason:"sem-conta-google"};
+      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(localSheetName)||obterFichaAtiva(true);
+      const realtimeId=realtimeIdDaFicha(ficha);
+      if(!realtimeId||!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-indisponivel"};
+      const uid=texto(user.uid),deleted=meta.deleted===true;
+      const op=criarOperacaoColecaoPura({
+        uid,sheetId:realtimeId,sheetName:ficha.name,collection:colecao,itemId:id,valor,deleted,
+        editAt:Number(meta.editAt||timestampEdicao()),deviceId:deviceId(),opId:idAleatorio("note")
+      });
+      adicionarOutboxColecao(op,uid);
+      if(root.navigator?.onLine===false)return {queued:true,op};
+      if(estadoRT.bootLiberado)await ativarFichaAtual().catch(()=>{});
+      const resultado=await processarOutbox();
+      return {...resultado,op};
+    }
+
     async function reconciliar(){
       if(!estadoRT.bootLiberado)return {skipped:true};
       await ativarFichaAtual().catch(()=>{});
@@ -405,9 +552,10 @@
     }
 
     root.ShinobiOnline.sincronizarCampoConfirmado=sincronizarCampoConfirmado;
+    root.ShinobiOnline.sincronizarItemColecaoConfirmado=sincronizarItemColecaoConfirmado;
     root.ShinobiOnline.sincronizarPendenciasRealtime=processarOutbox;
     root.EkoRealtimeSync={
-      sincronizarCampoConfirmado,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
+      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
       get estado(){return {bootLiberado:estadoRT.bootLiberado,uid:uidAtual(),sheetId:estadoRT.listener?.sheetId||""};}
     };
 
