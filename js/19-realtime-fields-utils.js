@@ -51,57 +51,6 @@
     return oa>ob?1:-1;
   }
 
-
-  function hashEstavelNota(texto){
-    let h=2166136261;
-    const valor=String(texto==null?"":texto);
-    for(let i=0;i<valor.length;i++){
-      h^=valor.charCodeAt(i);
-      h=Math.imul(h,16777619);
-    }
-    return (h>>>0).toString(36);
-  }
-
-  function normalizarItemNotaParaNuvem(valor){
-    if(!valor||typeof valor!=="object"||Array.isArray(valor)) return valor;
-    const saida=clonar(valor);
-    delete saida.aberto;
-    return saida;
-  }
-
-  function garantirIdsNotas(lista,characterId){
-    const atual=Array.isArray(lista)?clonar(lista):[];
-    const identidade=String(characterId||"").trim();
-    let alterou=false;
-    atual.forEach((item,indice)=>{
-      if(!item||typeof item!=="object"||Array.isArray(item)) return;
-      if(String(item.id||"").trim()) return;
-      const base=[identidade,indice,String(item.titulo||""),String(item.texto||"")].join("|");
-      item.id="nota_legacy_"+hashEstavelNota(base);
-      alterou=true;
-    });
-    return {lista:atual,alterou};
-  }
-
-  function aplicarItemNotaRemoto(lista,item,deleted=false){
-    const atual=Array.isArray(lista)?clonar(lista):[];
-    const id=String(item?.id||"").trim();
-    if(!id) return atual;
-    const indice=atual.findIndex(n=>String(n?.id||"")===id);
-    if(deleted){
-      if(indice>=0) atual.splice(indice,1);
-      return atual;
-    }
-    const remoto=normalizarItemNotaParaNuvem(item);
-    if(indice>=0){
-      const aberto=Boolean(atual[indice]?.aberto);
-      atual[indice]={...remoto,aberto};
-    }else{
-      atual.push({...remoto,aberto:false});
-    }
-    return atual;
-  }
-
   function normalizarValorParaNuvem(nome,valor){
     const copia=clonar(valor);
     if(nome==="notasTopicos"&&Array.isArray(copia)){
@@ -136,5 +85,5 @@
     });
   }
 
-  return {camposAlterados,campoPermitido,campoParaChave,chaveParaCampo,compararVersoes,normalizarValorParaNuvem,mesclarValorRemoto,normalizarItemNotaParaNuvem,garantirIdsNotas,aplicarItemNotaRemoto};
+  return {camposAlterados,campoPermitido,campoParaChave,chaveParaCampo,compararVersoes,normalizarValorParaNuvem,mesclarValorRemoto};
 });
