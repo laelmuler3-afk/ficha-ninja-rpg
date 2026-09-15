@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.77",
-  "name": "Correção da limpeza de cópias legadas",
-  "notes": "Corrige cópias automáticas antigas contaminadas por userCopy, torna a exclusão de ficha estritamente local e mostra os nomes antes da limpeza em lote; Principal e fichas sem marcação legada permanecem protegidas.",
+  "version": "2.5.8.78",
+  "name": "Reparo da biblioteca de fichas legadas",
+  "notes": "Corrige exclusão de aliases antigos cujas chaves físicas foram truncadas/normalizadas, impede cópias legacy/syncDisabled de ouvir o realtime da Principal e remove cópias locais sem tocar nos backups da nuvem.",
   "date": "2026-09-14"
 }
