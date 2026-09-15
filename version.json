@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.81",
-  "name": "Notas realtime por item",
-  "notes": "Notas agora possuem IDs permanentes e sincronizam individualmente em sheetRealtime/collections/notas. Criar, editar e excluir um tópico não substitui mais o array inteiro; alterações offline continuam em fila e o estado visual aberto/fechado permanece local.",
+  "version": "2.5.8.83",
+  "name": "Notas realtime por item - reconstrução segura",
+  "notes": "Reconstruída diretamente da 2.5.8.80. IDs de notas só são criados em ações confirmadas; nenhum ID é migrado/persistido no boot. Notas usam registros individuais no caminho fields já existente, sem alterar Firebase Rules nem o gerenciador de fichas.",
   "date": "2026-09-15"
 }
