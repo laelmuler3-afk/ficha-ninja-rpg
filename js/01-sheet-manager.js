@@ -1,4 +1,4 @@
-/* EKO 2.5.8.80 — exclusão protegida + importação completa por characterId. */
+/* EKO 2.5.8.82 — exclusão protegida + importação completa por characterId. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module!=="undefined"&&module.exports) module.exports=api;
@@ -216,13 +216,14 @@
     };
   }
 
-  function normalizarConteudoComparacao(valor){
-    if(Array.isArray(valor))return valor.map(normalizarConteudoComparacao);
+  function normalizarConteudoComparacao(valor,caminho=""){
+    if(Array.isArray(valor))return valor.map((item,indice)=>normalizarConteudoComparacao(item,`${caminho}[${indice}]`));
     if(!valor||typeof valor!=="object")return valor;
     const saida={};
     Object.keys(valor).sort().forEach(chave=>{
       if(chave==="__online")return;
-      saida[chave]=normalizarConteudoComparacao(valor[chave]);
+      if(/^notasTopicos\[\d+\]$/.test(caminho)&&(chave==="id"||chave==="aberto"))return;
+      saida[chave]=normalizarConteudoComparacao(valor[chave],caminho?`${caminho}.${chave}`:chave);
     });
     return saida;
   }

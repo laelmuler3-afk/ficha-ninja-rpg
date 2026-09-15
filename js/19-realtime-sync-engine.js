@@ -58,7 +58,9 @@
       deviceId:texto(deviceId),opId:texto(opId)||idAleatorio("item")
     };
     if(!op.deleted){
-      const normalizado=colecao==="notas"&&util?.normalizarItemNotaParaNuvem?util.normalizarItemNotaParaNuvem(valor):clonar(valor);
+      const normalizado=colecao==="notas"&&util?.normalizarItemNotaParaNuvem
+        ?util.normalizarItemNotaParaNuvem(valor)
+        :clonar(valor);
       op.payload=JSON.stringify(normalizado);
     }
     return op;
@@ -157,19 +159,25 @@
     function operacaoPendente(sheetId,campo,uid=uidAtual()){
       return lerOutbox(uid)?.[chaveOperacao(sheetId,campo)]||null;
     }
-    function chaveOperacaoColecao(sheetId,collection,itemId){return `${texto(sheetId)}::${texto(collection)}::${campoParaChave(itemId)}`;}
+    function chaveOperacaoColecao(sheetId,collection,itemId){
+      return `${texto(sheetId)}::${texto(collection)}::${campoParaChave(itemId)}`;
+    }
     function adicionarOutboxColecao(op,uid=uidAtual()){
       if(!uid||!op?.sheetId||texto(op?.collection)!=="notas"||!texto(op?.itemId))return;
-      const todos=lerOutboxColecoes(uid),chave=chaveOperacaoColecao(op.sheetId,op.collection,op.itemId);
+      const todos=lerOutboxColecoes(uid);
+      const chave=chaveOperacaoColecao(op.sheetId,op.collection,op.itemId);
       const anterior=todos[chave];
       if(!anterior||compararRegistros(op,anterior)>=0)todos[chave]=op;
       salvarOutboxColecoes(todos,uid);
     }
     function removerOutboxColecao(op,uid=uidAtual()){
-      const todos=lerOutboxColecoes(uid),chave=chaveOperacaoColecao(op?.sheetId,op?.collection,op?.itemId),atual=todos[chave];
+      const todos=lerOutboxColecoes(uid);
+      const chave=chaveOperacaoColecao(op?.sheetId,op?.collection,op?.itemId);
+      const atual=todos[chave];
       if(!atual)return;
       if(op?.opId&&texto(atual.opId)!==texto(op.opId))return;
-      delete todos[chave];salvarOutboxColecoes(todos,uid);
+      delete todos[chave];
+      salvarOutboxColecoes(todos,uid);
     }
     function operacaoColecaoPendente(sheetId,collection,itemId,uid=uidAtual()){
       return lerOutboxColecoes(uid)?.[chaveOperacaoColecao(sheetId,collection,itemId)]||null;
@@ -283,7 +291,7 @@
       for(const [chave,registro] of Object.entries(registros)){
         const campo=texto(registro?.name)||(util?.chaveParaCampo?util.chaveParaCampo(chave):"");
         if(!registro||!campoPermitido(campo)||texto(registro.name)!==campo)continue;
-        if(campo==="notasTopicos")continue; /* notas usam collections/notas por item desde 2.5.8.81 */
+        if(campo==="notasTopicos")continue; /* desde 2.5.8.82, notas usam collections/notas/{itemId} */
         const anterior=versaoAplicada(sheetId,campo,uid);
         if(anterior&&compararRegistros(registro,anterior)<=0)continue;
         const pendente=operacaoPendente(sheetId,campo,uid);
@@ -308,11 +316,31 @@
       return aplicados;
     }
 
+    function migrarIdsNotasAtivas(ficha,sheetId){
+      if(!ficha||!sheetId||!util?.garantirIdsNotas)return ficha;
+      let dados={};
+      try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}
+      catch(_e){dados=clonar(ficha.data||{});}
+      if(!dados||typeof dados!=="object"||Array.isArray(dados))return ficha;
+      const resultado=util.garantirIdsNotas(dados.notasTopicos,sheetId);
+      if(!resultado.alterou)return {...ficha,data:dados};
+      dados.notasTopicos=resultado.lista;
+      try{root.localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){}
+      try{
+        if(typeof estado!=="undefined"&&estado&&typeof estado==="object"){
+          estado.notasTopicos=clonar(resultado.lista);
+        }
+      }catch(_e){}
+      return {...ficha,data:dados};
+    }
+
     function aplicarSnapshotNotas(sheetId,valor){
-      const uid=uidAtual(),ficha=obterFichaAtiva(false);
+      const uid=uidAtual();
+      const ficha=obterFichaAtiva(false);
       if(!uid||!ficha||realtimeIdDaFicha(ficha)!==texto(sheetId))return [];
       let dados={};
-      try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
+      try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}
+      catch(_e){dados=clonar(ficha.data||{});}
       if(!dados||typeof dados!=="object"||Array.isArray(dados))dados={};
       let notas=Array.isArray(dados.notasTopicos)?dados.notasTopicos:[];
       const aplicados=[];
@@ -331,7 +359,7 @@
           if(!item||typeof item!=="object"||Array.isArray(item))continue;
           item.id=itemId;
         }
-        notas=util?.aplicarItemNotaRemoto?util.aplicarItemNotaRemoto(notas,item,registro.deleted===true):notas;
+        notas=util.aplicarItemNotaRemoto(notas,item,registro.deleted===true);
         registrarVersao(sheetId,versaoCampo,registro,uid);
         aplicados.push(itemId);
       }
@@ -342,7 +370,6 @@
           if(typeof estado!=="undefined"&&estado&&typeof estado==="object")estado.notasTopicos=clonar(notas);
         }catch(_e){}
         agendarAtualizacaoUi(["notasTopicos"],dados);
-        try{root.dispatchEvent(new CustomEvent("shinobi:realtime-colecao-aplicada",{detail:{sheetId,collection:"notas",itemIds:aplicados}}));}catch(_e){}
       }
       return aplicados;
     }
@@ -379,10 +406,11 @@
       observarOffset(db);
       const fichaBase=obterFichaAtiva(false);
       if(!fichaPodeUsarRealtime(fichaBase)){desconectarListener();return {skipped:true,reason:"ficha-legada-ou-desativada"};}
-      const ficha=obterFichaAtiva(true);
+      let ficha=obterFichaAtiva(true);
       const realtimeId=realtimeIdDaFicha(ficha);
       if(!fichaPodeUsarRealtime(ficha)||!realtimeId){desconectarListener();return {skipped:true,reason:"ficha-sem-identidade-realtime"};}
       const uid=texto(user.uid),sheetId=realtimeId;
+      ficha=migrarIdsNotasAtivas(ficha,sheetId);
       if(estadoRT.listener&&estadoRT.listener.uid===uid&&estadoRT.listener.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
         return {ok:true,already:true,sheetId};
@@ -396,27 +424,32 @@
         console.warn("Realtime da ficha ativa indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização em tempo real indisponível. A ficha local continua funcionando."}}));}catch(_e){}
       });
+
       const notasRef=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/notas`);
       const notasCallback=snap=>{
         try{aplicarSnapshotNotas(sheetId,snap.val()||{});}catch(erro){console.warn("Falha ao aplicar notas realtime.",erro);}
       };
-      notasRef.on("value",notasCallback,()=>{});
+      notasRef.on("value",notasCallback,erro=>{
+        console.warn("Notas realtime indisponíveis.",erro?.code||erro?.message||erro);
+      });
       estadoRT.listener={uid,sheetId,ref,callback,notasRef,notasCallback};
 
       try{
         const snapNotas=await notasRef.once("value");
         const remotas=snapNotas.val()&&typeof snapNotas.val()==="object"?snapNotas.val():{};
-        const fichaLocal=obterFichaAtiva(false);
-        const notas=Array.isArray(fichaLocal?.data?.notasTopicos)?fichaLocal.data.notasTopicos:[];
+        const notas=Array.isArray(ficha?.data?.notasTopicos)?ficha.data.notasTopicos:[];
         notas.forEach((item,indice)=>{
           const itemId=texto(item?.id);
           if(!itemId||Object.prototype.hasOwnProperty.call(remotas,campoParaChave(itemId)))return;
           adicionarOutboxColecao(criarOperacaoColecaoPura({
-            uid,sheetId,sheetName:fichaLocal.name,collection:"notas",itemId,valor:item,
+            uid,sheetId,sheetName:ficha.name,collection:"notas",itemId,valor:item,
             editAt:timestampEdicao()+indice,deviceId:deviceId(),opId:idAleatorio("note-seed")
           }),uid);
         });
-      }catch(_e){}
+      }catch(erro){
+        console.warn("Não foi possível preparar notas para realtime.",erro?.code||erro?.message||erro);
+      }
+
       await processarOutbox().catch(()=>{});
       return {ok:true,sheetId};
     }
@@ -447,6 +480,19 @@
       return {ok:true,record:salvo};
     }
 
+    function registroColecaoParaFirebase(op){
+      const registro={
+        id:texto(op.itemId),
+        deleted:op.deleted===true,
+        editAt:Number(op.editAt||0),
+        serverUpdatedAt:root.firebase.database.ServerValue.TIMESTAMP,
+        deviceId:texto(op.deviceId),
+        opId:texto(op.opId)
+      };
+      if(!registro.deleted)registro.payload=String(op.payload??"null");
+      return registro;
+    }
+
     async function enviarOperacaoColecao(op){
       const uid=uidAtual(),db=banco();
       if(!uid||!db||texto(op?.uid)!==uid)throw new Error("Conta Google indisponível para sincronização realtime.");
@@ -455,14 +501,14 @@
       let registroAtual=null;
       const resultado=await ref.transaction(atual=>{
         if(atual&&compararRegistros(op,atual)<=0){registroAtual=atual;return;}
-        const registro=registroParaFirebase(op);
-        registro.id=op.itemId;
-        return registro;
+        return registroColecaoParaFirebase(op);
       });
       if(!resultado.committed){
         removerOutboxColecao(op,uid);
         const atual=registroAtual||resultado.snapshot?.val?.();
-        if(atual&&estadoRT.listener?.sheetId===op.sheetId)aplicarSnapshotNotas(op.sheetId,{[campoParaChave(op.itemId)]:atual});
+        if(atual&&estadoRT.listener?.sheetId===op.sheetId){
+          aplicarSnapshotNotas(op.sheetId,{[campoParaChave(op.itemId)]:atual});
+        }
         return {ok:true,obsolete:true};
       }
       const salvo=resultado.snapshot?.val?.();
@@ -484,7 +530,9 @@
           try{resultados.push(await enviarOperacao(op));}
           catch(erro){resultados.push({ok:false,error:erro,op});}
         }
-        const itens=Object.values(lerOutboxColecoes(uid)).filter(op=>op?.sheetId&&texto(op?.collection)==="notas"&&texto(op?.itemId));
+        const itens=Object.values(lerOutboxColecoes(uid)).filter(op=>
+          op?.sheetId&&texto(op?.collection)==="notas"&&texto(op?.itemId)
+        );
         itens.sort((a,b)=>compararRegistros(a,b));
         for(const op of itens){
           try{resultados.push(await enviarOperacaoColecao(op));}
