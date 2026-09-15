@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.83",
-  "name": "Notas realtime por item - reconstrução segura",
-  "notes": "Reconstruída diretamente da 2.5.8.80. IDs de notas só são criados em ações confirmadas; nenhum ID é migrado/persistido no boot. Notas usam registros individuais no caminho fields já existente, sem alterar Firebase Rules nem o gerenciador de fichas.",
+  "version": "2.5.8.84",
+  "name": "Realtime de notas e sincronização manual",
+  "notes": "Corrige a fila runtime das notas, faz pendências offline subirem após reconexão, impede registros de nota de contaminarem campos comuns e adiciona Sincronizar agora com status real da fila realtime. A tela de sincronização deixa de misturar backups userSheets com a ficha realtime ativa.",
   "date": "2026-09-15"
 }
