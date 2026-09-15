@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.79",
-  "name": "Exclusão individual sem ressurreição",
-  "notes": "Impede salvamentos automáticos de pagehide/visibilitychange de recriar uma ficha recém-excluída. A trava atua somente durante a exclusão individual e preserva o fluxo normal de salvamento no restante do app.",
+  "version": "2.5.8.80",
+  "name": "Importação segura da nuvem",
+  "notes": "O botão Importar ficha agora permite escolher dispositivo ou nuvem. A restauração da nuvem reutiliza a ficha local quando encontra o mesmo characterId e preserva a identidade permanente do realtime. A importação por arquivo também mantém a identidade realtime já vinculada. Boot e lógica do Service Worker permanecem inalterados.",
   "date": "2026-09-15"
 }
