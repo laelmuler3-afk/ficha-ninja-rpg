@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.79",
-  "name": "Exclusão individual sem ressurreição",
-  "notes": "Impede salvamentos automáticos de pagehide/visibilitychange de recriar uma ficha recém-excluída. A trava atua somente durante a exclusão individual e preserva o fluxo normal de salvamento no restante do app.",
+  "version": "2.5.8.80",
+  "name": "Importar ficha completa da nuvem",
+  "notes": "O botão Importar ficha agora permite escolher entre arquivo do dispositivo e backup completo da Conta Google. A restauração usa characterId para substituir a mesma personagem sem criar duplicatas e preserva o realtime separado por campos confirmados.",
   "date": "2026-09-15"
 }
