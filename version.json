@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.84",
-  "name": "Realtime de notas e sincronização manual",
-  "notes": "Corrige a fila runtime das notas, faz pendências offline subirem após reconexão, impede registros de nota de contaminarem campos comuns e adiciona Sincronizar agora com status real da fila realtime. A tela de sincronização deixa de misturar backups userSheets com a ficha realtime ativa.",
+  "version": "2.5.8.79",
+  "name": "Exclusão individual sem ressurreição",
+  "notes": "Impede salvamentos automáticos de pagehide/visibilitychange de recriar uma ficha recém-excluída. A trava atua somente durante a exclusão individual e preserva o fluxo normal de salvamento no restante do app.",
   "date": "2026-09-15"
 }
