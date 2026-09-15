@@ -1,4 +1,4 @@
-/* EKO 2.5.8.78 — reparo robusto da biblioteca local de fichas legadas. */
+/* EKO 2.5.8.79 — exclusão individual protegida contra salvamento no pagehide. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module!=="undefined"&&module.exports) module.exports=api;
@@ -224,6 +224,41 @@
     return [...chaves];
   }
 
+  function exclusaoEmAndamento(){
+    return Boolean(root.__ekoExclusaoFichaEmAndamento);
+  }
+
+  function iniciarTravaExclusao(nome){
+    const limpo=limparNome(nome);
+    root.__ekoExclusaoFichaEmAndamento={
+      name:limpo,
+      keys:chavesFisicasDaFicha(limpo),
+      startedAt:Date.now()
+    };
+    return root.__ekoExclusaoFichaEmAndamento;
+  }
+
+  function encerrarTravaExclusao(){
+    try{delete root.__ekoExclusaoFichaEmAndamento;}catch(_erro){root.__ekoExclusaoFichaEmAndamento=null;}
+  }
+
+  function bloquearSalvamentoDeSaida(evento){
+    if(!exclusaoEmAndamento())return;
+    /* O 02-runtime.js registra salvamento automático em pagehide/visibilitychange.
+       Durante uma exclusão esses listeners não podem executar, senão recriam a
+       chave que acabou de ser removida. stopImmediatePropagation não cancela a
+       navegação; apenas impede os listeners posteriores deste mesmo evento. */
+    try{evento?.stopImmediatePropagation?.();}catch(_erro){}
+  }
+
+  function instalarBloqueioSaida(){
+    if(root.__ekoBloqueioExclusaoInstalado)return;
+    root.__ekoBloqueioExclusaoInstalado=true;
+    try{root.addEventListener?.("pagehide",bloquearSalvamentoDeSaida,true);}catch(_erro){}
+    try{root.addEventListener?.("beforeunload",bloquearSalvamentoDeSaida,true);}catch(_erro){}
+    try{root.document?.addEventListener?.("visibilitychange",bloquearSalvamentoDeSaida,true);}catch(_erro){}
+  }
+
   function removerFichaLocal(nome){
     const limpo=limparNome(nome);
     if(!limpo||limpo==="Principal")return false;
@@ -258,6 +293,11 @@
       : root.confirm?.(`Excluir "${nome}" deste aparelho?`);
     if(!confirmar)return false;
 
+    /* A trava precisa nascer ANTES da remoção. Ao chamar reload(), navegadores
+       disparam visibilitychange/pagehide; versões anteriores deixavam o runtime
+       salvar a ficha velha nesse intervalo e, assim, ressuscitá-la. */
+    iniciarTravaExclusao(nome);
+
     /* Não chamamos salvar() aqui: em aliases antigos cujo nome foi truncado,
        salvar antes da exclusão podia criar uma NOVA chave canônica e manter a
        chave física antiga viva. */
@@ -267,9 +307,16 @@
       atualizarListaAposExclusao([nome]);
     }
 
-    try{await root.EkoRealtimeSync?.ativarFichaAtual?.();}catch(_erro){}
+    /* Não religamos realtime nesta página: ela está sendo destruída. A nova
+       página abrirá já na Principal e ativará o realtime pelo fluxo normal. */
     root.alert?.("Ficha excluída deste aparelho.");
-    try{root.location.reload();}catch(_erro){}
+    try{
+      root.location.reload();
+    }catch(_erro){
+      /* Se o ambiente não conseguir recarregar, não deixamos o app travado sem
+         salvamento. Em um reload normal o novo contexto já nasce sem a trava. */
+      encerrarTravaExclusao();
+    }
     return true;
   }
 
@@ -314,6 +361,9 @@
   }
 
   function instalar(){
+    /* Este arquivo é carregado antes de 02-runtime.js; registrar o bloqueio aqui
+       garante que, numa exclusão, ele rode antes dos salvamentos de saída. */
+    instalarBloqueioSaida();
     root.excluirFicha=excluirFichaMelhorada;
     root.limparCopiasAntigas=limparCopiasAntigas;
   }
@@ -326,6 +376,10 @@
     obterFichaPorNome,
     listarCopiasLegadasLocais,
     chavesFisicasDaFicha,
+    exclusaoEmAndamento,
+    iniciarTravaExclusao,
+    encerrarTravaExclusao,
+    instalarBloqueioSaida,
     excluirFichaMelhorada,
     limparCopiasAntigas,
     removerFichaLocal,
