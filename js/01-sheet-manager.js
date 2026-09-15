@@ -1,4 +1,4 @@
-/* EKO 2.5.8.76 — exclusão simples e limpeza segura de cópias legadas. */
+/* EKO 2.5.8.77 — exclusão local confiável e limpeza de cópias legadas. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module!=="undefined"&&module.exports) module.exports=api;
@@ -15,14 +15,24 @@
 
   function texto(valor){return String(valor==null?"":valor).trim();}
 
+  function ehNomeCopiaAutomatica(nome){
+    return /(?:\s+nuvem(?:\s+\d+)?)+$/i.test(texto(nome));
+  }
+
   function ehCopiaLegadaMarcada(ficha){
     const nome=texto(ficha?.name);
     const online=ficha?.data?.__online&&typeof ficha.data.__online==="object"?ficha.data.__online:{};
+    /*
+     * O bug antigo podia marcar uma cópia automática como userCopy ao resolver
+     * colisões de sheetId. Esse userCopy contaminado não pode anular os sinais
+     * explícitos de legado (legacyAutoCopy/syncDisabled). Esses marcadores eram
+     * exclusivos do mecanismo automático antigo, então também cobrem nomes
+     * anômalos gerados por ele (ex.: "Nuvem abc123"). Um nome contendo
+     * "Nuvem" sem esses sinais nunca é suficiente para apagar.
+     */
     return Boolean(
       nome&&nome!=="Principal"&&
-      online.legacyAutoCopy===true&&
-      online.syncDisabled===true&&
-      online.userCopy!==true
+      (online.legacyAutoCopy===true||online.syncDisabled===true)
     );
   }
 
@@ -50,6 +60,29 @@
     }catch(_erro){return {};}
   }
 
+  function listarFichasLocais(){
+    let lista=lerJson(CHAVE_LISTA,["Principal"]);
+    if(!Array.isArray(lista)) lista=["Principal"];
+    const nomes=Array.from(new Set(lista.map(limparNome)));
+    if(!nomes.includes("Principal")) nomes.unshift("Principal");
+    return nomes.map(nome=>({
+      name:nome,
+      key:chaveFicha(nome),
+      data:lerDadosFicha(nome)
+    }));
+  }
+
+  function listarCopiasLegadasLocais(){
+    const seguras=[];
+    const revisar=[];
+    for(const ficha of listarFichasLocais()){
+      if(ficha.name==="Principal") continue;
+      if(ehCopiaLegadaMarcada(ficha)) seguras.push(ficha);
+      else if(ehNomeCopiaAutomatica(ficha.name)) revisar.push(ficha);
+    }
+    return {seguras,revisar};
+  }
+
   function atualizarListaAposExclusao(nomesExcluidos){
     const excluir=new Set((nomesExcluidos||[]).map(limparNome));
     let lista=lerJson(CHAVE_LISTA,["Principal"]);
@@ -62,22 +95,6 @@
     const ativa=limparNome(root.localStorage.getItem(CHAVE_ATIVA)||"Principal");
     if(excluir.has(ativa)) root.localStorage.setItem(CHAVE_ATIVA,"Principal");
     return lista;
-  }
-
-  async function esperarOnline(timeoutMs=2500){
-    if(root.ShinobiOnline) return root.ShinobiOnline;
-    return new Promise(resolve=>{
-      let terminou=false;
-      const finalizar=()=>{
-        if(terminou)return;
-        terminou=true;
-        root.removeEventListener?.("shinobi:online-stack-ready",aoPronto);
-        resolve(root.ShinobiOnline||null);
-      };
-      const aoPronto=()=>finalizar();
-      root.addEventListener?.("shinobi:online-stack-ready",aoPronto,{once:true});
-      setTimeout(finalizar,Math.max(100,Number(timeoutMs)||2500));
-    });
   }
 
   function removerFichaLocal(nome){
@@ -108,58 +125,59 @@
       : root.confirm?.(`Excluir "${nome}"?`);
     if(!confirmar) return false;
 
-    const dados=lerDadosFicha(nome);
-    const online=await esperarOnline(1800);
-    try{online?.registrarExclusaoLocal?.(nome,dados);}catch(_erroOnline){}
+    /* A exclusão da ficha local não depende mais da identidade antiga no
+       Firebase. Backups da nuvem serão administrados separadamente pelo futuro
+       gerenciador de backups. */
+    const removeu=removerFichaLocal(nome);
+    if(!removeu) return false;
 
-    removerFichaLocal(nome);
     root.alert?.("Ficha excluída.");
     try{root.location.reload();}catch(_erro){}
     return true;
   }
 
-  async function limparCopiasAntigas(){
-    const online=await esperarOnline(3500);
-    if(!online?.listarCopiasLegadasLocaisSeguras){
-      if(typeof root.avisoShinobi==="function"){
-        await root.avisoShinobi("Sincronização ainda carregando","Aguarde alguns segundos com a internet ligada e tente novamente. Nenhuma ficha foi apagada.");
-      }else root.alert?.("Aguarde a sincronização iniciar e tente novamente. Nenhuma ficha foi apagada.");
-      return {removidas:0,revisar:0};
-    }
+  function nomesParaMensagem(fichas){
+    return (fichas||[]).map(f=>`“${limparNome(f.name)}”`).join(" • ");
+  }
 
-    let analise={seguras:[],revisar:[]};
-    try{analise=online.listarCopiasLegadasLocaisSeguras()||analise;}catch(_erro){}
-    const seguras=Array.isArray(analise.seguras)?analise.seguras.filter(ehCopiaLegadaMarcada):[];
-    const revisar=Array.isArray(analise.revisar)?analise.revisar:[];
+  async function limparCopiasAntigas(){
+    /* Se a pilha online já estiver carregada, permitimos que ela faça apenas a
+       normalização LOCAL dos marcadores legados. A limpeza não depende disso,
+       não aguarda rede e não registra exclusões no Firebase. */
+    try{root.ShinobiOnline?.listarCopiasLegadasLocaisSeguras?.();}catch(_erro){}
+
+    const analise=listarCopiasLegadasLocais();
+    const seguras=analise.seguras;
+    const revisar=analise.revisar;
 
     if(!seguras.length){
       const complemento=revisar.length
-        ? ` Existem ${revisar.length} cópia(s) antiga(s) com conteúdo diferente; elas foram preservadas e podem ser excluídas individualmente.`
+        ? ` Existem ${revisar.length} ficha(s) com nome do padrão antigo, mas sem marcação segura de cópia automática; elas foram preservadas.`
         : "";
-      if(typeof root.avisoShinobi==="function") await root.avisoShinobi("Nenhuma cópia segura para limpar",`Não encontrei duplicatas idênticas que possam ser removidas automaticamente.${complemento}`);
-      else root.alert?.(`Nenhuma cópia segura para limpar.${complemento}`);
+      if(typeof root.avisoShinobi==="function") await root.avisoShinobi("Nenhuma cópia antiga marcada",`Não encontrei cópias automáticas antigas que possam ser removidas com segurança.${complemento}`);
+      else root.alert?.(`Nenhuma cópia antiga marcada para remover.${complemento}`);
       return {removidas:0,revisar:revisar.length};
     }
 
-    const avisoRevisao=revisar.length?` ${revisar.length} cópia(s) com diferenças serão mantidas para revisão.`:"";
+    const nomes=nomesParaMensagem(seguras);
+    const avisoRevisao=revisar.length?` ${revisar.length} ficha(s) sem marcação segura serão mantidas.`:"";
     const ok=typeof root.modalShinobi==="function"
       ? await root.modalShinobi(
           "Limpar cópias antigas?",
-          `Encontramos ${seguras.length} cópia(s) legada(s) idêntica(s) à ficha principal correspondente. A ficha Principal e cópias criadas por você não serão apagadas.${avisoRevisao}`
+          `Serão removidas ${seguras.length} cópia(s) automáticas antigas: ${nomes}. A ficha Principal será mantida.${avisoRevisao}`
         )
-      : root.confirm?.(`Excluir ${seguras.length} cópia(s) legada(s) idêntica(s)?`);
+      : root.confirm?.(`Excluir ${seguras.length} cópia(s) automáticas antigas? ${nomes}`);
     if(!ok) return {removidas:0,revisar:revisar.length};
 
     const removidas=[];
     for(const ficha of seguras){
       if(!ehCopiaLegadaMarcada(ficha)) continue;
-      try{online.registrarExclusaoLocal?.(ficha.name,ficha.data||{});}catch(_erroOnline){}
-      try{root.localStorage.removeItem(ficha.key||chaveFicha(ficha.name));}catch(_erroStorage){}
+      try{root.localStorage.removeItem(ficha.key||chaveFicha(ficha.name));}catch(_erroStorage){continue;}
       removidas.push(limparNome(ficha.name));
     }
     atualizarListaAposExclusao(removidas);
 
-    root.alert?.(`${removidas.length} cópia(s) antiga(s) removida(s).${revisar.length?` ${revisar.length} foram preservadas por terem diferenças.`:""}`);
+    root.alert?.(`${removidas.length} cópia(s) antiga(s) removida(s).${revisar.length?` ${revisar.length} foram preservadas por segurança.`:""}`);
     try{root.location.reload();}catch(_erro){}
     return {removidas:removidas.length,revisar:revisar.length};
   }
@@ -169,5 +187,12 @@
     root.limparCopiasAntigas=limparCopiasAntigas;
   }
 
-  return {ehCopiaLegadaMarcada,excluirFichaMelhorada,limparCopiasAntigas,instalar};
+  return {
+    ehCopiaLegadaMarcada,
+    listarCopiasLegadasLocais,
+    excluirFichaMelhorada,
+    limparCopiasAntigas,
+    removerFichaLocal,
+    instalar
+  };
 });
