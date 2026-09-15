@@ -85,5 +85,25 @@
     });
   }
 
-  return {camposAlterados,campoPermitido,campoParaChave,chaveParaCampo,compararVersoes,normalizarValorParaNuvem,mesclarValorRemoto};
+  function normalizarItemNotaParaNuvem(valor){
+    if(!valor||typeof valor!=="object"||Array.isArray(valor))return valor;
+    const copia=clonar(valor);
+    delete copia.aberto;
+    return copia;
+  }
+  function aplicarItemNotaRemoto(lista,item,deleted=false){
+    const atual=Array.isArray(lista)?clonar(lista):[];
+    const id=String(item?.id||"").trim();
+    if(!id)return atual;
+    const indice=atual.findIndex(n=>String(n?.id||"")===id);
+    if(deleted){if(indice>=0)atual.splice(indice,1);return atual;}
+    const remoto=normalizarItemNotaParaNuvem(item);
+    if(indice>=0){
+      const aberto=Boolean(atual[indice]?.aberto);
+      atual[indice]={...remoto,aberto};
+    }else atual.push({...remoto,aberto:false});
+    return atual;
+  }
+
+  return {camposAlterados,campoPermitido,campoParaChave,chaveParaCampo,compararVersoes,normalizarValorParaNuvem,mesclarValorRemoto,normalizarItemNotaParaNuvem,aplicarItemNotaRemoto};
 });

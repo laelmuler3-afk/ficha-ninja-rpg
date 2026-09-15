@@ -136,10 +136,18 @@
 
     const valor=valorAtualDoCampo(nome,campo,detalhe);
     try{
-      await window.ShinobiOnline.sincronizarCampoConfirmado?.(nome,campo,valor,{
-        motivo:texto(detalhe.motivo)||"alteracao-confirmada",
-        origem:texto(detalhe.origem)||"campo"
-      });
+      if(campo==="notasTopicos"&&texto(detalhe.collection)==="notas"&&texto(detalhe.itemId)){
+        const itemId=texto(detalhe.itemId),deleted=texto(detalhe.collectionAction)==="delete";
+        const item=deleted?undefined:(Array.isArray(valor)?valor.find(n=>texto(n?.id)===itemId):undefined);
+        await window.ShinobiOnline.sincronizarItemColecaoConfirmado?.(nome,"notas",itemId,item,{
+          deleted,motivo:texto(detalhe.motivo)||"alteracao-confirmada",origem:"notas"
+        });
+      }else if(campo!=="notasTopicos"){
+        await window.ShinobiOnline.sincronizarCampoConfirmado?.(nome,campo,valor,{
+          motivo:texto(detalhe.motivo)||"alteracao-confirmada",
+          origem:texto(detalhe.origem)||"campo"
+        });
+      }
       if(!syncPorTurnoAtiva()) await sincronizarResumoParticipante();
     }catch(erro){
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
