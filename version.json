@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.76",
-  "name": "Limpeza segura de cópias legadas",
-  "notes": "Simplifica a exclusão de fichas e adiciona limpeza em lote somente para duplicatas legadas marcadas e idênticas; cópias do usuário, Principal e versões com conteúdo diferente são preservadas.",
+  "version": "2.5.8.77",
+  "name": "Correção da limpeza de cópias legadas",
+  "notes": "Corrige cópias automáticas antigas contaminadas por userCopy, torna a exclusão de ficha estritamente local e mostra os nomes antes da limpeza em lote; Principal e fichas sem marcação legada permanecem protegidas.",
   "date": "2026-09-14"
 }
