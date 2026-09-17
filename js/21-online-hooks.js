@@ -3,6 +3,15 @@
   "use strict";
 
   let timerResumo=null;
+  const timersBackupEstrutural=new Map();
+  const ATRASO_BACKUP_ESTRUTURAL_MS=4000;
+  const CAMPOS_BACKUP_ESTRUTURAL=new Set([
+    "nome","cla","idade","rank","nivel","xp","proficiencia",
+    "pvMax","chakraMax","forca","destreza","constituicao","inteligencia","sabedoria","carisma",
+    "ca","cd","bonusCA","iniciativa","velocidade",
+    "jutsus","armados","inventarioItens","notasTopicos","carteira","kekkeiGenkai",
+    "resistenciasEscolhidas","progressaoFixa","atributoConjuracaoNatureza"
+  ]);
   let aplicandoRodada=false;
   let sincronizandoPendentes=false;
   let ultimoTurnoObservado="";
@@ -112,6 +121,42 @@
     return Boolean(st?.user&&!st.user.anonymous);
   }
 
+  function campoExigeBackupEstrutural(campo){
+    const nome=texto(campo);
+    return Boolean(nome&&(CAMPOS_BACKUP_ESTRUTURAL.has(nome)||nome.startsWith("p_")));
+  }
+
+  function executarBackupEstrutural(nome){
+    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.sincronizarFicha!=="function") return;
+    window.ShinobiOnline.sincronizarFicha(nome,{
+      force:false,
+      backup:false,
+      motivo:"backup-automatico-estrutural",
+      modo:"imediato"
+    }).catch(()=>{});
+  }
+
+  function agendarBackupEstrutural(detalhe={}){
+    if(!detalhe.confirmada||!campoExigeBackupEstrutural(detalhe.campo)) return;
+    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.sincronizarFicha!=="function") return;
+    const nome=texto(detalhe.sheetName)||fichaAtualNome();
+    const anterior=timersBackupEstrutural.get(nome);
+    if(anterior) clearTimeout(anterior);
+    const timer=setTimeout(()=>{
+      timersBackupEstrutural.delete(nome);
+      executarBackupEstrutural(nome);
+    },ATRASO_BACKUP_ESTRUTURAL_MS);
+    timersBackupEstrutural.set(nome,timer);
+  }
+
+  function enviarBackupsEstruturaisPendentes(){
+    [...timersBackupEstrutural.entries()].forEach(([nome,timer])=>{
+      clearTimeout(timer);
+      timersBackupEstrutural.delete(nome);
+      executarBackupEstrutural(nome);
+    });
+  }
+
   function valorAtualDoCampo(nomeFicha,campo,detalhe={}){
     if(Object.prototype.hasOwnProperty.call(detalhe,"depois")) return detalhe.depois;
     try{
@@ -159,20 +204,24 @@
       const campo=texto(detalhe.campo);
       if(!detalhe.confirmada||!campo)return;
       enviarAlteracaoConfirmada(detalhe).catch(()=>{});
+      agendarBackupEstrutural(detalhe);
     });
 
     document.addEventListener("visibilitychange",()=>{
       if(document.visibilityState==="hidden"){
         clearTimeout(timerResumo);
+        enviarBackupsEstruturaisPendentes();
         if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
       }
     });
     window.addEventListener("pagehide",()=>{
       clearTimeout(timerResumo);
+      enviarBackupsEstruturaisPendentes();
       if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
     });
     window.addEventListener("online",()=>{
       window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
+      window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"backup-automatico-reconexao"}).catch(()=>{});
     });
   }
 
