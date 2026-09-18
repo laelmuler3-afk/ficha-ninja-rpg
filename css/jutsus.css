@@ -1012,6 +1012,13 @@ main.scrollPages #jutsus > .painel::after,
   -webkit-backdrop-filter:none!important;
 }
 
+/* Cartas com capa: a camada clicável precisa permanecer transparente para
+   revelar a imagem do IndexedDB desenhada por .jutsuCartaFundo. */
+#jutsus .jutsuListaCard.comImagem .jutsuLinhaResumo{
+  background-color:transparent!important;
+  background-image:none!important;
+}
+
 /* Paleta neon das categorias. */
 #jutsus .grupo-katon{--grupo-cor:#ff4f55!important}
 #jutsus .grupo-raiton{--grupo-cor:#ffd43b!important}
