@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.85",
-  "name": "Inventário item-level",
-  "notes": "Migra o inventário para sincronização realtime por item com IDs permanentes. Adições, edições, consumo, compras e exclusões passam a gerar operações independentes em collections/inventario, preservando alterações simultâneas entre dispositivos sem reativar o conflito de ficha inteira. Itens antigos recebem IDs determinísticos e novos itens recebem IDs únicos.",
+  "version": "2.5.8.86",
+  "name": "Jutsus item-level",
+  "notes": "Migra jutsus para sincronização realtime por item com jutsuId permanente. Criação, edição, exclusão e reordenação passam a operar em collections/jutsus sem retransmitir o array completo. Capas continuam locais no IndexedDB e são preservadas durante atualizações remotas até a etapa do Firebase Storage.",
   "date": "2026-09-18"
 }
