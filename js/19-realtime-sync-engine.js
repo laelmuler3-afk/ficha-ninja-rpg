@@ -52,8 +52,8 @@
     return op;
   }
 
-  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"]]);
-  const COLECOES_ITEM_LEVEL=new Set(["notas"]);
+  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"]]);
+  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario"]);
 
   function campoGerenciadoPorColecao(campo){
     return CAMPOS_ITEM_LEVEL.has(texto(campo));
@@ -64,10 +64,8 @@
   function normalizarItemColecao(colecao,valor,itemId=""){
     if(valor==null||typeof valor!=="object"||Array.isArray(valor))return clonar(valor);
     const copia=clonar(valor)||{};
-    if(texto(colecao)==="notas"){
-      delete copia.aberto;
-      if(itemId)copia.id=texto(itemId);
-    }
+    if(texto(colecao)==="notas") delete copia.aberto;
+    if(["notas","inventario"].includes(texto(colecao))&&itemId)copia.id=texto(itemId);
     return copia;
   }
   function criarOperacaoColecaoPura({sheetId,sheetName,colecao,itemId,valor,deleted=false,editAt,deviceId,opId,uid=""}){
@@ -121,6 +119,7 @@
       uid:"",
       listener:null,
       listenerNotas:null,
+      listenerInventario:null,
       offset:Number.isFinite(offsetSalvo)?offsetSalvo:0,
       offsetConhecido:Number.isFinite(offsetSalvo),
       offsetRef:null,
@@ -350,9 +349,9 @@
       for(const [chave,registro] of Object.entries(registros)){
         const campo=texto(registro?.name)||(util?.chaveParaCampo?util.chaveParaCampo(chave):"");
         if(!registro||!campoPermitido(campo)||texto(registro.name)!==campo)continue;
-        /* notasTopicos passou a ser sincronizado por item em collections/notas.
-           O registro legado em fields pode permanecer no Firebase, mas não pode
-           mais sobrescrever a coleção item-level. */
+        /* Campos migrados para collections/{colecao}/{itemId} não podem mais ser
+           reaplicados pelo registro legado em fields, senão um array antigo pode
+           sobrescrever o merge item-level. */
         if(campoGerenciadoPorColecao(campo))continue;
         const anterior=versaoAplicada(sheetId,campo,uid);
         if(anterior&&compararRegistros(registro,anterior)<=0)continue;
@@ -379,7 +378,10 @@
     }
 
     function campoLocalDaColecao(colecao){
-      return texto(colecao)==="notas"?"notasTopicos":"";
+      const collection=texto(colecao);
+      if(collection==="notas")return "notasTopicos";
+      if(collection==="inventario")return "inventarioItens";
+      return "";
     }
 
     function aplicarSnapshotColecao(sheetId,colecao,valor){
@@ -391,6 +393,9 @@
       if(!ficha||!fichaPodeUsarRealtime(ficha)||realtimeIdDaFicha(ficha)!==texto(sheetId))return [];
       if(collection==="notas"){
         try{root.garantirTopicosNotas?.();}catch(_e){}
+      }
+      if(collection==="inventario"){
+        try{root.ShinobiInventarioItemLevel?.garantirEstado?.();}catch(_e){}
       }
       let dados={};
       try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
@@ -427,8 +432,11 @@
       if(atual){try{atual.ref.off("value",atual.callback);}catch(_e){}}
       const notas=estadoRT.listenerNotas;
       if(notas){try{notas.ref.off("value",notas.callback);}catch(_e){}}
+      const inventario=estadoRT.listenerInventario;
+      if(inventario){try{inventario.ref.off("value",inventario.callback);}catch(_e){}}
       estadoRT.listener=null;
       estadoRT.listenerNotas=null;
+      estadoRT.listenerInventario=null;
     }
 
     function observarOffset(db){
@@ -459,7 +467,8 @@
       if(!fichaPodeUsarRealtime(ficha)||!realtimeId){desconectarListener();return {skipped:true,reason:"ficha-sem-identidade-realtime"};}
       const uid=texto(user.uid),sheetId=realtimeId;
       if(estadoRT.listener&&estadoRT.listener.uid===uid&&estadoRT.listener.sheetId===sheetId&&
-         estadoRT.listenerNotas&&estadoRT.listenerNotas.uid===uid&&estadoRT.listenerNotas.sheetId===sheetId){
+         estadoRT.listenerNotas&&estadoRT.listenerNotas.uid===uid&&estadoRT.listenerNotas.sheetId===sheetId&&
+         estadoRT.listenerInventario&&estadoRT.listenerInventario.uid===uid&&estadoRT.listenerInventario.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
         return {ok:true,already:true,sheetId};
       }
@@ -483,6 +492,16 @@
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização das notas indisponível. As notas locais continuam salvas neste aparelho."}}));}catch(_e){}
       });
       estadoRT.listenerNotas={uid,sheetId,ref:refNotas,callback:callbackNotas};
+
+      const refInventario=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/inventario`);
+      const callbackInventario=snap=>{
+        try{aplicarSnapshotColecao(sheetId,"inventario",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar inventário item-level.",erro);}
+      };
+      refInventario.on("value",callbackInventario,erro=>{
+        console.warn("Realtime item-level do inventário indisponível.",erro?.code||erro?.message||erro);
+        try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização do inventário indisponível. Os itens locais continuam salvos neste aparelho."}}));}catch(_e){}
+      });
+      estadoRT.listenerInventario={uid,sheetId,ref:refInventario,callback:callbackInventario};
       await processarOutbox().catch(()=>{});
       return {ok:true,sheetId};
     }
@@ -527,7 +546,7 @@
       if(!resultado.committed){
         removerOutboxColecao(op,uid);
         const atual=registroAtual||resultado.snapshot?.val?.();
-        if(atual&&estadoRT.listenerNotas?.sheetId===op.sheetId){
+        if(atual&&estadoRT.listener?.sheetId===op.sheetId){
           aplicarSnapshotColecao(op.sheetId,op.collection,{[itemKey]:atual});
         }
         return {ok:true,obsolete:true};

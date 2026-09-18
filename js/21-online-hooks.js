@@ -169,10 +169,9 @@
     if(!detalhe.confirmada||!campo)return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
 
-    /* Notas usam collections/notas/{notaId}. O evento de persistência continua
-       existindo para backup estrutural, mas o array completo não entra mais no
-       realtime de fields. */
-    if(campo==="notasTopicos") return;
+    /* Coleções item-level continuam emitindo persistência para o backup estrutural,
+       mas seus arrays completos não entram mais no realtime de fields. */
+    if(campo==="notasTopicos"||campo==="inventarioItens") return;
 
     if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
@@ -198,7 +197,7 @@
   async function enviarItemColecaoConfirmado(detalhe={}){
     if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
     const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
-    if(collection!=="notas"||!itemId) return;
+    if(!["notas","inventario"].includes(collection)||!itemId) return;
     if(!contaGoogleAtiva()) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
     try{
@@ -211,7 +210,7 @@
       );
     }catch(erro){
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
-        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||"A nota ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível."}
+        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||"A alteração ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível."}
       }));
     }
   }
@@ -234,12 +233,14 @@
       enviarItemColecaoConfirmado(evento?.detail||{}).catch(()=>{});
     });
 
-    /* Quando uma nota remota chega, o estado local já contém o merge item-level.
+    /* Quando uma coleção remota chega, o estado local já contém o merge item-level.
        Atualizamos o snapshot completo depois do mesmo debounce para que o backup
        também converja sem transformar userSheets em um segundo realtime. */
     window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
-      if(texto(evento?.detail?.collection)!=="notas") return;
-      agendarBackupEstrutural({confirmada:true,campo:"notasTopicos",sheetName:fichaAtualNome()});
+      const collection=texto(evento?.detail?.collection);
+      const campo=collection==="notas"?"notasTopicos":collection==="inventario"?"inventarioItens":"";
+      if(!campo) return;
+      agendarBackupEstrutural({confirmada:true,campo,sheetName:fichaAtualNome()});
     });
 
     document.addEventListener("visibilitychange",()=>{

@@ -2,6 +2,159 @@
 (function(){
   "use strict";
 
+  /* ===== Inventário item-level =====
+     IDs antigos são migrados de forma determinística. Itens criados depois da
+     migração recebem IDs aleatórios, para que dois aparelhos possam adicionar
+     itens com o mesmo nome sem colidirem no Firebase. */
+  let inventarioItemLevelBaseline={};
+  let inventarioItemLevelChave="";
+
+  function clonarItemInventario(valor){
+    if(valor==null)return valor;
+    try{return structuredClone(valor);}catch(_erro){return JSON.parse(JSON.stringify(valor));}
+  }
+
+  function slugIdInventario(valor){
+    return String(valor||"")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/^-+|-+$/g,"")
+      .slice(0,64)||"item";
+  }
+
+  function novoIdInventario(){
+    try{
+      if(window.crypto?.randomUUID) return `inv_${window.crypto.randomUUID().replace(/-/g,"")}`;
+    }catch(_erro){}
+    return `inv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,12)}`;
+  }
+
+  function idLegadoInventario(item){
+    const catalogo=slugIdInventario(item?.catalogoSlug||item?.slug||"");
+    if(catalogo!=="item") return `inv_legado_catalogo_${catalogo}`;
+    const nome=slugIdInventario(item?.nome||"item");
+    const tipo=slugIdInventario(item?.tipo||"");
+    const dano=slugIdInventario(item?.dano||"");
+    const complemento=[tipo,dano].filter(valor=>valor&&valor!=="item").join("_");
+    return `inv_legado_${nome}${complemento?`_${complemento}`:""}`.slice(0,150);
+  }
+
+  function garantirIdsInventario(itens,{legado=false}={}){
+    if(!Array.isArray(itens))return false;
+    const usados=new Set();
+    let alterou=false;
+    itens.forEach(item=>{
+      if(!item||typeof item!=="object"||Array.isArray(item))return;
+      let id=String(item.id||"").trim();
+      if(!id)id=legado?idLegadoInventario(item):novoIdInventario();
+      if(usados.has(id)){
+        const base=id.slice(0,160)||"inv_item";
+        let sufixo=2;
+        while(usados.has(`${base}_${sufixo}`))sufixo+=1;
+        id=`${base}_${sufixo}`;
+      }
+      if(item.id!==id){item.id=id;alterou=true;}
+      usados.add(id);
+    });
+    return alterou;
+  }
+
+  function snapshotInventarioItemLevel(itens){
+    const snapshot={};
+    (Array.isArray(itens)?itens:[]).forEach(item=>{
+      const id=String(item?.id||"").trim();
+      if(id)snapshot[id]=clonarItemInventario(item);
+    });
+    return snapshot;
+  }
+
+  function diferencasInventarioItemLevel(anterior={},atual={}){
+    const mudancas=[];
+    Object.entries(atual||{}).forEach(([itemId,item])=>{
+      const antes=anterior?.[itemId];
+      if(!antes||JSON.stringify(antes)!==JSON.stringify(item)){
+        mudancas.push({itemId,deleted:false,value:clonarItemInventario(item)});
+      }
+    });
+    Object.keys(anterior||{}).forEach(itemId=>{
+      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId))mudancas.push({itemId,deleted:true,value:undefined});
+    });
+    return mudancas;
+  }
+
+  function chaveAtualInventarioItemLevel(){
+    try{return String(typeof CHAVE!=="undefined"?CHAVE:"");}catch(_erro){return "";}
+  }
+
+  function persistirIdsInventarioSilenciosamente(origem){
+    try{
+      if(typeof persistirEstadoLocal==="function"){
+        persistirEstadoLocal({emitir:false,confirmada:false,origem,motivo:"ids-permanentes-inventario"});
+      }
+    }catch(_erro){}
+  }
+
+  function reiniciarBaselineInventario({legado=true}={}){
+    try{if(typeof garantirInventarioItens==="function")garantirInventarioItens();}catch(_erro){}
+    const itens=Array.isArray(estado?.inventarioItens)?estado.inventarioItens:[];
+    if(garantirIdsInventario(itens,{legado}))persistirIdsInventarioSilenciosamente("migracao-inventario-item-level");
+    inventarioItemLevelBaseline=snapshotInventarioItemLevel(itens);
+    inventarioItemLevelChave=chaveAtualInventarioItemLevel();
+    return itens;
+  }
+
+  function garantirBaselineInventario(){
+    const chave=chaveAtualInventarioItemLevel();
+    if(chave!==inventarioItemLevelChave)return reiniciarBaselineInventario({legado:true});
+    return Array.isArray(estado?.inventarioItens)?estado.inventarioItens:[];
+  }
+
+  function publicarDiferencasInventarioConfirmadas(){
+    garantirBaselineInventario();
+    const itens=Array.isArray(estado?.inventarioItens)?estado.inventarioItens:[];
+    if(garantirIdsInventario(itens,{legado:false}))persistirIdsInventarioSilenciosamente("novo-item-inventario-item-level");
+    const atual=snapshotInventarioItemLevel(itens);
+    const mudancas=diferencasInventarioItemLevel(inventarioItemLevelBaseline,atual);
+    inventarioItemLevelBaseline=atual;
+    inventarioItemLevelChave=chaveAtualInventarioItemLevel();
+    if(typeof window.dispatchEvent!=="function")return mudancas;
+    mudancas.forEach(mudanca=>{
+      try{
+        window.dispatchEvent(new CustomEvent("shinobi:colecao-item-confirmado",{detail:{
+          sheetName:String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal"),
+          collection:"inventario",
+          itemId:mudanca.itemId,
+          deleted:mudanca.deleted===true,
+          value:mudanca.deleted===true?undefined:mudanca.value,
+          confirmed:true,
+          source:"inventario",
+          reason:"alteracao-confirmada"
+        }}));
+      }catch(_erro){}
+    });
+    return mudancas;
+  }
+
+  window.ShinobiInventarioItemLevel=Object.freeze({
+    garantirIds(itens){garantirIdsInventario(itens,{legado:true});return itens;},
+    snapshot:snapshotInventarioItemLevel,
+    diferencas:diferencasInventarioItemLevel,
+    garantirEstado(){return garantirBaselineInventario();}
+  });
+
+  window.addEventListener("shinobi:ficha-persistida",evento=>{
+    const detalhe=evento?.detail||{};
+    if(detalhe.confirmada!==true||String(detalhe.campo||"")!=="inventarioItens")return;
+    publicarDiferencasInventarioConfirmadas();
+  });
+
+  window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
+    if(String(evento?.detail?.collection||"")!=="inventario")return;
+    reiniciarBaselineInventario({legado:false});
+  });
+
   const ICONES_INVENTARIO = Object.freeze({
     "repelente": "assets/inventory-repelente.webp",
     "pergaminho-de-selamento": "assets/inventory-pergaminho-de-selamento.webp",
@@ -925,6 +1078,7 @@
 
   window.renderizarInventario=function(){
     migrarMoedasDoInventario();
+    garantirBaselineInventario();
     let aba="itens";
     try{aba=localStorage.getItem("shinobi_inventario_aba_v1")||"itens";}catch(_erro){}
     abrirAbaInventario(aba,{renderizar:true});
@@ -960,6 +1114,7 @@
   });
 
   migrarMoedasDoInventario();
+  reiniciarBaselineInventario({legado:true});
   renderizarInventario();
   if(typeof renderizarArmados==="function") renderizarArmados();
 })();
