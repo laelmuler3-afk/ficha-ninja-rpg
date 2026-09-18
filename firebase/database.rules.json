@@ -144,6 +144,11 @@
                 ".validate": "newData.hasChildren(['collection','itemId','deleted','editAt','serverUpdatedAt','deviceId','opId']) && newData.child('collection').isString() && newData.child('collection').val() === 'inventario' && newData.child('itemId').isString() && newData.child('itemId').val() === $itemId && newData.child('itemId').val().length > 0 && newData.child('itemId').val().length <= 180 && newData.child('deleted').isBoolean() && newData.child('editAt').isNumber() && newData.child('editAt').val() > 0 && newData.child('serverUpdatedAt').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && newData.child('opId').isString() && newData.child('opId').val().length > 0 && newData.child('opId').val().length <= 180 && ((newData.child('deleted').val() === true && !newData.child('payload').exists()) || (newData.child('deleted').val() !== true && newData.child('payload').isString() && newData.child('payload').val().length <= 5000000))"
               }
             },
+            "jutsus": {
+              "$itemId": {
+                ".validate": "newData.hasChildren(['collection','itemId','deleted','editAt','serverUpdatedAt','deviceId','opId']) && newData.child('collection').isString() && newData.child('collection').val() === 'jutsus' && newData.child('itemId').isString() && newData.child('itemId').val() === $itemId && newData.child('itemId').val().length > 0 && newData.child('itemId').val().length <= 180 && newData.child('deleted').isBoolean() && newData.child('editAt').isNumber() && newData.child('editAt').val() > 0 && newData.child('serverUpdatedAt').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && newData.child('opId').isString() && newData.child('opId').val().length > 0 && newData.child('opId').val().length <= 180 && ((newData.child('deleted').val() === true && !newData.child('payload').exists()) || (newData.child('deleted').val() !== true && newData.child('payload').isString() && newData.child('payload').val().length <= 5000000))"
+              }
+            },
             "$otherCollection": {
               ".validate": false
             }
