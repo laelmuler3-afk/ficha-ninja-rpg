@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.86",
-  "name": "Jutsus item-level",
-  "notes": "Migra jutsus para sincronização realtime por item com jutsuId permanente. Criação, edição, exclusão e reordenação passam a operar em collections/jutsus sem retransmitir o array completo. Capas continuam locais no IndexedDB e são preservadas durante atualizações remotas até a etapa do Firebase Storage.",
+  "version": "2.5.8.87",
+  "name": "Correção de piscada nos jutsus",
+  "notes": "Remove o frame intermediário da organização retrátil dos jutsus: após renderizar as cartas, o agrupamento acontece no mesmo ciclo, evitando a piscada percebida durante atualizações realtime. Não altera item-level, Firebase, imagens ou boot.",
   "date": "2026-09-18"
 }
