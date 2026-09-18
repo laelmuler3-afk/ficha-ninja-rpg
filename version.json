@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.82",
-  "name": "Capas dos jutsus visíveis",
-  "notes": "Corrige a camada visual da carta de jutsu que cobria a imagem de fundo com uma superfície preta opaca. Mantém o backup estrutural automático e a proteção de imagens locais no realtime da 2.5.8.81, sem alterar boot, realtime engine ou lógica do Service Worker além da versão/cache.",
+  "version": "2.5.8.83",
+  "name": "Notas item-level no realtime",
+  "notes": "Notas passam a sincronizar por item em sheetRealtime/{uid}/{characterId}/collections/notas/{notaId}, com IDs permanentes, fila offline e resolução latest-write-wins por tópico. Adições simultâneas em aparelhos diferentes deixam de sobrescrever o array inteiro. O backup estrutural automático continua ativo e o realtime legado de notasTopicos é ignorado nesta versão. Requer publicar as regras atualizadas do Realtime Database.",
   "date": "2026-09-18"
 }
