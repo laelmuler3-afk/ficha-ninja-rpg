@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.81",
-  "name": "Backup estrutural automático + capas de jutsu locais",
-  "notes": "Alterações estruturais confirmadas atualizam automaticamente o snapshot completo em userSheets após debounce de 4 segundos, com reenvio após reconexão. PV/EKO atuais continuam no realtime. O realtime de jutsus agora exclui imagem/imagemId locais do IndexedDB e preserva a capa já existente em cada aparelho ao aplicar atualizações remotas, evitando que IDs de imagem de outro dispositivo façam a capa desaparecer. Boot e lógica do Service Worker permanecem inalterados, além do número da versão/cache.",
-  "date": "2026-09-17"
+  "version": "2.5.8.82",
+  "name": "Capas dos jutsus visíveis",
+  "notes": "Corrige a camada visual da carta de jutsu que cobria a imagem de fundo com uma superfície preta opaca. Mantém o backup estrutural automático e a proteção de imagens locais no realtime da 2.5.8.81, sem alterar boot, realtime engine ou lógica do Service Worker além da versão/cache.",
+  "date": "2026-09-18"
 }
