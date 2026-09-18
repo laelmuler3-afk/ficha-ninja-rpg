@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.84",
-  "name": "Notas item-level sem conflito de backup",
-  "notes": "Separa definitivamente o backup estrutural em userSheets da sincronização realtime por item. O backup automático e o backup manual deixam de chamar o sincronizador legado de ficha inteira, evitando o popup de escolha entre versões quando dois aparelhos alteram notas simultaneamente. Backups estruturais offline usam fila própria e são reenviados na reconexão; notas remotas já mescladas também atualizam o snapshot após o debounce.",
+  "version": "2.5.8.85",
+  "name": "Inventário item-level",
+  "notes": "Migra o inventário para sincronização realtime por item com IDs permanentes. Adições, edições, consumo, compras e exclusões passam a gerar operações independentes em collections/inventario, preservando alterações simultâneas entre dispositivos sem reativar o conflito de ficha inteira. Itens antigos recebem IDs determinísticos e novos itens recebem IDs únicos.",
   "date": "2026-09-18"
 }
