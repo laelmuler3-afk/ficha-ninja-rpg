@@ -7,6 +7,7 @@
   const CHAVE_SYNC_LEGADA = "shinobi_sheet_sync_v1";
   const CHAVE_SYNC_BASE = "shinobi_sheet_sync_v2";
   const CHAVE_OUTBOX_BASE = "shinobi_sheet_outbox_v1";
+  const CHAVE_BACKUP_OUTBOX_BASE = "shinobi_backup_outbox_v1";
   const CHAVE_XP_PROCESSADO = "shinobi_xp_events_v1";
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1856,6 +1857,7 @@
 
   function chaveSyncConta(uid=uidContaAtiva()){return chaveConta(CHAVE_SYNC_BASE,uid);}
   function chaveOutboxConta(uid=uidContaAtiva()){return chaveConta(CHAVE_OUTBOX_BASE,uid);}
+  function chaveBackupOutboxConta(uid=uidContaAtiva()){return chaveConta(CHAVE_BACKUP_OUTBOX_BASE,uid);}
 
   function migrarEstadoSyncLegadoParaConta(uid){
     const chave=chaveSyncConta(uid);
@@ -1900,6 +1902,30 @@
     if(somenteTipo&&texto(outbox[id].type)!==somenteTipo) return;
     delete outbox[id];
     gravarOutbox(outbox,conta);
+  }
+
+  function estadoBackupOutbox(uid=uidContaAtiva()){
+    const chave=chaveBackupOutboxConta(uid);
+    return chave?(lerJson(chave,{})||{}):{};
+  }
+  function gravarBackupOutbox(v,uid=uidContaAtiva()){
+    const chave=chaveBackupOutboxConta(uid);
+    if(chave) salvarJson(chave,v||{});
+  }
+  function marcarBackupEstruturalPendente(localSheetName,sheetId,{motivo="backup-estrutural"}={},uid=uidContaAtiva()){
+    const conta=texto(uid),id=texto(sheetId);
+    if(!conta||!id) return;
+    const outbox=estadoBackupOutbox(conta);
+    outbox[id]={sheetId:id,name:texto(localSheetName)||"Principal",reason:texto(motivo)||"backup-estrutural",updatedAt:agora()};
+    gravarBackupOutbox(outbox,conta);
+  }
+  function removerBackupEstruturalPendente(sheetId,uid=uidContaAtiva()){
+    const conta=texto(uid),id=texto(sheetId);
+    if(!conta||!id) return;
+    const outbox=estadoBackupOutbox(conta);
+    if(!outbox[id]) return;
+    delete outbox[id];
+    gravarBackupOutbox(outbox,conta);
   }
   function restaurarOutboxConta(uid=uidContaAtiva()){
     estadoOnline.dirtySheets.clear();
@@ -2544,6 +2570,66 @@
     return tarefa;
   }
 
+  async function atualizarBackupEstrutural(localSheetName,{motivo="backup-automatico-estrutural"}={}){
+    exigirContaGoogle();
+    capturarEstadoAtualAntesDaSincronizacao(localSheetName);
+    prepararIdentidadeFichaParaConta(localSheetName);
+    const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    if(!ficha) throw new Error("Ficha local não encontrada.");
+    const ownerUid=texto(ficha.data?.__online?.ownerUid);
+    if(ownerUid&&ownerUid!==uidContaAtiva()) throw new Error("Esta ficha local pertence a outra Conta Google neste aparelho.");
+    if(ficha.data?.__online?.syncDisabled) return {skipped:true,legacyRecovery:true};
+
+    const api=estadoOnline.api,uid=estadoOnline.user.uid,sheetId=ficha.sheetId;
+    const data=garantirMetadadosFichaLocal(ficha.name,ficha.data);
+    const conteudoHash=hashFicha(data);
+    marcarBackupEstruturalPendente(ficha.name,sheetId,{motivo},uid);
+    if(window.navigator?.onLine===false) return {queued:true,sheetId};
+
+    const refFicha=api.ref(estadoOnline.db,`userSheets/${uid}/${sheetId}`);
+    let excluidaRemotamente=false;
+    const resultado=await api.runTransaction(refFicha,atual=>{
+      if(atual?.deleted===true){excluidaRemotamente=true;return;}
+      const revision=Number(atual?.revision||0)+1;
+      return {
+        name:ficha.name,characterName:texto(data.nome)||ficha.name,revision,updatedAt:api.serverTimestamp(),
+        deviceId:obterDeviceId(),hash:conteudoHash,appVersion:window.APP_VERSION||"",deleted:false,data
+      };
+    },{applyLocally:false});
+
+    if(!resultado.committed){
+      if(excluidaRemotamente){
+        removerBackupEstruturalPendente(sheetId,uid);
+        return {skipped:true,reason:"deleted-remotely",sheetId};
+      }
+      throw new Error("O backup estrutural não foi confirmado pela nuvem.");
+    }
+
+    const salvo=resultado.snapshot.val();
+    if(!salvo?.data||texto(salvo.hash)!==conteudoHash) throw new Error("A nuvem não confirmou o snapshot completo da ficha.");
+    removerBackupEstruturalPendente(sheetId,uid);
+    emitir("backup-estrutural-atualizado",{sheetId,name:ficha.name,revision:Number(salvo.revision||0),motivo:texto(motivo)});
+    return {ok:true,sheetId,revision:Number(salvo.revision||0)};
+  }
+
+  async function processarBackupsEstruturaisPendentes({motivo="reconexao"}={}){
+    if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return [];
+    if(window.navigator?.onLine===false) return [];
+    const uid=uidContaAtiva(),pendentes=estadoBackupOutbox(uid),resultados=[];
+    for(const op of Object.values(pendentes)){
+      const sheetId=texto(op?.sheetId);
+      if(!sheetId) continue;
+      const ficha=listarFichasLocais().find(f=>f.sheetId===sheetId)||listarFichasLocais().find(f=>f.name===texto(op?.name));
+      if(!ficha){removerBackupEstruturalPendente(sheetId,uid);continue;}
+      try{
+        resultados.push(await atualizarBackupEstrutural(ficha.name,{motivo:texto(op?.reason)||texto(motivo)||"reconexao"}));
+      }catch(erro){
+        resultados.push({ok:false,sheetId,erro});
+      }
+    }
+    return resultados;
+  }
+
   async function criarBackupFicha(ficha,{reason="manual",revision=0}={}){
     exigirContaGoogle();
     const api=estadoOnline.api,uid=estadoOnline.user.uid,id=`${agora()}_${slug(reason)}`;
@@ -2780,7 +2866,7 @@
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,
-    sincronizarPendenciasAgora,reconciliarSincronizacaoConta,ativarBackupsNuvem,garantirIdentidadeFichaRealtime,
+    sincronizarPendenciasAgora,reconciliarSincronizacaoConta,atualizarBackupEstrutural,processarBackupsEstruturaisPendentes,ativarBackupsNuvem,garantirIdentidadeFichaRealtime,
     resumoMudancasMeuTurno,finalizarMeuTurno,ehMeuTurno,chaveTurnoAtual,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };

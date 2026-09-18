@@ -1224,7 +1224,7 @@
     });
     if(acao==="sync-current")return executar(async()=>{
       try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
-      await window.ShinobiOnline.sincronizarFicha(window.ShinobiOnline.fichaAtualLocal()?.name,{backup:false,motivo:"backup-manual"});
+      await window.ShinobiOnline.atualizarBackupEstrutural(window.ShinobiOnline.fichaAtualLocal()?.name,{motivo:"backup-manual"});
       await avisar("Backup atualizado","A ficha completa foi salva na nuvem. A sincronização entre dispositivos continua sendo feita separadamente por campo confirmado.");
     });
     if(acao==="sync-all")return executar(async()=>{

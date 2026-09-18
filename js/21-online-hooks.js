@@ -127,18 +127,15 @@
   }
 
   function executarBackupEstrutural(nome){
-    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.sincronizarFicha!=="function") return;
-    window.ShinobiOnline.sincronizarFicha(nome,{
-      force:false,
-      backup:false,
-      motivo:"backup-automatico-estrutural",
-      modo:"imediato"
+    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.atualizarBackupEstrutural!=="function") return;
+    window.ShinobiOnline.atualizarBackupEstrutural(nome,{
+      motivo:"backup-automatico-estrutural"
     }).catch(()=>{});
   }
 
   function agendarBackupEstrutural(detalhe={}){
     if(!detalhe.confirmada||!campoExigeBackupEstrutural(detalhe.campo)) return;
-    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.sincronizarFicha!=="function") return;
+    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.atualizarBackupEstrutural!=="function") return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
     const anterior=timersBackupEstrutural.get(nome);
     if(anterior) clearTimeout(anterior);
@@ -237,6 +234,14 @@
       enviarItemColecaoConfirmado(evento?.detail||{}).catch(()=>{});
     });
 
+    /* Quando uma nota remota chega, o estado local já contém o merge item-level.
+       Atualizamos o snapshot completo depois do mesmo debounce para que o backup
+       também converja sem transformar userSheets em um segundo realtime. */
+    window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
+      if(texto(evento?.detail?.collection)!=="notas") return;
+      agendarBackupEstrutural({confirmada:true,campo:"notasTopicos",sheetName:fichaAtualNome()});
+    });
+
     document.addEventListener("visibilitychange",()=>{
       if(document.visibilityState==="hidden"){
         clearTimeout(timerResumo);
@@ -251,7 +256,7 @@
     });
     window.addEventListener("online",()=>{
       window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
-      window.ShinobiOnline?.sincronizarPendenciasAgora?.({motivo:"backup-automatico-reconexao"}).catch(()=>{});
+      window.ShinobiOnline?.processarBackupsEstruturaisPendentes?.({motivo:"backup-automatico-reconexao"}).catch(()=>{});
     });
   }
 
