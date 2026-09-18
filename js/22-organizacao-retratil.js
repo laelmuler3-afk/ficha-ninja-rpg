@@ -549,7 +549,10 @@
     const base = window.renderizarJutsus;
     window.renderizarJutsus = function(){
       const resultado = base.apply(this,arguments);
-      agendarOrganizacaoJutsus();
+      /* O render base recria as cartas de forma síncrona. Reagrupar também
+         de forma síncrona evita que o navegador pinte por 1–2 frames a lista
+         sem os grupos retráteis, que aparecia como uma piscada no realtime. */
+      organizarJutsusAgora();
       return resultado;
     };
     try{renderizarJutsus = window.renderizarJutsus;}catch(_erro){}
