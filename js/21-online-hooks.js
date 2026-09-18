@@ -171,7 +171,7 @@
 
     /* Coleções item-level continuam emitindo persistência para o backup estrutural,
        mas seus arrays completos não entram mais no realtime de fields. */
-    if(campo==="notasTopicos"||campo==="inventarioItens") return;
+    if(campo==="notasTopicos"||campo==="inventarioItens"||campo==="jutsus") return;
 
     if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
@@ -197,7 +197,7 @@
   async function enviarItemColecaoConfirmado(detalhe={}){
     if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
     const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
-    if(!["notas","inventario"].includes(collection)||!itemId) return;
+    if(!["notas","inventario","jutsus"].includes(collection)||!itemId) return;
     if(!contaGoogleAtiva()) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
     try{
@@ -238,7 +238,7 @@
        também converja sem transformar userSheets em um segundo realtime. */
     window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
       const collection=texto(evento?.detail?.collection);
-      const campo=collection==="notas"?"notasTopicos":collection==="inventario"?"inventarioItens":"";
+      const campo=collection==="notas"?"notasTopicos":collection==="inventario"?"inventarioItens":collection==="jutsus"?"jutsus":"";
       if(!campo) return;
       agendarBackupEstrutural({confirmada:true,campo,sheetName:fichaAtualNome()});
     });

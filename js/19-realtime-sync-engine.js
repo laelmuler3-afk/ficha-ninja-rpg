@@ -52,8 +52,8 @@
     return op;
   }
 
-  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"]]);
-  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario"]);
+  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"],["jutsus","jutsus"]]);
+  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario","jutsus"]);
 
   function campoGerenciadoPorColecao(campo){
     return CAMPOS_ITEM_LEVEL.has(texto(campo));
@@ -64,8 +64,14 @@
   function normalizarItemColecao(colecao,valor,itemId=""){
     if(valor==null||typeof valor!=="object"||Array.isArray(valor))return clonar(valor);
     const copia=clonar(valor)||{};
-    if(texto(colecao)==="notas") delete copia.aberto;
-    if(["notas","inventario"].includes(texto(colecao))&&itemId)copia.id=texto(itemId);
+    const collection=texto(colecao);
+    if(collection==="notas") delete copia.aberto;
+    if(["notas","inventario"].includes(collection)&&itemId)copia.id=texto(itemId);
+    if(collection==="jutsus"){
+      delete copia.imagem;
+      delete copia.imagemId;
+      if(itemId)copia.jutsuId=texto(itemId);
+    }
     return copia;
   }
   function criarOperacaoColecaoPura({sheetId,sheetName,colecao,itemId,valor,deleted=false,editAt,deviceId,opId,uid=""}){
@@ -83,7 +89,7 @@
     const collection=texto(colecao),id=texto(itemId);
     const lista=Array.isArray(itens)?clonar(itens):[];
     if(!colecaoPermitida(collection)||!id||!registro)return lista;
-    const indice=lista.findIndex(item=>texto(item?.id)===id);
+    const indice=lista.findIndex(item=>texto(collection==="jutsus"?item?.jutsuId:item?.id)===id);
     if(registro.deleted===true){
       if(indice>=0)lista.splice(indice,1);
       return lista;
@@ -96,7 +102,21 @@
       const aberto=indice>=0?Boolean(lista[indice]?.aberto):false;
       remoto.aberto=aberto;
     }
+    if(collection==="jutsus"&&indice>=0){
+      const local=lista[indice];
+      if(Object.prototype.hasOwnProperty.call(local||{},"imagem"))remoto.imagem=local.imagem;
+      if(Object.prototype.hasOwnProperty.call(local||{},"imagemId"))remoto.imagemId=local.imagemId;
+    }
     if(indice>=0)lista[indice]=remoto;else lista.push(remoto);
+    if(collection==="jutsus"){
+      lista.sort((a,b)=>{
+        const oa=Number(a?.ordem),ob=Number(b?.ordem);
+        const va=Number.isFinite(oa)?oa:Number.MAX_SAFE_INTEGER;
+        const vb=Number.isFinite(ob)?ob:Number.MAX_SAFE_INTEGER;
+        if(va!==vb)return va-vb;
+        return texto(a?.jutsuId).localeCompare(texto(b?.jutsuId));
+      });
+    }
     return lista;
   }
 
@@ -120,6 +140,7 @@
       listener:null,
       listenerNotas:null,
       listenerInventario:null,
+      listenerJutsus:null,
       offset:Number.isFinite(offsetSalvo)?offsetSalvo:0,
       offsetConhecido:Number.isFinite(offsetSalvo),
       offsetRef:null,
@@ -381,6 +402,7 @@
       const collection=texto(colecao);
       if(collection==="notas")return "notasTopicos";
       if(collection==="inventario")return "inventarioItens";
+      if(collection==="jutsus")return "jutsus";
       return "";
     }
 
@@ -396,6 +418,9 @@
       }
       if(collection==="inventario"){
         try{root.ShinobiInventarioItemLevel?.garantirEstado?.();}catch(_e){}
+      }
+      if(collection==="jutsus"){
+        try{root.ShinobiJutsusItemLevel?.garantirEstado?.();}catch(_e){}
       }
       let dados={};
       try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
@@ -418,7 +443,10 @@
       if(aplicados.length){
         dados[campoLocal]=clonar(itens);
         try{
-          if(typeof estado!=="undefined"&&estado&&typeof estado==="object")estado[campoLocal]=clonar(itens);
+          if(typeof estado!=="undefined"&&estado&&typeof estado==="object"){
+            estado[campoLocal]=clonar(itens);
+            if(collection==="jutsus")estado.jutsusAbertos={};
+          }
         }catch(_e){}
         try{root.localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){}
         agendarAtualizacaoUi([campoLocal],dados);
@@ -434,9 +462,12 @@
       if(notas){try{notas.ref.off("value",notas.callback);}catch(_e){}}
       const inventario=estadoRT.listenerInventario;
       if(inventario){try{inventario.ref.off("value",inventario.callback);}catch(_e){}}
+      const jutsus=estadoRT.listenerJutsus;
+      if(jutsus){try{jutsus.ref.off("value",jutsus.callback);}catch(_e){}}
       estadoRT.listener=null;
       estadoRT.listenerNotas=null;
       estadoRT.listenerInventario=null;
+      estadoRT.listenerJutsus=null;
     }
 
     function observarOffset(db){
@@ -468,7 +499,8 @@
       const uid=texto(user.uid),sheetId=realtimeId;
       if(estadoRT.listener&&estadoRT.listener.uid===uid&&estadoRT.listener.sheetId===sheetId&&
          estadoRT.listenerNotas&&estadoRT.listenerNotas.uid===uid&&estadoRT.listenerNotas.sheetId===sheetId&&
-         estadoRT.listenerInventario&&estadoRT.listenerInventario.uid===uid&&estadoRT.listenerInventario.sheetId===sheetId){
+         estadoRT.listenerInventario&&estadoRT.listenerInventario.uid===uid&&estadoRT.listenerInventario.sheetId===sheetId&&
+         estadoRT.listenerJutsus&&estadoRT.listenerJutsus.uid===uid&&estadoRT.listenerJutsus.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
         return {ok:true,already:true,sheetId};
       }
@@ -502,6 +534,16 @@
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização do inventário indisponível. Os itens locais continuam salvos neste aparelho."}}));}catch(_e){}
       });
       estadoRT.listenerInventario={uid,sheetId,ref:refInventario,callback:callbackInventario};
+
+      const refJutsus=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/jutsus`);
+      const callbackJutsus=snap=>{
+        try{aplicarSnapshotColecao(sheetId,"jutsus",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar jutsus item-level.",erro);}
+      };
+      refJutsus.on("value",callbackJutsus,erro=>{
+        console.warn("Realtime item-level de jutsus indisponível.",erro?.code||erro?.message||erro);
+        try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização dos jutsus indisponível. Os jutsus locais continuam salvos neste aparelho."}}));}catch(_e){}
+      });
+      estadoRT.listenerJutsus={uid,sheetId,ref:refJutsus,callback:callbackJutsus};
       await processarOutbox().catch(()=>{});
       return {ok:true,sheetId};
     }
