@@ -409,40 +409,94 @@ function numeroBatalha(valor,padrao=0){const n=Number(valor);return Number.isFin
 }
 /* ===== NOTAS: editor interno compatível com o app instalado ===== */
 function garantirTopicosNotas(){
-  if(
-    estado.notasTopicos &&
-    Array.isArray(estado.notasTopicos)
-  ){
-    return;
+  if(!estado.notasTopicos || !Array.isArray(estado.notasTopicos)){
+    estado.notasTopicos = [];
+
+    if(estado.notas && String(estado.notas).trim()){
+      estado.notasTopicos.push({
+        titulo: "Anotações da campanha",
+        texto: String(estado.notas || ""),
+        aberto: true
+      });
+    }
   }
 
-  estado.notasTopicos = [];
+  /* A partir da sincronização item-level, cada tópico precisa de identidade
+     permanente. Para tópicos antigos usamos uma identidade determinística
+     baseada no título já existente, para que dois aparelhos que vieram do
+     mesmo snapshot adotem o mesmo ID mesmo se a ordem local estiver diferente. */
+  let idsMigrados=false;
+  const idsUsados=new Set();
+  estado.notasTopicos.forEach((topico,indice)=>{
+    if(!topico || typeof topico!=="object") return;
+    let id=String(topico.id||"").trim();
+    if(!id){
+      const titulo=String(topico.titulo||"nota")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,"-")
+        .replace(/^-+|-+$/g,"")
+        .slice(0,36)||"nota";
+      id=`nota_legado_${titulo}`;
+      topico.id=id;
+      idsMigrados=true;
+    }
+    if(idsUsados.has(id)){
+      const base=id||`nota_legado_nota`;
+      let sufixo=2;
+      while(idsUsados.has(`${base}_${sufixo}`)) sufixo+=1;
+      topico.id=`${base}_${sufixo}`;
+      id=topico.id;
+      idsMigrados=true;
+    }
+    idsUsados.add(id);
+  });
 
-  if(estado.notas && String(estado.notas).trim()){
-    estado.notasTopicos.push({
-      titulo: "Anotações da campanha",
-      texto: String(estado.notas || ""),
-      aberto: true
+  if(idsMigrados && typeof persistirEstadoLocal==="function"){
+    persistirEstadoLocal({
+      emitir:false,
+      confirmada:false,
+      origem:"migracao-notas-item-level",
+      motivo:"ids-permanentes-notas"
     });
   }
 }
 
-function salvarTopicosNotas(){
+function salvarTopicosNotas(operacao={}){
   garantirTopicosNotas();
 
+  let persistiu=false;
   if(typeof persistirEstadoLocal === "function"){
-    persistirEstadoLocal({
+    persistiu=persistirEstadoLocal({
       confirmada:true,
       origem:"notas",
       campo:"notasTopicos",
       motivo:"alteracao-confirmada"
-    });
-    return;
+    })!==false;
+  }else if(typeof persistirSemRender === "function"){
+    persistirSemRender({confirmada:true,origem:"notas",campo:"notasTopicos",motivo:"alteracao-confirmada"});
+    persistiu=true;
   }
 
-  if(typeof persistirSemRender === "function"){
-    persistirSemRender({confirmada:true,origem:"notas",campo:"notasTopicos",motivo:"alteracao-confirmada"});
-  }
+  const itemId=String(operacao.itemId||operacao.item?.id||"").trim();
+  if(!persistiu||!itemId||typeof window?.dispatchEvent!=="function") return persistiu;
+
+  try{
+    window.dispatchEvent(new CustomEvent("shinobi:colecao-item-confirmado",{
+      detail:{
+        sheetName:String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal"),
+        collection:"notas",
+        itemId,
+        deleted:operacao.deleted===true,
+        value:operacao.deleted===true?undefined:{...(operacao.item||{}),id:itemId},
+        confirmed:true,
+        source:"notas",
+        reason:"alteracao-confirmada"
+      }
+    }));
+  }catch(_erroColecao){}
+  return persistiu;
 }
 
 function escaparHtmlNotas(txt){
@@ -685,13 +739,15 @@ async function adicionarTopicoNota(){
 
   if(!dados) return;
 
-  estado.notasTopicos.push({
+  const novoTopico={
+    id:`nota_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`,
     titulo: dados.titulo,
     texto: dados.texto,
     aberto: true
-  });
+  };
+  estado.notasTopicos.push(novoTopico);
 
-  salvarTopicosNotas();
+  salvarTopicosNotas({itemId:novoTopico.id,item:novoTopico,deleted:false});
   renderizarTopicosNotas();
 }
 
@@ -734,7 +790,7 @@ async function editarTituloTopicoNota(i, ev){
   topico.titulo = dados.titulo;
   topico.texto = dados.texto;
 
-  salvarTopicosNotas();
+  salvarTopicosNotas({itemId:topico.id,item:topico,deleted:false});
   renderizarTopicosNotas();
 }
 
@@ -765,7 +821,7 @@ async function removerTopicoNota(i, ev){
   if(!confirmado) return;
 
   estado.notasTopicos.splice(i, 1);
-  salvarTopicosNotas();
+  salvarTopicosNotas({itemId:topico.id,item:topico,deleted:true});
   renderizarTopicosNotas();
 }
 
@@ -789,7 +845,7 @@ async function confirmarTextoTopicoNota(i, valor){
   }
 
   topico.texto=novo;
-  salvarTopicosNotas();
+  salvarTopicosNotas({itemId:topico.id,item:topico,deleted:false});
   renderizarTopicosNotas();
 }
 

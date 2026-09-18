@@ -172,6 +172,11 @@
     if(!detalhe.confirmada||!campo)return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
 
+    /* Notas usam collections/notas/{notaId}. O evento de persistência continua
+       existindo para backup estrutural, mas o array completo não entra mais no
+       realtime de fields. */
+    if(campo==="notasTopicos") return;
+
     if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
     if(!contaGoogleAtiva()){
@@ -193,6 +198,27 @@
     }
   }
 
+  async function enviarItemColecaoConfirmado(detalhe={}){
+    if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
+    const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
+    if(collection!=="notas"||!itemId) return;
+    if(!contaGoogleAtiva()) return;
+    const nome=texto(detalhe.sheetName)||fichaAtualNome();
+    try{
+      await window.ShinobiOnline.sincronizarItemColecaoConfirmado?.(
+        nome,collection,itemId,detalhe.deleted===true?undefined:detalhe.value,{
+          deleted:detalhe.deleted===true,
+          motivo:texto(detalhe.reason)||"alteracao-confirmada",
+          origem:texto(detalhe.source)||"colecao"
+        }
+      );
+    }catch(erro){
+      window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
+        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||"A nota ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível."}
+      }));
+    }
+  }
+
   function instalarAutoSync(){
     if(window.__shinobiOnlinePersistListener) return;
     window.__shinobiOnlinePersistListener=true;
@@ -205,6 +231,10 @@
       if(!detalhe.confirmada||!campo)return;
       enviarAlteracaoConfirmada(detalhe).catch(()=>{});
       agendarBackupEstrutural(detalhe);
+    });
+
+    window.addEventListener("shinobi:colecao-item-confirmado",evento=>{
+      enviarItemColecaoConfirmado(evento?.detail||{}).catch(()=>{});
     });
 
     document.addEventListener("visibilitychange",()=>{

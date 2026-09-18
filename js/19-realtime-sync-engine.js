@@ -12,6 +12,8 @@
   const CHAVE_VERSOES_BASE="shinobi_field_versions_v2";
   const CHAVE_SERVER_OFFSET="shinobi_server_time_offset_v2";
   const CHAVE_DEVICE="shinobi_device_id_v1";
+  const CHAVE_COLECAO_OUTBOX_BASE="shinobi_collection_outbox_v1";
+  const CHAVE_COLECAO_VERSOES_BASE="shinobi_collection_versions_v1";
 
   function texto(v){return String(v==null?"":v).trim();}
   function clonar(v){if(v==null)return v;try{return structuredClone(v);}catch(_e){return JSON.parse(JSON.stringify(v));}}
@@ -50,7 +52,60 @@
     return op;
   }
 
-  const test={compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime};
+  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"]]);
+  const COLECOES_ITEM_LEVEL=new Set(["notas"]);
+
+  function campoGerenciadoPorColecao(campo){
+    return CAMPOS_ITEM_LEVEL.has(texto(campo));
+  }
+  function colecaoPermitida(colecao){
+    return COLECOES_ITEM_LEVEL.has(texto(colecao));
+  }
+  function normalizarItemColecao(colecao,valor,itemId=""){
+    if(valor==null||typeof valor!=="object"||Array.isArray(valor))return clonar(valor);
+    const copia=clonar(valor)||{};
+    if(texto(colecao)==="notas"){
+      delete copia.aberto;
+      if(itemId)copia.id=texto(itemId);
+    }
+    return copia;
+  }
+  function criarOperacaoColecaoPura({sheetId,sheetName,colecao,itemId,valor,deleted=false,editAt,deviceId,opId,uid=""}){
+    const collection=texto(colecao),id=texto(itemId);
+    const removida=deleted===true||valor===undefined;
+    const op={
+      kind:"collection",uid:texto(uid),sheetId:texto(sheetId),sheetName:texto(sheetName)||"Principal",
+      collection,itemId:id,deleted:removida,editAt:Number(editAt||agora()),deviceId:texto(deviceId),
+      opId:texto(opId)||idAleatorio("item")
+    };
+    if(!removida)op.payload=JSON.stringify(normalizarItemColecao(collection,valor,id));
+    return op;
+  }
+  function aplicarRegistroColecaoPuro(colecao,itens,itemId,registro){
+    const collection=texto(colecao),id=texto(itemId);
+    const lista=Array.isArray(itens)?clonar(itens):[];
+    if(!colecaoPermitida(collection)||!id||!registro)return lista;
+    const indice=lista.findIndex(item=>texto(item?.id)===id);
+    if(registro.deleted===true){
+      if(indice>=0)lista.splice(indice,1);
+      return lista;
+    }
+    let remoto;
+    try{remoto=JSON.parse(String(registro.payload??"null"));}catch(_e){return lista;}
+    if(!remoto||typeof remoto!=="object"||Array.isArray(remoto))return lista;
+    remoto=normalizarItemColecao(collection,remoto,id);
+    if(collection==="notas"){
+      const aberto=indice>=0?Boolean(lista[indice]?.aberto):false;
+      remoto.aberto=aberto;
+    }
+    if(indice>=0)lista[indice]=remoto;else lista.push(remoto);
+    return lista;
+  }
+
+  const test={
+    compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
+    criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida
+  };
 
   function install(){
     if(!root||!root.document||root.__ekoRealtimeLazyV2)return false;
@@ -65,6 +120,7 @@
       bootLiberado:false,
       uid:"",
       listener:null,
+      listenerNotas:null,
       offset:Number.isFinite(offsetSalvo)?offsetSalvo:0,
       offsetConhecido:Number.isFinite(offsetSalvo),
       offsetRef:null,
@@ -141,9 +197,44 @@
     function operacaoPendente(sheetId,campo,uid=uidAtual()){
       return lerOutbox(uid)?.[chaveOperacao(sheetId,campo)]||null;
     }
+    function chaveOperacaoColecao(sheetId,colecao,itemId){
+      return `${texto(sheetId)}::${texto(colecao)}::${campoParaChave(itemId)}`;
+    }
+    function lerOutboxColecoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_COLECAO_OUTBOX_BASE,uid),{});}
+    function salvarOutboxColecoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_COLECAO_OUTBOX_BASE,uid),valor||{});}
+    function lerVersoesColecoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_COLECAO_VERSOES_BASE,uid),{});}
+    function salvarVersoesColecoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_COLECAO_VERSOES_BASE,uid),valor||{});}
+    function registrarVersaoColecao(sheetId,colecao,itemId,registro,uid=uidAtual()){
+      if(!uid||!sheetId||!colecao||!itemId||!registro)return;
+      const todos=lerVersoesColecoes(uid);
+      todos[chaveOperacaoColecao(sheetId,colecao,itemId)]={editAt:Number(registro.editAt||0),opId:texto(registro.opId)};
+      salvarVersoesColecoes(todos,uid);
+    }
+    function versaoColecaoAplicada(sheetId,colecao,itemId,uid=uidAtual()){
+      return lerVersoesColecoes(uid)?.[chaveOperacaoColecao(sheetId,colecao,itemId)]||null;
+    }
+    function adicionarOutboxColecao(op,uid=uidAtual()){
+      if(!uid||!op?.sheetId||!colecaoPermitida(op?.collection)||!texto(op?.itemId))return;
+      const todos=lerOutboxColecoes(uid),chave=chaveOperacaoColecao(op.sheetId,op.collection,op.itemId),anterior=todos[chave];
+      if(!anterior||compararRegistros(op,anterior)>=0)todos[chave]=op;
+      salvarOutboxColecoes(todos,uid);
+    }
+    function removerOutboxColecao(op,uid=uidAtual()){
+      if(!uid||!op?.sheetId||!op?.collection||!op?.itemId)return;
+      const todos=lerOutboxColecoes(uid),chave=chaveOperacaoColecao(op.sheetId,op.collection,op.itemId),atual=todos[chave];
+      if(!atual)return;
+      if(op.opId&&texto(atual.opId)!==texto(op.opId))return;
+      delete todos[chave];
+      salvarOutboxColecoes(todos,uid);
+    }
+    function operacaoColecaoPendente(sheetId,colecao,itemId,uid=uidAtual()){
+      return lerOutboxColecoes(uid)?.[chaveOperacaoColecao(sheetId,colecao,itemId)]||null;
+    }
     function temPendencias(sheetId="",uid=uidAtual()){
       const id=texto(sheetId);
-      return Object.values(lerOutbox(uid)).some(op=>!id||texto(op?.sheetId)===id);
+      const campos=Object.values(lerOutbox(uid)).some(op=>!id||texto(op?.sheetId)===id);
+      const colecoes=Object.values(lerOutboxColecoes(uid)).some(op=>!id||texto(op?.sheetId)===id);
+      return campos||colecoes;
     }
 
     function registroParaFirebase(op){
@@ -154,6 +245,16 @@
         serverUpdatedAt:root.firebase.database.ServerValue.TIMESTAMP,
         deviceId:texto(op.deviceId),
         opId:texto(op.opId)
+      };
+      if(!registro.deleted)registro.payload=String(op.payload??"null");
+      return registro;
+    }
+
+    function registroColecaoParaFirebase(op){
+      const registro={
+        collection:texto(op.collection),itemId:texto(op.itemId),deleted:op.deleted===true,
+        editAt:Number(op.editAt||0),serverUpdatedAt:root.firebase.database.ServerValue.TIMESTAMP,
+        deviceId:texto(op.deviceId),opId:texto(op.opId)
       };
       if(!registro.deleted)registro.payload=String(op.payload??"null");
       return registro;
@@ -249,6 +350,10 @@
       for(const [chave,registro] of Object.entries(registros)){
         const campo=texto(registro?.name)||(util?.chaveParaCampo?util.chaveParaCampo(chave):"");
         if(!registro||!campoPermitido(campo)||texto(registro.name)!==campo)continue;
+        /* notasTopicos passou a ser sincronizado por item em collections/notas.
+           O registro legado em fields pode permanecer no Firebase, mas não pode
+           mais sobrescrever a coleção item-level. */
+        if(campoGerenciadoPorColecao(campo))continue;
         const anterior=versaoAplicada(sheetId,campo,uid);
         if(anterior&&compararRegistros(registro,anterior)<=0)continue;
         const pendente=operacaoPendente(sheetId,campo,uid);
@@ -273,10 +378,57 @@
       return aplicados;
     }
 
+    function campoLocalDaColecao(colecao){
+      return texto(colecao)==="notas"?"notasTopicos":"";
+    }
+
+    function aplicarSnapshotColecao(sheetId,colecao,valor){
+      const uid=uidAtual(),collection=texto(colecao),campoLocal=campoLocalDaColecao(collection);
+      if(!uid||!colecaoPermitida(collection)||!campoLocal)return [];
+      const fichaBase=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(fichaBase))return [];
+      const ficha=fichaBase?root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(fichaBase.name)||fichaBase:null;
+      if(!ficha||!fichaPodeUsarRealtime(ficha)||realtimeIdDaFicha(ficha)!==texto(sheetId))return [];
+      if(collection==="notas"){
+        try{root.garantirTopicosNotas?.();}catch(_e){}
+      }
+      let dados={};
+      try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
+      if(!dados||typeof dados!=="object"||Array.isArray(dados))dados={};
+      let itens=Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):[];
+      const aplicados=[];
+      const registros=valor&&typeof valor==="object"?valor:{};
+      for(const [chave,registro] of Object.entries(registros)){
+        const itemId=texto(registro?.itemId)||(util?.chaveParaCampo?util.chaveParaCampo(chave):texto(chave));
+        if(!registro||texto(registro.collection)!==collection||!itemId||texto(registro.itemId)!==itemId)continue;
+        const anterior=versaoColecaoAplicada(sheetId,collection,itemId,uid);
+        if(anterior&&compararRegistros(registro,anterior)<=0)continue;
+        const pendente=operacaoColecaoPendente(sheetId,collection,itemId,uid);
+        if(pendente&&compararRegistros(pendente,registro)>0)continue;
+        if(pendente&&compararRegistros(registro,pendente)>=0)removerOutboxColecao(pendente,uid);
+        itens=aplicarRegistroColecaoPuro(collection,itens,itemId,registro);
+        registrarVersaoColecao(sheetId,collection,itemId,registro,uid);
+        aplicados.push(itemId);
+      }
+      if(aplicados.length){
+        dados[campoLocal]=clonar(itens);
+        try{
+          if(typeof estado!=="undefined"&&estado&&typeof estado==="object")estado[campoLocal]=clonar(itens);
+        }catch(_e){}
+        try{root.localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){}
+        agendarAtualizacaoUi([campoLocal],dados);
+        try{root.dispatchEvent(new CustomEvent("shinobi:realtime-colecao-aplicada",{detail:{sheetId,collection,itemIds:aplicados}}));}catch(_e){}
+      }
+      return aplicados;
+    }
+
     function desconectarListener(){
       const atual=estadoRT.listener;
       if(atual){try{atual.ref.off("value",atual.callback);}catch(_e){}}
+      const notas=estadoRT.listenerNotas;
+      if(notas){try{notas.ref.off("value",notas.callback);}catch(_e){}}
       estadoRT.listener=null;
+      estadoRT.listenerNotas=null;
     }
 
     function observarOffset(db){
@@ -306,7 +458,8 @@
       const realtimeId=realtimeIdDaFicha(ficha);
       if(!fichaPodeUsarRealtime(ficha)||!realtimeId){desconectarListener();return {skipped:true,reason:"ficha-sem-identidade-realtime"};}
       const uid=texto(user.uid),sheetId=realtimeId;
-      if(estadoRT.listener&&estadoRT.listener.uid===uid&&estadoRT.listener.sheetId===sheetId){
+      if(estadoRT.listener&&estadoRT.listener.uid===uid&&estadoRT.listener.sheetId===sheetId&&
+         estadoRT.listenerNotas&&estadoRT.listenerNotas.uid===uid&&estadoRT.listenerNotas.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
         return {ok:true,already:true,sheetId};
       }
@@ -320,6 +473,16 @@
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização em tempo real indisponível. A ficha local continua funcionando."}}));}catch(_e){}
       });
       estadoRT.listener={uid,sheetId,ref,callback};
+
+      const refNotas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/notas`);
+      const callbackNotas=snap=>{
+        try{aplicarSnapshotColecao(sheetId,"notas",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar notas item-level.",erro);}
+      };
+      refNotas.on("value",callbackNotas,erro=>{
+        console.warn("Realtime item-level de notas indisponível.",erro?.code||erro?.message||erro);
+        try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização das notas indisponível. As notas locais continuam salvas neste aparelho."}}));}catch(_e){}
+      });
+      estadoRT.listenerNotas={uid,sheetId,ref:refNotas,callback:callbackNotas};
       await processarOutbox().catch(()=>{});
       return {ok:true,sheetId};
     }
@@ -350,6 +513,31 @@
       return {ok:true,record:salvo};
     }
 
+    async function enviarOperacaoColecao(op){
+      const uid=uidAtual(),db=banco();
+      if(!uid||!db||texto(op?.uid)!==uid)throw new Error("Conta Google indisponível para sincronização item-level.");
+      if(!colecaoPermitida(op?.collection)||!texto(op?.itemId))throw new Error("Coleção item-level inválida.");
+      const itemKey=campoParaChave(op.itemId);
+      const ref=db.ref(`sheetRealtime/${uid}/${op.sheetId}/collections/${op.collection}/${itemKey}`);
+      let registroAtual=null;
+      const resultado=await ref.transaction(atual=>{
+        if(atual&&compararRegistros(op,atual)<=0){registroAtual=atual;return;}
+        return registroColecaoParaFirebase(op);
+      });
+      if(!resultado.committed){
+        removerOutboxColecao(op,uid);
+        const atual=registroAtual||resultado.snapshot?.val?.();
+        if(atual&&estadoRT.listenerNotas?.sheetId===op.sheetId){
+          aplicarSnapshotColecao(op.sheetId,op.collection,{[itemKey]:atual});
+        }
+        return {ok:true,obsolete:true};
+      }
+      const salvo=resultado.snapshot?.val?.();
+      removerOutboxColecao(op,uid);
+      if(salvo)registrarVersaoColecao(op.sheetId,op.collection,op.itemId,salvo,uid);
+      return {ok:true,record:salvo};
+    }
+
     async function processarOutbox(){
       if(estadoRT.processando){estadoRT.reprocessar=true;return {busy:true};}
       const uid=uidAtual(),db=banco();
@@ -357,10 +545,12 @@
       estadoRT.processando=true;
       const resultados=[];
       try{
-        const pendentes=Object.values(lerOutbox(uid)).filter(op=>op?.sheetId&&campoPermitido(op?.name));
+        const pendentesCampos=Object.values(lerOutbox(uid)).filter(op=>op?.sheetId&&campoPermitido(op?.name));
+        const pendentesColecoes=Object.values(lerOutboxColecoes(uid)).filter(op=>op?.sheetId&&colecaoPermitida(op?.collection)&&texto(op?.itemId));
+        const pendentes=[...pendentesCampos,...pendentesColecoes];
         pendentes.sort((a,b)=>compararRegistros(a,b));
         for(const op of pendentes){
-          try{resultados.push(await enviarOperacao(op));}
+          try{resultados.push(op?.kind==="collection"?await enviarOperacaoColecao(op):await enviarOperacao(op));}
           catch(erro){resultados.push({ok:false,error:erro,op});}
         }
       }finally{
@@ -392,6 +582,28 @@
       return {...resultado,op};
     }
 
+    async function sincronizarItemColecaoConfirmado(localSheetName,colecao,itemId,valor,meta={}){
+      const collection=texto(colecao),id=texto(itemId);
+      if(!colecaoPermitida(collection)||!id)return {skipped:true,reason:"colecao-ou-item-invalido"};
+      const user=usuarioAtual();
+      if(!user)return {skipped:true,reason:"sem-conta-google"};
+      const base=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(base))return {skipped:true,reason:"ficha-legada-ou-desativada"};
+      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(localSheetName)||obterFichaAtiva(true);
+      const realtimeId=realtimeIdDaFicha(ficha);
+      if(!realtimeId||!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-indisponivel"};
+      const uid=texto(user.uid);
+      const op=criarOperacaoColecaoPura({
+        uid,sheetId:realtimeId,sheetName:ficha.name,colecao:collection,itemId:id,valor,
+        deleted:meta.deleted===true,editAt:Number(meta.editAt||timestampEdicao()),deviceId:deviceId(),opId:idAleatorio("item")
+      });
+      adicionarOutboxColecao(op,uid);
+      if(root.navigator?.onLine===false)return {queued:true,op};
+      if(estadoRT.bootLiberado)await ativarFichaAtual().catch(()=>{});
+      const resultado=await processarOutbox();
+      return {...resultado,op};
+    }
+
     async function reconciliar(){
       if(!estadoRT.bootLiberado)return {skipped:true};
       await ativarFichaAtual().catch(()=>{});
@@ -405,9 +617,10 @@
     }
 
     root.ShinobiOnline.sincronizarCampoConfirmado=sincronizarCampoConfirmado;
+    root.ShinobiOnline.sincronizarItemColecaoConfirmado=sincronizarItemColecaoConfirmado;
     root.ShinobiOnline.sincronizarPendenciasRealtime=processarOutbox;
     root.EkoRealtimeSync={
-      sincronizarCampoConfirmado,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
+      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
       get estado(){return {bootLiberado:estadoRT.bootLiberado,uid:uidAtual(),sheetId:estadoRT.listener?.sheetId||""};}
     };
 
