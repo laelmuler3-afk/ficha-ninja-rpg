@@ -30,6 +30,29 @@
     return tipo + ":" + unico;
   }
 
+
+  function nomeFichaAtualSeguro(){
+    try{return String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal").trim()||"Principal";}catch(_erro){return "Principal";}
+  }
+
+  function emitirImagemConfirmada(target, imageId="", deleted=false){
+    const alvo=target&&typeof target==="object"?target:null;
+    if(!alvo)return;
+    const online=estado?.__online&&typeof estado.__online==="object"?estado.__online:{};
+    const detail={
+      sheetName:nomeFichaAtualSeguro(),
+      target:JSON.parse(JSON.stringify(alvo)),
+      imageId:String(imageId||""),
+      deleted:deleted===true,
+      savedAt:Date.now(),
+      characterId:String(online.characterId||online.realtimeId||""),
+      ownerUid:String(online.characterOwnerUid||online.realtimeOwnerUid||online.ownerUid||"")
+    };
+    try{
+      window.dispatchEvent(new CustomEvent("shinobi:imagem-confirmada",{detail}));
+    }catch(_erro){}
+  }
+
   function abrirBanco(){
     if(promessaBanco) return promessaBanco;
 
@@ -130,6 +153,69 @@
       urlsEmMemoria.delete(id);
     }
   }
+
+
+  function alvoImagemAtual(target){
+    const tipo=String(target?.type||"");
+    if(tipo==="avatar") return {tipo,id:estado?.avatarNinjaId||""};
+    if(tipo==="profile-cover") return {tipo,id:estado?.perfilFundoImagemId||""};
+    if(tipo==="jutsu-cover"){
+      const jutsuId=String(target?.jutsuId||"");
+      const jutsu=(estado?.jutsus||[]).find(item=>String(item?.jutsuId||"")===jutsuId);
+      return {tipo,id:jutsu?.imagemId||"",jutsu};
+    }
+    return {tipo:"",id:""};
+  }
+
+  async function aplicarImagemRemota({target,blob,deleted=false,version=""}={}){
+    const atual=alvoImagemAtual(target);
+    if(!atual.tipo)return false;
+    const novoId=deleted?"":`cloud:${atual.tipo}:${String(version||Date.now())}`;
+    let url="";
+    if(!deleted){
+      if(!(blob instanceof Blob))throw new Error("Blob remoto de imagem inválido.");
+      await salvarBlob(novoId,blob);
+      url=urlParaBlob(novoId,blob);
+    }
+
+    if(atual.tipo==="avatar"){
+      if(deleted){delete estado.avatarNinjaId;estado.avatarNinja="";}
+      else{estado.avatarNinjaId=novoId;estado.avatarNinja="";}
+      if(typeof persistirEstadoLocal==="function")persistirEstadoLocal({emitir:false,origem:"imagem-remota"});
+      if(typeof aplicarAvatar==="function")aplicarAvatar(deleted?"":url);
+      return true;
+    }
+
+    if(atual.tipo==="profile-cover"){
+      if(deleted){delete estado.perfilFundoImagemId;delete estado.perfilFundoImagem;}
+      else{estado.perfilFundoImagemId=novoId;estado.perfilFundoImagem="";}
+      if(typeof persistirEstadoLocal==="function")persistirEstadoLocal({emitir:false,origem:"imagem-remota"});
+      if(typeof aplicarFundoPerfil==="function")aplicarFundoPerfil(deleted?"":url);
+      return true;
+    }
+
+    const jutsu=atual.jutsu;
+    if(!jutsu)return false;
+    if(deleted){delete jutsu.imagemId;jutsu.imagem="";}
+    else{jutsu.imagemId=novoId;jutsu.imagem="";}
+    if(typeof persistirEstadoLocal==="function")persistirEstadoLocal({emitir:false,origem:"imagem-remota"});
+    if(typeof renderizarJutsus==="function")renderizarJutsus();
+    return true;
+  }
+
+  async function temImagemLocal(target){
+    const atual=alvoImagemAtual(target);
+    if(!atual.id)return false;
+    try{return Boolean(await obterBlob(atual.id));}catch(_erro){return false;}
+  }
+
+  window.ShinobiImagensLocal=Object.freeze({
+    obterBlob,
+    salvarBlob,
+    apagarBlob,
+    temImagemLocal,
+    aplicarRemota:aplicarImagemRemota
+  });
 
   async function dataUrlParaBlob(dataUrl){
     const resposta = await fetch(dataUrl);
@@ -419,6 +505,8 @@
       throw new Error("Não foi possível salvar a imagem na ficha.");
     }
 
+    try{window.ShinobiJutsusItemLevel?.garantirIdsNovos?.(estado.jutsus);}catch(_erro){}
+    if(jutsu.jutsuId) emitirImagemConfirmada({type:"jutsu-cover",jutsuId:jutsu.jutsuId},novoId,false);
     agendarLimpezaImagensOrfas();
   }
 
@@ -465,6 +553,7 @@
     }
 
     if(typeof renderizarJutsus === "function") renderizarJutsus();
+    if(jutsu.jutsuId) emitirImagemConfirmada({type:"jutsu-cover",jutsuId:jutsu.jutsuId},"",true);
     agendarLimpezaImagensOrfas();
   };
 
@@ -519,6 +608,7 @@
       throw new Error("Não foi possível salvar a imagem do perfil.");
     }
 
+    emitirImagemConfirmada({type:campo === "avatarNinja" ? "avatar" : "profile-cover"},novoId,false);
     return url;
   }
 
@@ -569,6 +659,7 @@
     }
 
     if(typeof aplicarFundoPerfil === "function") aplicarFundoPerfil("");
+    emitirImagemConfirmada({type:"profile-cover"},"",true);
     fecharMenuAvatar();
     agendarLimpezaImagensOrfas();
   };
