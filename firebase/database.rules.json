@@ -158,6 +158,28 @@
           }
         }
       }
+    },
+    "sheetMedia": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$characterId": {
+          "avatar": {
+            ".validate": "newData.hasChildren(['kind','path','version','deleted','updatedAt','deviceId']) && newData.child('kind').val() === 'avatar' && newData.child('path').val() === 'users/' + $uid + '/characters/' + $characterId + '/avatar/current.webp' && newData.child('version').isString() && newData.child('version').val().length > 0 && newData.child('version').val().length <= 180 && newData.child('deleted').isBoolean() && newData.child('updatedAt').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100"
+          },
+          "profile-cover": {
+            ".validate": "newData.hasChildren(['kind','path','version','deleted','updatedAt','deviceId']) && newData.child('kind').val() === 'profile-cover' && newData.child('path').val() === 'users/' + $uid + '/characters/' + $characterId + '/profile-cover/current.webp' && newData.child('version').isString() && newData.child('version').val().length > 0 && newData.child('version').val().length <= 180 && newData.child('deleted').isBoolean() && newData.child('updatedAt').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100"
+          },
+          "jutsus": {
+            "$itemId": {
+              ".validate": "newData.hasChildren(['kind','path','version','deleted','updatedAt','deviceId','jutsuId']) && newData.child('kind').val() === 'jutsu-cover' && newData.child('path').val() === 'users/' + $uid + '/characters/' + $characterId + '/jutsus/' + $itemId + '/cover.webp' && newData.child('jutsuId').isString() && newData.child('jutsuId').val().length > 0 && newData.child('jutsuId').val().length <= 180 && newData.child('version').isString() && newData.child('version').val().length > 0 && newData.child('version').val().length <= 180 && newData.child('deleted').isBoolean() && newData.child('updatedAt').isNumber() && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100"
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }
