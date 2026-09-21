@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.87",
-  "name": "Correção de piscada nos jutsus",
-  "notes": "Remove o frame intermediário da organização retrátil dos jutsus: após renderizar as cartas, o agrupamento acontece no mesmo ciclo, evitando a piscada percebida durante atualizações realtime. Não altera item-level, Firebase, imagens ou boot.",
-  "date": "2026-09-18"
+  "version": "2.5.8.90",
+  "name": "Combate granular + catálogo por clã e técnicas 8T",
+  "notes": "Versão cumulativa sobre a 2.5.8.87: preserva a sincronização granular de combate da 2.5.8.89 (efeitos ativos item-level e bônus manuais de atributos/CA/CD em realtime) e acrescenta as seis técnicas 8T listadas para Liu Hyuuga, além de busca ampliada por clã, requisitos, especialidades e aliases. Firebase Storage permanece em standby e não faz parte desta versão.",
+  "date": "2026-09-21"
 }
