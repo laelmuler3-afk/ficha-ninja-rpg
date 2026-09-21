@@ -251,15 +251,13 @@ async function resetarBatalha(){
 
   salvar();
 
-  document.querySelectorAll("[data-bonus-batalha]").forEach(input=>input.value=0);
+  shinobiZerarBonusBatalhaPersistidos("todos");
   if(typeof bonusBatalhaAtributos!=="undefined"){
     Object.keys(bonusBatalhaAtributos).forEach(k=>bonusBatalhaAtributos[k]=0);
   }
 
   if(typeof atualizarModsBatalhaComBonus==="function")atualizarModsBatalhaComBonus();
-
-  if(typeof zerarBonusDefesasBatalha==="function")zerarBonusDefesasBatalha();
-  else document.querySelectorAll("[data-bonus-defesa-batalha]").forEach(input=>input.value=0);
+  if(typeof atualizarDefesasTotaisBatalha==="function")atualizarDefesasTotaisBatalha();
 
   await avisoShinobi("Batalha resetada","A área de batalha foi restaurada.");
 }
@@ -383,11 +381,66 @@ Confirmar alteração?`);if(!ok)return;estado.kekkeiGenkai[i].nivel=nivelFinal,s
 
   renderizarInventario();
   renderizarArmados();
-}window.addEventListener("pageshow",function(){estado=lerEstadoFichaSeguro(CHAVE);renderizarInventario()});const bonusBatalhaAtributos={forca:0,destreza:0,constituicao:0,inteligencia:0,sabedoria:0,carisma:0};function lerBonusAtributosBatalha(){document.querySelectorAll("[data-bonus-batalha]").forEach(input=>{const chave=input.getAttribute("data-bonus-batalha");bonusBatalhaAtributos[chave]=Number(input.value||0)})}function valorAtributoComBonusBatalha(chave){return Number(document.querySelector(`[data-save="${chave}"]`)?.value||0)+Number(bonusBatalhaAtributos[chave]||0)}function modificadorComBonusBatalha(chave){const base=Number(document.querySelector(`[data-save="${chave}"]`)?.value||0);if(!Number.isFinite(base)||base<=0)return 0;return calcularModificador(base+Number(bonusBatalhaAtributos[chave]||0))}function formatarModBatalha(v){return v>=0?"+"+v:String(v)}function atualizarModsBatalhaComBonus(){lerBonusAtributosBatalha(),[["forca","modForca"],["destreza","modDestreza"],["constituicao","modConstituicao"],["inteligencia","modInteligencia"],["sabedoria","modSabedoria"],["carisma","modCarisma"]].forEach(([chave,id])=>{const el=document.getElementById(id);if(!el)return;const bonusManual=Number(bonusBatalhaAtributos[chave]||0),bonusJutsu=Number(window.obterBonusEfeitosJutsuBatalha?.(`mod_${chave}`)||0),mod=modificadorComBonusBatalha(chave)+bonusJutsu,detalhes=[];bonusManual&&detalhes.push(`+${bonusManual} atr.`),bonusJutsu&&detalhes.push(`${bonusJutsu>0?"+":""}${bonusJutsu} jutsu`),el.innerHTML=formatarModBatalha(mod)+(detalhes.length?`<span class="bonusAplicadoTexto">${detalhes.join(" · ")}</span>`:"")})}async function limparBonusAtributosBatalha(){
+}window.addEventListener("pageshow",function(){estado=lerEstadoFichaSeguro(CHAVE);renderizarInventario()});
+
+/* ===== Estado granular dos bônus temporários de combate — v2.5.8.89 ===== */
+const SHINOBI_BONUS_BATALHA_CAMPOS={
+  atributo:{
+    forca:"batalhaBonusForca",destreza:"batalhaBonusDestreza",constituicao:"batalhaBonusConstituicao",
+    inteligencia:"batalhaBonusInteligencia",sabedoria:"batalhaBonusSabedoria",carisma:"batalhaBonusCarisma"
+  },
+  defesa:{ca:"batalhaBonusCA",cd:"batalhaBonusCD"}
+};
+function shinobiCampoEstadoBonusBatalha(input){
+  if(!input)return "";
+  const atributo=String(input.getAttribute?.("data-bonus-batalha")||"").trim();
+  if(atributo)return SHINOBI_BONUS_BATALHA_CAMPOS.atributo[atributo]||"";
+  const defesa=String(input.getAttribute?.("data-bonus-defesa-batalha")||"").trim();
+  if(defesa)return SHINOBI_BONUS_BATALHA_CAMPOS.defesa[defesa]||"";
+  return "";
+}
+function shinobiPersistirBonusBatalha(input){
+  const campo=shinobiCampoEstadoBonusBatalha(input);if(!campo)return false;
+  const antes=Number(estado?.[campo]||0),depois=Number(input?.value||0);
+  if(!Number.isFinite(depois))return false;
+  estado[campo]=depois;
+  return persistirEstadoLocal({confirmada:true,origem:"batalha-bonus",campo,antes,depois,motivo:"alteracao-confirmada"});
+}
+function shinobiCarregarBonusBatalhaPersistidos(){
+  document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(input=>{
+    const campo=shinobiCampoEstadoBonusBatalha(input);if(!campo)return;
+    if(Object.prototype.hasOwnProperty.call(estado||{},campo))input.value=String(Number(estado[campo]||0));
+  });
+  try{atualizarModsBatalhaComBonus();}catch(_erro){}
+  try{atualizarDefesasTotaisBatalha();}catch(_erro){}
+}
+function shinobiZerarBonusBatalhaPersistidos(grupo="todos"){
+  const seletores=[];
+  if(grupo==="todos"||grupo==="atributo")seletores.push("[data-bonus-batalha]");
+  if(grupo==="todos"||grupo==="defesa")seletores.push("[data-bonus-defesa-batalha]");
+  const campos=[];
+  document.querySelectorAll(seletores.join(",")).forEach(input=>{
+    input.value=0;
+    const campo=shinobiCampoEstadoBonusBatalha(input);if(!campo)return;
+    estado[campo]=0;campos.push(campo);
+  });
+  if(campos.length)persistirEstadoLocal({confirmada:true,origem:"batalha-bonus",campos,motivo:"alteracao-confirmada"});
+  return campos;
+}
+window.shinobiPersistirBonusBatalha=shinobiPersistirBonusBatalha;
+window.shinobiCarregarBonusBatalhaPersistidos=shinobiCarregarBonusBatalhaPersistidos;
+window.shinobiZerarBonusBatalhaPersistidos=shinobiZerarBonusBatalhaPersistidos;
+document.addEventListener("change",evento=>{
+  if(evento.target?.matches?.("[data-bonus-batalha],[data-bonus-defesa-batalha]"))shinobiPersistirBonusBatalha(evento.target);
+});
+document.addEventListener("DOMContentLoaded",()=>setTimeout(shinobiCarregarBonusBatalhaPersistidos,160));
+window.addEventListener("pageshow",()=>setTimeout(shinobiCarregarBonusBatalhaPersistidos,160));
+
+const bonusBatalhaAtributos={forca:0,destreza:0,constituicao:0,inteligencia:0,sabedoria:0,carisma:0};function lerBonusAtributosBatalha(){document.querySelectorAll("[data-bonus-batalha]").forEach(input=>{const chave=input.getAttribute("data-bonus-batalha");bonusBatalhaAtributos[chave]=Number(input.value||0)})}function valorAtributoComBonusBatalha(chave){return Number(document.querySelector(`[data-save="${chave}"]`)?.value||0)+Number(bonusBatalhaAtributos[chave]||0)}function modificadorComBonusBatalha(chave){const base=Number(document.querySelector(`[data-save="${chave}"]`)?.value||0);if(!Number.isFinite(base)||base<=0)return 0;return calcularModificador(base+Number(bonusBatalhaAtributos[chave]||0))}function formatarModBatalha(v){return v>=0?"+"+v:String(v)}function atualizarModsBatalhaComBonus(){lerBonusAtributosBatalha(),[["forca","modForca"],["destreza","modDestreza"],["constituicao","modConstituicao"],["inteligencia","modInteligencia"],["sabedoria","modSabedoria"],["carisma","modCarisma"]].forEach(([chave,id])=>{const el=document.getElementById(id);if(!el)return;const bonusManual=Number(bonusBatalhaAtributos[chave]||0),bonusJutsu=Number(window.obterBonusEfeitosJutsuBatalha?.(`mod_${chave}`)||0),mod=modificadorComBonusBatalha(chave)+bonusJutsu,detalhes=[];bonusManual&&detalhes.push(`+${bonusManual} atr.`),bonusJutsu&&detalhes.push(`${bonusJutsu>0?"+":""}${bonusJutsu} jutsu`),el.innerHTML=formatarModBatalha(mod)+(detalhes.length?`<span class="bonusAplicadoTexto">${detalhes.join(" · ")}</span>`:"")})}async function limparBonusAtributosBatalha(){
   const ok=await confirmarUsoAcao("bônus temporários","Limpar bônus de atributos","Todos os bônus temporários de FOR, DES, CON, INT, SAB e CAR serão zerados.");
   if(!ok)return;
 
-  document.querySelectorAll("[data-bonus-batalha]").forEach(input=>input.value=0);
+  shinobiZerarBonusBatalhaPersistidos("atributo");
 
   if(typeof bonusBatalhaAtributos!=="undefined"){
     Object.keys(bonusBatalhaAtributos).forEach(k=>bonusBatalhaAtributos[k]=0);
@@ -402,7 +455,7 @@ function numeroBatalha(valor,padrao=0){const n=Number(valor);return Number.isFin
   const ok=await confirmarUsoAcao("bônus temporários","Limpar bônus de CA/CD","Os bônus temporários de CA e CD serão zerados.");
   if(!ok)return;
 
-  document.querySelectorAll("[data-bonus-defesa-batalha]").forEach(input=>input.value=0);
+  shinobiZerarBonusBatalhaPersistidos("defesa");
   if(typeof atualizarDefesasTotaisBatalha==="function")atualizarDefesasTotaisBatalha();
   if(typeof logar==="function")logar("Bônus temporários de CA/CD removidos.");
   else if(typeof log==="function")log("Bônus temporários de CA/CD removidos.");

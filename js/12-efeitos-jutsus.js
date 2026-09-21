@@ -158,6 +158,22 @@
     return false;
   }
 
+  function emitirEfeitoItemConfirmado(item,{deleted=false,reason="alteracao-confirmada"}={}){
+    const itemId=String(item?.id||"").trim();
+    if(!itemId) return;
+    try{
+      window.dispatchEvent(new CustomEvent("shinobi:colecao-item-confirmado",{detail:{
+        confirmed:true,
+        collection:"efeitosBatalha",
+        itemId,
+        value:deleted?undefined:clonar(item),
+        deleted:Boolean(deleted),
+        source:"efeitos-jutsu",
+        reason
+      }}));
+    }catch(_erro){}
+  }
+
   function nivelNatureza(id){
     if(!id) return 0;
     if(window.RegrasNaturezaShinobi?.nivelNatureza){
@@ -1000,12 +1016,14 @@
   function encerrarEfeitosRequeridos(efeitos){
     const nomes=[];
     efeitos.filter(e=>e.tipo==="encerrar_efeitos" && Array.isArray(e.valor)).forEach(e=>nomes.push(...e.valor));
-    if(!nomes.length) return;
+    if(!nomes.length) return [];
     const normalizados=new Set(nomes.map(normalizar));
     const lista=garantirLista();
+    const removidos=[];
     for(let i=lista.length-1;i>=0;i--){
-      if(normalizados.has(normalizar(lista[i].nome))) lista.splice(i,1);
+      if(normalizados.has(normalizar(lista[i].nome))) removidos.push(...lista.splice(i,1));
     }
+    return removidos;
   }
 
   function idDoJutsu(jutsu,indice,config,destino,efeitos){
@@ -1075,7 +1093,7 @@
 
     const destino=resolverDestino(efeitos);
     efeitos=destino.efeitos;
-    encerrarEfeitosRequeridos(efeitos);
+    const efeitosEncerrados=encerrarEfeitosRequeridos(efeitos);
 
     const persistentes=efeitosPersistentes(efeitos);
     const resumo=resumoEfeitos(efeitos);
@@ -1119,7 +1137,12 @@
         renovado=true;
       }else lista.push(item);
       itemAtivo=item;
+    }
+
+    if(persistentes.length||efeitosEncerrados.length){
       salvarEstado({confirmada:true,origem:"efeitos-jutsu",campo:CHAVE_ESTADO,motivo:"alteracao-confirmada"});
+      efeitosEncerrados.forEach(item=>emitirEfeitoItemConfirmado(item,{deleted:true,reason:"efeito-encerrado-por-jutsu"}));
+      if(itemAtivo) emitirEfeitoItemConfirmado(itemAtivo,{reason:renovado?"efeito-renovado":"efeito-aplicado"});
       atualizarTudo();
     }
 
@@ -1155,6 +1178,7 @@
     if(!ok) return;
     lista.splice(indice,1);
     salvarEstado({confirmada:true,origem:"efeitos-jutsu",campo:CHAVE_ESTADO,motivo:"alteracao-confirmada"});
+    emitirEfeitoItemConfirmado(item,{deleted:true,reason:"efeito-encerrado"});
     atualizarTudo();
     if(typeof log==="function") log(`Efeito encerrado: ${item.nome}`);
   };
@@ -1290,11 +1314,14 @@
       if(dano) dano.value=1;
       if(custo) custo.value=1;
       if(logBox) logBox.innerHTML="Nada aconteceu ainda.";
-      document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(input=>{input.value=0;});
+      if(typeof window.shinobiZerarBonusBatalhaPersistidos==="function") window.shinobiZerarBonusBatalhaPersistidos("todos");
+      else document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(input=>{input.value=0;});
       if(typeof bonusBatalhaAtributos!=="undefined") Object.keys(bonusBatalhaAtributos).forEach(chave=>{bonusBatalhaAtributos[chave]=0;});
+      const efeitosAntesReset=Array.isArray(estado[CHAVE_ESTADO])?estado[CHAVE_ESTADO].map(clonar):[];
       estado[CHAVE_ESTADO]=[];
       const contextoReset={confirmada:true,origem:"batalha",campos:["pv","chakra",CHAVE_ESTADO],motivo:"alteracao-confirmada"};
       if(typeof salvar==="function") salvar(contextoReset); else salvarEstado(contextoReset);
+      efeitosAntesReset.forEach(item=>emitirEfeitoItemConfirmado(item,{deleted:true,reason:"reset-batalha"}));
       if(typeof atualizarModsBatalhaComBonus==="function") atualizarModsBatalhaComBonus();
       if(typeof atualizarPainelBatalhaVivo==="function") atualizarPainelBatalhaVivo();
       atualizarTudo();

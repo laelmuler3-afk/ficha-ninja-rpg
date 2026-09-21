@@ -169,6 +169,117 @@
       .trim();
   }
 
+  const NOMES_TECNICAS_LEE = new Set([
+    "entrada dinamica (requer habilidade)",
+    "lotus frontal (requer habilidade)",
+    "lotus reverso (requer habilidade)",
+    "segundo portao (requer habilidade)",
+    "quarto portao (requer habilidade)"
+  ]);
+
+  function palavrasChaveExtrasJutsu(jutsu){
+    const nome = normalizarBusca(jutsu?.nome);
+    const categoria = normalizarBusca(jutsu?.categoria);
+    const requisitos = normalizarBusca(
+      Array.isArray(jutsu?.requisitos)
+        ? jutsu.requisitos.join(" ")
+        : jutsu?.requisitos
+    );
+    const extras = [];
+
+    const adicionar = (...valores)=>{
+      valores.forEach(valor=>{
+        const texto = String(valor ?? "").trim();
+        if(texto) extras.push(texto);
+      });
+    };
+
+    if(nome.startsWith("8t:")){
+      adicionar(
+        "Hyuuga", "Hyuga", "Byakugan", "Jougan",
+        "Punho Suave", "8T", "Oito Trigramas", "Kaiten"
+      );
+    }else if(requisitos.includes("byakugan")){
+      adicionar(
+        "Hyuuga", "Hyuga", "Byakugan", "Jougan",
+        "Punho Suave", "Oito Trigramas"
+      );
+    }
+
+    if(
+      nome.includes("campo de cinzas quentes") ||
+      requisitos.includes("cla sarutobi")
+    ){
+      adicionar("Sarutobi", "Vontade do Fogo");
+    }
+
+    if(NOMES_TECNICAS_LEE.has(nome)){
+      adicionar("Lee", "Rock Lee", "Portoes", "Portões", "Lótus", "Lotus");
+    }
+
+    if(nome === "agilidade felina"){
+      adicionar("Izuna", "Agilidade Felina");
+    }
+
+    if(nome.includes("selamento")){
+      adicionar("Uzumaki", "Fuinjutsu", "Selamento");
+    }
+
+    if(categoria.includes("genjutsu")){
+      adicionar("Yuuhi", "Yuhi", "Ilusao", "Ilusão", "Pesadelo", "Genjutsu");
+    }
+
+    if(elementoDoJutsu(jutsu) === "katon"){
+      adicionar("Uchiha", "Mestre do Fogo");
+    }
+
+    /*
+     * Aliases preservam a grafia usada nas fichas de exemplo sem
+     * reescrever o nome oficial que veio do suplemento de jutsus.
+     */
+    if(nome === "punhos de ferro"){
+      adicionar("Punho de Ferro");
+    }
+
+    if(nome.includes("punhos silensiosos")){
+      adicionar("Punhos Silenciosos", "Punhos Silenciosos (C)");
+    }
+
+    if(nome.includes("fuuuton: grande espiral")){
+      adicionar("Fuuton: Grande Espiral de Vento");
+    }
+
+    if(nome.includes("jutsu multi clones das sombras")){
+      adicionar("Multi-Clones das Sombras", "Multi Clones das Sombras");
+    }
+
+    if(nome.includes("raiton: garras de tempestade")){
+      adicionar("Raiton: Garras da Tempestade");
+    }
+
+    if(nome.includes("suiton: grande vortice de agua")){
+      adicionar("Suiton: Grade Vórtice de Água", "Suiton: Grade Vortice de Agua");
+    }
+
+    return extras;
+  }
+
+  function textoBuscaJutsu(jutsu){
+    return normalizarBusca([
+      jutsu?.nome,
+      jutsu?.tipoNome,
+      jutsu?.categoria,
+      jutsu?.rank,
+      jutsu?.descricao,
+      jutsu?.upgrade?.efeito,
+      jutsu?.upgrade?.requisito,
+      ...(Array.isArray(jutsu?.requisitos) ? jutsu.requisitos : [jutsu?.requisitos]),
+      ...(Array.isArray(jutsu?.clas) ? jutsu.clas : [jutsu?.clas]),
+      ...(Array.isArray(jutsu?.palavrasChave) ? jutsu.palavrasChave : [jutsu?.palavrasChave]),
+      ...palavrasChaveExtrasJutsu(jutsu)
+    ].filter(Boolean).join(" "));
+  }
+
   const ORDEM_RANK_JUTSU={E:1,D:2,C:3,B:4,A:5,S:6};
 
   function rankMaximoPersonagem(){
@@ -335,15 +446,7 @@
 
       if(!busca) return true;
 
-      const texto = normalizarBusca([
-        jutsu.nome,
-        jutsu.tipoNome,
-        jutsu.categoria,
-        jutsu.rank,
-        jutsu.descricao,
-        jutsu.upgrade?.efeito,
-        jutsu.upgrade?.requisito
-      ].filter(Boolean).join(" "));
+      const texto = textoBuscaJutsu(jutsu);
 
       return texto.includes(busca);
     });

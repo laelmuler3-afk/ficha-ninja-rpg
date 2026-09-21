@@ -171,7 +171,7 @@
 
     /* Coleções item-level continuam emitindo persistência para o backup estrutural,
        mas seus arrays completos não entram mais no realtime de fields. */
-    if(campo==="notasTopicos"||campo==="inventarioItens"||campo==="jutsus") return;
+    if(campo==="notasTopicos"||campo==="inventarioItens"||campo==="jutsus"||campo==="efeitosBatalhaAtivos") return;
 
     if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
@@ -197,7 +197,7 @@
   async function enviarItemColecaoConfirmado(detalhe={}){
     if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
     const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
-    if(!["notas","inventario","jutsus"].includes(collection)||!itemId) return;
+    if(!["notas","inventario","jutsus","efeitosBatalha"].includes(collection)||!itemId) return;
     if(!contaGoogleAtiva()) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
     try{
@@ -377,6 +377,12 @@
         item.duracao=`${efeitoOnline.totalRounds} rodadas • restam ${efeitoOnline.totalRounds}`;
         salvarEstadoSemLoop();
         atualizarVisualEfeitos();
+        try{
+          window.dispatchEvent(new CustomEvent("shinobi:colecao-item-confirmado",{detail:{
+            confirmed:true,collection:"efeitosBatalha",itemId:String(item.id||""),value:item,
+            deleted:false,source:"efeitos-online",reason:"vinculo-efeito-online"
+          }}));
+        }catch(_erro){}
       }
       try{if(typeof log==="function") log(`Buff de ${jutsu?.nome||"Jutsu"} sincronizado com a mesa por ${efeitoOnline.totalRounds} rodadas.`);}catch(_erro){}
     }finally{publicacoesEmCurso.delete(chavePublicacao);}
