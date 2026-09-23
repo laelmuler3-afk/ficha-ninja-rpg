@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.92 — sincronização multi-dispositivo segura e atualização PWA.
+/* Ficha Ninja RPG 2.5.8.93 — ataques/armados item-level e sincronização multi-dispositivo segura.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.92";
+const APP_VERSION = "2.5.8.93";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -49,6 +49,7 @@ const APP_SHELL = [
   `./js/02-runtime.js?v=${APP_VERSION}`,
   `./js/03-images.js?v=${APP_VERSION}`,
   `./js/04-jutsus.js?v=${APP_VERSION}`,
+  `./js/05-armados-item-level.js?v=${APP_VERSION}`,
   `./js/09-catalogo.js?v=${APP_VERSION}`,
   `./js/05-battle.js?v=${APP_VERSION}`,
   `./js/06-inventory.js?v=${APP_VERSION}`,

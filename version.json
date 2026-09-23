@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.92",
-  "name": "Regularização isolada + atualização PWA consistente",
-  "notes": "Corrige a regularização histórica para enviar somente o lote criado pelo próprio botão, sem falhar por pendências antigas não relacionadas, e passa a mostrar o item/coleção que realmente falhou. Também garante recarga quando o HTML já está na versão nova mas ainda é controlado pelo Service Worker anterior, evitando interface nova com módulos online antigos em cache. Firebase Storage permanece em standby.",
+  "version": "2.5.8.93",
+  "name": "Ataques/Armados item-level",
+  "notes": "Migra ataques/armados para sincronização por item com ataqueId permanente. Edições, vínculos com inventário e exclusões deixam de enviar o array inteiro; ataques antigos recebem IDs determinísticos e passam a participar da regularização histórica. Firebase Storage permanece em standby.",
   "date": "2026-09-23"
 }
