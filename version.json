@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.90",
-  "name": "Combate granular + catálogo por clã e técnicas 8T",
-  "notes": "Versão cumulativa sobre a 2.5.8.87: preserva a sincronização granular de combate da 2.5.8.89 (efeitos ativos item-level e bônus manuais de atributos/CA/CD em realtime) e acrescenta as seis técnicas 8T listadas para Liu Hyuuga, além de busca ampliada por clã, requisitos, especialidades e aliases. Firebase Storage permanece em standby e não faz parte desta versão.",
-  "date": "2026-09-21"
+  "version": "2.5.8.91",
+  "name": "Regularização histórica + Storage em standby real",
+  "notes": "Adiciona regularização manual segura de notas, inventário e jutsus antigos, unindo conteúdo local, backup completo e realtime sem escolher um aparelho como vencedor. Duplicatas idênticas são unificadas, diferenças são preservadas separadamente e tombstones do realtime impedem ressurreição de itens já excluídos. O backup completo é atualizado ao final. Firebase Storage permanece em standby e o módulo experimental de imagens deixa de ser carregado.",
+  "date": "2026-09-23"
 }
