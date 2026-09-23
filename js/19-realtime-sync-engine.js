@@ -52,8 +52,8 @@
     return op;
   }
 
-  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"],["jutsus","jutsus"],["efeitosBatalhaAtivos","efeitosBatalha"]]);
-  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario","jutsus","efeitosBatalha"]);
+  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"],["jutsus","jutsus"],["armados","armados"],["efeitosBatalhaAtivos","efeitosBatalha"]]);
+  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario","jutsus","armados","efeitosBatalha"]);
 
   function campoGerenciadoPorColecao(campo){
     return CAMPOS_ITEM_LEVEL.has(texto(campo));
@@ -67,6 +67,7 @@
     const collection=texto(colecao);
     if(collection==="notas") delete copia.aberto;
     if(["notas","inventario","efeitosBatalha"].includes(collection)&&itemId)copia.id=texto(itemId);
+    if(collection==="armados"&&itemId)copia.ataqueId=texto(itemId);
     if(collection==="jutsus"){
       delete copia.imagem;
       delete copia.imagemId;
@@ -89,7 +90,7 @@
     const collection=texto(colecao),id=texto(itemId);
     const lista=Array.isArray(itens)?clonar(itens):[];
     if(!colecaoPermitida(collection)||!id||!registro)return lista;
-    const indice=lista.findIndex(item=>texto(collection==="jutsus"?item?.jutsuId:item?.id)===id);
+    const indice=lista.findIndex(item=>texto(collection==="jutsus"?item?.jutsuId:collection==="armados"?item?.ataqueId:item?.id)===id);
     if(registro.deleted===true){
       if(indice>=0)lista.splice(indice,1);
       return lista;
@@ -108,13 +109,13 @@
       if(Object.prototype.hasOwnProperty.call(local||{},"imagemId"))remoto.imagemId=local.imagemId;
     }
     if(indice>=0)lista[indice]=remoto;else lista.push(remoto);
-    if(collection==="jutsus"){
+    if(collection==="jutsus"||collection==="armados"){
       lista.sort((a,b)=>{
         const oa=Number(a?.ordem),ob=Number(b?.ordem);
         const va=Number.isFinite(oa)?oa:Number.MAX_SAFE_INTEGER;
         const vb=Number.isFinite(ob)?ob:Number.MAX_SAFE_INTEGER;
         if(va!==vb)return va-vb;
-        return texto(a?.jutsuId).localeCompare(texto(b?.jutsuId));
+        return texto(collection==="jutsus"?a?.jutsuId:a?.ataqueId).localeCompare(texto(collection==="jutsus"?b?.jutsuId:b?.ataqueId));
       });
     }
     return lista;
@@ -139,7 +140,7 @@
     Object.keys(valor).sort().forEach(chave=>{saida[chave]=ordenarObjetoRegularizacao(valor[chave]);});
     return saida;
   }
-  function campoIdColecao(colecao){return texto(colecao)==="jutsus"?"jutsuId":"id";}
+  function campoIdColecao(colecao){const collection=texto(colecao);return collection==="jutsus"?"jutsuId":collection==="armados"?"ataqueId":"id";}
   function itemComparavelRegularizacao(colecao,item){
     const collection=texto(colecao),copia=clonar(item)||{};
     if(!copia||typeof copia!=="object"||Array.isArray(copia))return copia;
@@ -148,6 +149,7 @@
     if(collection==="jutsus"){
       delete copia.imagem;delete copia.imagemId;delete copia.ordem;
     }
+    if(collection==="armados")delete copia.ordem;
     return ordenarObjetoRegularizacao(copia);
   }
   function fingerprintRegularizacao(colecao,item){
@@ -166,6 +168,12 @@
       const dano=slugRegularizacao(item?.dano||"",64);
       const complemento=[tipo,dano].filter(v=>v&&v!=="item").join("_");
       return `inv_legado_${nome}${complemento?`_${complemento}`:""}`.slice(0,170);
+    }
+    if(collection==="armados"){
+      const existente=texto(item?.id||item?.uuid);
+      if(existente)return `ataque_legado_id_${slugRegularizacao(existente)}`.slice(0,170);
+      const assinatura=[texto(item?.nome),texto(item?.tipo||"armado"),texto(item?.dano),texto(item?.itemInventario)].join("\u241f");
+      return `ataque_legado_${slugRegularizacao(item?.nome||"ataque")}_${hashRegularizacao(assinatura)}`.slice(0,170);
     }
     if(collection==="jutsus"){
       const catalogo=texto(item?.catalogoId);
@@ -190,7 +198,7 @@
         id=`${base}_${sufixo}`.slice(0,180);
       }
       item[campoId]=id;
-      if(collection==="jutsus"&&!Number.isFinite(Number(item.ordem)))item.ordem=indice;
+      if((collection==="jutsus"||collection==="armados")&&!Number.isFinite(Number(item.ordem)))item.ordem=indice;
       usados.add(id);saida.push(item);
     });
     return saida;
@@ -261,7 +269,7 @@
     localNorm.forEach(item=>adicionar(item,"local"));
     backupNorm.forEach(item=>adicionar(item,"backup"));
 
-    if(collection==="jutsus"){
+    if(collection==="jutsus"||collection==="armados"){
       const ordemLocal=new Map(localNorm.map((item,indice)=>[fingerprintRegularizacao(collection,item),indice]));
       items.sort((a,b)=>{
         const fa=fingerprintRegularizacao(collection,a),fb=fingerprintRegularizacao(collection,b);
@@ -345,6 +353,7 @@
       listenerNotas:null,
       listenerInventario:null,
       listenerJutsus:null,
+      listenerArmados:null,
       listenerEfeitosBatalha:null,
       offset:Number.isFinite(offsetSalvo)?offsetSalvo:0,
       offsetConhecido:Number.isFinite(offsetSalvo),
@@ -631,6 +640,7 @@
       if(collection==="notas")return "notasTopicos";
       if(collection==="inventario")return "inventarioItens";
       if(collection==="jutsus")return "jutsus";
+      if(collection==="armados")return "armados";
       if(collection==="efeitosBatalha")return "efeitosBatalhaAtivos";
       return "";
     }
@@ -650,6 +660,9 @@
       }
       if(collection==="jutsus"){
         try{root.ShinobiJutsusItemLevel?.garantirEstado?.();}catch(_e){}
+      }
+      if(collection==="armados"){
+        try{root.ShinobiArmadosItemLevel?.garantirEstado?.();}catch(_e){}
       }
       let dados={};
       try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
@@ -675,6 +688,7 @@
           if(typeof estado!=="undefined"&&estado&&typeof estado==="object"){
             estado[campoLocal]=clonar(itens);
             if(collection==="jutsus")estado.jutsusAbertos={};
+            if(collection==="armados")estado.ataquesAbertos={};
           }
         }catch(_e){}
         try{root.localStorage.setItem(ficha.key,JSON.stringify(dados));}catch(_e){}
@@ -693,12 +707,15 @@
       if(inventario){try{inventario.ref.off("value",inventario.callback);}catch(_e){}}
       const jutsus=estadoRT.listenerJutsus;
       if(jutsus){try{jutsus.ref.off("value",jutsus.callback);}catch(_e){}}
+      const armados=estadoRT.listenerArmados;
+      if(armados){try{armados.ref.off("value",armados.callback);}catch(_e){}}
       const efeitosBatalha=estadoRT.listenerEfeitosBatalha;
       if(efeitosBatalha){try{efeitosBatalha.ref.off("value",efeitosBatalha.callback);}catch(_e){}}
       estadoRT.listener=null;
       estadoRT.listenerNotas=null;
       estadoRT.listenerInventario=null;
       estadoRT.listenerJutsus=null;
+      estadoRT.listenerArmados=null;
       estadoRT.listenerEfeitosBatalha=null;
     }
 
@@ -733,6 +750,7 @@
          estadoRT.listenerNotas&&estadoRT.listenerNotas.uid===uid&&estadoRT.listenerNotas.sheetId===sheetId&&
          estadoRT.listenerInventario&&estadoRT.listenerInventario.uid===uid&&estadoRT.listenerInventario.sheetId===sheetId&&
          estadoRT.listenerJutsus&&estadoRT.listenerJutsus.uid===uid&&estadoRT.listenerJutsus.sheetId===sheetId&&
+         estadoRT.listenerArmados&&estadoRT.listenerArmados.uid===uid&&estadoRT.listenerArmados.sheetId===sheetId&&
          estadoRT.listenerEfeitosBatalha&&estadoRT.listenerEfeitosBatalha.uid===uid&&estadoRT.listenerEfeitosBatalha.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
         return {ok:true,already:true,sheetId};
@@ -777,6 +795,16 @@
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização dos jutsus indisponível. Os jutsus locais continuam salvos neste aparelho."}}));}catch(_e){}
       });
       estadoRT.listenerJutsus={uid,sheetId,ref:refJutsus,callback:callbackJutsus};
+
+      const refArmados=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/armados`);
+      const callbackArmados=snap=>{
+        try{aplicarSnapshotColecao(sheetId,"armados",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar ataques item-level.",erro);}
+      };
+      refArmados.on("value",callbackArmados,erro=>{
+        console.warn("Realtime item-level de ataques indisponível.",erro?.code||erro?.message||erro);
+        try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização dos ataques indisponível. Os ataques locais continuam salvos neste aparelho."}}));}catch(_e){}
+      });
+      estadoRT.listenerArmados={uid,sheetId,ref:refArmados,callback:callbackArmados};
 
       const refEfeitosBatalha=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/efeitosBatalha`);
       const callbackEfeitosBatalha=snap=>{
@@ -933,7 +961,8 @@
       const configs=[
         {collection:"notas",field:"notasTopicos"},
         {collection:"inventario",field:"inventarioItens"},
-        {collection:"jutsus",field:"jutsus"}
+        {collection:"jutsus",field:"jutsus"},
+        {collection:"armados",field:"armados"}
       ];
       const detalhes={},publicacoes=[];
 
@@ -964,10 +993,11 @@
           estado.notasTopicos=clonar(dadosLocal.notasTopicos||[]);
           estado.inventarioItens=clonar(dadosLocal.inventarioItens||[]);
           estado.jutsus=clonar(dadosLocal.jutsus||[]);
+          estado.armados=clonar(dadosLocal.armados||[]);
         }
       }catch(_e){}
       try{root.persistirEstadoLocal?.({emitir:false,confirmada:false,origem:"regularizacao-historica",motivo:"merge-seguro"});}catch(_e){}
-      agendarAtualizacaoUi(["notasTopicos","inventarioItens","jutsus"],dadosLocal);
+      agendarAtualizacaoUi(["notasTopicos","inventarioItens","jutsus","armados"],dadosLocal);
 
       const editBase=timestampEdicao();
       const operacoesRegularizacao=publicacoes.map((pub,indice)=>{
