@@ -54,7 +54,6 @@
       "js/19-online-core.js",
       "js/19-realtime-fields-utils.js",
       "js/19-realtime-sync-engine.js",
-      "js/19-image-storage-sync.js",
       "vendor/qrcode-local.js",
       "js/20-online-ui.js",
       "js/21-online-hooks.js"

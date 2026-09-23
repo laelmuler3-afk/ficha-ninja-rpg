@@ -845,6 +845,10 @@
           <button type="button" class="onlineBtn secundario compacto" data-action="sync-check">Verificar sincronização agora</button>
           <small>As alterações confirmadas são enviadas automaticamente. Use esta opção apenas para reenviar pendências da ficha ativa.</small>
         </div>
+        <div>
+          <button type="button" class="onlineBtn secundario compacto" data-action="regularize-current">Regularizar ficha completa</button>
+          <small>Une notas, inventário e jutsus antigos deste aparelho com o backup e o realtime, sem escolher um aparelho como vencedor. Para recuperar conteúdo que só existe em outro aparelho antigo, execute uma vez nele também.</small>
+        </div>
       </details>
     </section>`;
   }
@@ -1221,6 +1225,30 @@
       try{window.ShinobiOnline?.ativarBackupsNuvem?.();}catch(_erro){}
       await window.EkoRealtimeSync?.reconciliar?.();
       await avisar("Sincronização verificada","As alterações confirmadas da ficha ativa foram conferidas. O backup na nuvem permanece separado.");
+    });
+    if(acao==="regularize-current")return executar(async()=>{
+      const ok=await confirmar(
+        "Regularizar ficha completa",
+        "O Shinobi vai unir notas, inventário e jutsus antigos deste aparelho com o que já existe na nuvem. Duplicatas idênticas serão unificadas; versões diferentes serão preservadas separadamente; exclusões já confirmadas no realtime não serão ressuscitadas.\n\nSe outro aparelho antigo tiver conteúdo que nunca chegou à nuvem, execute esta opção uma vez naquele aparelho também.\n\nContinuar?"
+      );
+      if(!ok)return;
+      const nome=window.ShinobiOnline.fichaAtualLocal()?.name;
+      const resultado=await window.ShinobiOnline.regularizarFichaCompleta(nome);
+      const detalhes=resultado?.details||{};
+      const partes=[
+        `Notas: ${Number(detalhes.notas?.total||0)}`,
+        `Inventário: ${Number(detalhes.inventario?.total||0)}`,
+        `Jutsus: ${Number(detalhes.jutsus?.total||0)}`
+      ];
+      const extras=[];
+      if(Number(resultado?.published||0)>0)extras.push(`${resultado.published} item(ns) antigos publicados`);
+      if(Number(resultado?.conflicts||0)>0)extras.push(`${resultado.conflicts} diferença(s) preservada(s) como cópia separada`);
+      if(Number(resultado?.skippedDeleted||0)>0)extras.push(`${resultado.skippedDeleted} item(ns) já excluídos mantidos como excluídos`);
+      await avisar(
+        "Ficha regularizada",
+        `${partes.join(" • ")}.${extras.length?`\n\n${extras.join(" • ")}.`:""}\n\nO backup completo também foi atualizado. O app será recarregado para consolidar os índices locais.`
+      );
+      setTimeout(()=>window.location.reload(),180);
     });
     if(acao==="sync-current")return executar(async()=>{
       try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}

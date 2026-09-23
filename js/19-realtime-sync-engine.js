@@ -120,9 +120,173 @@
     return lista;
   }
 
+  function slugRegularizacao(valor,limite=72){
+    return texto(valor)
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .toLowerCase().replace(/[^a-z0-9]+/g,"-")
+      .replace(/^-+|-+$/g,"").slice(0,limite)||"item";
+  }
+  function hashRegularizacao(valor){
+    const str=String(valor==null?"":valor);
+    let hash=2166136261;
+    for(let i=0;i<str.length;i+=1){hash^=str.charCodeAt(i);hash=Math.imul(hash,16777619);}
+    return (hash>>>0).toString(36);
+  }
+  function ordenarObjetoRegularizacao(valor){
+    if(Array.isArray(valor))return valor.map(ordenarObjetoRegularizacao);
+    if(!valor||typeof valor!=="object")return valor;
+    const saida={};
+    Object.keys(valor).sort().forEach(chave=>{saida[chave]=ordenarObjetoRegularizacao(valor[chave]);});
+    return saida;
+  }
+  function campoIdColecao(colecao){return texto(colecao)==="jutsus"?"jutsuId":"id";}
+  function itemComparavelRegularizacao(colecao,item){
+    const collection=texto(colecao),copia=clonar(item)||{};
+    if(!copia||typeof copia!=="object"||Array.isArray(copia))return copia;
+    delete copia[campoIdColecao(collection)];
+    if(collection==="notas")delete copia.aberto;
+    if(collection==="jutsus"){
+      delete copia.imagem;delete copia.imagemId;delete copia.ordem;
+    }
+    return ordenarObjetoRegularizacao(copia);
+  }
+  function fingerprintRegularizacao(colecao,item){
+    return hashRegularizacao(JSON.stringify(itemComparavelRegularizacao(colecao,item)));
+  }
+  function idLegadoRegularizacao(colecao,item){
+    const collection=texto(colecao);
+    if(collection==="notas"){
+      return `nota_legado_${slugRegularizacao(item?.titulo||"nota",36)}`;
+    }
+    if(collection==="inventario"){
+      const catalogo=slugRegularizacao(item?.catalogoSlug||item?.slug||"",64);
+      if(catalogo!=="item")return `inv_legado_catalogo_${catalogo}`.slice(0,170);
+      const nome=slugRegularizacao(item?.nome||"item",64);
+      const tipo=slugRegularizacao(item?.tipo||"",64);
+      const dano=slugRegularizacao(item?.dano||"",64);
+      const complemento=[tipo,dano].filter(v=>v&&v!=="item").join("_");
+      return `inv_legado_${nome}${complemento?`_${complemento}`:""}`.slice(0,170);
+    }
+    if(collection==="jutsus"){
+      const catalogo=texto(item?.catalogoId);
+      if(catalogo)return `jutsu_catalogo_${slugRegularizacao(catalogo)}`.slice(0,170);
+      const existente=texto(item?.id||item?.uuid);
+      if(existente)return `jutsu_legado_id_${slugRegularizacao(existente)}`.slice(0,170);
+      const assinatura=[texto(item?.nome),texto(item?.rank),texto(item?.elemento),texto(item?.categoria),texto(item?.tipoNome)].join("\u241f");
+      return `jutsu_legado_${slugRegularizacao(item?.nome||"jutsu")}_${hashRegularizacao(assinatura)}`.slice(0,170);
+    }
+    return `item_legado_${hashRegularizacao(JSON.stringify(itemComparavelRegularizacao(collection,item)))}`;
+  }
+  function normalizarListaLegada(colecao,itens){
+    const collection=texto(colecao),campoId=campoIdColecao(collection),usados=new Set(),saida=[];
+    (Array.isArray(itens)?itens:[]).forEach((valor,indice)=>{
+      if(!valor||typeof valor!=="object"||Array.isArray(valor))return;
+      const item=clonar(valor)||{};
+      let id=texto(item[campoId])||idLegadoRegularizacao(collection,item);
+      if(usados.has(id)){
+        const base=id.slice(0,165)||`${collection}_legado`;
+        let sufixo=2;
+        while(usados.has(`${base}_${sufixo}`))sufixo+=1;
+        id=`${base}_${sufixo}`.slice(0,180);
+      }
+      item[campoId]=id;
+      if(collection==="jutsus"&&!Number.isFinite(Number(item.ordem)))item.ordem=indice;
+      usados.add(id);saida.push(item);
+    });
+    return saida;
+  }
+  function extrairRealtimeRegularizacao(colecao,valor){
+    const collection=texto(colecao),ativos=[],deletados=new Set();
+    const registros=valor&&typeof valor==="object"&&!Array.isArray(valor)?valor:{};
+    Object.values(registros).forEach(registro=>{
+      const id=texto(registro?.itemId);
+      if(!id||texto(registro?.collection)!==collection)return;
+      if(registro.deleted===true){deletados.add(id);return;}
+      let item;
+      try{item=JSON.parse(String(registro?.payload??"null"));}catch(_e){return;}
+      if(!item||typeof item!=="object"||Array.isArray(item))return;
+      item=normalizarItemColecao(collection,item,id);
+      ativos.push(item);
+    });
+    return {ativos,deletados};
+  }
+  function novoIdColisaoRegularizacao(base,fingerprint,usados){
+    const raiz=(texto(base)||"item").slice(0,145);
+    let id=`${raiz}__rec_${fingerprint}`.slice(0,180),sufixo=2;
+    while(usados.has(id))id=`${raiz}__rec_${fingerprint}_${sufixo++}`.slice(0,180);
+    return id;
+  }
+  function preservarLocaisRegularizacao(colecao,destino,origem){
+    const collection=texto(colecao);
+    if(collection==="notas"&&Object.prototype.hasOwnProperty.call(origem||{},"aberto"))destino.aberto=Boolean(origem.aberto);
+    if(collection==="jutsus"){
+      if(Object.prototype.hasOwnProperty.call(origem||{},"imagem"))destino.imagem=origem.imagem;
+      if(Object.prototype.hasOwnProperty.call(origem||{},"imagemId"))destino.imagemId=origem.imagemId;
+      if(Number.isFinite(Number(origem?.ordem)))destino.ordem=Number(origem.ordem);
+    }
+  }
+  function mesclarColecaoLegadaPura(colecao,{local=[],backup=[],realtime={}}={}){
+    const collection=texto(colecao),campoId=campoIdColecao(collection);
+    if(!colecaoPermitida(collection))return {items:[],toPublish:[],conflicts:0,skippedDeleted:0};
+    const localNorm=normalizarListaLegada(collection,local);
+    const backupNorm=normalizarListaLegada(collection,backup);
+    const rt=extrairRealtimeRegularizacao(collection,realtime);
+    const rtNorm=normalizarListaLegada(collection,rt.ativos);
+    const items=[],porId=new Map(),porFingerprint=new Map(),usados=new Set();
+    let conflicts=0,skippedDeleted=0;
+
+    const adicionar=(item,origem)=>{
+      const copia=clonar(item)||{};
+      let id=texto(copia[campoId])||idLegadoRegularizacao(collection,copia);
+      if(origem!=="realtime"&&rt.deletados.has(id)){skippedDeleted+=1;return;}
+      let fp=fingerprintRegularizacao(collection,copia);
+      const igual=porFingerprint.get(fp);
+      if(igual){
+        if(origem==="local")preservarLocaisRegularizacao(collection,igual,copia);
+        return;
+      }
+      const mesmoId=porId.get(id);
+      if(mesmoId){
+        id=novoIdColisaoRegularizacao(id,fp,usados);
+        copia[campoId]=id;
+        conflicts+=1;
+        fp=fingerprintRegularizacao(collection,copia);
+      }else{
+        copia[campoId]=id;
+      }
+      usados.add(id);porId.set(id,copia);porFingerprint.set(fp,copia);items.push(copia);
+    };
+
+    rtNorm.forEach(item=>adicionar(item,"realtime"));
+    localNorm.forEach(item=>adicionar(item,"local"));
+    backupNorm.forEach(item=>adicionar(item,"backup"));
+
+    if(collection==="jutsus"){
+      const ordemLocal=new Map(localNorm.map((item,indice)=>[fingerprintRegularizacao(collection,item),indice]));
+      items.sort((a,b)=>{
+        const fa=fingerprintRegularizacao(collection,a),fb=fingerprintRegularizacao(collection,b);
+        const oa=ordemLocal.has(fa)?ordemLocal.get(fa):100000+Number(a?.ordem||0);
+        const ob=ordemLocal.has(fb)?ordemLocal.get(fb):100000+Number(b?.ordem||0);
+        return oa-ob||texto(a[campoId]).localeCompare(texto(b[campoId]));
+      });
+      items.forEach((item,indice)=>item.ordem=indice);
+    }
+
+    const remotoPorId=new Map(rtNorm.map(item=>[texto(item[campoId]),fingerprintRegularizacao(collection,item)]));
+    const toPublish=[];
+    items.forEach(item=>{
+      const id=texto(item[campoId]),fp=fingerprintRegularizacao(collection,item);
+      if(!id||rt.deletados.has(id))return;
+      if(remotoPorId.get(id)===fp)return;
+      toPublish.push({itemId:id,value:clonar(item)});
+    });
+    return {items,toPublish,conflicts,skippedDeleted};
+  }
+
   const test={
     compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
-    criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida
+    criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
+    mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada
   };
 
   function install(){
@@ -704,6 +868,91 @@
       return {...resultado,op};
     }
 
+    async function regularizarFichaCompleta(localSheetName=""){
+      if(root.navigator?.onLine===false)throw new Error("Conecte este aparelho à internet para regularizar a ficha.");
+      const user=usuarioAtual(),db=banco();
+      if(!user||!db)throw new Error("Entre com a mesma Conta Google usada nos outros aparelhos antes de regularizar a ficha.");
+      const fichaBase=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(fichaBase))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
+      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(texto(localSheetName)||fichaBase?.name)||obterFichaAtiva(true);
+      if(!ficha||!fichaPodeUsarRealtime(ficha))throw new Error("Ficha ativa indisponível para regularização.");
+      const uid=texto(user.uid),realtimeId=realtimeIdDaFicha(ficha),backupSheetId=texto(ficha.sheetId);
+      if(!realtimeId||!backupSheetId)throw new Error("A ficha ainda não possui identidade de sincronização completa.");
+
+      let dadosLocal={};
+      try{dadosLocal=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dadosLocal=clonar(ficha.data||{});}
+      if(!dadosLocal||typeof dadosLocal!=="object"||Array.isArray(dadosLocal))dadosLocal=clonar(ficha.data||{});
+
+      const [snapBackup,snapColecoes]=await Promise.all([
+        db.ref(`userSheets/${uid}/${backupSheetId}`).once("value"),
+        db.ref(`sheetRealtime/${uid}/${realtimeId}/collections`).once("value")
+      ]);
+      const backupCloud=snapBackup?.val?.()||{};
+      const dadosBackup=backupCloud?.deleted===true?{}:(backupCloud?.data&&typeof backupCloud.data==="object"?backupCloud.data:{});
+      const colecoesCloud=snapColecoes?.val?.()||{};
+      const configs=[
+        {collection:"notas",field:"notasTopicos"},
+        {collection:"inventario",field:"inventarioItens"},
+        {collection:"jutsus",field:"jutsus"}
+      ];
+      const detalhes={},publicacoes=[];
+
+      for(const config of configs){
+        const resultado=mesclarColecaoLegadaPura(config.collection,{
+          local:Array.isArray(dadosLocal?.[config.field])?dadosLocal[config.field]:[],
+          backup:Array.isArray(dadosBackup?.[config.field])?dadosBackup[config.field]:[],
+          realtime:colecoesCloud?.[config.collection]||{}
+        });
+        dadosLocal[config.field]=clonar(resultado.items);
+        detalhes[config.collection]={
+          total:resultado.items.length,
+          novos:resultado.toPublish.length,
+          conflitosPreservados:resultado.conflicts,
+          exclusoesRespeitadas:resultado.skippedDeleted
+        };
+        resultado.toPublish.forEach(item=>publicacoes.push({collection:config.collection,...item}));
+      }
+
+      /* Mantém os metadados/identidade da instalação atual. O backup remoto só
+         contribui com conteúdo de coleção; nunca troca owner, characterId ou sheetId. */
+      dadosLocal.__online=dadosLocal.__online&&typeof dadosLocal.__online==="object"?dadosLocal.__online:{};
+      dadosLocal.__online={...(ficha.data?.__online||{}),...dadosLocal.__online};
+      try{root.localStorage.setItem(ficha.key,JSON.stringify(dadosLocal));}catch(_e){throw new Error("Não foi possível salvar o resultado regularizado neste aparelho.");}
+
+      try{
+        if(typeof estado!=="undefined"&&estado&&typeof estado==="object"){
+          estado.notasTopicos=clonar(dadosLocal.notasTopicos||[]);
+          estado.inventarioItens=clonar(dadosLocal.inventarioItens||[]);
+          estado.jutsus=clonar(dadosLocal.jutsus||[]);
+        }
+      }catch(_e){}
+      try{root.persistirEstadoLocal?.({emitir:false,confirmada:false,origem:"regularizacao-historica",motivo:"merge-seguro"});}catch(_e){}
+      agendarAtualizacaoUi(["notasTopicos","inventarioItens","jutsus"],dadosLocal);
+
+      const editBase=timestampEdicao();
+      publicacoes.forEach((pub,indice)=>{
+        const op=criarOperacaoColecaoPura({
+          uid,sheetId:realtimeId,sheetName:ficha.name,colecao:pub.collection,itemId:pub.itemId,valor:pub.value,
+          deleted:false,editAt:editBase+indice,deviceId:deviceId(),opId:idAleatorio("regulariza")
+        });
+        adicionarOutboxColecao(op,uid);
+      });
+      const envio=await processarOutbox();
+      if(envio?.ok===false)throw new Error("Parte da regularização ficou pendente. Nada foi descartado; tente novamente quando a conexão estiver estável.");
+
+      if(typeof root.ShinobiOnline?.atualizarBackupEstrutural==="function"){
+        await root.ShinobiOnline.atualizarBackupEstrutural(ficha.name,{motivo:"regularizacao-historica"});
+      }
+      return {
+        ok:true,sheetId:backupSheetId,realtimeId,
+        published:publicacoes.length,
+        details:detalhes,
+        total:configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.total||0),0),
+        conflicts:configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.conflitosPreservados||0),0),
+        skippedDeleted:configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.exclusoesRespeitadas||0),0)
+      };
+    }
+
     async function reconciliar(){
       if(!estadoRT.bootLiberado)return {skipped:true};
       await ativarFichaAtual().catch(()=>{});
@@ -718,9 +967,10 @@
 
     root.ShinobiOnline.sincronizarCampoConfirmado=sincronizarCampoConfirmado;
     root.ShinobiOnline.sincronizarItemColecaoConfirmado=sincronizarItemColecaoConfirmado;
+    root.ShinobiOnline.regularizarFichaCompleta=regularizarFichaCompleta;
     root.ShinobiOnline.sincronizarPendenciasRealtime=processarOutbox;
     root.EkoRealtimeSync={
-      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
+      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,regularizarFichaCompleta,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
       get estado(){return {bootLiberado:estadoRT.bootLiberado,uid:uidAtual(),sheetId:estadoRT.listener?.sheetId||""};}
     };
 
