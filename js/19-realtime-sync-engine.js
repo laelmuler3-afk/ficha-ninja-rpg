@@ -283,10 +283,50 @@
     return {items,toPublish,conflicts,skippedDeleted};
   }
 
+  async function enviarLoteRegularizacaoPuro(operacoes,enviar){
+    const lista=Array.isArray(operacoes)?operacoes.filter(Boolean):[];
+    if(typeof enviar!=="function")throw new TypeError("Função de envio da regularização indisponível.");
+    const resultados=[],falhas=[];
+    for(const op of lista){
+      try{
+        const resultado=await enviar(op);
+        if(resultado?.ok===false){
+          const erro=resultado.error||new Error("Operação recusada sem detalhe adicional.");
+          falhas.push({
+            collection:texto(op?.collection),itemId:texto(op?.itemId),opId:texto(op?.opId),
+            code:texto(erro?.code||resultado?.code),message:texto(erro?.message||resultado?.message||erro)
+          });
+        }else{
+          resultados.push({op,resultado});
+        }
+      }catch(erro){
+        falhas.push({
+          collection:texto(op?.collection),itemId:texto(op?.itemId),opId:texto(op?.opId),
+          code:texto(erro?.code),message:texto(erro?.message||erro)
+        });
+      }
+    }
+    return {ok:falhas.length===0,resultados,falhas};
+  }
+
+  function mensagemFalhasRegularizacaoPura(falhas){
+    const lista=Array.isArray(falhas)?falhas.filter(Boolean):[];
+    if(!lista.length)return "";
+    const linhas=lista.slice(0,3).map(falha=>{
+      const alvo=[texto(falha?.collection),texto(falha?.itemId)].filter(Boolean).join(" / ")||"item";
+      const codigo=texto(falha?.code);
+      const mensagem=texto(falha?.message)||"falha sem detalhe";
+      return `${alvo}${codigo?` (${codigo})`:""}: ${mensagem}`;
+    });
+    if(lista.length>3)linhas.push(`+ ${lista.length-3} falha(s) adicional(is)`);
+    return `A regularização consolidou os dados locais, mas ${lista.length} item(ns) não puderam ser publicados agora. Os itens que falharam continuam na fila para nova tentativa.\n\n${linhas.join("\n")}`;
+  }
+
   const test={
     compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
-    mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada
+    mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,
+    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura
   };
 
   function install(){
@@ -930,15 +970,20 @@
       agendarAtualizacaoUi(["notasTopicos","inventarioItens","jutsus"],dadosLocal);
 
       const editBase=timestampEdicao();
-      publicacoes.forEach((pub,indice)=>{
+      const operacoesRegularizacao=publicacoes.map((pub,indice)=>{
         const op=criarOperacaoColecaoPura({
           uid,sheetId:realtimeId,sheetName:ficha.name,colecao:pub.collection,itemId:pub.itemId,valor:pub.value,
           deleted:false,editAt:editBase+indice,deviceId:deviceId(),opId:idAleatorio("regulariza")
         });
         adicionarOutboxColecao(op,uid);
+        return op;
       });
-      const envio=await processarOutbox();
-      if(envio?.ok===false)throw new Error("Parte da regularização ficou pendente. Nada foi descartado; tente novamente quando a conexão estiver estável.");
+
+      /* A regularização envia somente as operações que ela própria criou.
+         Pendências antigas de campos, combate ou outras coleções continuam na fila
+         normal e não podem fazer este botão falhar por um erro não relacionado. */
+      const envio=await enviarLoteRegularizacaoPuro(operacoesRegularizacao,enviarOperacaoColecao);
+      if(!envio.ok)throw new Error(mensagemFalhasRegularizacaoPura(envio.falhas));
 
       if(typeof root.ShinobiOnline?.atualizarBackupEstrutural==="function"){
         await root.ShinobiOnline.atualizarBackupEstrutural(ficha.name,{motivo:"regularizacao-historica"});

@@ -56,6 +56,15 @@
     return Boolean(versao&&compararVersoes(versao,APP_VERSION)>0);
   }
 
+  function deveRecarregarAoAtivarWorker({versaoDocumento=APP_VERSION,versaoControlador="",versaoWorker="",temControlador=false}={}){
+    const documento=String(versaoDocumento||"").trim();
+    const controlador=String(versaoControlador||"").trim();
+    const worker=String(versaoWorker||"").trim();
+    if(!temControlador||!documento||!worker||compararVersoes(worker,documento)!==0)return false;
+    if(!controlador)return true;
+    return compararVersoes(controlador,worker)<0;
+  }
+
   function limparMarcadorRecargaDaUrl(){
     try{
       const url=new URL(window.location.href);
@@ -249,6 +258,24 @@
     try{worker.postMessage({type:"SKIP_WAITING"});}catch(_erro){}
   }
 
+  async function ativarWorkerDaVersaoDoDocumento(worker){
+    if(!worker)return;
+    const controlador=navigator.serviceWorker?.controller||null;
+    const [versaoWorker,versaoControlador]=await Promise.all([
+      obterVersaoWorker(worker),
+      obterVersaoWorker(controlador)
+    ]);
+    if(deveRecarregarAoAtivarWorker({
+      versaoDocumento:APP_VERSION,
+      versaoControlador,
+      versaoWorker:versaoWorker||APP_VERSION,
+      temControlador:Boolean(controlador)
+    })){
+      recarregarAoTrocarControlador=true;
+    }
+    ativarWorkerSemRecarregar(worker);
+  }
+
   function aplicarAtualizacao(){
     const worker=registroAtual?.waiting;
     if(aplicando) return;
@@ -303,7 +330,7 @@
         }
         const anunciou=await anunciarWorkerEsperando();
         if(!anunciou&&!ehVersaoNova(versaoRemotaConhecida)){
-          ativarWorkerSemRecarregar(registroAtual?.waiting);
+          await ativarWorkerDaVersaoDoDocumento(registroAtual?.waiting);
           ocultarAviso();
         }
       }
@@ -450,9 +477,10 @@
           await anunciarWorkerEsperando();
           return;
         }
-        /* Worker da mesma versão que ficou aguardando por uma instalação anterior:
-           ativa silenciosamente e não exibe novamente o botão de recarga. */
-        ativarWorkerSemRecarregar(waiting);
+        /* Se o documento já veio da rede na versão nova mas ainda está controlado
+           pelo Service Worker anterior, a troca precisa recarregar a página uma vez.
+           Isso impede HTML/version.json novos com módulos online antigos em cache. */
+        await ativarWorkerDaVersaoDoDocumento(waiting);
       }
       tentativasPublicacao=0;
       ocultarAviso();
@@ -556,7 +584,8 @@
   window.ShinobiAtualizacao={
     verificar:()=>verificarAtualizacao({manual:true,forcar:true}),
     aplicar:aplicarAtualizacao,
-    versao:APP_VERSION
+    versao:APP_VERSION,
+    __test:{deveRecarregarAoAtivarWorker}
   };
 
   function iniciarDepoisDaRenderizacao(){
