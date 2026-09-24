@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.95",
-  "name": "Carteira por moeda + histórico item-level",
-  "notes": "Migra a carteira para sincronização granular por moeda (PL/PO/PP/PC) e o histórico para movimentações item-level. A regularização histórica passa a incluir saldo e histórico sem reativar Firebase Storage, que permanece em standby.",
-  "date": "2026-09-23"
+  "version": "2.5.8.96",
+  "name": "Backup diário + gerenciador histórico",
+  "notes": "Mantém até 3 backups históricos por ficha, cria no máximo um backup automático por dia para a ficha ativa e adiciona criação manual, listagem, restauração segura e exclusão individual. A restauração preserva a identidade permanente da personagem e replica o snapshot escolhido para o realtime granular antes de atualizar o backup atual.",
+  "date": "2026-09-24"
 }
