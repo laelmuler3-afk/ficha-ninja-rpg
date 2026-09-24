@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.94",
-  "name": "Correção de exclusão + Kekkei Genkai item-level",
-  "notes": "Corrige a ordenação temporal de operações item-level para que exclusões confirmadas superem a versão remota já aplicada mesmo com relógios de aparelhos diferentes. Migra Kekkei Genkai para sincronização por item com kekkeiId permanente e inclui a coleção na regularização histórica. Firebase Storage permanece em standby.",
+  "version": "2.5.8.95",
+  "name": "Carteira por moeda + histórico item-level",
+  "notes": "Migra a carteira para sincronização granular por moeda (PL/PO/PP/PC) e o histórico para movimentações item-level. A regularização histórica passa a incluir saldo e histórico sem reativar Firebase Storage, que permanece em standby.",
   "date": "2026-09-23"
 }

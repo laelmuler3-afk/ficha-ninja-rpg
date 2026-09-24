@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.94 — correção de exclusão item-level e Kekkei Genkai item-level.
+/* Ficha Ninja RPG 2.5.8.95 — carteira por moeda e histórico item-level.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.94";
+const APP_VERSION = "2.5.8.95";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -54,6 +54,7 @@ const APP_SHELL = [
   `./js/09-catalogo.js?v=${APP_VERSION}`,
   `./js/05-battle.js?v=${APP_VERSION}`,
   `./js/06-inventory.js?v=${APP_VERSION}`,
+  `./js/06-wallet-item-level.js?v=${APP_VERSION}`,
   `./js/07-profile.js?v=${APP_VERSION}`,
   `./js/08-update.js?v=${APP_VERSION}`,
   `./js/08-post-render-loader.js?v=${APP_VERSION}`,
