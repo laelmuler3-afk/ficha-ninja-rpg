@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.96",
-  "name": "Backup diário + gerenciador histórico",
-  "notes": "Mantém até 3 backups históricos por ficha, cria no máximo um backup automático por dia para a ficha ativa e adiciona criação manual, listagem, restauração segura e exclusão individual. A restauração preserva a identidade permanente da personagem e replica o snapshot escolhido para o realtime granular antes de atualizar o backup atual.",
+  "version": "2.5.8.97",
+  "name": "Backup histórico seguro + restauração por etapas",
+  "notes": "Separa os 3 backups históricos (manual/automático) do slot rotativo de segurança da última restauração. Corrige a retenção que expulsava backups manuais e diferencia falhas por etapa; se apenas o snapshot atual falhar após uma restauração válida, a ficha permanece restaurada e o backup estrutural fica pendente para nova tentativa.",
   "date": "2026-09-24"
 }

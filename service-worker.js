@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.96 — backup diário + gerenciador de backups históricos.
+/* Ficha Ninja RPG 2.5.8.97 — backup histórico seguro + restauração por etapas.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.96";
+const APP_VERSION = "2.5.8.97";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
