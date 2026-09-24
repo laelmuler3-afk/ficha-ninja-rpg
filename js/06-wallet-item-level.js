@@ -70,20 +70,14 @@
   }
   function garantirIdsHistoricoPuro(itens,{legado=false,gerarId=novoIdHistorico}={}){
     if(!Array.isArray(itens))return false;
-    const usados=new Set();
-    let alterou=false;
+    const identidade=root?.ShinobiItemIdentity;
+    if(identidade?.garantirIds)return identidade.garantirIds(itens,{colecao:"carteiraHistorico",campo:"id",legado,gerarId});
+    const usados=new Set();let alterou=false;
     itens.forEach(item=>{
       if(!item||typeof item!=="object"||Array.isArray(item))return;
-      let id=texto(item.id);
-      if(!id)id=legado?idLegadoHistorico(item):gerarId();
-      if(usados.has(id)){
-        const raiz=id.slice(0,160)||"wallet_item";
-        let sufixo=2;
-        while(usados.has(`${raiz}_${sufixo}`))sufixo+=1;
-        id=`${raiz}_${sufixo}`.slice(0,180);
-      }
-      if(item.id!==id){item.id=id;alterou=true;}
-      usados.add(id);
+      let id=texto(item.id);if(!id)id=legado?idLegadoHistorico(item):gerarId();
+      if(usados.has(id)){const raiz=id.slice(0,160)||"wallet_item";let sufixo=2;while(usados.has(`${raiz}_${sufixo}`))sufixo+=1;id=`${raiz}_${sufixo}`.slice(0,180);}
+      if(item.id!==id){item.id=id;alterou=true;}usados.add(id);
     });
     return alterou;
   }
@@ -96,15 +90,13 @@
     return saida;
   }
   function diferencasHistoricoPuro(anterior={},atual={}){
-    const mudancas=[];
+    const mudancas=[],identidade=root?.ShinobiItemIdentity;
     Object.entries(atual||{}).forEach(([itemId,item])=>{
       const antes=anterior?.[itemId];
-      if(!antes||JSON.stringify(antes)!==JSON.stringify(item)){
-        mudancas.push({itemId,deleted:false,value:clonar(item)});
-      }
+      if(!antes||JSON.stringify(antes)!==JSON.stringify(item))mudancas.push({itemId,deleted:false,value:clonar(item),identityKey:identidade?.identityKey?.("carteiraHistorico",item)||""});
     });
     Object.keys(anterior||{}).forEach(itemId=>{
-      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId))mudancas.push({itemId,deleted:true,value:undefined});
+      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId)){const antes=anterior?.[itemId];mudancas.push({itemId,deleted:true,value:undefined,identityKey:identidade?.identityKey?.("carteiraHistorico",antes)||""});}
     });
     return mudancas;
   }
@@ -178,7 +170,7 @@
         root.dispatchEvent(new CustomEvent("shinobi:colecao-item-confirmado",{detail:{
           sheetName:String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal"),
           collection,itemId:mudanca.itemId,deleted:mudanca.deleted===true,
-          value:mudanca.deleted===true?undefined:mudanca.value,confirmed:true,
+          value:mudanca.deleted===true?undefined:mudanca.value,identityKey:mudanca.identityKey||"",confirmed:true,
           source:"carteira",reason:"alteracao-confirmada"
         }}));
       }catch(_erro){}

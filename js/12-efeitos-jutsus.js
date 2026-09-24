@@ -167,6 +167,7 @@
         collection:"efeitosBatalha",
         itemId,
         value:deleted?undefined:clonar(item),
+        identityKey:window.ShinobiItemIdentity?.identityKey?.("efeitosBatalha",item)||"",
         deleted:Boolean(deleted),
         source:"efeitos-jutsu",
         reason

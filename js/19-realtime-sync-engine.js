@@ -2,10 +2,11 @@
 (function(root,factory){
   const emNode=typeof module!=="undefined"&&module.exports;
   const util=emNode?require("./19-realtime-fields-utils.js"):root?.EkoRealtimeFields;
-  const api=factory(root,util);
+  const itemIdentity=emNode?require("./00-item-identity.js"):root?.ShinobiItemIdentity;
+  const api=factory(root,util,itemIdentity);
   if(emNode) module.exports=api.test;
   else api.install();
-})(typeof window!=="undefined"?window:globalThis,function(root,util){
+})(typeof window!=="undefined"?window:globalThis,function(root,util,itemIdentity){
   "use strict";
 
   const CHAVE_OUTBOX_BASE="shinobi_field_outbox_v2";
@@ -96,14 +97,16 @@
     }
     return copia;
   }
-  function criarOperacaoColecaoPura({sheetId,sheetName,colecao,itemId,valor,deleted=false,editAt,deviceId,opId,uid=""}){
+  function criarOperacaoColecaoPura({sheetId,sheetName,colecao,itemId,valor,deleted=false,editAt,deviceId,opId,uid="",identityKey=""}){
     const collection=texto(colecao),id=texto(itemId);
     const removida=deleted===true||valor===undefined;
+    const identidade=texto(identityKey)||(!removida?texto(itemIdentity?.identityKey?.(collection,valor)):"");
     const op={
       kind:"collection",uid:texto(uid),sheetId:texto(sheetId),sheetName:texto(sheetName)||"Principal",
       collection,itemId:id,deleted:removida,editAt:Number(editAt||agora()),deviceId:texto(deviceId),
       opId:texto(opId)||idAleatorio("item")
     };
+    if(identidade)op.identityKey=identidade.slice(0,180);
     if(!removida)op.payload=JSON.stringify(normalizarItemColecao(collection,valor,id));
     return op;
   }
@@ -183,6 +186,24 @@
     return saida;
   }
   function campoIdColecao(colecao){const collection=texto(colecao);return collection==="jutsus"?"jutsuId":collection==="armados"?"ataqueId":collection==="kekkeiGenkai"?"kekkeiId":"id";}
+  function identityKeyColecao(colecao,item){return texto(itemIdentity?.identityKey?.(texto(colecao),item)||"");}
+  function identityKeyRegistro(colecao,registro){
+    const explicita=texto(registro?.identityKey);
+    if(registro?.deleted===true)return explicita;
+    let item;try{item=JSON.parse(String(registro?.payload??"null"));}catch(_e){return explicita;}
+    const calculada=item&&typeof item==="object"&&!Array.isArray(item)?identityKeyColecao(colecao,item):"";
+    return calculada||explicita;
+  }
+  function idLocalCanonicoPorIdentidadePuro(colecao,itens,itemIdRemoto,identidade,quantidadeRemota=1){
+    const collection=texto(colecao),idRemoto=texto(itemIdRemoto),chave=texto(identidade);
+    if(collection==="carteiraMoedas"||!idRemoto||!chave||Number(quantidadeRemota)!==1||!Array.isArray(itens))return "";
+    const campo=campoIdColecao(collection);
+    if(itens.some(item=>texto(item?.[campo])===idRemoto))return "";
+    const candidatos=itens.filter(item=>identityKeyColecao(collection,item)===chave);
+    if(candidatos.length!==1)return "";
+    const antigo=texto(candidatos[0]?.[campo]);
+    return antigo&&antigo!==idRemoto?antigo:"";
+  }
   function itemComparavelRegularizacao(colecao,item){
     const collection=texto(colecao),copia=clonar(item)||{};
     if(!copia||typeof copia!=="object"||Array.isArray(copia))return copia;
@@ -233,20 +254,20 @@
     return `item_legado_${hashRegularizacao(JSON.stringify(itemComparavelRegularizacao(collection,item)))}`;
   }
   function normalizarListaLegada(colecao,itens){
-    const collection=texto(colecao),campoId=campoIdColecao(collection),usados=new Set(),saida=[];
-    (Array.isArray(itens)?itens:[]).forEach((valor,indice)=>{
-      if(!valor||typeof valor!=="object"||Array.isArray(valor))return;
-      const item=clonar(valor)||{};
-      let id=texto(item[campoId])||idLegadoRegularizacao(collection,item);
-      if(usados.has(id)){
-        const base=id.slice(0,165)||`${collection}_legado`;
-        let sufixo=2;
-        while(usados.has(`${base}_${sufixo}`))sufixo+=1;
-        id=`${base}_${sufixo}`.slice(0,180);
-      }
-      item[campoId]=id;
+    const collection=texto(colecao),campoId=campoIdColecao(collection);
+    const saida=(Array.isArray(itens)?itens:[]).filter(valor=>valor&&typeof valor==="object"&&!Array.isArray(valor)).map(valor=>clonar(valor)||{});
+    if(itemIdentity?.garantirIds){
+      itemIdentity.garantirIds(saida,{colecao:collection,campo:campoId,legado:true,gerarId:()=>idAleatorio(collection||"item")});
+    }else{
+      const usados=new Set();
+      saida.forEach(item=>{
+        let id=texto(item[campoId])||idLegadoRegularizacao(collection,item);
+        if(usados.has(id)){const base=id.slice(0,165)||`${collection}_legado`;let sufixo=2;while(usados.has(`${base}_${sufixo}`))sufixo+=1;id=`${base}_${sufixo}`.slice(0,180);}
+        item[campoId]=id;usados.add(id);
+      });
+    }
+    saida.forEach((item,indice)=>{
       if((collection==="jutsus"||collection==="armados"||collection==="kekkeiGenkai")&&!Number.isFinite(Number(item.ordem)))item.ordem=indice;
-      usados.add(id);saida.push(item);
     });
     return saida;
   }
@@ -441,7 +462,7 @@
       Object.values(remotos).forEach(registro=>{
         const id=texto(registro?.itemId);
         if(!id||porId.has(id)||registro?.deleted===true)return;
-        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,deleted:true,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
+        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,deleted:true,identityKey:identityKeyRegistro(collection,registro),editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
       });
       porId.forEach((item,id)=>{
         collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,valor:item,deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
@@ -517,7 +538,7 @@
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
     mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,regularizarCarteiraMoedasPura,
     enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtPuro,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura,
-    itemIdParaChaveFirebasePura
+    itemIdParaChaveFirebasePura,identityKeyRegistro,idLocalCanonicoPorIdentidadePuro
   };
 
   function install(){
@@ -661,6 +682,21 @@
     function operacaoColecaoPendente(sheetId,colecao,itemId,uid=uidAtual()){
       return lerOutboxColecoes(uid)?.[chaveOperacaoColecao(sheetId,colecao,itemId)]||null;
     }
+    function migrarOutboxColecaoId(sheetId,colecao,itemIdAntigo,itemIdNovo,identityKey="",uid=uidAtual()){
+      const antigo=texto(itemIdAntigo),novo=texto(itemIdNovo);if(!uid||!antigo||!novo||antigo===novo)return null;
+      const pendente=operacaoColecaoPendente(sheetId,colecao,antigo,uid);if(!pendente)return null;
+      removerOutboxColecao(pendente,uid);
+      const migrada=clonar(pendente)||{};migrada.itemId=novo;
+      const identidade=texto(identityKey)||texto(migrada.identityKey);if(identidade)migrada.identityKey=identidade.slice(0,180);
+      if(migrada.deleted!==true&&migrada.payload!=null){
+        try{
+          const item=JSON.parse(String(migrada.payload));
+          migrada.payload=JSON.stringify(normalizarItemColecao(colecao,item,novo));
+        }catch(_e){}
+      }
+      adicionarOutboxColecao(migrada,uid);
+      return migrada;
+    }
     function temPendencias(sheetId="",uid=uidAtual()){
       const id=texto(sheetId);
       const campos=Object.values(lerOutbox(uid)).some(op=>!id||texto(op?.sheetId)===id);
@@ -687,6 +723,7 @@
         editAt:Number(op.editAt||0),serverUpdatedAt:root.firebase.database.ServerValue.TIMESTAMP,
         deviceId:texto(op.deviceId),opId:texto(op.opId)
       };
+      const identidade=texto(op.identityKey);if(identidade)registro.identityKey=identidade.slice(0,180);
       if(!registro.deleted)registro.payload=String(op.payload??"null");
       return registro;
     }
@@ -876,11 +913,31 @@
       let itens=collection==="carteiraMoedas"
         ?(dados[campoLocal]&&typeof dados[campoLocal]==="object"&&!Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):{pd:0,po:0,pp:0,pc:0})
         :(Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):[]);
-      const aplicados=[];
-      const registros=valor&&typeof valor==="object"?valor:{};
+      const alterados=new Set(),registros=valor&&typeof valor==="object"?valor:{};
+      const contagemIdentidadeRemota=new Map();
+      if(collection!=="carteiraMoedas"){
+        Object.entries(registros).forEach(([chave,registro])=>{
+          const itemId=texto(registro?.itemId)||(util?.chaveParaCampo?util.chaveParaCampo(chave):texto(chave));
+          if(!registro||texto(registro.collection)!==collection||!itemId||texto(registro.itemId)!==itemId)return;
+          const identidade=identityKeyRegistro(collection,registro);if(!identidade)return;
+          contagemIdentidadeRemota.set(identidade,(contagemIdentidadeRemota.get(identidade)||0)+1);
+        });
+      }
       for(const [chave,registro] of Object.entries(registros)){
         const itemId=texto(registro?.itemId)||(util?.chaveParaCampo?util.chaveParaCampo(chave):texto(chave));
         if(!registro||texto(registro.collection)!==collection||!itemId||texto(registro.itemId)!==itemId)continue;
+        const identidade=identityKeyRegistro(collection,registro);
+        if(collection!=="carteiraMoedas"&&identidade){
+          const idAntigo=idLocalCanonicoPorIdentidadePuro(collection,itens,itemId,identidade,contagemIdentidadeRemota.get(identidade)||0);
+          if(idAntigo){
+            const campoId=campoIdColecao(collection),candidato=itens.find(item=>texto(item?.[campoId])===idAntigo);
+            if(candidato){
+              candidato[campoId]=itemId;
+              migrarOutboxColecaoId(sheetId,collection,idAntigo,itemId,identidade,uid);
+              alterados.add(itemId);
+            }
+          }
+        }
         const anterior=versaoColecaoAplicada(sheetId,collection,itemId,uid);
         if(anterior&&compararRegistros(registro,anterior)<=0)continue;
         const pendente=operacaoColecaoPendente(sheetId,collection,itemId,uid);
@@ -888,8 +945,9 @@
         if(pendente&&compararRegistros(registro,pendente)>=0)removerOutboxColecao(pendente,uid);
         itens=aplicarRegistroColecaoPuro(collection,itens,itemId,registro);
         registrarVersaoColecao(sheetId,collection,itemId,registro,uid);
-        aplicados.push(itemId);
+        alterados.add(itemId);
       }
+      const aplicados=[...alterados];
       if(aplicados.length){
         dados[campoLocal]=clonar(itens);
         try{
@@ -1240,7 +1298,7 @@
       );
       const op=criarOperacaoColecaoPura({
         uid,sheetId:realtimeId,sheetName:ficha.name,colecao:collection,itemId:id,valor,
-        deleted:meta.deleted===true,editAt,deviceId:deviceId(),opId:idAleatorio("item")
+        deleted:meta.deleted===true,identityKey:texto(meta.identityKey),editAt,deviceId:deviceId(),opId:idAleatorio("item")
       });
       adicionarOutboxColecao(op,uid);
       if(root.navigator?.onLine===false)return {queued:true,op};

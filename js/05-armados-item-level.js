@@ -39,27 +39,21 @@
   }
   function garantirIdsPuro(itens,{legado=false,gerarId=novoId}={}){
     if(!Array.isArray(itens))return false;
-    const usados=new Set();
+    const identidade=root?.ShinobiItemIdentity;
     let alterou=false;
-    let proximaOrdem=itens.reduce((max,item)=>{
-      const ordem=Number(item?.ordem);
-      return Number.isFinite(ordem)?Math.max(max,ordem+1):max;
-    },0);
-
-    itens.forEach(ataque=>{
-      if(!ataque||typeof ataque!=="object"||Array.isArray(ataque))return;
-      let id=texto(ataque.ataqueId);
-      if(!id)id=legado?idLegado(ataque):gerarId();
-      if(usados.has(id)){
-        const base=id.slice(0,160)||"ataque_item";
-        let sufixo=2;
-        while(usados.has(`${base}_${sufixo}`))sufixo+=1;
-        id=`${base}_${sufixo}`.slice(0,180);
-      }
-      if(ataque.ataqueId!==id){ataque.ataqueId=id;alterou=true;}
-      if(!Number.isFinite(Number(ataque.ordem))){ataque.ordem=proximaOrdem++;alterou=true;}
-      usados.add(id);
-    });
+    if(identidade?.garantirIds){
+      alterou=identidade.garantirIds(itens,{colecao:"armados",campo:"ataqueId",legado,gerarId});
+    }else{
+      const usados=new Set();
+      itens.forEach(item=>{
+        if(!item||typeof item!=="object"||Array.isArray(item))return;
+        let id=texto(item.ataqueId);if(!id)id=legado?idLegado(item):gerarId();
+        if(usados.has(id)){const raiz=id.slice(0,160)||"armados_item";let sufixo=2;while(usados.has(`${raiz}_${sufixo}`))sufixo+=1;id=`${raiz}_${sufixo}`.slice(0,180);}
+        if(item.ataqueId!==id){item.ataqueId=id;alterou=true;}usados.add(id);
+      });
+    }
+    let proximaOrdem=itens.reduce((max,item)=>{const ordem=Number(item?.ordem);return Number.isFinite(ordem)?Math.max(max,ordem+1):max;},0);
+    itens.forEach(item=>{if(item&&typeof item==="object"&&!Array.isArray(item)&&!Number.isFinite(Number(item.ordem))){item.ordem=proximaOrdem++;alterou=true;}});
     return alterou;
   }
   function snapshotPuro(itens){
@@ -71,17 +65,13 @@
     return saida;
   }
   function diferencasPuro(anterior={},atual={}){
-    const mudancas=[];
+    const mudancas=[],identidade=root?.ShinobiItemIdentity;
     Object.entries(atual||{}).forEach(([itemId,item])=>{
       const antes=anterior?.[itemId];
-      if(!antes||JSON.stringify(antes)!==JSON.stringify(item)){
-        mudancas.push({itemId,deleted:false,value:clonar(item)});
-      }
+      if(!antes||JSON.stringify(antes)!==JSON.stringify(item))mudancas.push({itemId,deleted:false,value:clonar(item),identityKey:identidade?.identityKey?.("armados",item)||""});
     });
     Object.keys(anterior||{}).forEach(itemId=>{
-      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId)){
-        mudancas.push({itemId,deleted:true,value:undefined});
-      }
+      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId)){const antes=anterior?.[itemId];mudancas.push({itemId,deleted:true,value:undefined,identityKey:identidade?.identityKey?.("armados",antes)||""});}
     });
     return mudancas;
   }
@@ -135,6 +125,7 @@
             itemId:mudanca.itemId,
             deleted:mudanca.deleted===true,
             value:mudanca.deleted===true?undefined:mudanca.value,
+            identityKey:mudanca.identityKey||"",
             confirmed:true,
             source:"armados",
             reason:"alteracao-confirmada"

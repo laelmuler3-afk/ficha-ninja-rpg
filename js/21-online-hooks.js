@@ -220,6 +220,7 @@
       await window.ShinobiOnline.sincronizarItemColecaoConfirmado?.(
         nome,collection,itemId,detalhe.deleted===true?undefined:detalhe.value,{
           deleted:detalhe.deleted===true,
+          identityKey:texto(detalhe.identityKey),
           motivo:texto(detalhe.reason)||"alteracao-confirmada",
           origem:texto(detalhe.source)||"colecao"
         }
@@ -431,6 +432,7 @@
         try{
           window.dispatchEvent(new CustomEvent("shinobi:colecao-item-confirmado",{detail:{
             confirmed:true,collection:"efeitosBatalha",itemId:String(item.id||""),value:item,
+            identityKey:window.ShinobiItemIdentity?.identityKey?.("efeitosBatalha",item)||"",
             deleted:false,source:"efeitos-online",reason:"vinculo-efeito-online"
           }}));
         }catch(_erro){}

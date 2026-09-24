@@ -29,26 +29,21 @@
   }
   function garantirIdsPuro(itens,{legado=false,gerarId=novoId}={}){
     if(!Array.isArray(itens))return false;
-    const usados=new Set();
+    const identidade=root?.ShinobiItemIdentity;
     let alterou=false;
-    let proximaOrdem=itens.reduce((max,item)=>{
-      const ordem=Number(item?.ordem);
-      return Number.isFinite(ordem)?Math.max(max,ordem+1):max;
-    },0);
-    itens.forEach(item=>{
-      if(!item||typeof item!=="object"||Array.isArray(item))return;
-      let id=texto(item.kekkeiId);
-      if(!id)id=legado?idLegado(item):gerarId();
-      if(usados.has(id)){
-        const raiz=id.slice(0,160)||"kekkei_item";
-        let sufixo=2;
-        while(usados.has(`${raiz}_${sufixo}`))sufixo+=1;
-        id=`${raiz}_${sufixo}`.slice(0,180);
-      }
-      if(item.kekkeiId!==id){item.kekkeiId=id;alterou=true;}
-      if(!Number.isFinite(Number(item.ordem))){item.ordem=proximaOrdem++;alterou=true;}
-      usados.add(id);
-    });
+    if(identidade?.garantirIds){
+      alterou=identidade.garantirIds(itens,{colecao:"kekkeiGenkai",campo:"kekkeiId",legado,gerarId});
+    }else{
+      const usados=new Set();
+      itens.forEach(item=>{
+        if(!item||typeof item!=="object"||Array.isArray(item))return;
+        let id=texto(item.kekkeiId);if(!id)id=legado?idLegado(item):gerarId();
+        if(usados.has(id)){const raiz=id.slice(0,160)||"kekkeiGenkai_item";let sufixo=2;while(usados.has(`${raiz}_${sufixo}`))sufixo+=1;id=`${raiz}_${sufixo}`.slice(0,180);}
+        if(item.kekkeiId!==id){item.kekkeiId=id;alterou=true;}usados.add(id);
+      });
+    }
+    let proximaOrdem=itens.reduce((max,item)=>{const ordem=Number(item?.ordem);return Number.isFinite(ordem)?Math.max(max,ordem+1):max;},0);
+    itens.forEach(item=>{if(item&&typeof item==="object"&&!Array.isArray(item)&&!Number.isFinite(Number(item.ordem))){item.ordem=proximaOrdem++;alterou=true;}});
     return alterou;
   }
   function snapshotPuro(itens){
@@ -60,13 +55,13 @@
     return saida;
   }
   function diferencasPuro(anterior={},atual={}){
-    const mudancas=[];
+    const mudancas=[],identidade=root?.ShinobiItemIdentity;
     Object.entries(atual||{}).forEach(([itemId,item])=>{
       const antes=anterior?.[itemId];
-      if(!antes||JSON.stringify(antes)!==JSON.stringify(item))mudancas.push({itemId,deleted:false,value:clonar(item)});
+      if(!antes||JSON.stringify(antes)!==JSON.stringify(item))mudancas.push({itemId,deleted:false,value:clonar(item),identityKey:identidade?.identityKey?.("kekkeiGenkai",item)||""});
     });
     Object.keys(anterior||{}).forEach(itemId=>{
-      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId))mudancas.push({itemId,deleted:true,value:undefined});
+      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId)){const antes=anterior?.[itemId];mudancas.push({itemId,deleted:true,value:undefined,identityKey:identidade?.identityKey?.("kekkeiGenkai",antes)||""});}
     });
     return mudancas;
   }
@@ -120,6 +115,7 @@
             itemId:mudanca.itemId,
             deleted:mudanca.deleted===true,
             value:mudanca.deleted===true?undefined:mudanca.value,
+            identityKey:mudanca.identityKey||"",
             confirmed:true,
             source:"kekkei",
             reason:"alteracao-confirmada"

@@ -474,45 +474,36 @@ function garantirTopicosNotas(){
     }
   }
 
-  /* A partir da sincronização item-level, cada tópico precisa de identidade
-     permanente. Para tópicos antigos usamos uma identidade determinística
-     baseada no título já existente, para que dois aparelhos que vieram do
-     mesmo snapshot adotem o mesmo ID mesmo se a ordem local estiver diferente. */
   let idsMigrados=false;
-  const idsUsados=new Set();
-  estado.notasTopicos.forEach((topico,indice)=>{
-    if(!topico || typeof topico!=="object") return;
-    let id=String(topico.id||"").trim();
-    if(!id){
-      const titulo=String(topico.titulo||"nota")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g,"")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g,"-")
-        .replace(/^-+|-+$/g,"")
-        .slice(0,36)||"nota";
-      id=`nota_legado_${titulo}`;
-      topico.id=id;
-      idsMigrados=true;
-    }
-    if(idsUsados.has(id)){
-      const base=id||`nota_legado_nota`;
-      let sufixo=2;
-      while(idsUsados.has(`${base}_${sufixo}`)) sufixo+=1;
-      topico.id=`${base}_${sufixo}`;
-      id=topico.id;
-      idsMigrados=true;
-    }
-    idsUsados.add(id);
-  });
+  const identidade=window.ShinobiItemIdentity;
+  if(identidade?.garantirIds){
+    idsMigrados=identidade.garantirIds(estado.notasTopicos,{
+      colecao:"notas",campo:"id",legado:true,
+      gerarId:()=>`nota_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,10)}`
+    });
+  }else{
+    /* Fallback defensivo para builds antigos que não carreguem o utilitário. */
+    const idsUsados=new Set();
+    estado.notasTopicos.forEach(topico=>{
+      if(!topico || typeof topico!=="object") return;
+      let id=String(topico.id||"").trim();
+      if(!id){
+        const titulo=String(topico.titulo||"nota").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+          .toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,36)||"nota";
+        id=`nota_legado_${titulo}`;idsMigrados=true;
+      }
+      if(idsUsados.has(id)){
+        const base=id||"nota_legado_nota";let sufixo=2;
+        while(idsUsados.has(`${base}_${sufixo}`))sufixo+=1;
+        id=`${base}_${sufixo}`;idsMigrados=true;
+      }
+      if(topico.id!==id){topico.id=id;idsMigrados=true;}
+      idsUsados.add(id);
+    });
+  }
 
   if(idsMigrados && typeof persistirEstadoLocal==="function"){
-    persistirEstadoLocal({
-      emitir:false,
-      confirmada:false,
-      origem:"migracao-notas-item-level",
-      motivo:"ids-permanentes-notas"
-    });
+    persistirEstadoLocal({emitir:false,confirmada:false,origem:"migracao-notas-item-level",motivo:"ids-permanentes-notas"});
   }
 }
 
@@ -543,6 +534,7 @@ function salvarTopicosNotas(operacao={}){
         itemId,
         deleted:operacao.deleted===true,
         value:operacao.deleted===true?undefined:{...(operacao.item||{}),id:itemId},
+        identityKey:window.ShinobiItemIdentity?.identityKey?.("notas",operacao.item||{})||"",
         confirmed:true,
         source:"notas",
         reason:"alteracao-confirmada"

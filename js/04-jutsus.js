@@ -57,24 +57,20 @@
   }
   function garantirIds(itens,{legado=false}={}){
     if(!Array.isArray(itens))return false;
-    const usados=new Set();
+    const identidade=window.ShinobiItemIdentity;
     let alterou=false;
-    itens.forEach((jutsu,indice)=>{
-      if(!jutsu||typeof jutsu!=="object"||Array.isArray(jutsu))return;
-      let id=texto(jutsu.jutsuId);
-      if(!id){
-        id=idCatalogo(jutsu)||(legado?idLegado(jutsu):novoId());
-      }
-      if(usados.has(id)){
-        const base=id.slice(0,160)||"jutsu_item";
-        let sufixo=2;
-        while(usados.has(`${base}_${sufixo}`))sufixo+=1;
-        id=`${base}_${sufixo}`;
-      }
-      if(jutsu.jutsuId!==id){jutsu.jutsuId=id;alterou=true;}
-      if(Number(jutsu.ordem)!==indice){jutsu.ordem=indice;alterou=true;}
-      usados.add(id);
-    });
+    if(identidade?.garantirIds){
+      alterou=identidade.garantirIds(itens,{colecao:"jutsus",campo:"jutsuId",legado,gerarId:novoId});
+    }else{
+      const usados=new Set();
+      itens.forEach(jutsu=>{
+        if(!jutsu||typeof jutsu!=="object"||Array.isArray(jutsu))return;
+        let id=texto(jutsu.jutsuId)||idCatalogo(jutsu)||(legado?idLegado(jutsu):novoId());
+        if(usados.has(id)){const base=id.slice(0,160)||"jutsu_item";let sufixo=2;while(usados.has(`${base}_${sufixo}`))sufixo+=1;id=`${base}_${sufixo}`;}
+        if(jutsu.jutsuId!==id){jutsu.jutsuId=id;alterou=true;}usados.add(id);
+      });
+    }
+    itens.forEach((jutsu,indice)=>{if(jutsu&&typeof jutsu==="object"&&!Array.isArray(jutsu)&&Number(jutsu.ordem)!==indice){jutsu.ordem=indice;alterou=true;}});
     return alterou;
   }
   function paraNuvem(jutsu){
@@ -93,16 +89,17 @@
     return saida;
   }
   function diferencas(anterior={},atual={}){
-    const mudancas=[];
+    const mudancas=[],identidade=window.ShinobiItemIdentity;
     Object.entries(atual||{}).forEach(([itemId,item])=>{
       const antes=anterior?.[itemId];
       if(!antes||JSON.stringify(antes)!==JSON.stringify(item)){
-        mudancas.push({itemId,deleted:false,value:clonar(item)});
+        mudancas.push({itemId,deleted:false,value:clonar(item),identityKey:identidade?.identityKey?.("jutsus",item)||""});
       }
     });
     Object.keys(anterior||{}).forEach(itemId=>{
       if(!Object.prototype.hasOwnProperty.call(atual||{},itemId)){
-        mudancas.push({itemId,deleted:true,value:undefined});
+        const antes=anterior?.[itemId];
+        mudancas.push({itemId,deleted:true,value:undefined,identityKey:identidade?.identityKey?.("jutsus",antes)||""});
       }
     });
     return mudancas;
@@ -146,6 +143,7 @@
           itemId:mudanca.itemId,
           deleted:mudanca.deleted===true,
           value:mudanca.deleted===true?undefined:mudanca.value,
+          identityKey:mudanca.identityKey||"",
           confirmed:true,
           source:"jutsus",
           reason:"alteracao-confirmada"

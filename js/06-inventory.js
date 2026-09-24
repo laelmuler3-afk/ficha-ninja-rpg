@@ -43,20 +43,16 @@
 
   function garantirIdsInventario(itens,{legado=false}={}){
     if(!Array.isArray(itens))return false;
-    const usados=new Set();
-    let alterou=false;
+    const identidade=window.ShinobiItemIdentity;
+    if(identidade?.garantirIds){
+      return identidade.garantirIds(itens,{colecao:"inventario",campo:"id",legado,gerarId:novoIdInventario});
+    }
+    const usados=new Set();let alterou=false;
     itens.forEach(item=>{
       if(!item||typeof item!=="object"||Array.isArray(item))return;
-      let id=String(item.id||"").trim();
-      if(!id)id=legado?idLegadoInventario(item):novoIdInventario();
-      if(usados.has(id)){
-        const base=id.slice(0,160)||"inv_item";
-        let sufixo=2;
-        while(usados.has(`${base}_${sufixo}`))sufixo+=1;
-        id=`${base}_${sufixo}`;
-      }
-      if(item.id!==id){item.id=id;alterou=true;}
-      usados.add(id);
+      let id=String(item.id||"").trim();if(!id)id=legado?idLegadoInventario(item):novoIdInventario();
+      if(usados.has(id)){const base=id.slice(0,160)||"inv_item";let sufixo=2;while(usados.has(`${base}_${sufixo}`))sufixo+=1;id=`${base}_${sufixo}`;}
+      if(item.id!==id){item.id=id;alterou=true;}usados.add(id);
     });
     return alterou;
   }
@@ -71,15 +67,13 @@
   }
 
   function diferencasInventarioItemLevel(anterior={},atual={}){
-    const mudancas=[];
+    const mudancas=[],identidade=window.ShinobiItemIdentity;
     Object.entries(atual||{}).forEach(([itemId,item])=>{
       const antes=anterior?.[itemId];
-      if(!antes||JSON.stringify(antes)!==JSON.stringify(item)){
-        mudancas.push({itemId,deleted:false,value:clonarItemInventario(item)});
-      }
+      if(!antes||JSON.stringify(antes)!==JSON.stringify(item))mudancas.push({itemId,deleted:false,value:clonarItemInventario(item),identityKey:identidade?.identityKey?.("inventario",item)||""});
     });
     Object.keys(anterior||{}).forEach(itemId=>{
-      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId))mudancas.push({itemId,deleted:true,value:undefined});
+      if(!Object.prototype.hasOwnProperty.call(atual||{},itemId)){const antes=anterior?.[itemId];mudancas.push({itemId,deleted:true,value:undefined,identityKey:identidade?.identityKey?.("inventario",antes)||""});}
     });
     return mudancas;
   }
@@ -128,6 +122,7 @@
           itemId:mudanca.itemId,
           deleted:mudanca.deleted===true,
           value:mudanca.deleted===true?undefined:mudanca.value,
+          identityKey:mudanca.identityKey||"",
           confirmed:true,
           source:"inventario",
           reason:"alteracao-confirmada"
