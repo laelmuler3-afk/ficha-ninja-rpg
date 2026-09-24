@@ -2177,6 +2177,7 @@
         revision:Number(duplicata.cloud.revision||0),createdAt:agora(),reason:"duplicata-automatica-legada",
         sourceSheetId:duplicata.sheetId,data:duplicata.cloud.data||{}
       });
+      await aplicarRetencaoBackups(canonicoId);
       await api.remove(api.ref(estadoOnline.db,`userSheets/${uid}/${duplicata.sheetId}`));
       const sync=estadoSync();
       delete sync[duplicata.sheetId];
@@ -2469,6 +2470,7 @@
       name:cloud.name||"Ficha",characterName:cloud.characterName||"",revision:Number(cloud.revision||0),
       createdAt:agora(),reason,data:cloud.data,sourceDeviceId:texto(cloud.deviceId)
     });
+    await aplicarRetencaoBackups(sheetId);
     return true;
   }
 
@@ -2630,18 +2632,144 @@
     return resultados;
   }
 
-  async function criarBackupFicha(ficha,{reason="manual",revision=0}={}){
-    exigirContaGoogle();
-    const api=estadoOnline.api,uid=estadoOnline.user.uid,id=`${agora()}_${slug(reason)}`;
-    await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${id}`),{
-      name:ficha.name,characterName:ficha.characterName,revision,createdAt:agora(),reason,data:ficha.data
-    });
-    const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}`));
-    const itens=Object.entries(snap.val()||{}).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
-    const limite=Math.max(1,Number(window.SHINOBI_FIREBASE_OPTIONS?.backupsToKeep||5));
+  function backupUtils(){
+    return window.ShinobiBackupUtils||{};
+  }
+
+  function normalizarBackupsHistoricos(valor){
+    const fn=backupUtils().normalizarBackups;
+    if(typeof fn==="function")return fn(valor);
+    return Object.entries(valor||{}).map(([id,item])=>({id,...item})).sort((a,b)=>Number(b?.createdAt||0)-Number(a?.createdAt||0));
+  }
+
+  async function aplicarRetencaoBackups(sheetId,{protegerIds=[]}={}){
+    const api=estadoOnline.api,uid=estadoOnline.user?.uid;
+    if(!api||!uid||!sheetId)return [];
+    const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${sheetId}`));
+    const valor=snap.val()||{};
+    const limite=Math.max(1,Number(window.SHINOBI_FIREBASE_OPTIONS?.backupsToKeep||3));
+    const fn=backupUtils().idsParaRemoverPorRetencao;
+    const ids=typeof fn==="function"
+      ?fn(valor,limite,protegerIds)
+      :normalizarBackupsHistoricos(valor).slice(limite).map(item=>item.id);
+    if(!ids.length)return [];
     const updates={};
-    itens.slice(limite).forEach(([backupId])=>updates[`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`]=null);
-    if(Object.keys(updates).length) await api.update(api.ref(estadoOnline.db),updates);
+    ids.forEach(backupId=>{updates[`sheetBackups/${uid}/${sheetId}/${backupId}`]=null;});
+    await api.update(api.ref(estadoOnline.db),updates);
+    return ids;
+  }
+
+  async function criarBackupFicha(ficha,{reason="manual",revision=0,type="",dayKey="",id="",protectIds=[]}={}){
+    exigirContaGoogle();
+    if(!ficha?.sheetId||!ficha?.data)throw new Error("Ficha indisponível para backup.");
+    const api=estadoOnline.api,uid=estadoOnline.user.uid;
+    const backupId=texto(id)||`${agora()}_${slug(reason)}`;
+    const createdAt=agora();
+    const registro={
+      name:ficha.name,characterName:ficha.characterName,revision:Number(revision||0),createdAt,
+      reason:texto(reason)||"manual",type:texto(type),dayKey:texto(dayKey),
+      appVersion:texto(window.APP_VERSION),sourceDeviceId:obterDeviceId(),data:clonar(ficha.data)
+    };
+    await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`),registro);
+    await aplicarRetencaoBackups(ficha.sheetId,{protegerIds:protectIds});
+    emitir("backup-historico-criado",{sheetId:ficha.sheetId,backupId,createdAt,reason:registro.reason,type:registro.type});
+    return {ok:true,sheetId:ficha.sheetId,backupId,createdAt,reason:registro.reason,type:registro.type};
+  }
+
+  async function listarBackupsHistoricos(sheetId=""){
+    exigirContaGoogle();
+    const ficha=fichaAtualLocal();
+    const id=texto(sheetId)||texto(ficha?.sheetId);
+    if(!id)throw new Error("A ficha ativa ainda não possui identidade de backup.");
+    const api=estadoOnline.api,uid=estadoOnline.user.uid;
+    const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}`));
+    return normalizarBackupsHistoricos(snap.val()||{}).map(item=>({
+      id:texto(item.id),name:texto(item.name)||"Ficha",characterName:texto(item.characterName),
+      revision:Number(item.revision||0),createdAt:Number(item.createdAt||0),reason:texto(item.reason)||"manual",
+      type:texto(item.type),dayKey:texto(item.dayKey),appVersion:texto(item.appVersion),sourceDeviceId:texto(item.sourceDeviceId)
+    }));
+  }
+
+  async function criarBackupHistoricoAtual(localSheetName="",{motivo="manual"}={}){
+    exigirContaGoogle();
+    capturarEstadoAtualAntesDaSincronizacao(localSheetName);
+    prepararIdentidadeFichaParaConta(localSheetName||fichaAtivaNomeSeguro());
+    const ficha=listarFichasLocais().find(f=>f.name===(texto(localSheetName)||fichaAtivaNomeSeguro()))||fichaAtualLocal();
+    if(!ficha)throw new Error("Ficha local não encontrada.");
+    if(ficha.data?.__online?.syncDisabled)return {skipped:true,legacyRecovery:true};
+    const resultado=await criarBackupFicha(ficha,{reason:texto(motivo)||"manual",type:"manual"});
+    await atualizarBackupEstrutural(ficha.name,{motivo:"backup-manual-historico"});
+    return resultado;
+  }
+
+  async function garantirBackupDiarioFichaAtiva(){
+    if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado||window.navigator?.onLine===false)return {skipped:true};
+    const ficha=fichaAtualLocal();
+    if(!ficha||ficha.data?.__online?.syncDisabled)return {skipped:true};
+    const utils=backupUtils();
+    const dayKey=typeof utils.dayKeyLocal==="function"?utils.dayKeyLocal(agora()):new Date().toISOString().slice(0,10);
+    const backupId=`daily_${dayKey}`;
+    const api=estadoOnline.api,uid=estadoOnline.user.uid;
+    const chaveOk=`shinobi_backup_daily_ok_v1__${uid}__${ficha.sheetId}`;
+    try{if(localStorage.getItem(chaveOk)===dayKey)return {ok:true,created:false,skipped:true,sheetId:ficha.sheetId,backupId,dayKey};}catch(_erro){}
+    const refBackup=api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`);
+    capturarEstadoAtualAntesDaSincronizacao(ficha.name);
+    const atualizada=listarFichasLocais().find(f=>f.name===ficha.name)||fichaAtualLocal()||ficha;
+    const registro={
+      name:atualizada.name,characterName:atualizada.characterName,revision:Number((estadoSync()[atualizada.sheetId]||{}).revision||0),
+      createdAt:agora(),reason:"automatico-diario",type:"daily",dayKey,
+      appVersion:texto(window.APP_VERSION),sourceDeviceId:obterDeviceId(),data:clonar(atualizada.data)
+    };
+    let jaExistia=false;
+    const transacao=await api.runTransaction(refBackup,existente=>{
+      if(existente){jaExistia=true;return;}
+      return registro;
+    },{applyLocally:false});
+    await aplicarRetencaoBackups(atualizada.sheetId,{protegerIds:[backupId]});
+    const created=Boolean(transacao.committed&&!jaExistia);
+    try{localStorage.setItem(chaveOk,dayKey);}catch(_erro){}
+    if(created)emitir("backup-diario-criado",{sheetId:atualizada.sheetId,backupId,dayKey});
+    return {ok:true,created,sheetId:atualizada.sheetId,backupId,dayKey};
+  }
+
+  async function excluirBackupHistorico(sheetId,backupId){
+    exigirContaGoogle();
+    const id=texto(sheetId),backup=texto(backupId);
+    if(!id||!backup)throw new Error("Backup histórico inválido.");
+    await estadoOnline.api.remove(estadoOnline.api.ref(estadoOnline.db,`sheetBackups/${estadoOnline.user.uid}/${id}/${backup}`));
+    emitir("backup-historico-excluido",{sheetId:id,backupId:backup});
+    return {ok:true,sheetId:id,backupId:backup};
+  }
+
+  async function restaurarBackupHistorico(sheetId,backupId){
+    exigirContaGoogle();
+    if(window.navigator?.onLine===false)throw new Error("Conecte este aparelho à internet para restaurar um backup histórico.");
+    const id=texto(sheetId),backup=texto(backupId);
+    const atual=fichaAtualLocal();
+    if(!id||!backup||!atual||texto(atual.sheetId)!==id)throw new Error("Abra a ficha correspondente antes de restaurar este backup.");
+    if(atual.data?.__online?.syncDisabled)throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
+    const api=estadoOnline.api,uid=estadoOnline.user.uid;
+    const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}/${backup}`));
+    if(!snap.exists())throw new Error("Backup histórico não encontrado.");
+    const registro=snap.val()||{};
+    if(!registro.data||typeof registro.data!=="object"||Array.isArray(registro.data))throw new Error("Este backup histórico não contém uma ficha válida.");
+
+    capturarEstadoAtualAntesDaSincronizacao(atual.name);
+    const antes=listarFichasLocais().find(f=>f.name===atual.name)||fichaAtualLocal()||atual;
+    await criarBackupFicha(antes,{reason:"antes-restaurar-historico",type:"safety",protectIds:[backup]});
+
+    const preparar=backupUtils().prepararSnapshotRestaurado;
+    const restaurada=typeof preparar==="function"?preparar(registro.data,antes.data):clonar(registro.data);
+    restaurada.__online=clonar(antes.data?.__online||{});
+
+    if(typeof window.EkoRealtimeSync?.aplicarSnapshotAutoritativo!=="function")throw new Error("O motor de sincronização ainda não está pronto para restaurar o backup.");
+    const realtime=await window.EkoRealtimeSync.aplicarSnapshotAutoritativo(antes.name,restaurada);
+
+    localStorage.setItem(antes.key,JSON.stringify(restaurada));
+    aplicarEstadoGlobalDaFicha(antes.name,antes.key,restaurada);
+    await atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"});
+    emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0)});
+    return {ok:true,sheetId:id,backupId:backup,realtime};
   }
 
   async function sincronizarTodasFichas(){
@@ -2867,6 +2995,7 @@
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,
     sincronizarPendenciasAgora,reconciliarSincronizacaoConta,atualizarBackupEstrutural,processarBackupsEstruturaisPendentes,ativarBackupsNuvem,garantirIdentidadeFichaRealtime,
+    listarBackupsHistoricos,criarBackupHistoricoAtual,garantirBackupDiarioFichaAtiva,excluirBackupHistorico,restaurarBackupHistorico,
     resumoMudancasMeuTurno,finalizarMeuTurno,ehMeuTurno,chaveTurnoAtual,linkDaSala,codigoDaUrl,erroAmigavel,
     parseXpAtual,formatarXp
   };

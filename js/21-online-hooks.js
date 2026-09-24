@@ -3,6 +3,8 @@
   "use strict";
 
   let timerResumo=null;
+  let timerBackupDiario=null;
+  let intervaloBackupDiario=null;
   const timersBackupEstrutural=new Map();
   const ATRASO_BACKUP_ESTRUTURAL_MS=4000;
   const CAMPOS_BACKUP_ESTRUTURAL=new Set([
@@ -259,6 +261,28 @@
       window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
       window.ShinobiOnline?.processarBackupsEstruturaisPendentes?.({motivo:"backup-automatico-reconexao"}).catch(()=>{});
     });
+  }
+
+  function executarBackupDiario(){
+    clearTimeout(timerBackupDiario);
+    timerBackupDiario=null;
+    if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.garantirBackupDiarioFichaAtiva!=="function")return;
+    window.ShinobiOnline.garantirBackupDiarioFichaAtiva().catch(()=>{});
+  }
+
+  function agendarBackupDiario(atraso=6500){
+    clearTimeout(timerBackupDiario);
+    timerBackupDiario=setTimeout(executarBackupDiario,Math.max(800,Number(atraso)||6500));
+  }
+
+  function instalarBackupDiario(){
+    if(window.__shinobiBackupDiarioInstalado)return;
+    window.__shinobiBackupDiarioInstalado=true;
+    agendarBackupDiario(7000);
+    window.addEventListener("shinobi:online:auth",()=>agendarBackupDiario(2200));
+    window.addEventListener("online",()=>agendarBackupDiario(1800));
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")agendarBackupDiario(2500);});
+    if(!intervaloBackupDiario)intervaloBackupDiario=setInterval(()=>agendarBackupDiario(1200),60*60*1000);
   }
 
   function instalarBackupManual(){
@@ -594,6 +618,7 @@
   function iniciar(){
     instalarAutoSync();
     instalarBackupManual();
+    instalarBackupDiario();
     instalarPublicacaoJutsu();
     instalarEncerramentoManual();
     instalarLimpezaOnline();
@@ -601,6 +626,7 @@
     setTimeout(()=>{
       instalarAutoSync();
       instalarBackupManual();
+      instalarBackupDiario();
       instalarPublicacaoJutsu();
       instalarEncerramentoManual();
       instalarLimpezaOnline();

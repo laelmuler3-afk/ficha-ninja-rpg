@@ -51,6 +51,7 @@
     var arquivos=[
       "js/18-online-config.js",
       "js/19-character-identity.js",
+      "js/19-backup-manager-utils.js",
       "js/19-online-core.js",
       "js/19-realtime-fields-utils.js",
       "js/19-realtime-sync-engine.js",

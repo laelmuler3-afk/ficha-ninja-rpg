@@ -371,6 +371,83 @@
     return {carteira,toPublish,total:4,skippedDeleted:exclusoesRespeitadas};
   }
 
+  const CAMPOS_LOCAIS_RESTAURACAO=new Set(["avatarNinja","avatarNinjaId","perfilFundoImagem","perfilFundoImagemId"]);
+
+  const CONFIG_RESTAURACAO_COLECOES=[
+    {field:"notasTopicos",collection:"notas"},
+    {field:"inventarioItens",collection:"inventario"},
+    {field:"jutsus",collection:"jutsus"},
+    {field:"armados",collection:"armados"},
+    {field:"kekkeiGenkai",collection:"kekkeiGenkai"},
+    {field:"carteiraHistorico",collection:"carteiraHistorico"},
+    {field:"efeitosBatalhaAtivos",collection:"efeitosBatalha"}
+  ];
+
+  function maiorEditAtRealtimePuro(realtime){
+    let maior=0;
+    const visitar=valor=>{
+      if(!valor||typeof valor!=="object")return;
+      if(Number.isFinite(Number(valor.editAt)))maior=Math.max(maior,Number(valor.editAt));
+      Object.values(valor).forEach(filho=>{if(filho&&typeof filho==="object")visitar(filho);});
+    };
+    visitar(realtime||{});
+    return maior;
+  }
+
+  function planejarRestauracaoAutoritativaPura({sheetId,sheetName,snapshot={},realtime={},editAtBase=0,deviceId="",uid=""}={}){
+    const dados=snapshot&&typeof snapshot==="object"&&!Array.isArray(snapshot)?clonar(snapshot):{};
+    const rt=realtime&&typeof realtime==="object"&&!Array.isArray(realtime)?realtime:{};
+    let proximo=Math.max(Number(editAtBase||0),maiorEditAtRealtimePuro(rt))+1;
+    const novoEditAt=()=>proximo++;
+    const fieldOps=[],collectionOps=[];
+    const camposDesejados=new Map();
+
+    Object.keys(dados).forEach(campo=>{
+      if(!campoPermitido(campo)||campoGerenciadoPorColecao(campo)||CAMPOS_LOCAIS_RESTAURACAO.has(campo))return;
+      camposDesejados.set(campo,dados[campo]);
+    });
+    const remotosCampos=rt.fields&&typeof rt.fields==="object"?rt.fields:{};
+    Object.values(remotosCampos).forEach(registro=>{
+      const campo=texto(registro?.name);
+      if(!campo||!campoPermitido(campo)||campoGerenciadoPorColecao(campo)||CAMPOS_LOCAIS_RESTAURACAO.has(campo))return;
+      if(camposDesejados.has(campo)||registro?.deleted===true)return;
+      fieldOps.push(criarOperacaoPura({uid,sheetId,sheetName,campo,valor:undefined,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_field")}));
+    });
+    camposDesejados.forEach((valor,campo)=>{
+      fieldOps.push(criarOperacaoPura({uid,sheetId,sheetName,campo,valor,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_field")}));
+    });
+
+    const remotasColecoes=rt.collections&&typeof rt.collections==="object"?rt.collections:{};
+    for(const config of CONFIG_RESTAURACAO_COLECOES){
+      const collection=config.collection,campoId=campoIdColecao(collection);
+      const desejados=normalizarListaLegada(collection,Array.isArray(dados[config.field])?dados[config.field]:[]);
+      const porId=new Map(desejados.map(item=>[texto(item?.[campoId]),item]).filter(([id])=>id));
+      const remotos=remotasColecoes[collection]&&typeof remotasColecoes[collection]==="object"?remotasColecoes[collection]:{};
+      Object.values(remotos).forEach(registro=>{
+        const id=texto(registro?.itemId);
+        if(!id||porId.has(id)||registro?.deleted===true)return;
+        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,deleted:true,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
+      });
+      porId.forEach((item,id)=>{
+        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,valor:item,deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
+      });
+    }
+
+    const carteira=normalizarCarteiraRegularizacao(dados.carteira||{});
+    const moedasRemotas=remotasColecoes.carteiraMoedas&&typeof remotasColecoes.carteiraMoedas==="object"?remotasColecoes.carteiraMoedas:{};
+    for(const chave of ["pd","po","pp","pc"]){
+      collectionOps.push(criarOperacaoColecaoPura({
+        uid,sheetId,sheetName,colecao:"carteiraMoedas",itemId:chave,
+        valor:{chave,quantidade:carteira[chave]},deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")
+      }));
+    }
+    /* Registros inválidos/legados com outra chave não são tocados: as regras atuais
+       só aceitam as quatro moedas canônicas e os listeners ignoram qualquer outra. */
+    void moedasRemotas;
+
+    return {fieldOps,collectionOps,maxPreviousEditAt:maiorEditAtRealtimePuro(rt),nextEditAt:proximo};
+  }
+
   async function enviarLoteRegularizacaoPuro(operacoes,enviar){
     const lista=Array.isArray(operacoes)?operacoes.filter(Boolean):[];
     if(typeof enviar!=="function")throw new TypeError("Função de envio da regularização indisponível.");
@@ -421,7 +498,7 @@
     compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
     mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,regularizarCarteiraMoedasPura,
-    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtColecaoPuro
+    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura
   };
 
   function install(){
@@ -1085,6 +1162,54 @@
       return {...resultado,op};
     }
 
+    function maiorEditAtPendenciasFicha(sheetId,uid=uidAtual()){
+      const id=texto(sheetId);
+      let maior=0;
+      Object.values(lerOutbox(uid)).forEach(op=>{if(texto(op?.sheetId)===id)maior=Math.max(maior,Number(op?.editAt||0));});
+      Object.values(lerOutboxColecoes(uid)).forEach(op=>{if(texto(op?.sheetId)===id)maior=Math.max(maior,Number(op?.editAt||0));});
+      const versoesCampos=lerVersoes(uid)?.[id]||{};
+      Object.values(versoesCampos).forEach(v=>{maior=Math.max(maior,Number(v?.editAt||0));});
+      const prefixo=`${id}::`;
+      Object.entries(lerVersoesColecoes(uid)).forEach(([chave,v])=>{if(chave.startsWith(prefixo))maior=Math.max(maior,Number(v?.editAt||0));});
+      return maior;
+    }
+
+    function limparPendenciasFicha(sheetId,uid=uidAtual()){
+      const id=texto(sheetId),prefixo=`${id}::`;
+      const campos=lerOutbox(uid);
+      Object.keys(campos).forEach(chave=>{if(chave.startsWith(prefixo))delete campos[chave];});
+      salvarOutbox(campos,uid);
+      const colecoes=lerOutboxColecoes(uid);
+      Object.keys(colecoes).forEach(chave=>{if(chave.startsWith(prefixo))delete colecoes[chave];});
+      salvarOutboxColecoes(colecoes,uid);
+    }
+
+    async function aplicarSnapshotAutoritativo(localSheetName="",snapshot={}){
+      if(root.navigator?.onLine===false)throw new Error("Conecte este aparelho à internet para restaurar um backup histórico.");
+      const user=usuarioAtual(),db=banco();
+      if(!user||!db)throw new Error("Entre com sua Conta Google antes de restaurar um backup histórico.");
+      const base=obterFichaAtiva(false);
+      if(!fichaPodeUsarRealtime(base))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
+      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(texto(localSheetName)||base?.name)||obterFichaAtiva(true);
+      const sheetId=realtimeIdDaFicha(ficha),uid=texto(user.uid);
+      if(!sheetId||!fichaPodeUsarRealtime(ficha))throw new Error("Ficha ativa indisponível para restauração.");
+      const dados=snapshot&&typeof snapshot==="object"&&!Array.isArray(snapshot)?clonar(snapshot):{};
+      const ref=db.ref(`sheetRealtime/${uid}/${sheetId}`);
+      const snap=await ref.once("value");
+      const realtime=snap.val()||{};
+      const plano=planejarRestauracaoAutoritativaPura({
+        uid,sheetId,sheetName:ficha.name,snapshot:dados,realtime,
+        editAtBase:Math.max(timestampEdicao(),maiorEditAtPendenciasFicha(sheetId,uid)),
+        deviceId:deviceId()
+      });
+      const updates={};
+      plano.fieldOps.forEach(op=>{updates[`fields/${campoParaChave(op.name)}`]=registroParaFirebase(op);});
+      plano.collectionOps.forEach(op=>{updates[`collections/${op.collection}/${campoParaChave(op.itemId)}`]=registroColecaoParaFirebase(op);});
+      if(Object.keys(updates).length)await ref.update(updates);
+      limparPendenciasFicha(sheetId,uid);
+      return {ok:true,sheetId,fields:plano.fieldOps.length,items:plano.collectionOps.length};
+    }
+
     async function regularizarFichaCompleta(localSheetName=""){
       if(root.navigator?.onLine===false)throw new Error("Conecte este aparelho à internet para regularizar a ficha.");
       const user=usuarioAtual(),db=banco();
@@ -1211,9 +1336,10 @@
     root.ShinobiOnline.sincronizarCampoConfirmado=sincronizarCampoConfirmado;
     root.ShinobiOnline.sincronizarItemColecaoConfirmado=sincronizarItemColecaoConfirmado;
     root.ShinobiOnline.regularizarFichaCompleta=regularizarFichaCompleta;
+    root.ShinobiOnline.aplicarSnapshotAutoritativo=aplicarSnapshotAutoritativo;
     root.ShinobiOnline.sincronizarPendenciasRealtime=processarOutbox;
     root.EkoRealtimeSync={
-      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,regularizarFichaCompleta,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
+      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,regularizarFichaCompleta,aplicarSnapshotAutoritativo,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
       get estado(){return {bootLiberado:estadoRT.bootLiberado,uid:uidAtual(),sheetId:estadoRT.listener?.sheetId||""};}
     };
 

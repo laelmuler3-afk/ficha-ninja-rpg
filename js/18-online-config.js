@@ -22,7 +22,7 @@ window.SHINOBI_FIREBASE_CONFIG = {
 window.SHINOBI_FIREBASE_OPTIONS = {
   enabled: true,
   sdkVersion: "12.16.0",
-  backupsToKeep: 5,
+  backupsToKeep: 3,
   sdkMode: "compat",
   sdkTimeoutMs: 18000,
   sdkSources: [

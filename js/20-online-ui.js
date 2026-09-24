@@ -14,6 +14,10 @@
   let campanhaMenuAberto=null;
   let destinoAtual=null;
   let ultimaVerificacaoSync=0;
+  let backupsHistoricos=[];
+  let backupsCarregando=false;
+  let backupsErro="";
+  let backupSheetId="";
 
   const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
 
@@ -342,7 +346,7 @@
   function normalizarDestino(destino){
     const valor=String(destino||"").trim().toLowerCase();
     if(valor==="conta")return "conta-conectada"; // compatibilidade com atalhos antigos
-    const permitidos=new Set(["login","conta-conectada","sincronizacao","criar-sala","entrar-sala","sala-atual"]);
+    const permitidos=new Set(["login","conta-conectada","sincronizacao","backups","criar-sala","entrar-sala","sala-atual"]);
     return permitidos.has(valor)?valor:null;
   }
 
@@ -353,6 +357,7 @@
         "login":"[data-online-destino=\"login\"]",
         "conta-conectada":"[data-online-destino=\"conta-conectada\"]",
         "sincronizacao":"[data-online-destino=\"sincronizacao\"]",
+        "backups":"[data-online-destino=\"backups\"]",
         "criar-sala":"[data-online-destino=\"criar-sala\"]",
         "entrar-sala":"form[data-form=\"join-room\"]",
         "sala-atual":".onlineSalaTopo,[data-online-destino=\"sala-atual\"]"
@@ -373,6 +378,7 @@
       "login":["CONTA","Minha conta"],
       "conta-conectada":["CONTA","Conta conectada"],
       "sincronizacao":["NUVEM","Sincronização"],
+      "backups":["NUVEM","Backups da ficha"],
       "criar-sala":["SALA","Criar sala"],
       "entrar-sala":["SALA","Entrar em sala"],
       "sala-atual":["SALA","Sala atual"]
@@ -714,6 +720,51 @@
     return `<div class="onlineDestinoPagina" data-online-destino="sincronizacao">${cabecalhoConta(st)}${renderConflito()}${renderNuvem(st)}</div>`;
   }
 
+  function formatarDataBackup(timestamp){
+    const n=Number(timestamp||0);
+    if(!n)return "Data indisponível";
+    try{return new Date(n).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});}catch(_erro){return new Date(n).toLocaleString("pt-BR");}
+  }
+
+  function rotuloMotivoBackup(item){
+    if(item?.type==="daily"||item?.reason==="automatico-diario")return "Automático diário";
+    if(item?.type==="safety"||item?.reason==="antes-restaurar-historico")return "Segurança antes de restaurar";
+    if(item?.reason==="manual")return "Manual";
+    return String(item?.reason||"Backup").replace(/[-_]+/g," ");
+  }
+
+  async function carregarBackupsAtivos(){
+    const ficha=window.ShinobiOnline?.fichaAtualLocal?.();
+    backupSheetId=String(ficha?.sheetId||"");
+    if(!backupSheetId){backupsHistoricos=[];backupsErro="A ficha ativa ainda não possui identidade de backup.";return;}
+    backupsCarregando=true;backupsErro="";renderizar();
+    try{backupsHistoricos=await window.ShinobiOnline.listarBackupsHistoricos(backupSheetId);}
+    catch(erro){backupsHistoricos=[];backupsErro=window.ShinobiOnline?.erroAmigavel?.(erro)||erro.message||String(erro);}
+    finally{backupsCarregando=false;renderizar();}
+  }
+
+  function renderBackupsDestino(st){
+    if(!st.user||st.user.anonymous){
+      return `<div class="onlineDestinoPagina" data-online-destino="backups"><section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">BACKUPS</span><h3>Conta Google necessária</h3><p>Os backups históricos pertencem à sua Conta Google.</p><button type="button" class="onlineBtn primario" data-action="go-login">Abrir login</button></section></div>`;
+    }
+    const ficha=window.ShinobiOnline?.fichaAtualLocal?.();
+    const nome=String(ficha?.characterName||ficha?.data?.nome||ficha?.name||"Ficha");
+    const lista=Array.isArray(backupsHistoricos)?backupsHistoricos:[];
+    return `<div class="onlineDestinoPagina" data-online-destino="backups">
+      <section class="onlineCard">
+        <div class="onlineCardTitulo"><div><span class="onlineCardSelo">BACKUPS HISTÓRICOS</span><h3>${esc(nome)}</h3></div></div>
+        <p>O Shinobi mantém no máximo <strong>3 backups históricos</strong> desta ficha. O backup automático é criado no máximo uma vez por dia quando esta ficha é aberta com a Conta Google conectada.</p>
+        <div class="onlineAcoesLinha">
+          <button type="button" class="onlineBtn primario" data-action="create-history-backup">Criar backup agora</button>
+          <button type="button" class="onlineBtn secundario" data-action="back-sync">Voltar para sincronização</button>
+        </div>
+      </section>
+      ${backupsCarregando?`<div class="onlineLoading"><span></span><p>Carregando backups...</p></div>`:""}
+      ${backupsErro?`<section class="onlineCard"><h3>Não foi possível listar os backups</h3><p>${esc(backupsErro)}</p><button type="button" class="onlineBtn secundario" data-action="reload-backups">Tentar novamente</button></section>`:""}
+      ${!backupsCarregando&&!backupsErro?(lista.length?`<section class="onlineCard"><div class="onlineSyncSecaoTitulo"><span>VERSÕES DISPONÍVEIS</span><small>${lista.length}/3 backups armazenados</small></div><div class="onlineAcoesColuna">${lista.map(item=>`<div class="onlineCard" style="margin:0;padding:14px"><div class="onlineCardTitulo"><div><strong>${esc(rotuloMotivoBackup(item))}</strong><small>${esc(formatarDataBackup(item.createdAt))}${item.appVersion?` • v${esc(item.appVersion)}`:""}</small></div></div><div class="onlineAcoesLinha"><button type="button" class="onlineBtn secundario compacto" data-action="restore-history-backup" data-sheet-id="${esc(backupSheetId)}" data-backup-id="${esc(item.id)}">Restaurar</button><button type="button" class="onlineBtn texto compacto" data-action="delete-history-backup" data-sheet-id="${esc(backupSheetId)}" data-backup-id="${esc(item.id)}">Excluir</button></div></div>`).join("")}</div></section>`:`<section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">BACKUPS</span><h3>Nenhum backup histórico ainda</h3><p>Você pode criar o primeiro agora. O automático diário também será criado quando esta ficha estiver aberta e a conta estiver online.</p></section>`):""}
+    </div>`;
+  }
+
   function renderDestino(st){
     if(destinoAtual==="login")return renderMinhaConta(st);
     if(destinoAtual==="conta-conectada")return renderContaConectada(st);
@@ -721,6 +772,7 @@
     if(destinoAtual==="entrar-sala")return renderEntrarSalaDestino(st);
     if(destinoAtual==="sala-atual")return renderSalaAtualDestino(st);
     if(destinoAtual==="sincronizacao")return renderSincronizacaoDestino(st);
+    if(destinoAtual==="backups")return renderBackupsDestino(st);
     return null;
   }
 
@@ -847,7 +899,11 @@
         </div>
         <div>
           <button type="button" class="onlineBtn secundario compacto" data-action="regularize-current">Regularizar ficha completa</button>
-          <small>Une notas, inventário e jutsus antigos deste aparelho com o backup e o realtime, sem escolher um aparelho como vencedor. Para recuperar conteúdo que só existe em outro aparelho antigo, execute uma vez nele também.</small>
+          <small>Une notas, inventário, jutsus, ataques, Kekkei Genkai, carteira e histórico antigos com o backup e o realtime, sem escolher um aparelho como vencedor.</small>
+        </div>
+        <div>
+          <button type="button" class="onlineBtn secundario compacto" data-action="manage-backups">Gerenciar backups</button>
+          <small>Crie um ponto de restauração, veja as três versões históricas mais recentes, restaure ou exclua uma delas.</small>
         </div>
       </details>
     </section>`;
@@ -1161,6 +1217,36 @@
     if(acao==="go-join-room"){destinoAtual="entrar-sala";renderizar();return;}
     if(acao==="go-create-room"){destinoAtual="criar-sala";renderizar();return;}
     if(acao==="open-current-room"){destinoAtual="sala-atual";renderizar();return;}
+    if(acao==="back-sync"){destinoAtual="sincronizacao";renderizar();verificarSincronizacaoAoAbrir();return;}
+    if(acao==="manage-backups"){
+      destinoAtual="backups";backupsHistoricos=[];backupsErro="";renderizar();
+      return carregarBackupsAtivos();
+    }
+    if(acao==="reload-backups")return carregarBackupsAtivos();
+    if(acao==="create-history-backup")return executar(async()=>{
+      try{if(typeof window.salvar==="function")window.salvar();}catch(_erro){}
+      const resultado=await window.ShinobiOnline.criarBackupHistoricoAtual(window.ShinobiOnline.fichaAtualLocal()?.name,{motivo:"manual"});
+      await carregarBackupsAtivos();
+      await avisar("Backup criado",`Um ponto de restauração foi salvo. O Shinobi mantém no máximo 3 backups históricos por ficha.`);
+      return resultado;
+    });
+    if(acao==="delete-history-backup")return executar(async()=>{
+      const ok=await confirmar("Excluir backup","Excluir este backup histórico? Esta versão específica não poderá ser restaurada depois.");
+      if(!ok)return;
+      await window.ShinobiOnline.excluirBackupHistorico(el.dataset.sheetId,el.dataset.backupId);
+      await carregarBackupsAtivos();
+      await avisar("Backup excluído","A versão histórica foi removida da nuvem.");
+    });
+    if(acao==="restore-history-backup")return executar(async()=>{
+      const ok=await confirmar(
+        "Restaurar backup histórico",
+        "Esta versão substituirá o estado atual desta ficha e será propagada para os outros aparelhos. Antes da restauração, o Shinobi criará automaticamente um backup de segurança do estado atual.\n\nContinuar?"
+      );
+      if(!ok)return;
+      await window.ShinobiOnline.restaurarBackupHistorico(el.dataset.sheetId,el.dataset.backupId);
+      await avisar("Backup restaurado","A versão escolhida foi aplicada à ficha e à sincronização. O app será recarregado agora.");
+      setTimeout(()=>window.location.reload(),180);
+    });
     if(acao==="switch-google-account")return (async()=>{
       const st=obterEstado();
       if(st.sala){
