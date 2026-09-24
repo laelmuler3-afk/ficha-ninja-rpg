@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.97",
-  "name": "Backup histórico seguro + restauração por etapas",
-  "notes": "Separa os 3 backups históricos (manual/automático) do slot rotativo de segurança da última restauração. Corrige a retenção que expulsava backups manuais e diferencia falhas por etapa; se apenas o snapshot atual falhar após uma restauração válida, a ficha permanece restaurada e o backup estrutural fica pendente para nova tentativa.",
+  "version": "2.5.8.98",
+  "name": "Restauração item-level compatível com Firebase",
+  "notes": "Corrige as chaves das coleções item-level no Realtime Database: IDs válidos como jutsu:... deixam de ser codificados no caminho, mantendo a chave igual ao itemId exigido pelas regras. Adiciona validação explícita para caracteres proibidos e preserva toda a arquitetura de backup/restauração da 2.5.8.97.",
   "date": "2026-09-24"
 }
