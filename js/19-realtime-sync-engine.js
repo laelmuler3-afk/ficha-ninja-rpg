@@ -52,8 +52,8 @@
     return op;
   }
 
-  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"],["jutsus","jutsus"],["armados","armados"],["kekkeiGenkai","kekkeiGenkai"],["efeitosBatalhaAtivos","efeitosBatalha"]]);
-  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario","jutsus","armados","kekkeiGenkai","efeitosBatalha"]);
+  const CAMPOS_ITEM_LEVEL=new Map([["notasTopicos","notas"],["inventarioItens","inventario"],["jutsus","jutsus"],["armados","armados"],["kekkeiGenkai","kekkeiGenkai"],["carteira","carteiraMoedas"],["carteiraHistorico","carteiraHistorico"],["efeitosBatalhaAtivos","efeitosBatalha"]]);
+  const COLECOES_ITEM_LEVEL=new Set(["notas","inventario","jutsus","armados","kekkeiGenkai","carteiraMoedas","carteiraHistorico","efeitosBatalha"]);
 
   function campoGerenciadoPorColecao(campo){
     return CAMPOS_ITEM_LEVEL.has(texto(campo));
@@ -66,7 +66,12 @@
     const copia=clonar(valor)||{};
     const collection=texto(colecao);
     if(collection==="notas") delete copia.aberto;
-    if(["notas","inventario","efeitosBatalha"].includes(collection)&&itemId)copia.id=texto(itemId);
+    if(["notas","inventario","carteiraHistorico","efeitosBatalha"].includes(collection)&&itemId)copia.id=texto(itemId);
+    if(collection==="carteiraMoedas"){
+      const chave=texto(itemId||copia.chave).toLowerCase();
+      const quantidade=Math.max(0,Number.parseInt(copia.quantidade,10)||0);
+      return {chave,quantidade};
+    }
     if(collection==="armados"&&itemId)copia.ataqueId=texto(itemId);
     if(collection==="kekkeiGenkai"&&itemId)copia.kekkeiId=texto(itemId);
     if(collection==="jutsus"){
@@ -89,8 +94,21 @@
   }
   function aplicarRegistroColecaoPuro(colecao,itens,itemId,registro){
     const collection=texto(colecao),id=texto(itemId);
+    if(!colecaoPermitida(collection)||!id||!registro){
+      return collection==="carteiraMoedas"?(itens&&typeof itens==="object"&&!Array.isArray(itens)?clonar(itens):{}):(Array.isArray(itens)?clonar(itens):[]);
+    }
+    if(collection==="carteiraMoedas"){
+      const carteira=itens&&typeof itens==="object"&&!Array.isArray(itens)?clonar(itens):{};
+      const chave=id.toLowerCase();
+      if(!["pd","po","pp","pc"].includes(chave))return carteira;
+      if(registro.deleted===true){carteira[chave]=0;return carteira;}
+      let remoto;
+      try{remoto=JSON.parse(String(registro.payload??"null"));}catch(_e){return carteira;}
+      if(!remoto||typeof remoto!=="object"||Array.isArray(remoto)||texto(remoto.chave).toLowerCase()!==chave)return carteira;
+      carteira[chave]=Math.max(0,Number.parseInt(remoto.quantidade,10)||0);
+      return carteira;
+    }
     const lista=Array.isArray(itens)?clonar(itens):[];
-    if(!colecaoPermitida(collection)||!id||!registro)return lista;
     const indice=lista.findIndex(item=>texto(collection==="jutsus"?item?.jutsuId:collection==="armados"?item?.ataqueId:collection==="kekkeiGenkai"?item?.kekkeiId:item?.id)===id);
     if(registro.deleted===true){
       if(indice>=0)lista.splice(indice,1);
@@ -118,6 +136,14 @@
         if(va!==vb)return va-vb;
         return texto(collection==="jutsus"?a?.jutsuId:collection==="armados"?a?.ataqueId:a?.kekkeiId).localeCompare(texto(collection==="jutsus"?b?.jutsuId:collection==="armados"?b?.ataqueId:b?.kekkeiId));
       });
+    }
+    if(collection==="carteiraHistorico"){
+      lista.sort((a,b)=>{
+        const da=Number(a?.data||0),db=Number(b?.data||0);
+        if(da!==db)return db-da;
+        return texto(b?.id).localeCompare(texto(a?.id));
+      });
+      return lista.slice(0,40);
     }
     return lista;
   }
@@ -285,6 +311,14 @@
       });
       items.forEach((item,indice)=>item.ordem=indice);
     }
+    if(collection==="carteiraHistorico"){
+      items.sort((a,b)=>{
+        const da=Number(a?.data||0),db=Number(b?.data||0);
+        if(da!==db)return db-da;
+        return texto(b?.id).localeCompare(texto(a?.id));
+      });
+      if(items.length>40)items.splice(40);
+    }
 
     const remotoPorId=new Map(rtNorm.map(item=>[texto(item[campoId]),fingerprintRegularizacao(collection,item)]));
     const toPublish=[];
@@ -295,6 +329,46 @@
       toPublish.push({itemId:id,value:clonar(item)});
     });
     return {items,toPublish,conflicts,skippedDeleted};
+  }
+
+  function normalizarCarteiraRegularizacao(valor){
+    const origem=valor&&typeof valor==="object"&&!Array.isArray(valor)?valor:{};
+    const saida={};
+    ["pd","po","pp","pc"].forEach(chave=>{saida[chave]=Math.max(0,Number.parseInt(origem[chave],10)||0);});
+    return saida;
+  }
+  function extrairCarteiraRealtimeRegularizacao(valor){
+    const registros=valor&&typeof valor==="object"&&!Array.isArray(valor)?valor:{};
+    const ativos={},deletados=new Set();
+    Object.values(registros).forEach(registro=>{
+      const id=texto(registro?.itemId).toLowerCase();
+      if(!["pd","po","pp","pc"].includes(id)||texto(registro?.collection)!=="carteiraMoedas")return;
+      if(registro.deleted===true){deletados.add(id);return;}
+      let item;
+      try{item=JSON.parse(String(registro?.payload??"null"));}catch(_e){return;}
+      if(!item||typeof item!=="object"||Array.isArray(item)||texto(item.chave).toLowerCase()!==id)return;
+      ativos[id]=Math.max(0,Number.parseInt(item.quantidade,10)||0);
+    });
+    return {ativos,deletados};
+  }
+  function regularizarCarteiraMoedasPura({local={},backup={},realtime={}}={}){
+    const localObj=local&&typeof local==="object"&&!Array.isArray(local)?local:{};
+    const backupObj=backup&&typeof backup==="object"&&!Array.isArray(backup)?backup:{};
+    const rt=extrairCarteiraRealtimeRegularizacao(realtime);
+    const carteira={},toPublish=[];
+    let exclusoesRespeitadas=0;
+    ["pd","po","pp","pc"].forEach(chave=>{
+      if(Object.prototype.hasOwnProperty.call(rt.ativos,chave)){
+        carteira[chave]=rt.ativos[chave];
+        return;
+      }
+      if(rt.deletados.has(chave)){carteira[chave]=0;exclusoesRespeitadas+=1;return;}
+      const fonte=Object.prototype.hasOwnProperty.call(localObj,chave)?localObj:backupObj;
+      const quantidade=Math.max(0,Number.parseInt(fonte?.[chave],10)||0);
+      carteira[chave]=quantidade;
+      toPublish.push({itemId:chave,value:{chave,quantidade}});
+    });
+    return {carteira,toPublish,total:4,skippedDeleted:exclusoesRespeitadas};
   }
 
   async function enviarLoteRegularizacaoPuro(operacoes,enviar){
@@ -346,7 +420,7 @@
   const test={
     compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
-    mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,
+    mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,regularizarCarteiraMoedasPura,
     enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtColecaoPuro
   };
 
@@ -368,6 +442,8 @@
       listenerJutsus:null,
       listenerArmados:null,
       listenerKekkeiGenkai:null,
+      listenerCarteiraMoedas:null,
+      listenerCarteiraHistorico:null,
       listenerEfeitosBatalha:null,
       offset:Number.isFinite(offsetSalvo)?offsetSalvo:0,
       offsetConhecido:Number.isFinite(offsetSalvo),
@@ -656,6 +732,8 @@
       if(collection==="jutsus")return "jutsus";
       if(collection==="armados")return "armados";
       if(collection==="kekkeiGenkai")return "kekkeiGenkai";
+      if(collection==="carteiraMoedas")return "carteira";
+      if(collection==="carteiraHistorico")return "carteiraHistorico";
       if(collection==="efeitosBatalha")return "efeitosBatalhaAtivos";
       return "";
     }
@@ -682,10 +760,15 @@
       if(collection==="kekkeiGenkai"){
         try{root.ShinobiKekkeiItemLevel?.garantirEstado?.();}catch(_e){}
       }
+      if(collection==="carteiraMoedas"||collection==="carteiraHistorico"){
+        try{root.ShinobiWalletItemLevel?.garantirEstado?.();}catch(_e){}
+      }
       let dados={};
       try{dados=JSON.parse(root.localStorage.getItem(ficha.key)||"{}");}catch(_e){dados=clonar(ficha.data||{});}
       if(!dados||typeof dados!=="object"||Array.isArray(dados))dados={};
-      let itens=Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):[];
+      let itens=collection==="carteiraMoedas"
+        ?(dados[campoLocal]&&typeof dados[campoLocal]==="object"&&!Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):{pd:0,po:0,pp:0,pc:0})
+        :(Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):[]);
       const aplicados=[];
       const registros=valor&&typeof valor==="object"?valor:{};
       for(const [chave,registro] of Object.entries(registros)){
@@ -729,6 +812,10 @@
       if(armados){try{armados.ref.off("value",armados.callback);}catch(_e){}}
       const kekkeiGenkai=estadoRT.listenerKekkeiGenkai;
       if(kekkeiGenkai){try{kekkeiGenkai.ref.off("value",kekkeiGenkai.callback);}catch(_e){}}
+      const carteiraMoedas=estadoRT.listenerCarteiraMoedas;
+      if(carteiraMoedas){try{carteiraMoedas.ref.off("value",carteiraMoedas.callback);}catch(_e){}}
+      const carteiraHistorico=estadoRT.listenerCarteiraHistorico;
+      if(carteiraHistorico){try{carteiraHistorico.ref.off("value",carteiraHistorico.callback);}catch(_e){}}
       const efeitosBatalha=estadoRT.listenerEfeitosBatalha;
       if(efeitosBatalha){try{efeitosBatalha.ref.off("value",efeitosBatalha.callback);}catch(_e){}}
       estadoRT.listener=null;
@@ -737,6 +824,8 @@
       estadoRT.listenerJutsus=null;
       estadoRT.listenerArmados=null;
       estadoRT.listenerKekkeiGenkai=null;
+      estadoRT.listenerCarteiraMoedas=null;
+      estadoRT.listenerCarteiraHistorico=null;
       estadoRT.listenerEfeitosBatalha=null;
     }
 
@@ -773,6 +862,8 @@
          estadoRT.listenerJutsus&&estadoRT.listenerJutsus.uid===uid&&estadoRT.listenerJutsus.sheetId===sheetId&&
          estadoRT.listenerArmados&&estadoRT.listenerArmados.uid===uid&&estadoRT.listenerArmados.sheetId===sheetId&&
          estadoRT.listenerKekkeiGenkai&&estadoRT.listenerKekkeiGenkai.uid===uid&&estadoRT.listenerKekkeiGenkai.sheetId===sheetId&&
+         estadoRT.listenerCarteiraMoedas&&estadoRT.listenerCarteiraMoedas.uid===uid&&estadoRT.listenerCarteiraMoedas.sheetId===sheetId&&
+         estadoRT.listenerCarteiraHistorico&&estadoRT.listenerCarteiraHistorico.uid===uid&&estadoRT.listenerCarteiraHistorico.sheetId===sheetId&&
          estadoRT.listenerEfeitosBatalha&&estadoRT.listenerEfeitosBatalha.uid===uid&&estadoRT.listenerEfeitosBatalha.sheetId===sheetId){
         await processarOutbox().catch(()=>{});
         return {ok:true,already:true,sheetId};
@@ -837,6 +928,26 @@
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização de Kekkei Genkai indisponível. Os dados locais continuam salvos neste aparelho."}}));}catch(_e){}
       });
       estadoRT.listenerKekkeiGenkai={uid,sheetId,ref:refKekkeiGenkai,callback:callbackKekkeiGenkai};
+
+      const refCarteiraMoedas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraMoedas`);
+      const callbackCarteiraMoedas=snap=>{
+        try{aplicarSnapshotColecao(sheetId,"carteiraMoedas",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar carteira por moeda.",erro);}
+      };
+      refCarteiraMoedas.on("value",callbackCarteiraMoedas,erro=>{
+        console.warn("Realtime item-level da carteira indisponível.",erro?.code||erro?.message||erro);
+        try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização da carteira indisponível. O saldo local continua salvo neste aparelho."}}));}catch(_e){}
+      });
+      estadoRT.listenerCarteiraMoedas={uid,sheetId,ref:refCarteiraMoedas,callback:callbackCarteiraMoedas};
+
+      const refCarteiraHistorico=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraHistorico`);
+      const callbackCarteiraHistorico=snap=>{
+        try{aplicarSnapshotColecao(sheetId,"carteiraHistorico",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar histórico da carteira item-level.",erro);}
+      };
+      refCarteiraHistorico.on("value",callbackCarteiraHistorico,erro=>{
+        console.warn("Realtime item-level do histórico da carteira indisponível.",erro?.code||erro?.message||erro);
+        try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização do histórico da carteira indisponível. O histórico local continua salvo neste aparelho."}}));}catch(_e){}
+      });
+      estadoRT.listenerCarteiraHistorico={uid,sheetId,ref:refCarteiraHistorico,callback:callbackCarteiraHistorico};
 
       const refEfeitosBatalha=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/efeitosBatalha`);
       const callbackEfeitosBatalha=snap=>{
@@ -1001,9 +1112,24 @@
         {collection:"inventario",field:"inventarioItens"},
         {collection:"jutsus",field:"jutsus"},
         {collection:"armados",field:"armados"},
-        {collection:"kekkeiGenkai",field:"kekkeiGenkai"}
+        {collection:"kekkeiGenkai",field:"kekkeiGenkai"},
+        {collection:"carteiraHistorico",field:"carteiraHistorico"}
       ];
       const detalhes={},publicacoes=[];
+
+      const carteiraResultado=regularizarCarteiraMoedasPura({
+        local:dadosLocal?.carteira||{},
+        backup:dadosBackup?.carteira||{},
+        realtime:colecoesCloud?.carteiraMoedas||{}
+      });
+      dadosLocal.carteira=clonar(carteiraResultado.carteira);
+      detalhes.carteiraMoedas={
+        total:carteiraResultado.total,
+        novos:carteiraResultado.toPublish.length,
+        conflitosPreservados:0,
+        exclusoesRespeitadas:carteiraResultado.skippedDeleted
+      };
+      carteiraResultado.toPublish.forEach(item=>publicacoes.push({collection:"carteiraMoedas",...item}));
 
       for(const config of configs){
         const resultado=mesclarColecaoLegadaPura(config.collection,{
@@ -1034,10 +1160,12 @@
           estado.jutsus=clonar(dadosLocal.jutsus||[]);
           estado.armados=clonar(dadosLocal.armados||[]);
           estado.kekkeiGenkai=clonar(dadosLocal.kekkeiGenkai||[]);
+          estado.carteira=clonar(dadosLocal.carteira||{pd:0,po:0,pp:0,pc:0});
+          estado.carteiraHistorico=clonar(dadosLocal.carteiraHistorico||[]);
         }
       }catch(_e){}
       try{root.persistirEstadoLocal?.({emitir:false,confirmada:false,origem:"regularizacao-historica",motivo:"merge-seguro"});}catch(_e){}
-      agendarAtualizacaoUi(["notasTopicos","inventarioItens","jutsus","armados","kekkeiGenkai"],dadosLocal);
+      agendarAtualizacaoUi(["notasTopicos","inventarioItens","jutsus","armados","kekkeiGenkai","carteira","carteiraHistorico"],dadosLocal);
 
       const editBase=timestampEdicao();
       const operacoesRegularizacao=publicacoes.map((pub,indice)=>{
@@ -1062,9 +1190,9 @@
         ok:true,sheetId:backupSheetId,realtimeId,
         published:publicacoes.length,
         details:detalhes,
-        total:configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.total||0),0),
+        total:carteiraResultado.total+configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.total||0),0),
         conflicts:configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.conflitosPreservados||0),0),
-        skippedDeleted:configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.exclusoesRespeitadas||0),0)
+        skippedDeleted:carteiraResultado.skippedDeleted+configs.reduce((soma,c)=>soma+Number(detalhes[c.collection]?.exclusoesRespeitadas||0),0)
       };
     }
 

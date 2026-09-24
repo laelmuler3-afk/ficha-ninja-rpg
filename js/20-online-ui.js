@@ -1229,7 +1229,7 @@
     if(acao==="regularize-current")return executar(async()=>{
       const ok=await confirmar(
         "Regularizar ficha completa",
-        "O Shinobi vai unir notas, inventário, jutsus, ataques e Kekkei Genkai antigos deste aparelho com o que já existe na nuvem. Duplicatas idênticas serão unificadas; versões diferentes serão preservadas separadamente; exclusões já confirmadas no realtime não serão ressuscitadas.\n\nSe outro aparelho antigo tiver conteúdo que nunca chegou à nuvem, execute esta opção uma vez naquele aparelho também.\n\nContinuar?"
+        "O Shinobi vai unir notas, inventário, jutsus, ataques, Kekkei Genkai, carteira e histórico antigos deste aparelho com o que já existe na nuvem. Duplicatas idênticas serão unificadas; versões diferentes serão preservadas separadamente; exclusões já confirmadas no realtime não serão ressuscitadas.\n\nNa carteira, cada moeda é regularizada separadamente; se já existir um saldo realtime consolidado, ele é preservado.\n\nSe outro aparelho antigo tiver conteúdo que nunca chegou à nuvem, execute esta opção uma vez naquele aparelho também.\n\nContinuar?"
       );
       if(!ok)return;
       const nome=window.ShinobiOnline.fichaAtualLocal()?.name;
@@ -1240,7 +1240,9 @@
         `Inventário: ${Number(detalhes.inventario?.total||0)}`,
         `Jutsus: ${Number(detalhes.jutsus?.total||0)}`,
         `Ataques: ${Number(detalhes.armados?.total||0)}`,
-        `Kekkei Genkai: ${Number(detalhes.kekkeiGenkai?.total||0)}`
+        `Kekkei Genkai: ${Number(detalhes.kekkeiGenkai?.total||0)}`,
+        `Carteira: ${Number(detalhes.carteiraMoedas?.total||0)}`,
+        `Histórico: ${Number(detalhes.carteiraHistorico?.total||0)}`
       ];
       const extras=[];
       if(Number(resultado?.published||0)>0)extras.push(`${resultado.published} item(ns) antigos publicados`);

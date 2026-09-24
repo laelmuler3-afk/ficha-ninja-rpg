@@ -9,7 +9,7 @@
     "nome","cla","idade","rank","nivel","xp","proficiencia",
     "pvMax","chakraMax","forca","destreza","constituicao","inteligencia","sabedoria","carisma",
     "ca","cd","bonusCA","iniciativa","velocidade",
-    "jutsus","armados","inventarioItens","notasTopicos","carteira","kekkeiGenkai",
+    "jutsus","armados","inventarioItens","notasTopicos","carteira","carteiraHistorico","kekkeiGenkai",
     "resistenciasEscolhidas","progressaoFixa","atributoConjuracaoNatureza"
   ]);
   let aplicandoRodada=false;
@@ -171,7 +171,7 @@
 
     /* Coleções item-level continuam emitindo persistência para o backup estrutural,
        mas seus arrays completos não entram mais no realtime de fields. */
-    if(campo==="notasTopicos"||campo==="inventarioItens"||campo==="jutsus"||campo==="armados"||campo==="kekkeiGenkai"||campo==="efeitosBatalhaAtivos") return;
+    if(campo==="notasTopicos"||campo==="inventarioItens"||campo==="jutsus"||campo==="armados"||campo==="kekkeiGenkai"||campo==="carteira"||campo==="carteiraHistorico"||campo==="efeitosBatalhaAtivos") return;
 
     if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
@@ -197,7 +197,7 @@
   async function enviarItemColecaoConfirmado(detalhe={}){
     if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
     const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
-    if(!["notas","inventario","jutsus","armados","kekkeiGenkai","efeitosBatalha"].includes(collection)||!itemId) return;
+    if(!["notas","inventario","jutsus","armados","kekkeiGenkai","carteiraMoedas","carteiraHistorico","efeitosBatalha"].includes(collection)||!itemId) return;
     if(!contaGoogleAtiva()) return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
     try{
@@ -238,7 +238,7 @@
        também converja sem transformar userSheets em um segundo realtime. */
     window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
       const collection=texto(evento?.detail?.collection);
-      const campo=collection==="notas"?"notasTopicos":collection==="inventario"?"inventarioItens":collection==="jutsus"?"jutsus":collection==="armados"?"armados":collection==="kekkeiGenkai"?"kekkeiGenkai":"";
+      const campo=collection==="notas"?"notasTopicos":collection==="inventario"?"inventarioItens":collection==="jutsus"?"jutsus":collection==="armados"?"armados":collection==="kekkeiGenkai"?"kekkeiGenkai":collection==="carteiraMoedas"?"carteira":collection==="carteiraHistorico"?"carteiraHistorico":"";
       if(!campo) return;
       agendarBackupEstrutural({confirmada:true,campo,sheetName:fichaAtualNome()});
     });
