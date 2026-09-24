@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.99",
-  "name": "Blindagem de integridade da sincronização",
-  "notes": "Preserva o vínculo __online da ficha de destino durante importação, migra imagens Base64 para IndexedDB antes do localStorage e restaura o estado anterior em caso de falha. Torna editAt de campos escalares monotônico, coloca operações item-level com IDs Firebase inválidos em quarentena e protege userSheets contra snapshots estruturais atrasados com convergência inicial do realtime e realtimeWatermark. Fichas com syncDisabled ou legacyAutoCopy ficam bloqueadas de forma consistente nos fluxos de nuvem.",
+  "version": "2.5.8.100",
+  "name": "Identidade canônica dos itens legados",
+  "notes": "Centraliza a geração e validação de IDs item-level, normaliza IDs legados incompatíveis com Firebase e torna colisões independentes da ordem local. Operações de coleção passam a carregar identityKey semântica; durante a convergência, correspondências únicas adotam o ID canônico da nuvem e tombstones novos preservam essa identidade, reduzindo duplicação e ressurreição causada por IDs históricos divergentes.",
   "date": "2026-09-24"
 }

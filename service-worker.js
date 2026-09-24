@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.99 — blindagem de integridade entre realtime, backup e importação.
+/* Ficha Ninja RPG 2.5.8.100 — blindagem de integridade entre realtime, backup e importação.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.99";
+const APP_VERSION = "2.5.8.100";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -44,6 +44,7 @@ const APP_SHELL = [
   `./css/loja-v25843.css?v=${APP_VERSION}`,
   `./css/notas.css?v=${APP_VERSION}`,
   `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
+  `./js/00-item-identity.js?v=${APP_VERSION}`,
   `./js/01-core.js?v=${APP_VERSION}`,
   `./js/01-sheet-manager.js?v=${APP_VERSION}`,
   `./js/02-runtime.js?v=${APP_VERSION}`,
