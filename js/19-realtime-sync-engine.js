@@ -32,6 +32,15 @@
   function registroMaisNovo(a,b){return compararRegistros(a,b)>=0?a:b;}
   function campoParaChave(campo){return util?.campoParaChave?util.campoParaChave(campo):encodeURIComponent(texto(campo)).replace(/\./g,"%2E");}
   function campoPermitido(campo){return util?.campoPermitido?util.campoPermitido(campo):Boolean(texto(campo));}
+  function itemIdParaChaveFirebasePura(itemId){
+    const id=texto(itemId);
+    if(!id)throw new Error("ID de item inválido para sincronização.");
+    if(id.length>180)throw new Error("ID de item inválido para sincronização: limite de 180 caracteres excedido.");
+    if(/[.#$\/\[\]\u0000-\u001F\u007F]/.test(id)){
+      throw new Error(`ID de item inválido para Firebase Realtime Database: ${id}`);
+    }
+    return id;
+  }
   function normalizarValor(campo,valor){return util?.normalizarValorParaNuvem?util.normalizarValorParaNuvem(campo,valor):clonar(valor);}
   function realtimeIdDaFicha(ficha){
     return texto(ficha?.characterId||ficha?.data?.__online?.characterId||ficha?.realtimeId||ficha?.data?.__online?.realtimeId||"");
@@ -498,7 +507,8 @@
     compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
     mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,regularizarCarteiraMoedasPura,
-    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura
+    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura,
+    itemIdParaChaveFirebasePura
   };
 
   function install(){
@@ -1069,7 +1079,7 @@
       const uid=uidAtual(),db=banco();
       if(!uid||!db||texto(op?.uid)!==uid)throw new Error("Conta Google indisponível para sincronização item-level.");
       if(!colecaoPermitida(op?.collection)||!texto(op?.itemId))throw new Error("Coleção item-level inválida.");
-      const itemKey=campoParaChave(op.itemId);
+      const itemKey=itemIdParaChaveFirebasePura(op.itemId);
       const ref=db.ref(`sheetRealtime/${uid}/${op.sheetId}/collections/${op.collection}/${itemKey}`);
       let registroAtual=null;
       const resultado=await ref.transaction(atual=>{
@@ -1204,7 +1214,7 @@
       });
       const updates={};
       plano.fieldOps.forEach(op=>{updates[`fields/${campoParaChave(op.name)}`]=registroParaFirebase(op);});
-      plano.collectionOps.forEach(op=>{updates[`collections/${op.collection}/${campoParaChave(op.itemId)}`]=registroColecaoParaFirebase(op);});
+      plano.collectionOps.forEach(op=>{updates[`collections/${op.collection}/${itemIdParaChaveFirebasePura(op.itemId)}`]=registroColecaoParaFirebase(op);});
       if(Object.keys(updates).length)await ref.update(updates);
       limparPendenciasFicha(sheetId,uid);
       return {ok:true,sheetId,fields:plano.fieldOps.length,items:plano.collectionOps.length};
