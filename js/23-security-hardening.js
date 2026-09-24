@@ -55,6 +55,28 @@
     return novoEstado;
   }
 
+  function clonarSeguro(valor){
+    if(valor==null)return valor;
+    if(typeof structuredClone==="function")return structuredClone(valor);
+    return JSON.parse(JSON.stringify(valor));
+  }
+
+  function aplicarVinculoDaFichaDestino(importado){
+    const onlineAtual=estado?.__online&&typeof estado.__online==="object"?clonarSeguro(estado.__online):null;
+
+    /* __online descreve o vínculo da ficha que já existe neste aparelho.
+       Um arquivo importado fornece conteúdo, nunca autorização para assumir o
+       characterId/sheetId de outra ficha. Se a ficha atual ainda não possui
+       vínculo online, a identidade será criada normalmente pelo motor online. */
+    if(onlineAtual&&Object.keys(onlineAtual).length){
+      importado.__online=onlineAtual;
+      importado.__online.name=String(typeof fichaAtual!=="undefined"?fichaAtual:(onlineAtual.name||"Principal"));
+    }else{
+      delete importado.__online;
+    }
+    return importado;
+  }
+
   function importarFichaSegura(event){
     const input=event?.target;
     const arquivo=input?.files?.[0];
@@ -71,45 +93,31 @@
       alert("Não foi possível ler o arquivo selecionado.");
       input.value="";
     };
-    leitor.onload=evento=>{
+    leitor.onload=async evento=>{
+      const estadoAnterior=clonarSeguro(estado);
       try{
         const dados=JSON.parse(String(evento.target?.result||""));
         const novoEstado=extrairEstadoBackup(dados);
         if(!confirm("Importar esta ficha vai substituir os dados salvos neste aparelho. Continuar?")) return;
 
-        /* Importar conteúdo não pode trocar silenciosamente a identidade de
-           sincronização da ficha atual. Preserva o sheetId já vinculado neste
-           aparelho; assim um backup antigo não cria outro personagem na nuvem. */
-        const importado=typeof structuredClone==="function"?structuredClone(novoEstado):JSON.parse(JSON.stringify(novoEstado));
-        const onlineAtual=estado?.__online&&typeof estado.__online==="object"?estado.__online:{};
-        const sheetIdAtual=String(onlineAtual.sheetId||"").trim();
-        const characterIdAtual=String(onlineAtual.characterId||"").trim();
-        const realtimeIdAtual=String(onlineAtual.realtimeId||characterIdAtual||"").trim();
-        if(sheetIdAtual||characterIdAtual||realtimeIdAtual){
-          importado.__online=importado.__online&&typeof importado.__online==="object"?importado.__online:{};
-          if(sheetIdAtual) importado.__online.sheetId=sheetIdAtual;
-          if(onlineAtual.ownerUid) importado.__online.ownerUid=onlineAtual.ownerUid;
-          if(onlineAtual.identityVersion) importado.__online.identityVersion=onlineAtual.identityVersion;
-          if(characterIdAtual){
-            importado.__online.characterId=characterIdAtual;
-            importado.__online.characterOwnerUid=onlineAtual.characterOwnerUid||onlineAtual.ownerUid||"";
-            importado.__online.characterIdentityVersion=onlineAtual.characterIdentityVersion||1;
-          }
-          if(realtimeIdAtual){
-            importado.__online.realtimeId=realtimeIdAtual;
-            importado.__online.realtimeOwnerUid=onlineAtual.realtimeOwnerUid||onlineAtual.characterOwnerUid||onlineAtual.ownerUid||"";
-            importado.__online.realtimeIdentityVersion=onlineAtual.realtimeIdentityVersion||2;
-          }
-          importado.__online.name=String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal");
-          delete importado.__online.syncDisabled;
-          delete importado.__online.legacyAutoCopy;
-        }
+        const importado=aplicarVinculoDaFichaDestino(clonarSeguro(novoEstado));
         estado=importado;
-        if(!persistirEstadoLocal()) throw new Error("O armazenamento local não aceitou os dados importados.");
+
+        /* Backups exportados podem conter imagens Base64. Elas precisam sair do
+           objeto antes do localStorage; do contrário um backup perfeitamente
+           válido pode estourar a quota antes de chegar ao IndexedDB. */
+        if(typeof window.shinobiMigrarEstadoImagensParaIndexedDB==="function"){
+          await window.shinobiMigrarEstadoImagensParaIndexedDB({persistir:false});
+        }
+
+        if(!persistirEstadoLocal({emitir:false,origem:"importacao",motivo:"importacao-local"})){
+          throw new Error("O armazenamento local não aceitou os dados importados.");
+        }
         alert("Ficha importada com sucesso!");
         location.reload();
       }catch(erro){
         console.error("Falha ao importar backup:",erro);
+        estado=estadoAnterior;
         alert(`Não foi possível importar a ficha. ${erro?.message||"O arquivo precisa ser um JSON válido."}`);
       }finally{
         input.value="";

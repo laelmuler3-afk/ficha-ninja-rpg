@@ -128,6 +128,19 @@
     return Boolean(nome&&(CAMPOS_BACKUP_ESTRUTURAL.has(nome)||nome.startsWith("p_")));
   }
 
+  function campoLocalDaColecao(collection){
+    const nome=texto(collection);
+    if(nome==="notas")return "notasTopicos";
+    if(nome==="inventario")return "inventarioItens";
+    if(nome==="jutsus")return "jutsus";
+    if(nome==="armados")return "armados";
+    if(nome==="kekkeiGenkai")return "kekkeiGenkai";
+    if(nome==="carteiraMoedas")return "carteira";
+    if(nome==="carteiraHistorico")return "carteiraHistorico";
+    if(nome==="efeitosBatalha")return "efeitosBatalhaAtivos";
+    return "";
+  }
+
   function executarBackupEstrutural(nome){
     if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.atualizarBackupEstrutural!=="function") return;
     window.ShinobiOnline.atualizarBackupEstrutural(nome,{
@@ -188,6 +201,7 @@
         motivo:texto(detalhe.motivo)||"alteracao-confirmada",
         origem:texto(detalhe.origem)||"campo"
       });
+      agendarBackupEstrutural(detalhe);
       if(!syncPorTurnoAtiva()) await sincronizarResumoParticipante();
     }catch(erro){
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
@@ -210,11 +224,29 @@
           origem:texto(detalhe.source)||"colecao"
         }
       );
+      const campoBackup=campoLocalDaColecao(collection);
+      if(campoBackup)agendarBackupEstrutural({confirmada:true,campo:campoBackup,sheetName:nome});
     }catch(erro){
-      window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
-        detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||"A alteração ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível."}
-      }));
+      const mensagem=erro?.code==="shinobi/invalid-item-id"
+        ?"Este item possui um identificador legado incompatível com a nuvem. Ele continua salvo neste aparelho, mas precisa ser regularizado antes de sincronizar."
+        :(window.ShinobiOnline?.erroAmigavel?.(erro)||"A alteração ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível.");
+      window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem}}));
     }
+  }
+
+  let drenagemBackupEstruturalEmCurso=null;
+  function drenarBackupsEstruturaisAposRealtime(motivo="reconexao"){
+    if(drenagemBackupEstruturalEmCurso)return drenagemBackupEstruturalEmCurso;
+    drenagemBackupEstruturalEmCurso=(async()=>{
+      if(!contaGoogleAtiva()||window.navigator?.onLine===false)return {skipped:true};
+      await window.EkoRealtimeSync?.reconciliar?.();
+      if(typeof window.EkoRealtimeSync?.aguardarConvergenciaAtual==="function"){
+        const convergencia=await window.EkoRealtimeSync.aguardarConvergenciaAtual({timeoutMs:8000});
+        if(convergencia?.ok!==true)return {queued:true,reason:texto(convergencia?.reason)||"realtime-nao-convergido"};
+      }
+      return window.ShinobiOnline?.processarBackupsEstruturaisPendentes?.({motivo});
+    })().finally(()=>{drenagemBackupEstruturalEmCurso=null;});
+    return drenagemBackupEstruturalEmCurso;
   }
 
   function instalarAutoSync(){
@@ -228,22 +260,15 @@
       const campo=texto(detalhe.campo);
       if(!detalhe.confirmada||!campo)return;
       enviarAlteracaoConfirmada(detalhe).catch(()=>{});
-      agendarBackupEstrutural(detalhe);
     });
 
     window.addEventListener("shinobi:colecao-item-confirmado",evento=>{
       enviarItemColecaoConfirmado(evento?.detail||{}).catch(()=>{});
     });
 
-    /* Quando uma coleção remota chega, o estado local já contém o merge item-level.
-       Atualizamos o snapshot completo depois do mesmo debounce para que o backup
-       também converja sem transformar userSheets em um segundo realtime. */
-    window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
-      const collection=texto(evento?.detail?.collection);
-      const campo=collection==="notas"?"notasTopicos":collection==="inventario"?"inventarioItens":collection==="jutsus"?"jutsus":collection==="armados"?"armados":collection==="kekkeiGenkai"?"kekkeiGenkai":collection==="carteiraMoedas"?"carteira":collection==="carteiraHistorico"?"carteiraHistorico":"";
-      if(!campo) return;
-      agendarBackupEstrutural({confirmada:true,campo,sheetName:fichaAtualNome()});
-    });
+    /* Receber uma alteração remota não agenda novo userSheets neste aparelho.
+       O dispositivo autor já mantém o backup estrutural; regravar aqui criava
+       amplificação de escrita e podia promover snapshots atrasados. */
 
     document.addEventListener("visibilitychange",()=>{
       if(document.visibilityState==="hidden"){
@@ -258,8 +283,10 @@
       if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
     });
     window.addEventListener("online",()=>{
-      window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
-      window.ShinobiOnline?.processarBackupsEstruturaisPendentes?.({motivo:"backup-automatico-reconexao"}).catch(()=>{});
+      drenarBackupsEstruturaisAposRealtime("backup-automatico-reconexao").catch(()=>{});
+    });
+    window.addEventListener("shinobi:online:auth",()=>{
+      setTimeout(()=>drenarBackupsEstruturaisAposRealtime("backup-automatico-login").catch(()=>{}),1500);
     });
   }
 
@@ -650,7 +677,7 @@
         iniciar();
         /* pageshow não reconcilia fichas completas. Apenas tenta reenviar
            operações granulares que já estavam confirmadas e pendentes. */
-        window.EkoRealtimeSync?.reconciliar?.().catch(()=>{});
+        drenarBackupsEstruturaisAposRealtime("backup-automatico-pageshow").catch(()=>{});
       },180);
     });
   });

@@ -14,6 +14,7 @@
   const CHAVE_DEVICE="shinobi_device_id_v1";
   const CHAVE_COLECAO_OUTBOX_BASE="shinobi_collection_outbox_v1";
   const CHAVE_COLECAO_VERSOES_BASE="shinobi_collection_versions_v1";
+  const CHAVE_COLECAO_QUARENTENA_BASE="shinobi_collection_quarantine_v1";
 
   function texto(v){return String(v==null?"":v).trim();}
   function clonar(v){if(v==null)return v;try{return structuredClone(v);}catch(_e){return JSON.parse(JSON.stringify(v));}}
@@ -32,12 +33,17 @@
   function registroMaisNovo(a,b){return compararRegistros(a,b)>=0?a:b;}
   function campoParaChave(campo){return util?.campoParaChave?util.campoParaChave(campo):encodeURIComponent(texto(campo)).replace(/\./g,"%2E");}
   function campoPermitido(campo){return util?.campoPermitido?util.campoPermitido(campo):Boolean(texto(campo));}
+  function erroItemIdInvalido(mensagem){
+    const erro=new Error(mensagem);
+    erro.code="shinobi/invalid-item-id";
+    return erro;
+  }
   function itemIdParaChaveFirebasePura(itemId){
     const id=texto(itemId);
-    if(!id)throw new Error("ID de item inválido para sincronização.");
-    if(id.length>180)throw new Error("ID de item inválido para sincronização: limite de 180 caracteres excedido.");
+    if(!id)throw erroItemIdInvalido("ID de item inválido para sincronização.");
+    if(id.length>180)throw erroItemIdInvalido("ID de item inválido para sincronização: limite de 180 caracteres excedido.");
     if(/[.#$\/\[\]\u0000-\u001F\u007F]/.test(id)){
-      throw new Error(`ID de item inválido para Firebase Realtime Database: ${id}`);
+      throw erroItemIdInvalido(`ID de item inválido para Firebase Realtime Database: ${id}`);
     }
     return id;
   }
@@ -483,11 +489,14 @@
     return {ok:falhas.length===0,resultados,falhas};
   }
 
-  function proximoEditAtColecaoPuro(timestampAtual,versaoAplicada,operacaoPendente,editAtSolicitado){
+  function proximoEditAtPuro(timestampAtual,versaoAplicada,operacaoPendente,editAtSolicitado){
     const base=Number(editAtSolicitado||timestampAtual||0);
     const anterior=Number(versaoAplicada?.editAt||0);
     const pendente=Number(operacaoPendente?.editAt||0);
     return Math.max(base,anterior+1,pendente+1);
+  }
+  function proximoEditAtColecaoPuro(timestampAtual,versaoAplicada,operacaoPendente,editAtSolicitado){
+    return proximoEditAtPuro(timestampAtual,versaoAplicada,operacaoPendente,editAtSolicitado);
   }
 
   function mensagemFalhasRegularizacaoPura(falhas){
@@ -507,7 +516,7 @@
     compararRegistros,registroMaisNovo,criarOperacaoPura,realtimeIdDaFicha,fichaPodeUsarRealtime,
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
     mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,regularizarCarteiraMoedasPura,
-    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura,
+    enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtPuro,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura,
     itemIdParaChaveFirebasePura
   };
 
@@ -536,6 +545,7 @@
       offsetConhecido:Number.isFinite(offsetSalvo),
       offsetRef:null,
       offsetCallback:null,
+      convergencia:null,
       processando:false,
       reprocessar:false,
       timerAtivacao:null
@@ -613,6 +623,16 @@
     }
     function lerOutboxColecoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_COLECAO_OUTBOX_BASE,uid),{});}
     function salvarOutboxColecoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_COLECAO_OUTBOX_BASE,uid),valor||{});}
+    function lerQuarentenaColecoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_COLECAO_QUARENTENA_BASE,uid),{});}
+    function salvarQuarentenaColecoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_COLECAO_QUARENTENA_BASE,uid),valor||{});}
+    function quarentenarOperacaoColecao(op,erro,uid=uidAtual()){
+      if(!uid||!op)return;
+      const todos=lerQuarentenaColecoes(uid);
+      const chave=chaveOperacaoColecao(op.sheetId,op.collection,op.itemId||op.opId||idAleatorio("invalid"));
+      todos[chave]={...clonar(op),quarantinedAt:agora(),errorCode:texto(erro?.code||"shinobi/invalid-item-id"),errorMessage:texto(erro?.message||erro)};
+      salvarQuarentenaColecoes(todos,uid);
+      removerOutboxColecao(op,uid);
+    }
     function lerVersoesColecoes(uid=uidAtual()){return lerJson(chaveConta(CHAVE_COLECAO_VERSOES_BASE,uid),{});}
     function salvarVersoesColecoes(valor,uid=uidAtual()){salvarJson(chaveConta(CHAVE_COLECAO_VERSOES_BASE,uid),valor||{});}
     function registrarVersaoColecao(sheetId,colecao,itemId,registro,uid=uidAtual()){
@@ -886,6 +906,41 @@
       return aplicados;
     }
 
+    const CHAVES_CONVERGENCIA=["fields","notas","inventario","jutsus","armados","kekkeiGenkai","carteiraMoedas","carteiraHistorico","efeitosBatalha"];
+    function finalizarConvergencia(resultado){
+      const atual=estadoRT.convergencia;
+      if(!atual||atual.concluida)return;
+      atual.concluida=true;
+      atual.resultado=resultado||{ok:true,sheetId:atual.sheetId};
+      try{atual.resolve?.(atual.resultado);}catch(_e){}
+    }
+    function iniciarConvergencia(uid,sheetId){
+      if(estadoRT.convergencia&&!estadoRT.convergencia.concluida){
+        finalizarConvergencia({ok:false,reason:"listener-substituido",sheetId:estadoRT.convergencia.sheetId});
+      }
+      let resolve;
+      const promise=new Promise(res=>{resolve=res;});
+      estadoRT.convergencia={uid,sheetId,pendentes:new Set(CHAVES_CONVERGENCIA),concluida:false,resultado:null,promise,resolve};
+    }
+    function marcarConvergencia(sheetId,chave){
+      const atual=estadoRT.convergencia;
+      if(!atual||atual.concluida||texto(atual.sheetId)!==texto(sheetId))return;
+      atual.pendentes.delete(chave);
+      if(!atual.pendentes.size)finalizarConvergencia({ok:true,sheetId:atual.sheetId});
+    }
+    async function aguardarConvergenciaAtual({timeoutMs=8000}={}){
+      if(!estadoRT.bootLiberado)return {ok:false,reason:"boot-ainda-nao-liberado"};
+      const ativacao=await ativarFichaAtual();
+      if(ativacao?.ok!==true)return ativacao||{ok:false,reason:"ficha-indisponivel"};
+      const atual=estadoRT.convergencia;
+      if(!atual||atual.concluida)return atual?.resultado||{ok:true,sheetId:ativacao.sheetId,already:true};
+      const limite=Math.max(1000,Number(timeoutMs)||8000);
+      return Promise.race([
+        atual.promise,
+        new Promise(resolve=>root.setTimeout(()=>resolve({ok:false,reason:"timeout-convergencia",sheetId:atual.sheetId}),limite))
+      ]);
+    }
+
     function desconectarListener(){
       const atual=estadoRT.listener;
       if(atual){try{atual.ref.off("value",atual.callback);}catch(_e){}}
@@ -914,6 +969,9 @@
       estadoRT.listenerCarteiraMoedas=null;
       estadoRT.listenerCarteiraHistorico=null;
       estadoRT.listenerEfeitosBatalha=null;
+      if(estadoRT.convergencia&&!estadoRT.convergencia.concluida){
+        finalizarConvergencia({ok:false,reason:"listener-desconectado",sheetId:estadoRT.convergencia.sheetId});
+      }
     }
 
     function observarOffset(db){
@@ -956,9 +1014,10 @@
         return {ok:true,already:true,sheetId};
       }
       desconectarListener();
+      iniciarConvergencia(uid,sheetId);
       const ref=db.ref(`sheetRealtime/${uid}/${sheetId}/fields`);
       const callback=snap=>{
-        try{aplicarSnapshotCampos(sheetId,snap.val()||{});}catch(erro){console.warn("Falha ao aplicar realtime da ficha ativa.",erro);}
+        try{aplicarSnapshotCampos(sheetId,snap.val()||{});marcarConvergencia(sheetId,"fields");}catch(erro){console.warn("Falha ao aplicar realtime da ficha ativa.",erro);}
       };
       ref.on("value",callback,erro=>{
         console.warn("Realtime da ficha ativa indisponível.",erro?.code||erro?.message||erro);
@@ -968,7 +1027,7 @@
 
       const refNotas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/notas`);
       const callbackNotas=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"notas",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar notas item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"notas",snap.val()||{});marcarConvergencia(sheetId,"notas");}catch(erro){console.warn("Falha ao aplicar notas item-level.",erro);}
       };
       refNotas.on("value",callbackNotas,erro=>{
         console.warn("Realtime item-level de notas indisponível.",erro?.code||erro?.message||erro);
@@ -978,7 +1037,7 @@
 
       const refInventario=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/inventario`);
       const callbackInventario=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"inventario",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar inventário item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"inventario",snap.val()||{});marcarConvergencia(sheetId,"inventario");}catch(erro){console.warn("Falha ao aplicar inventário item-level.",erro);}
       };
       refInventario.on("value",callbackInventario,erro=>{
         console.warn("Realtime item-level do inventário indisponível.",erro?.code||erro?.message||erro);
@@ -988,7 +1047,7 @@
 
       const refJutsus=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/jutsus`);
       const callbackJutsus=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"jutsus",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar jutsus item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"jutsus",snap.val()||{});marcarConvergencia(sheetId,"jutsus");}catch(erro){console.warn("Falha ao aplicar jutsus item-level.",erro);}
       };
       refJutsus.on("value",callbackJutsus,erro=>{
         console.warn("Realtime item-level de jutsus indisponível.",erro?.code||erro?.message||erro);
@@ -998,7 +1057,7 @@
 
       const refArmados=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/armados`);
       const callbackArmados=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"armados",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar ataques item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"armados",snap.val()||{});marcarConvergencia(sheetId,"armados");}catch(erro){console.warn("Falha ao aplicar ataques item-level.",erro);}
       };
       refArmados.on("value",callbackArmados,erro=>{
         console.warn("Realtime item-level de ataques indisponível.",erro?.code||erro?.message||erro);
@@ -1008,7 +1067,7 @@
 
       const refKekkeiGenkai=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/kekkeiGenkai`);
       const callbackKekkeiGenkai=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"kekkeiGenkai",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar Kekkei Genkai item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"kekkeiGenkai",snap.val()||{});marcarConvergencia(sheetId,"kekkeiGenkai");}catch(erro){console.warn("Falha ao aplicar Kekkei Genkai item-level.",erro);}
       };
       refKekkeiGenkai.on("value",callbackKekkeiGenkai,erro=>{
         console.warn("Realtime item-level de Kekkei Genkai indisponível.",erro?.code||erro?.message||erro);
@@ -1018,7 +1077,7 @@
 
       const refCarteiraMoedas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraMoedas`);
       const callbackCarteiraMoedas=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"carteiraMoedas",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar carteira por moeda.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"carteiraMoedas",snap.val()||{});marcarConvergencia(sheetId,"carteiraMoedas");}catch(erro){console.warn("Falha ao aplicar carteira por moeda.",erro);}
       };
       refCarteiraMoedas.on("value",callbackCarteiraMoedas,erro=>{
         console.warn("Realtime item-level da carteira indisponível.",erro?.code||erro?.message||erro);
@@ -1028,7 +1087,7 @@
 
       const refCarteiraHistorico=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraHistorico`);
       const callbackCarteiraHistorico=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"carteiraHistorico",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar histórico da carteira item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"carteiraHistorico",snap.val()||{});marcarConvergencia(sheetId,"carteiraHistorico");}catch(erro){console.warn("Falha ao aplicar histórico da carteira item-level.",erro);}
       };
       refCarteiraHistorico.on("value",callbackCarteiraHistorico,erro=>{
         console.warn("Realtime item-level do histórico da carteira indisponível.",erro?.code||erro?.message||erro);
@@ -1038,7 +1097,7 @@
 
       const refEfeitosBatalha=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/efeitosBatalha`);
       const callbackEfeitosBatalha=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"efeitosBatalha",snap.val()||{});}catch(erro){console.warn("Falha ao aplicar efeitos de batalha item-level.",erro);}
+        try{aplicarSnapshotColecao(sheetId,"efeitosBatalha",snap.val()||{});marcarConvergencia(sheetId,"efeitosBatalha");}catch(erro){console.warn("Falha ao aplicar efeitos de batalha item-level.",erro);}
       };
       refEfeitosBatalha.on("value",callbackEfeitosBatalha,erro=>{
         console.warn("Realtime item-level dos efeitos de batalha indisponível.",erro?.code||erro?.message||erro);
@@ -1108,7 +1167,18 @@
       const resultados=[];
       try{
         const pendentesCampos=Object.values(lerOutbox(uid)).filter(op=>op?.sheetId&&campoPermitido(op?.name));
-        const pendentesColecoes=Object.values(lerOutboxColecoes(uid)).filter(op=>op?.sheetId&&colecaoPermitida(op?.collection)&&texto(op?.itemId));
+        const pendentesColecoes=[];
+        Object.values(lerOutboxColecoes(uid)).forEach(op=>{
+          if(!op?.sheetId||!colecaoPermitida(op?.collection)||!texto(op?.itemId))return;
+          try{
+            itemIdParaChaveFirebasePura(op.itemId);
+            pendentesColecoes.push(op);
+          }catch(erro){
+            quarentenarOperacaoColecao(op,erro,uid);
+            try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Um item legado possui um identificador incompatível com a nuvem e foi retirado da fila automática para evitar tentativas infinitas."}}));}catch(_e){}
+            resultados.push({ok:false,quarantined:true,error:erro,op});
+          }
+        });
         const pendentes=[...pendentesCampos,...pendentesColecoes];
         pendentes.sort((a,b)=>compararRegistros(a,b));
         for(const op of pendentes){
@@ -1133,9 +1203,15 @@
       const realtimeId=realtimeIdDaFicha(ficha);
       if(!realtimeId||!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-indisponivel"};
       const uid=texto(user.uid);
+      const editAt=proximoEditAtPuro(
+        timestampEdicao(),
+        versaoAplicada(realtimeId,nome,uid),
+        operacaoPendente(realtimeId,nome,uid),
+        Number(meta.editAt||0)
+      );
       const op=criarOperacaoPura({
         uid,sheetId:realtimeId,sheetName:ficha.name,campo:nome,valor,
-        editAt:Number(meta.editAt||timestampEdicao()),deviceId:deviceId(),opId:idAleatorio("field")
+        editAt,deviceId:deviceId(),opId:idAleatorio("field")
       });
       adicionarOutbox(op,uid);
       if(root.navigator?.onLine===false)return {queued:true,op};
@@ -1147,6 +1223,7 @@
     async function sincronizarItemColecaoConfirmado(localSheetName,colecao,itemId,valor,meta={}){
       const collection=texto(colecao),id=texto(itemId);
       if(!colecaoPermitida(collection)||!id)return {skipped:true,reason:"colecao-ou-item-invalido"};
+      itemIdParaChaveFirebasePura(id);
       const user=usuarioAtual();
       if(!user)return {skipped:true,reason:"sem-conta-google"};
       const base=obterFichaAtiva(false);
@@ -1349,8 +1426,9 @@
     root.ShinobiOnline.aplicarSnapshotAutoritativo=aplicarSnapshotAutoritativo;
     root.ShinobiOnline.sincronizarPendenciasRealtime=processarOutbox;
     root.EkoRealtimeSync={
-      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,regularizarFichaCompleta,aplicarSnapshotAutoritativo,processarOutbox,reconciliar,ativarFichaAtual,temPendencias,
-      get estado(){return {bootLiberado:estadoRT.bootLiberado,uid:uidAtual(),sheetId:estadoRT.listener?.sheetId||""};}
+      sincronizarCampoConfirmado,sincronizarItemColecaoConfirmado,regularizarFichaCompleta,aplicarSnapshotAutoritativo,processarOutbox,reconciliar,ativarFichaAtual,aguardarConvergenciaAtual,temPendencias,
+      maiorEditAtConhecido:maiorEditAtPendenciasFicha,
+      get estado(){return {bootLiberado:estadoRT.bootLiberado,uid:uidAtual(),sheetId:estadoRT.listener?.sheetId||"",convergente:Boolean(estadoRT.convergencia?.concluida&&estadoRT.convergencia?.resultado?.ok)};}
     };
 
     root.addEventListener("shinobi:online:auth",()=>{if(estadoRT.bootLiberado)agendarAtivacao(100);});

@@ -315,7 +315,8 @@
     }
   }
 
-  async function migrarEstadoAtualParaIndexedDB(){
+  async function migrarEstadoAtualParaIndexedDB(opcoes={}){
+    const persistirAoFinal=opcoes?.persistir!==false;
     await abrirBanco();
 
     const pendentes = [];
@@ -363,7 +364,7 @@
       urlParaBlob(item.id, item.blob);
     });
 
-    if(!persistirEstadoLocal()){
+    if(persistirAoFinal&&!persistirEstadoLocal()){
       antes.forEach(item=>{
         item.alvo[item.campo] = item.valor;
         if(item.valorId) item.alvo[item.campoId] = item.valorId;
@@ -720,6 +721,11 @@
       await avisar("Não foi possível exportar", "Tente novamente em alguns segundos.");
     }
   };
+
+  /* API mínima para o importador defensivo carregado depois deste módulo.
+     A função opera sobre o `estado` atual e move qualquer data:image para
+     IndexedDB antes que a ficha seja persistida no localStorage. */
+  window.shinobiMigrarEstadoImagensParaIndexedDB = migrarEstadoAtualParaIndexedDB;
 
   window.importarFicha = function(evento){
     const arquivo = evento?.target?.files?.[0];
