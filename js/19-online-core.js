@@ -2648,7 +2648,8 @@
     const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${sheetId}`));
     const valor=snap.val()||{};
     const limite=Math.max(1,Number(window.SHINOBI_FIREBASE_OPTIONS?.backupsToKeep||3));
-    const fn=backupUtils().idsParaRemoverPorRetencao;
+    const utils=backupUtils();
+    const fn=utils.idsParaLimpezaGerenciador||utils.idsParaRemoverPorRetencao;
     const ids=typeof fn==="function"
       ?fn(valor,limite,protegerIds)
       :normalizarBackupsHistoricos(valor).slice(limite).map(item=>item.id);
@@ -2663,15 +2664,35 @@
     exigirContaGoogle();
     if(!ficha?.sheetId||!ficha?.data)throw new Error("Ficha indisponível para backup.");
     const api=estadoOnline.api,uid=estadoOnline.user.uid;
-    const backupId=texto(id)||`${agora()}_${slug(reason)}`;
+    const tipo=texto(type);
+    const seguranca=tipo==="safety"||texto(reason)==="antes-restaurar-historico";
+    const backupId=texto(id)||(seguranca?"safety_latest":`${agora()}_${slug(reason)}`);
     const createdAt=agora();
     const registro={
       name:ficha.name,characterName:ficha.characterName,revision:Number(revision||0),createdAt,
-      reason:texto(reason)||"manual",type:texto(type),dayKey:texto(dayKey),
+      reason:texto(reason)||"manual",type:tipo,dayKey:texto(dayKey),
       appVersion:texto(window.APP_VERSION),sourceDeviceId:obterDeviceId(),data:clonar(ficha.data)
     };
     await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`),registro);
-    await aplicarRetencaoBackups(ficha.sheetId,{protegerIds:protectIds});
+    if(seguranca){
+      /* O estado anterior à restauração usa um único slot rotativo separado.
+         Backups safety antigos da .96 são removidos de forma conservadora depois
+         que o novo safety_latest já foi confirmado na nuvem. */
+      try{
+        const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}`));
+        const limpar=backupUtils().idsSegurancaLegadosParaRemover;
+        const ids=typeof limpar==="function"?limpar(snap.val()||{},backupId):[];
+        if(ids.length){
+          const updates={};
+          ids.forEach(idAntigo=>{updates[`sheetBackups/${uid}/${ficha.sheetId}/${idAntigo}`]=null;});
+          await api.update(api.ref(estadoOnline.db),updates);
+        }
+      }catch(erro){
+        console.warn("Backup de segurança criado, mas não foi possível limpar versões safety antigas.",erro);
+      }
+    }else{
+      await aplicarRetencaoBackups(ficha.sheetId,{protegerIds:protectIds});
+    }
     emitir("backup-historico-criado",{sheetId:ficha.sheetId,backupId,createdAt,reason:registro.reason,type:registro.type});
     return {ok:true,sheetId:ficha.sheetId,backupId,createdAt,reason:registro.reason,type:registro.type};
   }
@@ -2749,27 +2770,65 @@
     if(!id||!backup||!atual||texto(atual.sheetId)!==id)throw new Error("Abra a ficha correspondente antes de restaurar este backup.");
     if(atual.data?.__online?.syncDisabled)throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
     const api=estadoOnline.api,uid=estadoOnline.user.uid;
-    const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}/${backup}`));
+    const mensagemEtapa=backupUtils().mensagemErroRestauracao;
+    let snap;
+    try{
+      snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}/${backup}`));
+    }catch(erro){
+      const detalhe=erroAmigavel(erro);
+      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("leitura",detalhe):`Não foi possível ler o backup escolhido. ${detalhe}`);
+      falha.code="shinobi/restore-read";falha.cause=erro;throw falha;
+    }
     if(!snap.exists())throw new Error("Backup histórico não encontrado.");
     const registro=snap.val()||{};
     if(!registro.data||typeof registro.data!=="object"||Array.isArray(registro.data))throw new Error("Este backup histórico não contém uma ficha válida.");
 
     capturarEstadoAtualAntesDaSincronizacao(atual.name);
     const antes=listarFichasLocais().find(f=>f.name===atual.name)||fichaAtualLocal()||atual;
-    await criarBackupFicha(antes,{reason:"antes-restaurar-historico",type:"safety",protectIds:[backup]});
+    try{
+      await criarBackupFicha(antes,{reason:"antes-restaurar-historico",type:"safety"});
+    }catch(erro){
+      const detalhe=erroAmigavel(erro);
+      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("seguranca",detalhe):`Não foi possível criar o backup de segurança antes da restauração. ${detalhe}`);
+      falha.code="shinobi/restore-safety";falha.cause=erro;throw falha;
+    }
 
     const preparar=backupUtils().prepararSnapshotRestaurado;
     const restaurada=typeof preparar==="function"?preparar(registro.data,antes.data):clonar(registro.data);
     restaurada.__online=clonar(antes.data?.__online||{});
 
     if(typeof window.EkoRealtimeSync?.aplicarSnapshotAutoritativo!=="function")throw new Error("O motor de sincronização ainda não está pronto para restaurar o backup.");
-    const realtime=await window.EkoRealtimeSync.aplicarSnapshotAutoritativo(antes.name,restaurada);
+    let realtime;
+    try{
+      realtime=await window.EkoRealtimeSync.aplicarSnapshotAutoritativo(antes.name,restaurada);
+    }catch(erro){
+      const detalhe=erroAmigavel(erro);
+      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("realtime",detalhe):`Não foi possível aplicar a versão escolhida na sincronização. ${detalhe}`);
+      falha.code="shinobi/restore-realtime";falha.cause=erro;throw falha;
+    }
 
-    localStorage.setItem(antes.key,JSON.stringify(restaurada));
-    aplicarEstadoGlobalDaFicha(antes.name,antes.key,restaurada);
-    await atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"});
-    emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0)});
-    return {ok:true,sheetId:id,backupId:backup,realtime};
+    try{
+      localStorage.setItem(antes.key,JSON.stringify(restaurada));
+      aplicarEstadoGlobalDaFicha(antes.name,antes.key,restaurada);
+    }catch(erro){
+      const detalhe=texto(erro?.message)||"O armazenamento local recusou a gravação.";
+      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("local",detalhe):`A versão chegou à sincronização, mas não foi possível aplicá-la neste aparelho. ${detalhe}`);
+      falha.code="shinobi/restore-local";falha.cause=erro;throw falha;
+    }
+
+    let snapshotAtualizado=true,snapshotErro="";
+    try{
+      await atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"});
+    }catch(erro){
+      snapshotAtualizado=false;
+      snapshotErro=erroAmigavel(erro);
+      /* atualizarBackupEstrutural marca a operação como pendente antes de acessar
+         a nuvem. A ficha já foi restaurada no realtime + aparelho; portanto esta
+         falha final não deve transformar uma restauração bem-sucedida em erro. */
+      emitir("backup-restauracao-snapshot-pendente",{sheetId:id,backupId:backup,mensagem:snapshotErro});
+    }
+    emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0),snapshotAtualizado});
+    return {ok:true,sheetId:id,backupId:backup,realtime,snapshotAtualizado,snapshotPendente:!snapshotAtualizado,snapshotErro};
   }
 
   async function sincronizarTodasFichas(){

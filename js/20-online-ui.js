@@ -728,7 +728,7 @@
 
   function rotuloMotivoBackup(item){
     if(item?.type==="daily"||item?.reason==="automatico-diario")return "Automático diário";
-    if(item?.type==="safety"||item?.reason==="antes-restaurar-historico")return "Segurança antes de restaurar";
+    if(item?.type==="safety"||item?.reason==="antes-restaurar-historico")return "Estado anterior à última restauração";
     if(item?.reason==="manual")return "Manual";
     return String(item?.reason||"Backup").replace(/[-_]+/g," ");
   }
@@ -750,10 +750,14 @@
     const ficha=window.ShinobiOnline?.fichaAtualLocal?.();
     const nome=String(ficha?.characterName||ficha?.data?.nome||ficha?.name||"Ficha");
     const lista=Array.isArray(backupsHistoricos)?backupsHistoricos:[];
+    const ehSeguranca=item=>item?.type==="safety"||item?.reason==="antes-restaurar-historico";
+    const historicos=lista.filter(item=>!ehSeguranca(item));
+    const seguranca=lista.find(ehSeguranca)||null;
+    const cardBackup=item=>`<div class="onlineCard" style="margin:0;padding:14px"><div class="onlineCardTitulo"><div><strong>${esc(rotuloMotivoBackup(item))}</strong><small>${esc(formatarDataBackup(item.createdAt))}${item.appVersion?` • v${esc(item.appVersion)}`:""}</small></div></div><div class="onlineAcoesLinha"><button type="button" class="onlineBtn secundario compacto" data-action="restore-history-backup" data-sheet-id="${esc(backupSheetId)}" data-backup-id="${esc(item.id)}">Restaurar</button><button type="button" class="onlineBtn texto compacto" data-action="delete-history-backup" data-sheet-id="${esc(backupSheetId)}" data-backup-id="${esc(item.id)}">Excluir</button></div></div>`;
     return `<div class="onlineDestinoPagina" data-online-destino="backups">
       <section class="onlineCard">
         <div class="onlineCardTitulo"><div><span class="onlineCardSelo">BACKUPS HISTÓRICOS</span><h3>${esc(nome)}</h3></div></div>
-        <p>O Shinobi mantém no máximo <strong>3 backups históricos</strong> desta ficha. O backup automático é criado no máximo uma vez por dia quando esta ficha é aberta com a Conta Google conectada.</p>
+        <p>O Shinobi mantém no máximo <strong>3 versões históricas</strong> desta ficha entre backups manuais e automáticos. A segurança criada antes de uma restauração usa um slot separado e não ocupa uma dessas três vagas.</p>
         <div class="onlineAcoesLinha">
           <button type="button" class="onlineBtn primario" data-action="create-history-backup">Criar backup agora</button>
           <button type="button" class="onlineBtn secundario" data-action="back-sync">Voltar para sincronização</button>
@@ -761,7 +765,8 @@
       </section>
       ${backupsCarregando?`<div class="onlineLoading"><span></span><p>Carregando backups...</p></div>`:""}
       ${backupsErro?`<section class="onlineCard"><h3>Não foi possível listar os backups</h3><p>${esc(backupsErro)}</p><button type="button" class="onlineBtn secundario" data-action="reload-backups">Tentar novamente</button></section>`:""}
-      ${!backupsCarregando&&!backupsErro?(lista.length?`<section class="onlineCard"><div class="onlineSyncSecaoTitulo"><span>VERSÕES DISPONÍVEIS</span><small>${lista.length}/3 backups armazenados</small></div><div class="onlineAcoesColuna">${lista.map(item=>`<div class="onlineCard" style="margin:0;padding:14px"><div class="onlineCardTitulo"><div><strong>${esc(rotuloMotivoBackup(item))}</strong><small>${esc(formatarDataBackup(item.createdAt))}${item.appVersion?` • v${esc(item.appVersion)}`:""}</small></div></div><div class="onlineAcoesLinha"><button type="button" class="onlineBtn secundario compacto" data-action="restore-history-backup" data-sheet-id="${esc(backupSheetId)}" data-backup-id="${esc(item.id)}">Restaurar</button><button type="button" class="onlineBtn texto compacto" data-action="delete-history-backup" data-sheet-id="${esc(backupSheetId)}" data-backup-id="${esc(item.id)}">Excluir</button></div></div>`).join("")}</div></section>`:`<section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">BACKUPS</span><h3>Nenhum backup histórico ainda</h3><p>Você pode criar o primeiro agora. O automático diário também será criado quando esta ficha estiver aberta e a conta estiver online.</p></section>`):""}
+      ${!backupsCarregando&&!backupsErro?(historicos.length?`<section class="onlineCard"><div class="onlineSyncSecaoTitulo"><span>VERSÕES DA FICHA</span><small>${historicos.length}/3 backups históricos</small></div><div class="onlineAcoesColuna">${historicos.map(cardBackup).join("")}</div></section>`:`<section class="onlineCard onlineEstadoVazio"><span class="onlineCardSelo">VERSÕES DA FICHA</span><h3>Nenhum backup histórico ainda</h3><p>Você pode criar o primeiro agora. O automático diário também será criado quando esta ficha estiver aberta e a conta estiver online.</p></section>`):""}
+      ${!backupsCarregando&&!backupsErro&&seguranca?`<section class="onlineCard"><div class="onlineSyncSecaoTitulo"><span>SEGURANÇA DA RESTAURAÇÃO</span><small>slot separado</small></div><p>Guarda somente o estado imediatamente anterior à última restauração.</p><div class="onlineAcoesColuna">${cardBackup(seguranca)}</div></section>`:""}
     </div>`;
   }
 
@@ -1243,8 +1248,12 @@
         "Esta versão substituirá o estado atual desta ficha e será propagada para os outros aparelhos. Antes da restauração, o Shinobi criará automaticamente um backup de segurança do estado atual.\n\nContinuar?"
       );
       if(!ok)return;
-      await window.ShinobiOnline.restaurarBackupHistorico(el.dataset.sheetId,el.dataset.backupId);
-      await avisar("Backup restaurado","A versão escolhida foi aplicada à ficha e à sincronização. O app será recarregado agora.");
+      const resultado=await window.ShinobiOnline.restaurarBackupHistorico(el.dataset.sheetId,el.dataset.backupId);
+      if(resultado?.snapshotPendente){
+        await avisar("Backup restaurado",`A versão escolhida foi aplicada à ficha e à sincronização. O backup completo atual ficou pendente e o Shinobi tentará enviá-lo novamente.${resultado.snapshotErro?`\n\nDetalhe: ${resultado.snapshotErro}`:""}\n\nO app será recarregado agora.`);
+      }else{
+        await avisar("Backup restaurado","A versão escolhida foi aplicada à ficha, à sincronização e ao backup atual. O app será recarregado agora.");
+      }
       setTimeout(()=>window.location.reload(),180);
     });
     if(acao==="switch-google-account")return (async()=>{

@@ -45,9 +45,27 @@
     return normalizarBackups(valor).some(item=>item.dayKey===chave&&(item.type==="daily"||item.reason==="automatico-diario"));
   }
 
+  function ehBackupSeguranca(item){
+    return Boolean(item&&(item.type==="safety"||item.reason==="antes-restaurar-historico"));
+  }
+
+  function separarBackups(valor){
+    const lista=normalizarBackups(valor);
+    const historicos=lista.filter(item=>!ehBackupSeguranca(item));
+    const segurancas=lista.filter(ehBackupSeguranca);
+    return {historicos,seguranca:segurancas[0]||null,segurancas};
+  }
+
+  function idsSegurancaLegadosParaRemover(valor,manterId="safety_latest"){
+    const manter=texto(manterId);
+    return normalizarBackups(valor)
+      .filter(item=>ehBackupSeguranca(item)&&item.id!==manter)
+      .map(item=>item.id);
+  }
+
   function idsParaRemoverPorRetencao(valor,limite=3,protegerIds=[]){
     const max=Math.max(1,Number(limite)||3);
-    const lista=normalizarBackups(valor);
+    const lista=separarBackups(valor).historicos;
     const proteger=new Set((Array.isArray(protegerIds)?protegerIds:[]).map(texto).filter(Boolean));
     const manter=new Set();
     lista.forEach(item=>{if(proteger.has(item.id))manter.add(item.id);});
@@ -56,6 +74,26 @@
       manter.add(item.id);
     }
     return lista.filter(item=>!manter.has(item.id)).map(item=>item.id);
+  }
+
+  function idsParaLimpezaGerenciador(valor,limite=3,protegerIds=[]){
+    const grupos=separarBackups(valor);
+    const removerHistoricos=idsParaRemoverPorRetencao(valor,limite,protegerIds);
+    const manterSeguranca=texto(grupos.seguranca?.id);
+    const removerSafeties=manterSeguranca?idsSegurancaLegadosParaRemover(valor,manterSeguranca):[];
+    return [...new Set([...removerHistoricos,...removerSafeties])];
+  }
+
+
+  function mensagemErroRestauracao(etapa,detalhe=""){
+    const info=texto(detalhe)||"Não foi possível concluir esta etapa.";
+    const prefixos={
+      leitura:"Não foi possível ler o backup escolhido.",
+      seguranca:"Não foi possível criar o backup de segurança antes da restauração.",
+      realtime:"Não foi possível aplicar a versão escolhida na sincronização.",
+      local:"A versão chegou à sincronização, mas não foi possível aplicá-la neste aparelho."
+    };
+    return `${prefixos[texto(etapa)]||"Não foi possível concluir a restauração."} ${info}`.trim();
   }
 
   function prepararSnapshotRestaurado(dadosBackup,dadosAtual){
@@ -85,5 +123,5 @@
     return backup;
   }
 
-  return {dayKeyLocal,normalizarBackups,temBackupDiarioDoDia,idsParaRemoverPorRetencao,prepararSnapshotRestaurado};
+  return {dayKeyLocal,normalizarBackups,temBackupDiarioDoDia,ehBackupSeguranca,separarBackups,idsSegurancaLegadosParaRemover,idsParaRemoverPorRetencao,idsParaLimpezaGerenciador,mensagemErroRestauracao,prepararSnapshotRestaurado};
 });
