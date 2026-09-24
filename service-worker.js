@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.98 — restauração item-level compatível com Firebase.
+/* Ficha Ninja RPG 2.5.8.99 — blindagem de integridade entre realtime, backup e importação.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.98";
+const APP_VERSION = "2.5.8.99";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

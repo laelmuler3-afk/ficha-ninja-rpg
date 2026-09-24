@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.98",
-  "name": "Restauração item-level compatível com Firebase",
-  "notes": "Corrige as chaves das coleções item-level no Realtime Database: IDs válidos como jutsu:... deixam de ser codificados no caminho, mantendo a chave igual ao itemId exigido pelas regras. Adiciona validação explícita para caracteres proibidos e preserva toda a arquitetura de backup/restauração da 2.5.8.97.",
+  "version": "2.5.8.99",
+  "name": "Blindagem de integridade da sincronização",
+  "notes": "Preserva o vínculo __online da ficha de destino durante importação, migra imagens Base64 para IndexedDB antes do localStorage e restaura o estado anterior em caso de falha. Torna editAt de campos escalares monotônico, coloca operações item-level com IDs Firebase inválidos em quarentena e protege userSheets contra snapshots estruturais atrasados com convergência inicial do realtime e realtimeWatermark. Fichas com syncDisabled ou legacyAutoCopy ficam bloqueadas de forma consistente nos fluxos de nuvem.",
   "date": "2026-09-24"
 }
