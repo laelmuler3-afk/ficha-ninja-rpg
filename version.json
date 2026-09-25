@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.105",
-  "name": "Backups históricos protegidos por Rules",
-  "notes": "Endurece sheetBackups sem alterar o formato do app: valida o núcleo dos backups e metadados opcionais, mantém compatibilidade com registros legados e impede sobrescrita silenciosa de históricos já criados. O slot safety_latest continua rotativo e exclusões continuam permitidas.",
+  "version": "2.5.8.106",
+  "name": "Backups sem espera estrutural",
+  "notes": "Remove espera desnecessária do snapshot userSheets no backup manual e na restauração. O histórico/safety e o realtime continuam confirmados antes do sucesso; a consolidação estrutural usa a outbox persistente sem bloquear a interface.",
   "date": "2026-09-25"
 }
