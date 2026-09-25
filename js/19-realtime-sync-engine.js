@@ -194,16 +194,7 @@
     const calculada=item&&typeof item==="object"&&!Array.isArray(item)?identityKeyColecao(colecao,item):"";
     return calculada||explicita;
   }
-  function idLocalCanonicoPorIdentidadePuro(colecao,itens,itemIdRemoto,identidade,quantidadeRemota=1){
-    const collection=texto(colecao),idRemoto=texto(itemIdRemoto),chave=texto(identidade);
-    if(collection==="carteiraMoedas"||!idRemoto||!chave||Number(quantidadeRemota)!==1||!Array.isArray(itens))return "";
-    const campo=campoIdColecao(collection);
-    if(itens.some(item=>texto(item?.[campo])===idRemoto))return "";
-    const candidatos=itens.filter(item=>identityKeyColecao(collection,item)===chave);
-    if(candidatos.length!==1)return "";
-    const antigo=texto(candidatos[0]?.[campo]);
-    return antigo&&antigo!==idRemoto?antigo:"";
-  }
+
   function itemComparavelRegularizacao(colecao,item){
     const collection=texto(colecao),copia=clonar(item)||{};
     if(!copia||typeof copia!=="object"||Array.isArray(copia))return copia;
@@ -538,7 +529,7 @@
     criarOperacaoColecaoPura,aplicarRegistroColecaoPuro,campoGerenciadoPorColecao,colecaoPermitida,
     mesclarColecaoLegadaPura,fingerprintRegularizacao,normalizarListaLegada,regularizarCarteiraMoedasPura,
     enviarLoteRegularizacaoPuro,mensagemFalhasRegularizacaoPura,proximoEditAtPuro,proximoEditAtColecaoPuro,planejarRestauracaoAutoritativaPura,
-    itemIdParaChaveFirebasePura,identityKeyRegistro,idLocalCanonicoPorIdentidadePuro
+    itemIdParaChaveFirebasePura,identityKeyRegistro
   };
 
   function install(){
@@ -682,21 +673,7 @@
     function operacaoColecaoPendente(sheetId,colecao,itemId,uid=uidAtual()){
       return lerOutboxColecoes(uid)?.[chaveOperacaoColecao(sheetId,colecao,itemId)]||null;
     }
-    function migrarOutboxColecaoId(sheetId,colecao,itemIdAntigo,itemIdNovo,identityKey="",uid=uidAtual()){
-      const antigo=texto(itemIdAntigo),novo=texto(itemIdNovo);if(!uid||!antigo||!novo||antigo===novo)return null;
-      const pendente=operacaoColecaoPendente(sheetId,colecao,antigo,uid);if(!pendente)return null;
-      removerOutboxColecao(pendente,uid);
-      const migrada=clonar(pendente)||{};migrada.itemId=novo;
-      const identidade=texto(identityKey)||texto(migrada.identityKey);if(identidade)migrada.identityKey=identidade.slice(0,180);
-      if(migrada.deleted!==true&&migrada.payload!=null){
-        try{
-          const item=JSON.parse(String(migrada.payload));
-          migrada.payload=JSON.stringify(normalizarItemColecao(colecao,item,novo));
-        }catch(_e){}
-      }
-      adicionarOutboxColecao(migrada,uid);
-      return migrada;
-    }
+
     function temPendencias(sheetId="",uid=uidAtual()){
       const id=texto(sheetId);
       const campos=Object.values(lerOutbox(uid)).some(op=>!id||texto(op?.sheetId)===id);
@@ -914,30 +891,15 @@
         ?(dados[campoLocal]&&typeof dados[campoLocal]==="object"&&!Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):{pd:0,po:0,pp:0,pc:0})
         :(Array.isArray(dados[campoLocal])?clonar(dados[campoLocal]):[]);
       const alterados=new Set(),registros=valor&&typeof valor==="object"?valor:{};
-      const contagemIdentidadeRemota=new Map();
-      if(collection!=="carteiraMoedas"){
-        Object.entries(registros).forEach(([chave,registro])=>{
-          const itemId=texto(registro?.itemId)||(util?.chaveParaCampo?util.chaveParaCampo(chave):texto(chave));
-          if(!registro||texto(registro.collection)!==collection||!itemId||texto(registro.itemId)!==itemId)return;
-          const identidade=identityKeyRegistro(collection,registro);if(!identidade)return;
-          contagemIdentidadeRemota.set(identidade,(contagemIdentidadeRemota.get(identidade)||0)+1);
-        });
-      }
       for(const [chave,registro] of Object.entries(registros)){
         const itemId=texto(registro?.itemId)||(util?.chaveParaCampo?util.chaveParaCampo(chave):texto(chave));
         if(!registro||texto(registro.collection)!==collection||!itemId||texto(registro.itemId)!==itemId)continue;
-        const identidade=identityKeyRegistro(collection,registro);
-        if(collection!=="carteiraMoedas"&&identidade){
-          const idAntigo=idLocalCanonicoPorIdentidadePuro(collection,itens,itemId,identidade,contagemIdentidadeRemota.get(identidade)||0);
-          if(idAntigo){
-            const campoId=campoIdColecao(collection),candidato=itens.find(item=>texto(item?.[campoId])===idAntigo);
-            if(candidato){
-              candidato[campoId]=itemId;
-              migrarOutboxColecaoId(sheetId,collection,idAntigo,itemId,identidade,uid);
-              alterados.add(itemId);
-            }
-          }
-        }
+        /* O ID permanente é a única identidade autoritativa do realtime.
+           A v100 tentou reconciliar IDs diferentes por uma assinatura semântica
+           (nome/rank/catalogo etc.). Isso podia transformar um tombstone antigo
+           no ID de um jutsu local e apagar justamente o objeto que guardava a
+           imagem local. Assinaturas continuam nos registros para diagnóstico,
+           mas nunca mais renomeiam um item automaticamente. */
         const anterior=versaoColecaoAplicada(sheetId,collection,itemId,uid);
         if(anterior&&compararRegistros(registro,anterior)<=0)continue;
         const pendente=operacaoColecaoPendente(sheetId,collection,itemId,uid);

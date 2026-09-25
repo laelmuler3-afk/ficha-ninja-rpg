@@ -104,6 +104,68 @@
     });
     return mudancas;
   }
+  function fingerprintReparo(jutsu){
+    const identidade=window.ShinobiItemIdentity;
+    if(identidade?.fingerprint)return identidade.fingerprint("jutsus",jutsu);
+    const copia=clonar(jutsu)||{};
+    delete copia.jutsuId;delete copia.imagem;delete copia.imagemId;delete copia.ordem;
+    return hashDeterministico(JSON.stringify(copia));
+  }
+  function repararDuplicatasCatalogoExatas(){
+    const itens=Array.isArray(estado?.jutsus)?estado.jutsus:[];
+    if(itens.length<2)return {alterou:false,removidos:[]};
+    const grupos=new Map();
+    itens.forEach((jutsu,indice)=>{
+      const catalogoId=texto(jutsu?.catalogoId);
+      if(!catalogoId)return;
+      const chave=`${catalogoId.toLowerCase()}::${fingerprintReparo(jutsu)}`;
+      const grupo=grupos.get(chave)||[];
+      grupo.push({jutsu,indice});
+      grupos.set(chave,grupo);
+    });
+    const remover=new Set(),removidos=[];
+    grupos.forEach(grupo=>{
+      if(grupo.length<2)return;
+      const ordenado=grupo.slice().sort((a,b)=>{
+        const imagemA=texto(a.jutsu?.imagemId)?1:0,imagemB=texto(b.jutsu?.imagemId)?1:0;
+        if(imagemA!==imagemB)return imagemB-imagemA;
+        const ordemA=Number.isFinite(Number(a.jutsu?.ordem))?Number(a.jutsu.ordem):a.indice;
+        const ordemB=Number.isFinite(Number(b.jutsu?.ordem))?Number(b.jutsu.ordem):b.indice;
+        return ordemA-ordemB||a.indice-b.indice;
+      });
+      const manter=ordenado[0];
+      ordenado.slice(1).forEach(entrada=>{
+        if(!texto(manter.jutsu?.imagemId)&&texto(entrada.jutsu?.imagemId)){
+          manter.jutsu.imagemId=entrada.jutsu.imagemId;
+          manter.jutsu.imagem=entrada.jutsu.imagem||"";
+        }else if(!texto(manter.jutsu?.imagem)&&texto(entrada.jutsu?.imagem)){
+          manter.jutsu.imagem=entrada.jutsu.imagem;
+        }
+        const idRemovido=texto(entrada.jutsu?.jutsuId);
+        if(idRemovido&&idRemovido!==texto(manter.jutsu?.jutsuId))removidos.push(idRemovido);
+        remover.add(entrada.indice);
+      });
+    });
+    if(!remover.size)return {alterou:false,removidos:[]};
+    estado.jutsus=itens.filter((_,indice)=>!remover.has(indice));
+    estado.jutsus.forEach((jutsu,indice)=>{if(jutsu&&typeof jutsu==="object")jutsu.ordem=indice;});
+    estado.jutsusAbertos={};
+    return {alterou:true,removidos:[...new Set(removidos)]};
+  }
+  function aplicarReparoDuplicatasCatalogo(origem){
+    const reparo=repararDuplicatasCatalogoExatas();
+    if(!reparo.alterou)return reparo;
+    try{
+      if(typeof persistirEstadoLocal==="function"){
+        persistirEstadoLocal({
+          confirmada:true,campo:"jutsus",origem:origem||"reparo-jutsus",
+          motivo:"reparo-duplicatas-catalogo-v100"
+        });
+      }
+    }catch(_erro){}
+    try{if(typeof renderizarJutsus==="function")renderizarJutsus();}catch(_erro){}
+    return reparo;
+  }
   function chaveAtual(){
     try{return texto(typeof CHAVE!=="undefined"?CHAVE:"");}catch(_erro){return "";}
   }
@@ -169,6 +231,10 @@
   window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
     if(texto(evento?.detail?.collection)!=="jutsus")return;
     reiniciarBaseline({legado:false});
+    /* Repara apenas duplicatas inequívocas do catálogo: mesmo catalogoId e
+       mesmo conteúdo funcional. Se houver qualquer diferença real entre as
+       cartas, nenhuma delas é removida automaticamente. */
+    aplicarReparoDuplicatasCatalogo("reparo-jutsus-pos-realtime");
   });
 
   const renderBase=window.renderizarJutsus;
@@ -180,6 +246,7 @@
   }
 
   reiniciarBaseline({legado:true});
+  aplicarReparoDuplicatasCatalogo("reparo-jutsus-inicial");
 })();
 
 /* ===== JUTSUS: ORGANIZAÇÃO POR ELEMENTO ===== */

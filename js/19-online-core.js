@@ -9,6 +9,8 @@
   const CHAVE_OUTBOX_BASE = "shinobi_sheet_outbox_v1";
   const CHAVE_BACKUP_OUTBOX_BASE = "shinobi_backup_outbox_v1";
   const CHAVE_XP_PROCESSADO = "shinobi_xp_events_v1";
+  const CHAVE_RESTORE_RESERVA_PREFIX = "shinobi_restore_reserve_v1__";
+  const LIMITE_RESERVA_RESTORE_MS = 30*60*1000;
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -74,6 +76,68 @@
     for(let i=0;i<str.length;i+=1){hash^=str.charCodeAt(i);hash=Math.imul(hash,16777619);}
     return (hash>>>0).toString(16).padStart(8,"0");
   }
+  function limparReservasRestauracaoLocais(){
+    const limite=agora()-LIMITE_RESERVA_RESTORE_MS;
+    try{
+      for(let i=localStorage.length-1;i>=0;i-=1){
+        const chave=localStorage.key(i);
+        if(!chave||!chave.startsWith(CHAVE_RESTORE_RESERVA_PREFIX))continue;
+        const resto=chave.slice(CHAVE_RESTORE_RESERVA_PREFIX.length);
+        const criadoEm=Number(resto.split("__",1)[0]);
+        /* Não apaga uma reserva recente: outra aba pode estar no meio de uma
+           restauração legítima. Só resíduos antigos são tratados como órfãos. */
+        if(!Number.isFinite(criadoEm)||criadoEm<=limite) localStorage.removeItem(chave);
+      }
+    }catch(_erro){}
+  }
+
+  function prepararReservaRestauracaoLocal(chave,dados,{sheetId=""}={}){
+    let serializado;
+    try{serializado=JSON.stringify(dados);}
+    catch(erro){
+      const falha=new Error(`Não foi possível preparar a ficha restaurada para armazenamento local. ${texto(erro?.message)}`.trim());
+      falha.code="shinobi/restore-preflight";falha.cause=erro;throw falha;
+    }
+    let atual="";
+    try{atual=localStorage.getItem(chave)||"";}
+    catch(erro){
+      const falha=new Error(`O armazenamento local deste aparelho não pôde ser verificado. ${texto(erro?.message)}`.trim());
+      falha.code="shinobi/restore-preflight";falha.cause=erro;throw falha;
+    }
+    const calcular=backupUtils().calcularReservaPersistenciaLocal;
+    const plano=typeof calcular==="function"
+      ?calcular(serializado,atual)
+      :{reserva:Math.max(0,serializado.length-atual.length)};
+    const chaveReserva=`${CHAVE_RESTORE_RESERVA_PREFIX}${agora()}__${slug(sheetId||"ficha")}__${idAleatorio("restore")}`;
+    let ativa=false;
+    try{
+      if(Number(plano.reserva||0)>0){
+        localStorage.setItem(chaveReserva,"0".repeat(Number(plano.reserva)));
+        ativa=true;
+      }
+    }catch(erro){
+      try{localStorage.removeItem(chaveReserva);}catch(_ignorar){}
+      const falha=new Error(`O aparelho não possui espaço local suficiente para guardar esta versão da ficha. ${texto(erro?.message)}`.trim());
+      falha.code="shinobi/restore-preflight";falha.cause=erro;throw falha;
+    }
+    let liberada=false;
+    return {
+      serializado,
+      plano,
+      liberar(){
+        if(liberada)return;
+        liberada=true;
+        if(ativa){try{localStorage.removeItem(chaveReserva);}catch(_erro){}}
+      },
+      confirmar(){
+        /* Libera o espaço reservado e substitui a ficha sem await entre as duas
+           operações. A janela para outra escrita consumir a quota é mínima. */
+        this.liberar();
+        localStorage.setItem(chave,serializado);
+      }
+    };
+  }
+
   function hashFicha(valor){
     const copia=clonar(valor||{});
     /* Metadados de transporte nunca fazem parte do conteúdo da personagem.
@@ -2831,50 +2895,65 @@
 
     capturarEstadoAtualAntesDaSincronizacao(atual.name);
     const antes=listarFichasLocais().find(f=>f.name===atual.name)||fichaAtualLocal()||atual;
-    try{
-      await criarBackupFicha(antes,{reason:"antes-restaurar-historico",type:"safety"});
-    }catch(erro){
-      const detalhe=erroAmigavel(erro);
-      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("seguranca",detalhe):`Não foi possível criar o backup de segurança antes da restauração. ${detalhe}`);
-      falha.code="shinobi/restore-safety";falha.cause=erro;throw falha;
-    }
-
     const preparar=backupUtils().prepararSnapshotRestaurado;
     const restaurada=typeof preparar==="function"?preparar(registro.data,antes.data):clonar(registro.data);
     restaurada.__online=clonar(antes.data?.__online||{});
 
-    if(typeof window.EkoRealtimeSync?.aplicarSnapshotAutoritativo!=="function")throw new Error("O motor de sincronização ainda não está pronto para restaurar o backup.");
-    let realtime;
+    /* Preflight obrigatório antes de criar tombstones ou alterar o Firebase.
+       Mantemos reservada a diferença de espaço até a gravação final local. */
+    let reservaLocal;
     try{
-      realtime=await window.EkoRealtimeSync.aplicarSnapshotAutoritativo(antes.name,restaurada);
+      reservaLocal=prepararReservaRestauracaoLocal(antes.key,restaurada,{sheetId:id});
     }catch(erro){
       const detalhe=erroAmigavel(erro);
-      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("realtime",detalhe):`Não foi possível aplicar a versão escolhida na sincronização. ${detalhe}`);
-      falha.code="shinobi/restore-realtime";falha.cause=erro;throw falha;
+      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("preflight",detalhe):`Não há espaço local suficiente para iniciar a restauração com segurança. ${detalhe}`);
+      falha.code="shinobi/restore-preflight";falha.cause=erro;throw falha;
     }
 
     try{
-      localStorage.setItem(antes.key,JSON.stringify(restaurada));
-      aplicarEstadoGlobalDaFicha(antes.name,antes.key,restaurada);
-    }catch(erro){
-      const detalhe=texto(erro?.message)||"O armazenamento local recusou a gravação.";
-      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("local",detalhe):`A versão chegou à sincronização, mas não foi possível aplicá-la neste aparelho. ${detalhe}`);
-      falha.code="shinobi/restore-local";falha.cause=erro;throw falha;
-    }
+      try{
+        await criarBackupFicha(antes,{reason:"antes-restaurar-historico",type:"safety"});
+      }catch(erro){
+        const detalhe=erroAmigavel(erro);
+        const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("seguranca",detalhe):`Não foi possível criar o backup de segurança antes da restauração. ${detalhe}`);
+        falha.code="shinobi/restore-safety";falha.cause=erro;throw falha;
+      }
 
-    let snapshotAtualizado=true,snapshotErro="";
-    try{
-      await atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"});
-    }catch(erro){
-      snapshotAtualizado=false;
-      snapshotErro=erroAmigavel(erro);
-      /* atualizarBackupEstrutural marca a operação como pendente antes de acessar
-         a nuvem. A ficha já foi restaurada no realtime + aparelho; portanto esta
-         falha final não deve transformar uma restauração bem-sucedida em erro. */
-      emitir("backup-restauracao-snapshot-pendente",{sheetId:id,backupId:backup,mensagem:snapshotErro});
+      if(typeof window.EkoRealtimeSync?.aplicarSnapshotAutoritativo!=="function")throw new Error("O motor de sincronização ainda não está pronto para restaurar o backup.");
+      let realtime;
+      try{
+        realtime=await window.EkoRealtimeSync.aplicarSnapshotAutoritativo(antes.name,restaurada);
+      }catch(erro){
+        const detalhe=erroAmigavel(erro);
+        const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("realtime",detalhe):`Não foi possível aplicar a versão escolhida na sincronização. ${detalhe}`);
+        falha.code="shinobi/restore-realtime";falha.cause=erro;throw falha;
+      }
+
+      try{
+        reservaLocal.confirmar();
+        aplicarEstadoGlobalDaFicha(antes.name,antes.key,restaurada);
+      }catch(erro){
+        const detalhe=texto(erro?.message)||"O armazenamento local recusou a gravação.";
+        const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("local",detalhe):`A versão chegou à sincronização, mas não foi possível aplicá-la neste aparelho. ${detalhe}`);
+        falha.code="shinobi/restore-local";falha.cause=erro;throw falha;
+      }
+
+      let snapshotAtualizado=true,snapshotErro="";
+      try{
+        await atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"});
+      }catch(erro){
+        snapshotAtualizado=false;
+        snapshotErro=erroAmigavel(erro);
+        /* atualizarBackupEstrutural marca a operação como pendente antes de acessar
+           a nuvem. A ficha já foi restaurada no realtime + aparelho; portanto esta
+           falha final não deve transformar uma restauração bem-sucedida em erro. */
+        emitir("backup-restauracao-snapshot-pendente",{sheetId:id,backupId:backup,mensagem:snapshotErro});
+      }
+      emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0),snapshotAtualizado});
+      return {ok:true,sheetId:id,backupId:backup,realtime,snapshotAtualizado,snapshotPendente:!snapshotAtualizado,snapshotErro};
+    }finally{
+      reservaLocal?.liberar?.();
     }
-    emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0),snapshotAtualizado});
-    return {ok:true,sheetId:id,backupId:backup,realtime,snapshotAtualizado,snapshotPendente:!snapshotAtualizado,snapshotErro};
   }
 
   async function sincronizarTodasFichas(){
@@ -3125,6 +3204,7 @@
       window.addEventListener("load",()=>setTimeout(iniciarOnlineDepoisDaAbertura,1200),{once:true});
     }
   }
+  limparReservasRestauracaoLocais();
   if(window.__shinobiOnlineStackLoading){
     window.addEventListener("shinobi:online-stack-ready",agendarInicioOnlineSeguro,{once:true});
   }else{

@@ -127,6 +127,13 @@
     }
     return candidato;
   }
+  function gerarSufixoCompativel(base,usados,reservados){
+    const raiz=texto(base).slice(0,172)||"item";let n=2,candidato=limitarId(raiz,`_${n}`);
+    while(usados.has(candidato)||reservados.has(candidato)){
+      n+=1;candidato=limitarId(raiz,`_${n}`);
+    }
+    return candidato;
+  }
 
   function garantirIds(itens,{colecao,campo=campoId(colecao),legado=false,gerarId}={}){
     if(!Array.isArray(itens))return false;
@@ -138,18 +145,31 @@
       if(!proposto)proposto=legado?idLegado(c,item):(typeof gerarId==="function"?texto(gerarId(item,indice)):"");
       if(!proposto)proposto=`${prefixo(c)}_${hash(`${Date.now()}\u241f${indice}\u241f${Math.random()}`)}`;
       proposto=normalizarIdExistente(c,proposto)||`${prefixo(c)}_${hash(proposto)}`;
-      entradas.push({item,indice,bruto,proposto,fp:fingerprint(c,item),canon:serializar(comparavel(c,item)),existente:Boolean(bruto&&idFirebaseSeguro(bruto))});
+      entradas.push({
+        item,indice,bruto,proposto,fp:fingerprint(c,item),canon:serializar(comparavel(c,item)),
+        existente:Boolean(bruto&&idFirebaseSeguro(bruto))
+      });
     });
     const grupos=new Map();
     entradas.forEach(e=>{const grupo=grupos.get(e.proposto)||[];grupo.push(e);grupos.set(e.proposto,grupo);});
     const reservados=new Set(grupos.keys()),usados=new Set();let alterou=false;
     [...grupos.keys()].sort().forEach(base=>{
-      const grupo=grupos.get(base).slice().sort((a,b)=>{
+      const brutoGrupo=grupos.get(base).slice();
+      const temIdExistente=brutoGrupo.some(entrada=>entrada.existente);
+      const grupo=brutoGrupo.sort((a,b)=>{
+        /* Compatibilidade: IDs válidos já persistidos não mudam por causa de
+           fingerprint/conteúdo. Em colisões históricas mantemos a ordem antiga
+           (_2, _3...) usada até a v99. Só itens ainda sem ID usam desempate
+           determinístico independente da ordem do array. */
         if(a.existente!==b.existente)return a.existente?-1:1;
+        if(temIdExistente)return a.indice-b.indice;
         return a.fp.localeCompare(b.fp)||a.canon.localeCompare(b.canon)||a.indice-b.indice;
       });
       grupo.forEach((entrada,pos)=>{
-        let id=pos===0&&!usados.has(base)?base:gerarSufixoDeterministico(base,entrada.fp,usados,reservados);
+        let id;
+        if(pos===0&&!usados.has(base))id=base;
+        else if(entrada.existente)id=gerarSufixoCompativel(base,usados,reservados);
+        else id=gerarSufixoDeterministico(base,entrada.fp,usados,reservados);
         if(entrada.item[campo]!==id){entrada.item[campo]=id;alterou=true;}
         usados.add(id);
       });

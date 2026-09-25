@@ -89,11 +89,23 @@
     const info=texto(detalhe)||"Não foi possível concluir esta etapa.";
     const prefixos={
       leitura:"Não foi possível ler o backup escolhido.",
+      preflight:"Não há espaço local suficiente para iniciar a restauração com segurança.",
       seguranca:"Não foi possível criar o backup de segurança antes da restauração.",
       realtime:"Não foi possível aplicar a versão escolhida na sincronização.",
       local:"A versão chegou à sincronização, mas não foi possível aplicá-la neste aparelho."
     };
     return `${prefixos[texto(etapa)]||"Não foi possível concluir a restauração."} ${info}`.trim();
+  }
+
+  function calcularReservaPersistenciaLocal(serializadoNovo,serializadoAtual=""){
+    const novo=typeof serializadoNovo==="string"?serializadoNovo:JSON.stringify(serializadoNovo??null);
+    const atual=typeof serializadoAtual==="string"?serializadoAtual:"";
+    const delta=Math.max(0,novo.length-atual.length);
+    if(delta<=0)return {tamanhoNovo:novo.length,tamanhoAtual:atual.length,delta:0,reserva:0,margem:0};
+    /* A reserva reproduz o crescimento que acontecerá ao substituir a ficha e
+       mantém uma pequena margem para metadados do navegador/outras chaves. */
+    const margem=Math.max(4096,Math.min(65536,Math.ceil(delta*0.05)));
+    return {tamanhoNovo:novo.length,tamanhoAtual:atual.length,delta,reserva:delta+margem,margem};
   }
 
   function prepararSnapshotRestaurado(dadosBackup,dadosAtual){
@@ -123,5 +135,5 @@
     return backup;
   }
 
-  return {dayKeyLocal,normalizarBackups,temBackupDiarioDoDia,ehBackupSeguranca,separarBackups,idsSegurancaLegadosParaRemover,idsParaRemoverPorRetencao,idsParaLimpezaGerenciador,mensagemErroRestauracao,prepararSnapshotRestaurado};
+  return {dayKeyLocal,normalizarBackups,temBackupDiarioDoDia,ehBackupSeguranca,separarBackups,idsSegurancaLegadosParaRemover,idsParaRemoverPorRetencao,idsParaLimpezaGerenciador,mensagemErroRestauracao,calcularReservaPersistenciaLocal,prepararSnapshotRestaurado};
 });

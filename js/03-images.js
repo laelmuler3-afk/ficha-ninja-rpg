@@ -10,6 +10,7 @@
   const DB_NOME = "FichaNinjaImagens";
   const DB_VERSAO = 1;
   const STORE_IMAGENS = "imagens";
+  const RETENCAO_IMAGEM_ORFA_MS = 7*24*60*60*1000;
   const urlsEmMemoria = new Map();
   let promessaBanco = null;
 
@@ -134,6 +135,16 @@
       const pedido = tx.objectStore(STORE_IMAGENS).getAllKeys();
       pedido.onsuccess = ()=>resolve(pedido.result || []);
       pedido.onerror = ()=>reject(pedido.error || new Error("Não foi possível listar as imagens."));
+    });
+  }
+
+  async function listarRegistrosDoBanco(){
+    const banco = await abrirBanco();
+    return new Promise((resolve, reject)=>{
+      const tx = banco.transaction(STORE_IMAGENS, "readonly");
+      const pedido = tx.objectStore(STORE_IMAGENS).getAll();
+      pedido.onsuccess = ()=>resolve(pedido.result || []);
+      pedido.onerror = ()=>reject(pedido.error || new Error("Não foi possível listar os registros de imagens."));
     });
   }
 
@@ -793,14 +804,23 @@
 
   async function limparImagensOrfas(){
     try{
-      const idsDoBanco = await listarIdsDoBanco();
+      const registros = await listarRegistrosDoBanco();
       const idsEmUso = await coletarIdsEmUso();
-      const orfas = idsDoBanco.filter(
-        id=>!idsEmUso.has(id)
-      );
+      const limite = Date.now()-RETENCAO_IMAGEM_ORFA_MS;
+      /* Não apaga uma capa assim que ela perde a referência. Como imagens são
+         locais, um conflito/reconciliação pode remover temporariamente imagemId.
+         Mantemos órfãs por 7 dias para que uma regressão de sync não transforme
+         um conflito de metadados em perda imediata do blob do usuário. */
+      const orfas = registros.filter(registro=>{
+        const id=String(registro?.id||"");
+        if(!id||idsEmUso.has(id))return false;
+        const atualizado=Number(registro?.atualizadoEm);
+        return Number.isFinite(atualizado)&&atualizado>0&&atualizado<=limite;
+      });
 
       await Promise.all(
-        orfas.map(id=>{
+        orfas.map(registro=>{
+          const id=String(registro?.id||"");
           limparUrlEmMemoria(id);
           return apagarBlob(id).catch(()=>{});
         })
