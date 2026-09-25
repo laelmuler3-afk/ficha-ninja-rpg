@@ -1323,6 +1323,23 @@
     return id;
   }
 
+  function resumoParticipanteAtual(participante){
+    if(!participante||typeof participante!=="object")return null;
+    return {
+      displayName:texto(participante.displayName),
+      initiativeBonus:Number(participante.initiativeBonus||0),
+      battle:participante.battle&&typeof participante.battle==="object"?participante.battle:{},
+      localSheetName:texto(participante.localSheetName),
+      sheetId:texto(participante.sheetId)
+    };
+  }
+
+  function resumosParticipanteIguais(atual,proximo){
+    if(!atual||!proximo)return false;
+    try{return JSON.stringify(atual)===JSON.stringify(proximo);}
+    catch(_erro){return false;}
+  }
+
   async function atualizarMeuParticipante(){
     exigirUsuario();
     const sessao=lerJson(CHAVE_SESSAO,null);
@@ -1330,12 +1347,19 @@
     const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)||listarFichasLocais().find(f=>f.name===sessao.localSheetName)||fichaAtualLocal();
     if(!ficha) return {skipped:true};
     const resumo=resumoBatalhaDaFicha(ficha);
-    await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`),{
+    const proximo={
       displayName:resumo.displayName,
       initiativeBonus:resumo.initiativeBonus,
       battle:resumo,
       localSheetName:ficha.name,
-      sheetId:ficha.sheetId,
+      sheetId:ficha.sheetId
+    };
+    const participanteRemoto=estadoOnline.sala?.participants?.[estadoOnline.user.uid]||null;
+    if(resumosParticipanteIguais(resumoParticipanteAtual(participanteRemoto),proximo)){
+      return {skipped:true,reason:"unchanged"};
+    }
+    await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`),{
+      ...proximo,
       updatedAt:agora()
     });
     return {ok:true};

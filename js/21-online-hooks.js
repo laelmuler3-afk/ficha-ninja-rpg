@@ -191,7 +191,7 @@
     if(syncPorTurnoAtiva()) marcarTurnoLocalPendente();
 
     if(!contaGoogleAtiva()){
-      if(!syncPorTurnoAtiva()) await sincronizarResumoParticipante();
+      if(!syncPorTurnoAtiva()) agendarResumoParticipante();
       return;
     }
 
@@ -202,7 +202,7 @@
         origem:texto(detalhe.origem)||"campo"
       });
       agendarBackupEstrutural(detalhe);
-      if(!syncPorTurnoAtiva()) await sincronizarResumoParticipante();
+      if(!syncPorTurnoAtiva()) agendarResumoParticipante();
     }catch(erro){
       window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{
         detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||"A alteração ficou salva neste aparelho e será reenviada quando a sincronização estiver disponível."}
