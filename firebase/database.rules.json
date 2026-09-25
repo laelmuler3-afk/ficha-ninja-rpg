@@ -21,14 +21,14 @@
     },
     "sheetBackups": {
       "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
         "$sheetId": {
           "$backupId": {
             ".read": "auth != null && auth.uid === $uid",
-            ".write": "auth != null && auth.uid === $uid"
+            ".write": "auth != null && auth.uid === $uid && (!newData.exists() || !data.exists() || $backupId === 'safety_latest')",
+            ".validate": "!newData.exists() || (newData.hasChildren(['createdAt','reason','data']) && newData.child('createdAt').isNumber() && newData.child('createdAt').val() > 0 && newData.child('reason').isString() && newData.child('reason').val().length > 0 && newData.child('reason').val().length <= 80 && newData.child('data').hasChildren() && (!newData.child('name').exists() || (newData.child('name').isString() && newData.child('name').val().length <= 80)) && (!newData.child('characterName').exists() || (newData.child('characterName').isString() && newData.child('characterName').val().length <= 120)) && (!newData.child('revision').exists() || (newData.child('revision').isNumber() && newData.child('revision').val() >= 0)) && (!newData.child('type').exists() || (newData.child('type').isString() && newData.child('type').val().length <= 32)) && (!newData.child('dayKey').exists() || (newData.child('dayKey').isString() && newData.child('dayKey').val().length <= 20)) && (!newData.child('appVersion').exists() || (newData.child('appVersion').isString() && newData.child('appVersion').val().length <= 40)) && (!newData.child('sourceDeviceId').exists() || (newData.child('sourceDeviceId').isString() && newData.child('sourceDeviceId').val().length <= 100)) && (!newData.child('sourceSheetId').exists() || (newData.child('sourceSheetId').isString() && newData.child('sourceSheetId').val().length <= 120)))"
           }
-        },
-        ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid"
+        }
       }
     },
     "campaigns": {
