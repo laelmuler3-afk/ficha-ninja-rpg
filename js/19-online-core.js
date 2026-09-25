@@ -13,6 +13,8 @@
   const LIMITE_RESERVA_RESTORE_MS = 30*60*1000;
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const CACHE_BACKUPS_HISTORICOS = new Map();
+  const LIMITE_CACHE_BACKUP_MS = 5*60*1000;
 
   const estadoOnline = {
     iniciado:false,
@@ -2742,6 +2744,34 @@
     return resultados;
   }
 
+  function chaveCacheBackup(uid,sheetId,backupId){
+    return `${texto(uid)}::${texto(sheetId)}::${texto(backupId)}`;
+  }
+
+  function guardarBackupNoCache(uid,sheetId,backupId,registro){
+    if(!uid||!sheetId||!backupId||!registro||typeof registro!=="object")return;
+    CACHE_BACKUPS_HISTORICOS.set(chaveCacheBackup(uid,sheetId,backupId),{
+      fetchedAt:agora(),
+      registro:clonar(registro)
+    });
+  }
+
+  function obterBackupDoCache(uid,sheetId,backupId){
+    /* safety_latest é rotativo e pode ser substituído por outro aparelho. Para
+       os históricos normais, as Rules atuais tornam o registro imutável; usar
+       por poucos minutos a cópia que a própria tela acabou de baixar evita uma
+       segunda leitura grande sem alterar a semântica da restauração. */
+    if(texto(backupId)==="safety_latest")return null;
+    const chave=chaveCacheBackup(uid,sheetId,backupId),item=CACHE_BACKUPS_HISTORICOS.get(chave);
+    if(!item)return null;
+    if(agora()-Number(item.fetchedAt||0)>LIMITE_CACHE_BACKUP_MS){CACHE_BACKUPS_HISTORICOS.delete(chave);return null;}
+    return clonar(item.registro);
+  }
+
+  function removerBackupDoCache(uid,sheetId,backupId){
+    CACHE_BACKUPS_HISTORICOS.delete(chaveCacheBackup(uid,sheetId,backupId));
+  }
+
   function backupUtils(){
     return window.ShinobiBackupUtils||{};
   }
@@ -2784,22 +2814,12 @@
       appVersion:texto(window.APP_VERSION),sourceDeviceId:obterDeviceId(),data:clonar(ficha.data)
     };
     await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`),registro);
+    guardarBackupNoCache(uid,ficha.sheetId,backupId,registro);
     if(seguranca){
-      /* O safety_latest já está confirmado neste ponto. A limpeza de safeties
-         legados é apenas manutenção e não deve atrasar uma restauração. Fazemos
-         a limpeza sem bloquear; se a página fechar, o próximo safety tentará de
-         novo e nenhum backup normal é consumido por esses registros antigos. */
-      Promise.resolve().then(async()=>{
-        const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}`));
-        const limpar=backupUtils().idsSegurancaLegadosParaRemover;
-        const ids=typeof limpar==="function"?limpar(snap.val()||{},backupId):[];
-        if(!ids.length)return;
-        const updates={};
-        ids.forEach(idAntigo=>{updates[`sheetBackups/${uid}/${ficha.sheetId}/${idAntigo}`]=null;});
-        await api.update(api.ref(estadoOnline.db),updates);
-      }).catch(erro=>{
-        console.warn("Backup de segurança criado, mas não foi possível limpar versões safety antigas.",erro);
-      });
+      /* Não fazemos uma segunda leitura de TODOS os backups logo após gravar o
+         safety_latest. Essa manutenção competia pela mesma rede justamente no
+         trecho crítico da restauração. Safeties legados são detectados usando
+         o snapshot que a tela de backups já baixa para listar as versões. */
     }else{
       await aplicarRetencaoBackups(ficha.sheetId,{protegerIds:protectIds});
     }
@@ -2814,7 +2834,28 @@
     if(!id)throw new Error("A ficha ativa ainda não possui identidade de backup.");
     const api=estadoOnline.api,uid=estadoOnline.user.uid;
     const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}`));
-    return normalizarBackupsHistoricos(snap.val()||{}).map(item=>({
+    const valor=snap.val()||{};
+    /* A lista do painel já trouxe os snapshots completos do Firebase. Guardamos
+       por poucos minutos os históricos imutáveis para a restauração não baixar
+       o mesmo JSON novamente ao apertar Restaurar. */
+    Object.entries(valor).forEach(([backupId,registro])=>guardarBackupNoCache(uid,id,backupId,registro));
+
+    /* Limpeza de safeties de versões antigas usando o valor já baixado, sem uma
+       nova leitura concorrendo com a restauração. É manutenção best-effort. */
+    const limpar=backupUtils().idsSegurancaLegadosParaRemover;
+    const idsLegados=typeof limpar==="function"?limpar(valor,"safety_latest"):[];
+    if(idsLegados.length){
+      const updates={};
+      idsLegados.forEach(idAntigo=>{
+        updates[`sheetBackups/${uid}/${id}/${idAntigo}`]=null;
+        removerBackupDoCache(uid,id,idAntigo);
+      });
+      api.update(api.ref(estadoOnline.db),updates).catch(erro=>{
+        console.warn("Não foi possível limpar backups safety legados agora.",erro);
+      });
+    }
+
+    return normalizarBackupsHistoricos(valor).map(item=>({
       id:texto(item.id),name:texto(item.name)||"Ficha",characterName:texto(item.characterName),
       revision:Number(item.revision||0),createdAt:Number(item.createdAt||0),reason:texto(item.reason)||"manual",
       type:texto(item.type),dayKey:texto(item.dayKey),appVersion:texto(item.appVersion),sourceDeviceId:texto(item.sourceDeviceId)
@@ -2874,6 +2915,7 @@
     const id=texto(sheetId),backup=texto(backupId);
     if(!id||!backup)throw new Error("Backup histórico inválido.");
     await estadoOnline.api.remove(estadoOnline.api.ref(estadoOnline.db,`sheetBackups/${estadoOnline.user.uid}/${id}/${backup}`));
+    removerBackupDoCache(estadoOnline.user.uid,id,backup);
     emitir("backup-historico-excluido",{sheetId:id,backupId:backup});
     return {ok:true,sheetId:id,backupId:backup};
   }
@@ -2887,16 +2929,20 @@
     if(fichaBloqueadaNuvem(atual))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
     const api=estadoOnline.api,uid=estadoOnline.user.uid;
     const mensagemEtapa=backupUtils().mensagemErroRestauracao;
-    let snap;
-    try{
-      snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}/${backup}`));
-    }catch(erro){
-      const detalhe=erroAmigavel(erro);
-      const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("leitura",detalhe):`Não foi possível ler o backup escolhido. ${detalhe}`);
-      falha.code="shinobi/restore-read";falha.cause=erro;throw falha;
+    let registro=obterBackupDoCache(uid,id,backup);
+    if(!registro){
+      let snap;
+      try{
+        snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${id}/${backup}`));
+      }catch(erro){
+        const detalhe=erroAmigavel(erro);
+        const falha=new Error(typeof mensagemEtapa==="function"?mensagemEtapa("leitura",detalhe):`Não foi possível ler o backup escolhido. ${detalhe}`);
+        falha.code="shinobi/restore-read";falha.cause=erro;throw falha;
+      }
+      if(!snap.exists())throw new Error("Backup histórico não encontrado.");
+      registro=snap.val()||{};
+      guardarBackupNoCache(uid,id,backup,registro);
     }
-    if(!snap.exists())throw new Error("Backup histórico não encontrado.");
-    const registro=snap.val()||{};
     if(!registro.data||typeof registro.data!=="object"||Array.isArray(registro.data))throw new Error("Este backup histórico não contém uma ficha válida.");
 
     capturarEstadoAtualAntesDaSincronizacao(atual.name);

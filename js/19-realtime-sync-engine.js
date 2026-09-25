@@ -427,6 +427,7 @@
     let proximo=Math.max(Number(editAtBase||0),maiorEditAtRealtimePuro(rt))+1;
     const novoEditAt=()=>proximo++;
     const fieldOps=[],collectionOps=[];
+    let camposIguais=0,itensIguais=0;
     const camposDesejados=new Map();
 
     Object.keys(dados).forEach(campo=>{
@@ -434,13 +435,24 @@
       camposDesejados.set(campo,dados[campo]);
     });
     const remotosCampos=rt.fields&&typeof rt.fields==="object"?rt.fields:{};
+    const remotoCampoPorNome=new Map();
     Object.values(remotosCampos).forEach(registro=>{
       const campo=texto(registro?.name);
       if(!campo||!campoPermitido(campo)||campoGerenciadoPorColecao(campo)||CAMPOS_LOCAIS_RESTAURACAO.has(campo))return;
+      const anterior=remotoCampoPorNome.get(campo);
+      if(!anterior||compararRegistros(registro,anterior)>0)remotoCampoPorNome.set(campo,registro);
+    });
+    remotoCampoPorNome.forEach((registro,campo)=>{
       if(camposDesejados.has(campo)||registro?.deleted===true)return;
       fieldOps.push(criarOperacaoPura({uid,sheetId,sheetName,campo,valor:undefined,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_field")}));
     });
     camposDesejados.forEach((valor,campo)=>{
+      const remoto=remotoCampoPorNome.get(campo);
+      const payloadDesejado=JSON.stringify(normalizarValor(campo,valor));
+      if(remoto&&remoto.deleted!==true&&String(remoto.payload??"null")===payloadDesejado){
+        camposIguais+=1;
+        return;
+      }
       fieldOps.push(criarOperacaoPura({uid,sheetId,sheetName,campo,valor,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_field")}));
     });
 
@@ -450,29 +462,57 @@
       const desejados=normalizarListaLegada(collection,Array.isArray(dados[config.field])?dados[config.field]:[]);
       const porId=new Map(desejados.map(item=>[texto(item?.[campoId]),item]).filter(([id])=>id));
       const remotos=remotasColecoes[collection]&&typeof remotasColecoes[collection]==="object"?remotasColecoes[collection]:{};
+      const remotoPorId=new Map();
       Object.values(remotos).forEach(registro=>{
-        const id=texto(registro?.itemId);
-        if(!id||porId.has(id)||registro?.deleted===true)return;
-        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,deleted:true,identityKey:identityKeyRegistro(collection,registro),editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
+        const itemId=texto(registro?.itemId);
+        if(!itemId)return;
+        const anterior=remotoPorId.get(itemId);
+        if(!anterior||compararRegistros(registro,anterior)>0)remotoPorId.set(itemId,registro);
       });
-      porId.forEach((item,id)=>{
-        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId:id,valor:item,deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
+      remotoPorId.forEach((registro,itemId)=>{
+        if(porId.has(itemId)||registro?.deleted===true)return;
+        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId,deleted:true,identityKey:identityKeyRegistro(collection,registro),editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
+      });
+      porId.forEach((item,itemId)=>{
+        const remoto=remotoPorId.get(itemId);
+        const payloadDesejado=JSON.stringify(normalizarItemColecao(collection,item,itemId));
+        if(remoto&&remoto.deleted!==true&&String(remoto.payload??"null")===payloadDesejado){
+          itensIguais+=1;
+          return;
+        }
+        collectionOps.push(criarOperacaoColecaoPura({uid,sheetId,sheetName,colecao:collection,itemId,valor:item,deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")}));
       });
     }
 
     const carteira=normalizarCarteiraRegularizacao(dados.carteira||{});
     const moedasRemotas=remotasColecoes.carteiraMoedas&&typeof remotasColecoes.carteiraMoedas==="object"?remotasColecoes.carteiraMoedas:{};
+    const moedaRemotaPorId=new Map();
+    Object.values(moedasRemotas).forEach(registro=>{
+      const itemId=texto(registro?.itemId).toLowerCase();
+      if(!["pd","po","pp","pc"].includes(itemId))return;
+      const anterior=moedaRemotaPorId.get(itemId);
+      if(!anterior||compararRegistros(registro,anterior)>0)moedaRemotaPorId.set(itemId,registro);
+    });
     for(const chave of ["pd","po","pp","pc"]){
+      const valor={chave,quantidade:carteira[chave]};
+      const remoto=moedaRemotaPorId.get(chave);
+      const payloadDesejado=JSON.stringify(normalizarItemColecao("carteiraMoedas",valor,chave));
+      if(remoto&&remoto.deleted!==true&&String(remoto.payload??"null")===payloadDesejado){
+        itensIguais+=1;
+        continue;
+      }
       collectionOps.push(criarOperacaoColecaoPura({
         uid,sheetId,sheetName,colecao:"carteiraMoedas",itemId:chave,
-        valor:{chave,quantidade:carteira[chave]},deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")
+        valor,deleted:false,editAt:novoEditAt(),deviceId,opId:idAleatorio("restore_item")
       }));
     }
     /* Registros inválidos/legados com outra chave não são tocados: as regras atuais
        só aceitam as quatro moedas canônicas e os listeners ignoram qualquer outra. */
-    void moedasRemotas;
 
-    return {fieldOps,collectionOps,maxPreviousEditAt:maiorEditAtRealtimePuro(rt),nextEditAt:proximo};
+    return {
+      fieldOps,collectionOps,camposIguais,itensIguais,
+      maxPreviousEditAt:maiorEditAtRealtimePuro(rt),nextEditAt:proximo
+    };
   }
 
   async function enviarLoteRegularizacaoPuro(operacoes,enviar){
