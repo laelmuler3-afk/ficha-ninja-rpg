@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.106 — proteção de backups históricos e coorte PWA.
+/* Ficha Ninja RPG 2.5.8.107 — restauração otimizada e coorte PWA.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.106";
+const APP_VERSION = "2.5.8.107";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

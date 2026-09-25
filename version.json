@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.106",
-  "name": "Backups sem espera estrutural",
-  "notes": "Remove espera desnecessária do snapshot userSheets no backup manual e na restauração. O histórico/safety e o realtime continuam confirmados antes do sucesso; a consolidação estrutural usa a outbox persistente sem bloquear a interface.",
+  "version": "2.5.8.107",
+  "name": "Restauração otimizada sem regravação redundante",
+  "notes": "Acelera a restauração reutilizando o backup histórico já carregado pelo painel, removendo a leitura concorrente de safeties legados e evitando regravar campos/itens realtime que já são idênticos ao snapshot restaurado. Safety, tombstones e restauração autoritativa permanecem obrigatórios.",
   "date": "2026-09-25"
 }
