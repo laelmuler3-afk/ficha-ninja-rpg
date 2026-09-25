@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.102 — hotfix de jutsus e restauração segura.
+/* Ficha Ninja RPG 2.5.8.103 — hotfix de jutsus e restauração segura.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.102";
+const APP_VERSION = "2.5.8.103";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -219,65 +219,83 @@ async function limparCachesAntigos(){
   );
 }
 
-async function buscarShellNoCache(request){
-  const cache=await caches.open(SHELL_CACHE);
-
-  // Primeiro tenta a URL exata. Em seguida ignora a query string para aceitar
-  // o mesmo recurso solicitado como arquivo.png, arquivo.png?v=antiga ou
-  // arquivo.png?v=atual. Isso é essencial para o carregamento 100% offline.
-  const resposta=await cache.match(request)
-    || await cache.match(request,{ignoreSearch:true});
-  if(resposta) return resposta;
-
-  try{
-    const rede=await fetch(request);
-    if(respostaPodeSerSalva(rede)){
-      await cache.put(request,rede.clone());
-      const canonica=new URL(request.url);
-      canonica.search="";
-      canonica.hash="";
-      await cache.put(canonica.href,rede.clone());
-    }
-    return rede;
-  }catch(erro){
-    // Última tentativa: procura pelo pathname dentro dos caches atuais.
-    // Protege instalações antigas que só possuíam a entrada versionada.
-    const compat=await cache.match(request,{ignoreSearch:true});
-    if(compat) return compat;
-    throw erro;
-  }
+function urlCanonicaSemBusca(url){
+  const canonica=new URL(url);
+  canonica.search="";
+  canonica.hash="";
+  return canonica.href;
 }
 
-// CSS, JavaScript e JSON mudam com frequência durante o desenvolvimento.
-// Busca a rede primeiro para evitar que um Service Worker antigo esconda alterações
-// recém-publicadas; o cache continua sendo usado quando o dispositivo está offline.
-async function buscarCodigoAtualizado(request){
+async function buscarShellNoCache(request){
   const cache=await caches.open(SHELL_CACHE);
-  try{
-    const rede=await fetch(new Request(request,{cache:"no-cache"}));
-    if(respostaPodeSerSalva(rede)) await cache.put(request,rede.clone());
-    return rede;
-  }catch(erro){
-    const salva=await cache.match(request);
-    if(salva) return salva;
-    const compat=await cache.match(request,{ignoreSearch:true});
-    if(compat) return compat;
-    throw erro;
+  const exata=await cache.match(request);
+  if(exata) return exata;
+
+  // O alias canônico é seguro porque vive dentro do cache desta versão do worker.
+  const canonica=await cache.match(urlCanonicaSemBusca(request.url));
+  if(canonica) return canonica;
+
+  const rede=await fetch(new Request(request,{cache:"no-store"}));
+  if(respostaPodeSerSalva(rede)){
+    await cache.put(request,rede.clone());
+    await cache.put(urlCanonicaSemBusca(request.url),rede.clone());
   }
+  return rede;
+}
+
+// Código e dados do shell formam uma coorte imutável. Um documento controlado
+// por este worker recebe somente arquivos preparados para APP_VERSION.
+async function buscarCodigoAtualizado(request){
+  const url=new URL(request.url);
+  const versaoSolicitada=String(url.searchParams.get("v")||"").trim();
+
+  if(versaoSolicitada&&versaoSolicitada!==APP_VERSION){
+    await avisarClientes({
+      type:"SW_VERSION_MISMATCH",
+      workerVersion:APP_VERSION,
+      requestedVersion:versaoSolicitada,
+      url:request.url
+    });
+    return new Response("Versão de recurso incompatível com o Service Worker ativo.",{
+      status:409,
+      headers:{
+        "Content-Type":"text/plain; charset=utf-8",
+        "Cache-Control":"no-store"
+      }
+    });
+  }
+
+  const cache=await caches.open(SHELL_CACHE);
+  const exata=await cache.match(request);
+  if(exata) return exata;
+
+  // Requisições sem ?v= podem usar somente o alias da release atual.
+  if(!versaoSolicitada){
+    const canonica=await cache.match(urlCanonicaSemBusca(request.url));
+    if(canonica) return canonica;
+  }
+
+  const rede=await fetch(new Request(request,{cache:"no-store"}));
+  if(respostaPodeSerSalva(rede)){
+    await cache.put(request,rede.clone());
+    if(!versaoSolicitada){
+      await cache.put(urlCanonicaSemBusca(request.url),rede.clone());
+    }
+  }
+  return rede;
 }
 
 async function abrirPaginaPrincipal(request){
   const cache=await caches.open(SHELL_CACHE);
 
-  try{
-    const resposta=await fetch(new Request(request,{cache:"no-store"}));
-    if(respostaPodeSerSalva(resposta)) await cache.put(INDEX_URL,resposta.clone());
-    return resposta;
-  }catch(erro){
-    const fallback=await cache.match(INDEX_URL,{ignoreSearch:true});
-    if(fallback) return fallback;
-    throw erro;
-  }
+  // A página principal vem primeiro do shell desta release. Atualizações entram
+  // somente após o updater preparar o novo worker e ocorrer um reload.
+  const atual=await cache.match(INDEX_URL);
+  if(atual) return atual;
+
+  const resposta=await fetch(new Request(request,{cache:"no-store"}));
+  if(respostaPodeSerSalva(resposta)) await cache.put(INDEX_URL,resposta.clone());
+  return resposta;
 }
 
 async function staleWhileRevalidate(request,event){
@@ -388,7 +406,10 @@ self.addEventListener("install",event=>{
 });
 
 self.addEventListener("activate",event=>{
-  event.waitUntil(Promise.all([limparCachesAntigos(),self.clients.claim()]));
+  /* Não usamos clients.claim() e não apagamos caches antigos aqui. Uma release
+     pode ativar via skipWaiting enquanto ainda existe uma aba executando a versão
+     anterior. Essa aba deve terminar com seu worker/cache e migrar só no reload. */
+  event.waitUntil(Promise.resolve());
 });
 
 self.addEventListener("fetch",event=>{
