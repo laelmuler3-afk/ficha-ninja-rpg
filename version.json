@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.108",
-  "name": "Resumo de sala sem escritas redundantes",
-  "notes": "Agrupa atualizacoes consecutivas do resumo do participante usando o debounce ja existente e evita gravar novamente no Firebase quando o resumo remoto ja corresponde ao estado local. Nao altera sincronizacao item-level, backups, imagens ou regras de sala.",
+  "version": "2.5.8.109",
+  "name": "Rollback seguro da otimização de resumo de sala",
+  "notes": "Restaura o fluxo de atualização de participantes da sala comprovadamente estável da v2.5.8.107, revertendo o debounce e a comparação remota introduzidos na v2.5.8.108. Mantém todas as correções de backup, restauração, PWA, imagens e realtime das versões anteriores.",
   "date": "2026-09-25"
 }

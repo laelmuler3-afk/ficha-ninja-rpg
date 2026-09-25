@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.108 — resumo de sala sem escritas redundantes.
+/* Ficha Ninja RPG 2.5.8.109 — rollback seguro do resumo de sala.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.108";
+const APP_VERSION = "2.5.8.109";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
