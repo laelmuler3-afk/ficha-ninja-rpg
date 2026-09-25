@@ -2785,21 +2785,21 @@
     };
     await api.set(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`),registro);
     if(seguranca){
-      /* O estado anterior à restauração usa um único slot rotativo separado.
-         Backups safety antigos da .96 são removidos de forma conservadora depois
-         que o novo safety_latest já foi confirmado na nuvem. */
-      try{
+      /* O safety_latest já está confirmado neste ponto. A limpeza de safeties
+         legados é apenas manutenção e não deve atrasar uma restauração. Fazemos
+         a limpeza sem bloquear; se a página fechar, o próximo safety tentará de
+         novo e nenhum backup normal é consumido por esses registros antigos. */
+      Promise.resolve().then(async()=>{
         const snap=await api.get(api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}`));
         const limpar=backupUtils().idsSegurancaLegadosParaRemover;
         const ids=typeof limpar==="function"?limpar(snap.val()||{},backupId):[];
-        if(ids.length){
-          const updates={};
-          ids.forEach(idAntigo=>{updates[`sheetBackups/${uid}/${ficha.sheetId}/${idAntigo}`]=null;});
-          await api.update(api.ref(estadoOnline.db),updates);
-        }
-      }catch(erro){
+        if(!ids.length)return;
+        const updates={};
+        ids.forEach(idAntigo=>{updates[`sheetBackups/${uid}/${ficha.sheetId}/${idAntigo}`]=null;});
+        await api.update(api.ref(estadoOnline.db),updates);
+      }).catch(erro=>{
         console.warn("Backup de segurança criado, mas não foi possível limpar versões safety antigas.",erro);
-      }
+      });
     }else{
       await aplicarRetencaoBackups(ficha.sheetId,{protegerIds:protectIds});
     }
@@ -2829,8 +2829,14 @@
     if(!ficha)throw new Error("Ficha local não encontrada.");
     if(fichaBloqueadaNuvem(ficha))return {skipped:true,legacyRecovery:true};
     const resultado=await criarBackupFicha(ficha,{reason:texto(motivo)||"manual",type:"manual"});
-    await atualizarBackupEstrutural(ficha.name,{motivo:"backup-manual-historico"});
-    return resultado;
+    /* O ponto histórico já está confirmado no Firebase. userSheets é um snapshot
+       estrutural secundário e possui outbox própria; não seguramos mais o botão
+       de backup esperando convergência dos nove listeners + outra transaction.
+       atualizarBackupEstrutural marca a pendência antes do primeiro await. */
+    atualizarBackupEstrutural(ficha.name,{motivo:"backup-manual-historico"}).catch(erro=>{
+      console.warn("Backup histórico criado; snapshot estrutural ficou pendente.",erro);
+    });
+    return {...resultado,snapshotEstruturalAgendado:true};
   }
 
   async function garantirBackupDiarioFichaAtiva(){
@@ -2938,19 +2944,25 @@
         falha.code="shinobi/restore-local";falha.cause=erro;throw falha;
       }
 
-      let snapshotAtualizado=true,snapshotErro="";
-      try{
-        await atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"});
-      }catch(erro){
-        snapshotAtualizado=false;
-        snapshotErro=erroAmigavel(erro);
-        /* atualizarBackupEstrutural marca a operação como pendente antes de acessar
-           a nuvem. A ficha já foi restaurada no realtime + aparelho; portanto esta
-           falha final não deve transformar uma restauração bem-sucedida em erro. */
-        emitir("backup-restauracao-snapshot-pendente",{sheetId:id,backupId:backup,mensagem:snapshotErro});
-      }
-      emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0),snapshotAtualizado});
-      return {ok:true,sheetId:id,backupId:backup,realtime,snapshotAtualizado,snapshotPendente:!snapshotAtualizado,snapshotErro};
+      /* Realtime + armazenamento local já são autoritativos neste ponto.
+         userSheets é redundante para recuperação e tem outbox persistente; esperar
+         sua convergence/transaction fazia a tela parecer travada por vários
+         segundos. Disparamos a consolidação sem bloquear a restauração concluída. */
+      let snapshotAtualizado=false,snapshotPendente=true,snapshotErro="";
+      atualizarBackupEstrutural(antes.name,{motivo:"restauracao-backup-historico"}).then(resultado=>{
+        if(resultado?.ok===true){
+          emitir("backup-restauracao-snapshot-atualizado",{sheetId:id,backupId:backup});
+          return;
+        }
+        emitir("backup-restauracao-snapshot-pendente",{
+          sheetId:id,backupId:backup,mensagem:texto(resultado?.reason)||"snapshot-estrutural-agendado"
+        });
+      }).catch(erro=>{
+        const mensagem=erroAmigavel(erro);
+        emitir("backup-restauracao-snapshot-pendente",{sheetId:id,backupId:backup,mensagem});
+      });
+      emitir("backup-historico-restaurado",{sheetId:id,backupId:backup,createdAt:Number(registro.createdAt||0),snapshotAtualizado,snapshotPendente});
+      return {ok:true,sheetId:id,backupId:backup,realtime,snapshotAtualizado,snapshotPendente,snapshotAgendado:true,snapshotErro};
     }finally{
       reservaLocal?.liberar?.();
     }

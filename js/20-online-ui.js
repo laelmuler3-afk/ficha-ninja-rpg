@@ -1249,7 +1249,9 @@
       );
       if(!ok)return;
       const resultado=await window.ShinobiOnline.restaurarBackupHistorico(el.dataset.sheetId,el.dataset.backupId);
-      if(resultado?.snapshotPendente){
+      if(resultado?.snapshotAgendado){
+        await avisar("Backup restaurado","A versão escolhida foi aplicada à ficha e à sincronização. O snapshot estrutural será consolidado automaticamente sem atrasar a restauração. O app será recarregado agora.");
+      }else if(resultado?.snapshotPendente){
         await avisar("Backup restaurado",`A versão escolhida foi aplicada à ficha e à sincronização. O backup completo atual ficou pendente e o Shinobi tentará enviá-lo novamente.${resultado.snapshotErro?`\n\nDetalhe: ${resultado.snapshotErro}`:""}\n\nO app será recarregado agora.`);
       }else{
         await avisar("Backup restaurado","A versão escolhida foi aplicada à ficha, à sincronização e ao backup atual. O app será recarregado agora.");
