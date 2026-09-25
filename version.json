@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.107",
-  "name": "Restauração otimizada sem regravação redundante",
-  "notes": "Acelera a restauração reutilizando o backup histórico já carregado pelo painel, removendo a leitura concorrente de safeties legados e evitando regravar campos/itens realtime que já são idênticos ao snapshot restaurado. Safety, tombstones e restauração autoritativa permanecem obrigatórios.",
+  "version": "2.5.8.108",
+  "name": "Resumo de sala sem escritas redundantes",
+  "notes": "Agrupa atualizacoes consecutivas do resumo do participante usando o debounce ja existente e evita gravar novamente no Firebase quando o resumo remoto ja corresponde ao estado local. Nao altera sincronizacao item-level, backups, imagens ou regras de sala.",
   "date": "2026-09-25"
 }
