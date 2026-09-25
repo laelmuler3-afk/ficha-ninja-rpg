@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.104 — hotfix de jutsus e restauração segura.
+/* Ficha Ninja RPG 2.5.8.105 — proteção de backups históricos e coorte PWA.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.104";
+const APP_VERSION = "2.5.8.105";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.104",
-  "name": "Limpeza conservadora de caches PWA",
-  "notes": "Mantém a coorte PWA validada na 2.5.8.103 e adiciona limpeza conservadora: o Service Worker preserva as 6 versões de cache mais recentes existentes no aparelho e remove apenas coortes reconhecidas mais antigas. Caches desconhecidos não são apagados e não há clients.claim, evitando regressão em abas antigas durante atualização.",
+  "version": "2.5.8.105",
+  "name": "Backups históricos protegidos por Rules",
+  "notes": "Endurece sheetBackups sem alterar o formato do app: valida o núcleo dos backups e metadados opcionais, mantém compatibilidade com registros legados e impede sobrescrita silenciosa de históricos já criados. O slot safety_latest continua rotativo e exclusões continuam permitidas.",
   "date": "2026-09-25"
 }
