@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.100",
-  "name": "Identidade canônica dos itens legados",
-  "notes": "Centraliza a geração e validação de IDs item-level, normaliza IDs legados incompatíveis com Firebase e torna colisões independentes da ordem local. Operações de coleção passam a carregar identityKey semântica; durante a convergência, correspondências únicas adotam o ID canônico da nuvem e tombstones novos preservam essa identidade, reduzindo duplicação e ressurreição causada por IDs históricos divergentes.",
+  "version": "2.5.8.102",
+  "name": "Hotfix de jutsus e restauração segura",
+  "notes": "Corrige regressão da v100 que podia reconciliar IDs diferentes por assinatura semântica e aplicar tombstones ao jutsu local, causando duplicação e perda da referência local de capa. IDs permanentes voltam a ser a única identidade autoritativa do realtime. Duplicatas idênticas do catálogo são reparadas conservadoramente preservando imagemId, imagens órfãs ganham retenção de segurança de 7 dias e permanece o preflight local da restauração histórica introduzido na v101.",
   "date": "2026-09-24"
 }
