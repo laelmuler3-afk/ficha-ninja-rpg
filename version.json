@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.103",
-  "name": "Atualização PWA por coorte",
-  "notes": "Impede mistura de releases no PWA: navegação e módulos do app passam a usar o shell da mesma versão do Service Worker controlador, sem fallback ignoreSearch para código. O worker novo não usa clients.claim nem apaga caches antigos durante a ativação, evitando assumir abas ainda carregadas com a versão anterior. A limpeza de caches antigos fica separada para validação posterior.",
+  "version": "2.5.8.104",
+  "name": "Limpeza conservadora de caches PWA",
+  "notes": "Mantém a coorte PWA validada na 2.5.8.103 e adiciona limpeza conservadora: o Service Worker preserva as 6 versões de cache mais recentes existentes no aparelho e remove apenas coortes reconhecidas mais antigas. Caches desconhecidos não são apagados e não há clients.claim, evitando regressão em abas antigas durante atualização.",
   "date": "2026-09-25"
 }

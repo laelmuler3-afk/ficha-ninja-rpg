@@ -1,12 +1,13 @@
-/* Ficha Ninja RPG 2.5.8.103 — hotfix de jutsus e restauração segura.
+/* Ficha Ninja RPG 2.5.8.104 — hotfix de jutsus e restauração segura.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.103";
+const APP_VERSION = "2.5.8.104";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
 const FIREBASE_CACHE = `${CACHE_PREFIX}-firebase-${APP_VERSION}`;
 const LIMITE_DOWNLOADS_SIMULTANEOS = 1;
+const CACHE_VERSOES_RETIDAS = 6;
 
 const FIREBASE_VERSION = "12.16.0";
 const FIREBASE_GSTATIC_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
@@ -209,14 +210,63 @@ async function instalarAppShell(){
   );
 }
 
-async function limparCachesAntigos(){
+function compararVersoesCache(a,b){
+  const partesA=String(a||"").split(/[.-]/).map(valor=>Number(valor)||0);
+  const partesB=String(b||"").split(/[.-]/).map(valor=>Number(valor)||0);
+  const tamanho=Math.max(partesA.length,partesB.length);
+  for(let i=0;i<tamanho;i+=1){
+    const av=partesA[i]||0;
+    const bv=partesB[i]||0;
+    if(av>bv) return 1;
+    if(av<bv) return -1;
+  }
+  return 0;
+}
+
+function identificarCacheVersionado(nome){
+  const prefixos=[
+    `${CACHE_PREFIX}-shell-`,
+    `${CACHE_PREFIX}-runtime-`,
+    `${CACHE_PREFIX}-firebase-`
+  ];
+  const prefixo=prefixos.find(item=>String(nome||"").startsWith(item));
+  if(!prefixo) return null;
+  const versao=String(nome).slice(prefixo.length).trim();
+  if(!/^\d+(?:\.\d+){1,5}$/.test(versao)) return null;
+  return {nome:String(nome),versao};
+}
+
+async function limparCachesAntigosComRetencao(){
   const nomes=await caches.keys();
-  const atuais=new Set([SHELL_CACHE,RUNTIME_CACHE,FIREBASE_CACHE]);
-  await Promise.all(
-    nomes
-      .filter(nome=>nome.startsWith(`${CACHE_PREFIX}-`)&&!atuais.has(nome))
-      .map(nome=>caches.delete(nome))
-  );
+  const reconhecidos=nomes
+    .map(identificarCacheVersionado)
+    .filter(Boolean);
+
+  const versoes=[...new Set(reconhecidos.map(item=>item.versao))]
+    .sort((a,b)=>compararVersoesCache(b,a));
+
+  // Mantém várias coortes reais do próprio aparelho. Se um usuário saltou
+  // diretamente de uma versão antiga para a atual, as duas permanecem: a
+  // limpeza só começa quando existem mais de CACHE_VERSOES_RETIDAS releases
+  // distintas armazenadas localmente.
+  const manter=new Set(versoes.slice(0,CACHE_VERSOES_RETIDAS));
+  manter.add(APP_VERSION);
+
+  const antigos=reconhecidos
+    .filter(item=>!manter.has(item.versao))
+    .map(item=>item.nome);
+
+  if(!antigos.length) return {removidos:[],mantidos:[...manter]};
+
+  const removidos=[];
+  for(const nome of antigos){
+    try{
+      if(await caches.delete(nome)) removidos.push(nome);
+    }catch(erro){
+      console.warn("Não foi possível remover cache antigo:",nome,erro);
+    }
+  }
+  return {removidos,mantidos:[...manter]};
 }
 
 function urlCanonicaSemBusca(url){
@@ -406,10 +456,15 @@ self.addEventListener("install",event=>{
 });
 
 self.addEventListener("activate",event=>{
-  /* Não usamos clients.claim() e não apagamos caches antigos aqui. Uma release
-     pode ativar via skipWaiting enquanto ainda existe uma aba executando a versão
-     anterior. Essa aba deve terminar com seu worker/cache e migrar só no reload. */
-  event.waitUntil(Promise.resolve());
+  /* Continua sem clients.claim(): a release nova não toma uma aba no meio da
+     sessão. A limpeza também é deliberadamente conservadora: preserva as 6
+     coortes mais recentes que realmente existem neste aparelho e só remove
+     caches reconhecidos mais antigos. */
+  event.waitUntil(
+    limparCachesAntigosComRetencao().catch(erro=>{
+      console.warn("Falha ao limpar caches PWA antigos:",erro);
+    })
+  );
 });
 
 self.addEventListener("fetch",event=>{
