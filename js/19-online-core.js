@@ -1196,8 +1196,24 @@
     const lista=Array.isArray(raw)?raw:Object.keys(raw||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]);
     const saida=[];
     lista.forEach(id=>{
-      const valor=id===antigoId?novoId:id;
+      const atual=texto(id);
+      const valor=texto(atual===texto(antigoId)?novoId:atual);
       if(valor&&!saida.includes(valor)) saida.push(valor);
+    });
+    return saida;
+  }
+
+  function normalizarParticipantesSala(raw){
+    const saida={};
+    Object.entries(raw&&typeof raw==="object"?raw:{}).forEach(([chave,valor])=>{
+      if(!valor||typeof valor!=="object"||Array.isArray(valor)) return;
+      const participantId=texto(chave);
+      if(!participantId) return;
+      /* A chave participants/{participantId} é a identidade canônica. Salas
+         antigas podem não ter gravado o campo interno `id`, e versões antigas
+         chegaram a gravar valores divergentes. Nunca dependemos disso para
+         ações do mestre. */
+      saida[participantId]={...valor,id:participantId};
     });
     return saida;
   }
@@ -1309,7 +1325,12 @@
         limparSessaoLocal();
         return;
       }
-      estadoOnline.sala={id:roomId,...snap.val()};
+      const salaRemota=snap.val()||{};
+      estadoOnline.sala={
+        id:roomId,
+        ...salaRemota,
+        participants:normalizarParticipantesSala(salaRemota.participants)
+      };
       emitir("sala",snapshot());
       /* Se o jogador trocou/duplicou a ficha enquanto a sessão da sala ficou
          aberta, a sessão local ainda pode apontar para a ficha anterior. Fazemos
@@ -1693,11 +1714,16 @@
     await api.update(api.ref(estadoOnline.db),updates);
   }
 
-  function participantes(){return estadoOnline.sala?.participants||{};}
+  function participantes(){return normalizarParticipantesSala(estadoOnline.sala?.participants||{});}
   function normalizarOrdem(){
     const raw=estadoOnline.sala?.combat?.order||[];
-    const lista=Array.isArray(raw)?raw:Object.keys(raw).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]);
-    return lista.filter(id=>participantes()[id]);
+    const lista=Array.isArray(raw)?raw:Object.keys(raw||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]);
+    const mapa=participantes(),saida=[];
+    lista.forEach(valor=>{
+      const id=texto(valor);
+      if(id&&mapa[id]&&!saida.includes(id)) saida.push(id);
+    });
+    return saida;
   }
 
   async function definirIniciativa(participantId,valor){
@@ -1710,12 +1736,12 @@
 
   async function ordenarIniciativa(){
     exigirMestre();
-    const ordem=Object.values(participantes()).sort((a,b)=>{
+    const ordem=Object.entries(participantes()).sort(([,a],[,b])=>{
       const ia=Number.isFinite(Number(a.initiative))?Number(a.initiative):-999;
       const ib=Number.isFinite(Number(b.initiative))?Number(b.initiative):-999;
       if(ib!==ia)return ib-ia;
       return Number(b.initiativeBonus||0)-Number(a.initiativeBonus||0);
-    }).map(p=>p.id);
+    }).map(([participantId])=>texto(participantId)).filter(Boolean);
     await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/combat`),{order:ordem,turnIndex:0,round:1});
     return ordem;
   }
@@ -1737,12 +1763,15 @@
     const refCombat=api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/combat`);
     const resultado=await api.runTransaction(refCombat,combat=>{
       if(!combat||!combat.started) return;
-      const ordem=Array.isArray(combat.order)?combat.order:Object.values(combat.order||{});
+      const bruto=Array.isArray(combat.order)?combat.order:Object.values(combat.order||{});
+      const ordem=[];
+      bruto.forEach(valor=>{const id=texto(valor);if(id&&!ordem.includes(id)) ordem.push(id);});
       if(!ordem.length) return;
       let indice=Number(combat.turnIndex||0),round=Math.max(1,Number(combat.round||1));
+      if(!Number.isInteger(indice)||indice<0||indice>=ordem.length) indice=0;
       if(direcao>0){indice+=1;if(indice>=ordem.length){indice=0;round+=1;}}
       else{indice-=1;if(indice<0){indice=ordem.length-1;round=Math.max(1,round-1);}}
-      return {...combat,turnIndex:indice,round,updatedAt:agora()};
+      return {...combat,order:ordem,turnIndex:indice,round,updatedAt:agora()};
     });
     if(!resultado.committed) throw new Error("O combate ainda não foi iniciado.");
     const combat=resultado.snapshot.val();
@@ -1942,6 +1971,13 @@
   }
   function formatarXp(current,max){return `${Math.max(0,Math.trunc(current))}/${Math.max(0,Math.trunc(max||355000))}`;}
 
+  function referenciaFichaDoParticipante(p){
+    return {
+      sheetId:texto(p?.sheetId||p?.battle?.sourceSheetId||p?.sourceSheetId),
+      localSheetName:texto(p?.localSheetName||p?.battle?.sourceSheetName||p?.sourceSheetName)
+    };
+  }
+
   async function concederXp({participantIds,amount,reason=""}){
     exigirMestre();
     const valor=Math.trunc(Number(amount));
@@ -1952,10 +1988,13 @@
     const api=estadoOnline.api,updates={};
     ids.forEach(participantId=>{
       const p=participantes()[participantId];
+      const ownerUid=texto(p?.ownerUid);
+      if(!ownerUid) throw new Error(`O participante ${texto(p?.displayName)||participantId} não possui proprietário válido. Remova-o e entre novamente na sala.`);
+      const ficha=referenciaFichaDoParticipante(p);
       const eventRef=api.push(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/events`));
       updates[`rooms/${estadoOnline.salaId}/events/${eventRef.key}`]={
         id:eventRef.key,type:"XP_GRANTED",createdBy:estadoOnline.user.uid,createdAt:agora(),
-        payload:{participantId,targetUid:p.ownerUid,sheetId:p.sheetId,localSheetName:p.localSheetName,amount:valor,reason:texto(reason).slice(0,160)}
+        payload:{participantId,targetUid:ownerUid,sheetId:ficha.sheetId,localSheetName:ficha.localSheetName,amount:valor,reason:texto(reason).slice(0,160)}
       };
     });
     await api.update(api.ref(estadoOnline.db),updates);
@@ -1968,6 +2007,9 @@
     const valor=Math.max(1,Math.min(20,Math.trunc(Number(nivel))));
     if(!Number.isFinite(valor)) throw new Error("Informe um nível entre 1 e 20.");
 
+    const ownerUid=texto(p?.ownerUid);
+    if(!ownerUid) throw new Error(`O participante ${texto(p?.displayName)||participantId} não possui proprietário válido. Remova-o e entre novamente na sala.`);
+    const ficha=referenciaFichaDoParticipante(p);
     const api=estadoOnline.api;
     const eventRef=api.push(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/events`));
     const updates={};
@@ -1976,7 +2018,7 @@
     updates[`rooms/${estadoOnline.salaId}/events/${eventRef.key}`]={
       id:eventRef.key,type:"LEVEL_SET",createdBy:estadoOnline.user.uid,createdAt:agora(),
       payload:{
-        participantId,targetUid:p.ownerUid,sheetId:p.sheetId,localSheetName:p.localSheetName,
+        participantId,targetUid:ownerUid,sheetId:ficha.sheetId,localSheetName:ficha.localSheetName,
         level:valor,reason:texto(reason).slice(0,160)
       }
     };

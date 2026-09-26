@@ -25,6 +25,7 @@
   const num=(v,p=0)=>Number.isFinite(Number(v))?Number(v):p;
   const pct=(atual,max)=>{const m=num(max);return m>0?Math.max(0,Math.min(100,Math.round((num(atual)/m)*100))):0;};
   const listaDeObjeto=valor=>Object.values(valor||{});
+  const participantesComId=valor=>Object.entries(valor||{}).map(([participantId,p])=>({...(p&&typeof p==="object"?p:{}),id:String(participantId)}));
 
   function obterEstado(){return window.ShinobiOnline?.snapshot?.()||{};}
   function sessaoLocal(){try{return JSON.parse(localStorage.getItem("shinobi_online_session_v1")||"null");}catch(_erro){return null;}}
@@ -32,7 +33,7 @@
     const sessao=sessaoLocal();
     return Boolean(st?.user&&st?.sala&&st.sala.masterUid===st.user.uid&&sessao?.role==="master"&&(!sessao.roomId||sessao.roomId===st.sala.id));
   }
-  function participantes(st){return listaDeObjeto(st?.sala?.participants).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"pt-BR"));}
+  function participantes(st){return participantesComId(st?.sala?.participants).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"pt-BR"));}
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
   function participanteAtual(st){const o=ordem(st);return st?.sala?.participants?.[o[num(st?.sala?.combat?.turnIndex)]]||null;}
   function presencaConectada(registro,participantId=""){
