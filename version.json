@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.113",
-  "name": "Identidade correta de mestre e jogador na sala",
-  "notes": "Separa o papel local de mestre/jogador da Conta Google e impede colisão quando a mesma conta é usada em aparelhos diferentes. Quando a conta do mestre também entra como jogador, a ficha recebe participantId próprio; XP e nível passam a ser consumidos apenas pela sessão/ficha alvo, e a sala migra automaticamente participantes legados preservando iniciativa e efeitos.",
+  "version": "2.5.8.114",
+  "name": "IDs canônicos dos participantes da mesa",
+  "notes": "Corrige ações do mestre em salas antigas usando a chave participants/{participantId} como identidade canônica. Saneia combat.order para nunca enviar undefined ao Firebase e normaliza participantes sem campo interno id, restaurando iniciativa, turnos, XP, nível, efeitos e remoção.",
   "date": "2026-09-26"
 }
