@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.110",
-  "name": "Mesa ao vivo e painel de combate simplificado",
-  "notes": "Atualiza PV, Chakra, CA e CD do participante em tempo real durante a batalha sem reenviar o resumo pesado da ficha. Simplifica a Sala Atual do mestre, recolhendo convite/QR e formulários administrativos, removendo o painel completo de sincronização da tela de combate e priorizando iniciativa, participantes e efeitos ativos.",
-  "date": "2026-09-25"
+  "version": "2.5.8.111",
+  "name": "Vínculo de ficha seguro na sala",
+  "notes": "Distingue fichas duplicadas na sala pelo nome local escolhido e impede que uma sessão antiga de outra ficha da mesma conta sobrescreva o participante ativo. Mantém um único participante por conta na sala, mas vinculado explicitamente ao sheetId selecionado.",
+  "date": "2026-09-26"
 }
