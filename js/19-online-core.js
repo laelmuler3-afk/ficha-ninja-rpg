@@ -1224,6 +1224,11 @@
       }
       estadoOnline.sala={id:roomId,...snap.val()};
       emitir("sala",snapshot());
+      /* Se o jogador trocou/duplicou a ficha enquanto a sessão da sala ficou
+         aberta, a sessão local ainda pode apontar para a ficha anterior. Fazemos
+         a reconciliação somente quando nome/id ativos diferem do que a sessão
+         registrou, evitando publicar silenciosamente os recursos da ficha velha. */
+      reconciliarSessaoDaSalaComFichaAtiva().catch(()=>{});
       deduplicarEfeitosDaSala().catch(()=>{});
       processarEventosXp().catch(()=>{});
     },erro=>emitir("erro",{mensagem:erroAmigavel(erro),erro}));
@@ -1343,16 +1348,74 @@
     return {ok,participantId,participante,sheetSessao,sheetSala};
   }
 
+  let reconciliacaoFichaSalaEmCurso=null;
+  async function reconciliarSessaoDaSalaComFichaAtiva(){
+    if(reconciliacaoFichaSalaEmCurso) return reconciliacaoFichaSalaEmCurso;
+    reconciliacaoFichaSalaEmCurso=(async()=>{
+      if(!estadoOnline.user) return {skipped:true,reason:"no-user"};
+      const sessao=lerJson(CHAVE_SESSAO,null);
+      if(!sessao?.roomId||sessao.role!=="player") return {skipped:true,reason:"no-player-session"};
+      if(estadoOnline.salaId!==sessao.roomId||!estadoOnline.sala) return {skipped:true,reason:"room-not-ready"};
+
+      const ativa=fichaAtualLocal();
+      if(!ativa) return {skipped:true,reason:"active-sheet-not-found"};
+      const nomeAtivo=texto(ativa.name);
+      const sheetAtivo=texto(ativa.sheetId);
+      const nomeSessao=texto(sessao.localSheetName);
+      const sheetSessao=texto(sessao.sheetId);
+      if(nomeAtivo===nomeSessao&&sheetAtivo&&sheetAtivo===sheetSessao){
+        return {ok:true,unchanged:true};
+      }
+
+      const participantId=texto(sessao.participantId)||texto(estadoOnline.user.uid);
+      const participante=estadoOnline.sala?.participants?.[participantId];
+      if(!participante) return {skipped:true,reason:"participant-not-ready"};
+      if(texto(participante.ownerUid)!==texto(estadoOnline.user.uid)) return {skipped:true,reason:"participant-owner-mismatch"};
+
+      /* Trocar/duplicar ficha recarrega o app, mas a sessão da sala é persistente.
+         Quando a ficha ativa mudou desde que o jogador entrou, fazemos uma única
+         troca explícita do vínculo da sala para essa ficha ativa. Dispositivos que
+         continuam na ficha antiga não retomam o controle automaticamente, porque
+         sua sessão local continua apontando para a ficha antiga. */
+      const resumo=resumoBatalhaDaFicha(ativa);
+      const api=estadoOnline.api;
+      const updates={};
+      updates[`roomMemberships/${sessao.roomId}/${estadoOnline.user.uid}/sheetId`]=ativa.sheetId;
+      updates[`rooms/${sessao.roomId}/participants/${participantId}/displayName`]=resumo.displayName;
+      updates[`rooms/${sessao.roomId}/participants/${participantId}/initiativeBonus`]=resumo.initiativeBonus;
+      updates[`rooms/${sessao.roomId}/participants/${participantId}/battle`]=resumo;
+      updates[`rooms/${sessao.roomId}/participants/${participantId}/localSheetName`]=ativa.name;
+      updates[`rooms/${sessao.roomId}/participants/${participantId}/sheetId`]=ativa.sheetId;
+      updates[`rooms/${sessao.roomId}/participants/${participantId}/updatedAt`]=agora();
+      await api.update(api.ref(estadoOnline.db),updates);
+      salvarJson(CHAVE_SESSAO,{...sessao,participantId,sheetId:ativa.sheetId,localSheetName:ativa.name});
+      return {ok:true,rebound:true,from:{sheetId:sheetSessao,name:nomeSessao},to:{sheetId:ativa.sheetId,name:ativa.name}};
+    })().finally(()=>{reconciliacaoFichaSalaEmCurso=null;});
+    return reconciliacaoFichaSalaEmCurso;
+  }
+
+  function fichaAtivaCompativelComSessao(sessao){
+    const ativa=fichaAtualLocal();
+    if(!ativa) return {ok:false,reason:"active-sheet-not-found",ficha:null};
+    const ok=texto(ativa.sheetId)===texto(sessao?.sheetId)&&texto(ativa.name)===texto(sessao?.localSheetName);
+    return {ok,reason:ok?"":"active-sheet-session-mismatch",ficha:ativa};
+  }
+
   async function atualizarMeuParticipante(){
     exigirUsuario();
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||sessao.role!=="player") return {skipped:true};
+    const ativa=fichaAtivaCompativelComSessao(sessao);
+    if(!ativa.ok){
+      const reconciliada=await reconciliarSessaoDaSalaComFichaAtiva();
+      if(reconciliada?.ok!==true) return {skipped:true,reason:ativa.reason};
+      return {ok:true,rebound:reconciliada.rebound===true};
+    }
     const vinculo=validarVinculoFichaDaSessao(sessao);
     if(!vinculo.ok){
       return {skipped:true,reason:"room-bound-to-another-sheet",sheetId:vinculo.sheetSessao,roomSheetId:vinculo.sheetSala};
     }
-    const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)||listarFichasLocais().find(f=>f.name===sessao.localSheetName)||fichaAtualLocal();
-    if(!ficha) return {skipped:true};
+    const ficha=ativa.ficha;
     const resumo=resumoBatalhaDaFicha(ficha);
     await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`),{
       displayName:resumo.displayName,
@@ -1373,14 +1436,19 @@
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||sessao.role!=="player") return {skipped:true};
     if(estadoOnline.salaId!==sessao.roomId||!estadoOnline.sala?.participants?.[estadoOnline.user.uid]) return {skipped:true};
+    const ativa=fichaAtivaCompativelComSessao(sessao);
+    if(!ativa.ok){
+      /* Nunca publique os números da ficha antiga enquanto uma troca de ficha
+         ainda não foi reconciliada. A própria reconciliação publica o resumo
+         completo da ficha nova quando concluir. */
+      reconciliarSessaoDaSalaComFichaAtiva().catch(()=>{});
+      return {skipped:true,reason:ativa.reason};
+    }
     const vinculo=validarVinculoFichaDaSessao(sessao);
     if(!vinculo.ok){
       return {skipped:true,reason:"room-bound-to-another-sheet",sheetId:vinculo.sheetSessao,roomSheetId:vinculo.sheetSala};
     }
-    const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)
-      ||listarFichasLocais().find(f=>f.name===sessao.localSheetName)
-      ||fichaAtualLocal();
-    if(!ficha) return {skipped:true};
+    const ficha=ativa.ficha;
     const resumo=resumoBatalhaDaFicha(ficha);
     const refParticipante=estadoOnline.api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`);
     await estadoOnline.api.update(refParticipante,{

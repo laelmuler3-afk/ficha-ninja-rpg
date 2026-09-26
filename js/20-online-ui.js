@@ -1445,7 +1445,18 @@
       const st=obterEstado();
       if(st.sala){
         const atual=String(st.sala.code||"").toUpperCase();
-        if(codigo===atual){destinoAtual="sala-atual";renderizar();return;}
+        if(codigo===atual){
+          const fichaEscolhida=String(dados.get("localSheetName")||"");
+          const sessao=sessaoLocal();
+          if(sessao?.role==="player"&&fichaEscolhida&&fichaEscolhida!==String(sessao.localSheetName||"")){
+            return executar(async()=>{
+              await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:fichaEscolhida});
+              pararScanner();
+              destinoAtual="sala-atual";
+            });
+          }
+          destinoAtual="sala-atual";renderizar();return;
+        }
         const ok=await confirmar("Trocar de sala",`Você está na sala ${atual||"atual"}. Deseja sair dela e entrar na sala ${codigo||"informada"}?`);
         if(!ok)return;
       }
