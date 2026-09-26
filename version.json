@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.112",
-  "name": "Sessão da sala acompanha a ficha ativa",
-  "notes": "Corrige sessão de sala presa à ficha anterior após duplicar ou trocar de ficha. Ao detectar troca local, reatribui o participante à ficha ativa preservando iniciativa; bloqueia publicação de PV/EKO da ficha antiga durante a transição e permite trocar a ficha usada ao entrar novamente na mesma sala.",
+  "version": "2.5.8.113",
+  "name": "Identidade correta de mestre e jogador na sala",
+  "notes": "Separa o papel local de mestre/jogador da Conta Google e impede colisão quando a mesma conta é usada em aparelhos diferentes. Quando a conta do mestre também entra como jogador, a ficha recebe participantId próprio; XP e nível passam a ser consumidos apenas pela sessão/ficha alvo, e a sala migra automaticamente participantes legados preservando iniciativa e efeitos.",
   "date": "2026-09-26"
 }
