@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.111",
-  "name": "Vínculo de ficha seguro na sala",
-  "notes": "Distingue fichas duplicadas na sala pelo nome local escolhido e impede que uma sessão antiga de outra ficha da mesma conta sobrescreva o participante ativo. Mantém um único participante por conta na sala, mas vinculado explicitamente ao sheetId selecionado.",
+  "version": "2.5.8.112",
+  "name": "Sessão da sala acompanha a ficha ativa",
+  "notes": "Corrige sessão de sala presa à ficha anterior após duplicar ou trocar de ficha. Ao detectar troca local, reatribui o participante à ficha ativa preservando iniciativa; bloqueia publicação de PV/EKO da ficha antiga durante a transição e permite trocar a ficha usada ao entrar novamente na mesma sala.",
   "date": "2026-09-26"
 }
