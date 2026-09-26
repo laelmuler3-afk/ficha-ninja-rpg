@@ -28,15 +28,22 @@
 
   function obterEstado(){return window.ShinobiOnline?.snapshot?.()||{};}
   function sessaoLocal(){try{return JSON.parse(localStorage.getItem("shinobi_online_session_v1")||"null");}catch(_erro){return null;}}
-  function ehMestre(st){return Boolean(st?.user&&st?.sala&&st.sala.masterUid===st.user.uid);}
+  function ehMestre(st){
+    const sessao=sessaoLocal();
+    return Boolean(st?.user&&st?.sala&&st.sala.masterUid===st.user.uid&&sessao?.role==="master"&&(!sessao.roomId||sessao.roomId===st.sala.id));
+  }
   function participantes(st){return listaDeObjeto(st?.sala?.participants).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"pt-BR"));}
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
   function participanteAtual(st){const o=ordem(st);return st?.sala?.participants?.[o[num(st?.sala?.combat?.turnIndex)]]||null;}
-  function presencaConectada(registro){
-    if(registro?.connected===true) return true; // compatibilidade com versões antigas
-    return Object.values(registro?.devices||{}).some(device=>device?.connected===true);
+  function presencaConectada(registro,participantId=""){
+    const alvo=String(participantId||"");
+    const devices=Object.values(registro?.devices||{});
+    if(devices.length){
+      return devices.some(device=>device?.connected===true&&(!alvo||!device?.participantId||String(device.participantId)===alvo));
+    }
+    return registro?.connected===true; // compatibilidade com versões antigas
   }
-  function conectado(st,p){return p.type==="player"&&presencaConectada(st?.presencas?.[p.ownerUid]);}
+  function conectado(st,p){return p.type==="player"&&presencaConectada(st?.presencas?.[p.ownerUid],p.id);}
   function rodadasRestantes(efeito,combat){
     const rodadaAtual=Math.max(1,num(combat?.round,1));
     const indiceAtual=Math.max(0,num(combat?.turnIndex));

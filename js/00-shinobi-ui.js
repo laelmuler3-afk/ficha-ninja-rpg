@@ -74,7 +74,7 @@
     let sessaoSala=null;
     try{sessaoSala=JSON.parse(localStorage.getItem("shinobi_online_session_v1")||"null");}catch(_erro){}
     const temSala=Boolean(sala||online.salaId||sessaoSala?.roomId);
-    const mestre=Boolean(usuario&&sala&&sala.masterUid===usuario.uid);
+    const mestre=Boolean(usuario&&sala&&sala.masterUid===usuario.uid&&sessaoSala?.role==="master"&&(!sessaoSala.roomId||sessaoSala.roomId===sala.id));
     let syncTexto="Somente neste aparelho",syncEstado="local";
     if(navigator.onLine===false){syncTexto="Offline · alterações locais";syncEstado="offline";}
     else if(usuario&&!usuario.anonymous){
