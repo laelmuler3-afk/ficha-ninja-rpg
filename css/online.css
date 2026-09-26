@@ -386,3 +386,35 @@ body.onlineAberto{overflow:hidden}
   .onlineSyncFichaTopo{align-items:flex-start}
   .onlineSyncSecaoTitulo small{display:none}
 }
+
+/* v2.5.8.110 — sala de batalha focada no que importa durante a mesa */
+.onlineSalaTopoCompacta{align-items:center;padding:14px 16px;margin-bottom:10px}
+.onlineSalaTopoCompacta h3{margin:5px 0 6px;font-size:18px}
+.onlineSalaMeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#9f907c;font-size:10px;font-weight:700}
+.onlineSalaStatus{display:inline-flex;align-items:center;gap:5px}
+.onlineSalaStatus.aberta{color:#8fd6a8}.onlineSalaStatus.fechada{color:#d38d87}
+.onlineCodigoRapido{display:grid;gap:2px;min-width:112px;padding:9px 11px;border:1px solid rgba(225,168,92,.24);border-radius:12px;background:#0b0f13;color:#f8e8ce;text-align:right;cursor:pointer}
+.onlineCodigoRapido small{color:#9d8b74;font:800 8px/1 system-ui;letter-spacing:.12em}.onlineCodigoRapido strong{font:900 18px/1.1 system-ui;letter-spacing:.13em;color:#ffe0ad}
+.onlineConviteSala{margin-bottom:10px}.onlineConviteSala>summary{padding:11px 14px}.onlineConviteSala>summary b{font-size:12px}.onlineConviteSala>summary small{font-size:9.5px}.onlineConviteSala .onlineDetailsConteudo{padding-top:12px}
+.onlineConviteSala .onlineQrBloco{width:min(270px,100%);margin:auto}.onlineConviteSala .onlineQrCode{width:190px}
+
+.onlineCardTitulo{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}.onlineCardTitulo h3{margin-bottom:0}
+.onlineAoVivoLegenda{color:#7fd29b;font:800 9px/1 system-ui;white-space:nowrap;padding-bottom:2px}
+.onlineParticipantesCard{padding-bottom:13px}
+.onlineParticipanteNome{min-width:0}.onlineParticipanteNome>div{flex:1;min-width:0}
+.onlineTurnoBadge{margin-left:auto;padding:4px 7px;border:1px solid rgba(225,168,92,.28);border-radius:999px;background:rgba(225,168,92,.08);color:#e7bd82;font:900 8px/1 system-ui;letter-spacing:.08em}
+.onlineRecursosAoVivo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+.onlineRecurso{display:grid;gap:5px;min-width:0}.onlineRecurso>span{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#9fadb6;font-size:9px}.onlineRecurso>span b{font-size:9px;letter-spacing:.08em}.onlineRecurso>span strong{color:#edf2f5;font-size:10px}
+.onlineRecurso>i{display:block;height:5px;border-radius:999px;background:#20262d;overflow:hidden}.onlineRecurso>i>em{display:block;height:100%;border-radius:inherit;background:#5cae72;transition:width .18s ease}.onlineRecursoChakra>i>em{background:#5d91c4}
+.onlineDefesasCompactas{display:flex;gap:5px;align-items:center}.onlineDefesasCompactas span{padding:5px 7px;border-radius:999px;background:#171d23;color:#aeb7c0;font-size:9px;white-space:nowrap}.onlineDefesasCompactas b{color:#edf2f5}
+
+.onlineSubDetails{margin-top:10px;border-top:1px solid rgba(255,255,255,.07);padding-top:8px}
+.onlineSubDetails>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:7px 2px;color:#d8b47d;font:800 10px/1.2 system-ui}.onlineSubDetails>summary::-webkit-details-marker{display:none}.onlineSubDetails>summary:after{content:"＋";font-size:16px}.onlineSubDetails[open]>summary:after{content:"−"}.onlineSubDetails>div{padding-top:6px}
+.onlineSubDetails .onlineFormEfeito{border-top:0;padding-top:0}
+.onlineZonaPerigoCompacta{padding:10px 12px;margin-bottom:2px;background:transparent;border-color:rgba(215,90,82,.18);box-shadow:none}
+
+@media(max-width:560px){
+  .onlineSalaTopoCompacta{display:flex;align-items:center;gap:10px}.onlineCodigoRapido{min-width:94px;padding:8px 9px}.onlineCodigoRapido strong{font-size:16px}
+  .onlineRecursosAoVivo{grid-template-columns:1fr 1fr}.onlineDefesasCompactas{grid-column:1/-1}
+  .onlineAoVivoLegenda{font-size:8px}.onlineConviteSala .onlineQrCode{width:176px}
+}
