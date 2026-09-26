@@ -1341,6 +1341,32 @@
     return {ok:true};
   }
 
+  /* Recursos que precisam aparecer imediatamente na mesa durante a batalha.
+     O resumo completo (jutsus, ataques, atributos etc.) continua podendo ser
+     consolidado no fim do turno; aqui enviamos apenas números leves do HUD. */
+  async function atualizarMeuParticipanteAoVivo(){
+    exigirUsuario();
+    const sessao=lerJson(CHAVE_SESSAO,null);
+    if(!sessao?.roomId||sessao.role!=="player") return {skipped:true};
+    if(estadoOnline.salaId!==sessao.roomId||!estadoOnline.sala?.participants?.[estadoOnline.user.uid]) return {skipped:true};
+    const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)
+      ||listarFichasLocais().find(f=>f.name===sessao.localSheetName)
+      ||fichaAtualLocal();
+    if(!ficha) return {skipped:true};
+    const resumo=resumoBatalhaDaFicha(ficha);
+    const refParticipante=estadoOnline.api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`);
+    await estadoOnline.api.update(refParticipante,{
+      "battle/pv":resumo.pv,
+      "battle/pvMax":resumo.pvMax,
+      "battle/chakra":resumo.chakra,
+      "battle/chakraMax":resumo.chakraMax,
+      "battle/ca":resumo.ca,
+      "battle/cd":resumo.cd,
+      updatedAt:agora()
+    });
+    return {ok:true};
+  }
+
   function chaveTurnoAtual(combat=estadoOnline.sala?.combat||{}){
     if(!combat?.started) return "";
     const indice=Math.max(0,Number(combat.turnIndex||0));
@@ -3232,7 +3258,7 @@
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
     entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,fichaPodeParticiparNuvem:ficha=>!fichaBloqueadaNuvem(ficha),resumoBatalhaDaFicha,
-    importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarParticipante,removerParticipante,definirIniciativa,
+    importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
     restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,

@@ -23,6 +23,7 @@
 
   const esc=valor=>String(valor==null?"":valor).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const num=(v,p=0)=>Number.isFinite(Number(v))?Number(v):p;
+  const pct=(atual,max)=>{const m=num(max);return m>0?Math.max(0,Math.min(100,Math.round((num(atual)/m)*100))):0;};
   const listaDeObjeto=valor=>Object.values(valor||{});
 
   function obterEstado(){return window.ShinobiOnline?.snapshot?.()||{};}
@@ -946,6 +947,13 @@
     </div>`;
   }
 
+  function renderConviteSala(st){
+    return `<details class="onlineCard onlineDetails onlineConviteSala" data-online-detail="invite">
+      <summary><span><b>Convidar jogadores</b><small>QR Code, link e código ${esc(st.sala.code||"")}</small></span></summary>
+      <div class="onlineDetailsConteudo">${qrHtml(st)}</div>
+    </details>`;
+  }
+
   function tipoParticipante(p){
     if(p.type==="player")return"Jogador";
     if(p.type==="npc-imported")return`Ficha importada${p.sourceSheetName?` • ${p.sourceSheetName}`:""}`;
@@ -954,20 +962,22 @@
 
   function renderParticipantes(st,master){
     const ps=participantes(st),ord=ordem(st),atual=participanteAtual(st);
-    return `<section class="onlineCard">
-      <div class="onlineCardTitulo"><div><span class="onlineCardSelo">PARTICIPANTES</span><h3>${ps.length} na sala</h3></div></div>
+    return `<section class="onlineCard onlineParticipantesCard">
+      <div class="onlineCardTitulo"><div><span class="onlineCardSelo">PARTICIPANTES</span><h3>${ps.length} na sala</h3></div><small class="onlineAoVivoLegenda">● recursos ao vivo</small></div>
       <div class="onlineParticipantes">
         ${ps.length?ps.map(p=>{
           const naOrdem=ord.indexOf(p.id),isAtual=atual?.id===p.id;
+          const pv=num(p.battle?.pv),pvMax=num(p.battle?.pvMax),chakra=num(p.battle?.chakra),chakraMax=num(p.battle?.chakraMax);
           return `<article class="onlineParticipante ${isAtual?"turnoAtual":""}">
             <div class="onlineParticipanteNome">
               ${p.type==="player"?`<span class="presencaDot ${conectado(st,p)?"conectado":""}" title="${conectado(st,p)?"Conectado":"Desconectado"}"></span>`:`<span class="npcDot">◆</span>`}
               <div><strong>${esc(p.displayName||"Participante")}</strong><small>${esc(tipoParticipante(p))}${naOrdem>=0?` • ordem ${naOrdem+1}`:""}</small></div>
+              ${isAtual?`<span class="onlineTurnoBadge">TURNO</span>`:""}
             </div>
-            <div class="onlineParticipanteStats">
-              <span>PV <b>${num(p.battle?.pv)}/${num(p.battle?.pvMax)}</b></span>
-              <span>CH <b>${num(p.battle?.chakra)}/${num(p.battle?.chakraMax)}</b></span>
-              <span>CA <b>${num(p.battle?.ca,10)}</b></span>
+            <div class="onlineRecursosAoVivo">
+              <div class="onlineRecurso onlineRecursoPv"><span><b>PV</b><strong>${pv}/${pvMax}</strong></span><i><em style="width:${pct(pv,pvMax)}%"></em></i></div>
+              <div class="onlineRecurso onlineRecursoChakra"><span><b>CH</b><strong>${chakra}/${chakraMax}</strong></span><i><em style="width:${pct(chakra,chakraMax)}%"></em></i></div>
+              <div class="onlineDefesasCompactas"><span>CA <b>${num(p.battle?.ca,10)}</b></span><span>CD <b>${num(p.battle?.cd,10)}</b></span></div>
             </div>
             ${master?`<div class="onlineParticipanteAcoes">
               <label>Iniciativa<input data-action-change="initiative" data-participant-id="${esc(p.id)}" type="number" value="${p.initiative==null?"":esc(p.initiative)}" placeholder="—"></label>
@@ -1030,21 +1040,23 @@
     const efeitos=efeitosAtivos(st);
     return `<section class="onlineCard">
       <span class="onlineCardSelo">DURAÇÃO AUTOMÁTICA</span><h3>Efeitos em rodadas</h3>
-      <p class="onlineExplicacao">Uma rodada completa representa 6 segundos. O contador só diminui depois que todos tiverem jogado.</p>
+      ${efeitos.length?`<p class="onlineExplicacao">O contador avança junto com as rodadas da mesa.</p>`:""}
       <div class="onlineEfeitosLista">
         ${efeitos.length?efeitos.map(e=>{
           const p=st.sala?.participants?.[e.participantId],rest=rodadasRestantes(e,st.sala?.combat);
           const mecanicas=mecanicasDoEfeito(e);
           const resumo=resumoDoEfeito(e);
-          return `<article class="onlineEfeitoItem"><div class="onlineEfeitoConteudo"><strong>${esc(e.name)}</strong><small>${esc(p?.displayName||"Participante")} • ${rest} rodada(s) restante(s) • ${esc(e.durationOriginal||`${e.totalRounds||rest} rodadas`)}</small>${mecanicas.length?`<div class="onlineEfeitoMecanicas">${mecanicas.map((mecanica,indice)=>`<span class="${String(e.details?.[indice]?.polarity||"").toLowerCase()}">${esc(mecanica)}</span>`).join("")}</div>`:resumo?`<p class="onlineEfeitoResumo">${esc(resumo)}</p>`:""}</div>${master||e.ownerUid===st.user?.uid?`<button class="onlineBtn texto" data-action="end-effect" data-effect-id="${esc(e.id)}">Encerrar</button>`:""}</article>`;
-        }).join(""):`<p class="onlineVazio">Nenhum efeito com duração ativa.</p>`}
+          return `<article class="onlineEfeitoItem"><div class="onlineEfeitoConteudo"><strong>${esc(e.name)}</strong><small>${esc(p?.displayName||"Participante")} • ${rest} rodada(s) restante(s)</small>${mecanicas.length?`<div class="onlineEfeitoMecanicas">${mecanicas.map((mecanica,indice)=>`<span class="${String(e.details?.[indice]?.polarity||"").toLowerCase()}">${esc(mecanica)}</span>`).join("")}</div>`:resumo?`<p class="onlineEfeitoResumo">${esc(resumo)}</p>`:""}</div>${master||e.ownerUid===st.user?.uid?`<button class="onlineBtn texto" data-action="end-effect" data-effect-id="${esc(e.id)}">Encerrar</button>`:""}</article>`;
+        }).join(""):`<p class="onlineVazio">Nenhum efeito ativo.</p>`}
       </div>
-      ${master?`<form data-form="add-effect" class="onlineForm onlineFormLinha onlineFormEfeito">
-        <label>Participante<select name="participantId">${participantes(st).map(p=>`<option value="${esc(p.id)}">${esc(p.displayName)}</option>`).join("")}</select></label>
-        <label>Efeito<input name="name" placeholder="Atordoado" required></label>
-        <label>Rodadas<input name="duration" type="number" min="1" value="1" required></label>
-        <button class="onlineBtn secundario" type="submit">Adicionar</button>
-      </form>`:""}
+      ${master?`<details class="onlineSubDetails" data-online-detail="add-effect"><summary>Adicionar efeito</summary><div>
+        <form data-form="add-effect" class="onlineForm onlineFormLinha onlineFormEfeito">
+          <label>Participante<select name="participantId">${participantes(st).map(p=>`<option value="${esc(p.id)}">${esc(p.displayName)}</option>`).join("")}</select></label>
+          <label>Efeito<input name="name" placeholder="Atordoado" required></label>
+          <label>Rodadas<input name="duration" type="number" min="1" value="1" required></label>
+          <button class="onlineBtn secundario" type="submit">Adicionar</button>
+        </form>
+      </div></details>`:""}
     </section>`;
   }
 
@@ -1075,18 +1087,18 @@
 
   function renderSala(st){
     const master=ehMestre(st);
-    return `${cabecalhoConta(st)}
-      <section class="onlineCard onlineSalaTopo">
-        <div><span class="onlineCardSelo">${master?"SALA DO MESTRE":"SALA ATUAL"}</span><h3>${esc(st.sala.title)}</h3><p>${esc(st.sala.status==="open"?"Sala aberta":"Sala encerrada")}</p></div>
-        ${master?qrHtml(st):`<div class="onlineCodigoSala compacto"><small>CÓDIGO</small><strong>${esc(st.sala.code)}</strong></div>`}
+    const ps=participantes(st);
+    return `<section class="onlineCard onlineSalaTopo onlineSalaTopoCompacta">
+        <div><span class="onlineCardSelo">${master?"SALA DO MESTRE":"SALA ATUAL"}</span><h3>${esc(st.sala.title)}</h3><div class="onlineSalaMeta"><span class="onlineSalaStatus ${st.sala.status==="open"?"aberta":"fechada"}">${st.sala.status==="open"?"● Sala aberta":"Sala encerrada"}</span><span>${ps.length} ${ps.length===1?"participante":"participantes"}</span></div></div>
+        <button type="button" class="onlineCodigoRapido" data-action="copy-code" title="Copiar código da sala"><small>CÓDIGO</small><strong>${esc(st.sala.code)}</strong></button>
       </section>
+      ${master?renderConviteSala(st):""}
       ${renderCombate(st,master)}
       ${renderParticipantes(st,master)}
-      ${master?renderAdicionarNpc(st):""}
       ${renderEfeitos(st,master)}
+      ${master?renderAdicionarNpc(st):""}
       ${master?renderXp(st):""}
-      ${renderNuvem(st)}
-      <section class="onlineCard onlineZonaPerigo">
+      <section class="onlineCard onlineZonaPerigo onlineZonaPerigoCompacta">
         ${master?`<button class="onlineBtn perigo" data-action="close-room">Encerrar sala</button>`:`<button class="onlineBtn perigo" data-action="leave-room">Sair da sala</button>`}
       </section>`;
   }

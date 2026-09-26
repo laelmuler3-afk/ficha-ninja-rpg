@@ -81,6 +81,47 @@
     }catch(_erro){return false;}
   }
 
+  const CAMPOS_SALA_AO_VIVO=new Set(["pv","pvMax","chakra","chakraMax","ca","cd"]);
+  let timerSalaAoVivo=null;
+  let salaAoVivoSincronizando=false;
+  let salaAoVivoPendente=false;
+
+  function possuiCampoSalaAoVivo(campos){
+    const lista=Array.isArray(campos)?campos:[campos];
+    return lista.some(campo=>CAMPOS_SALA_AO_VIVO.has(texto(campo)));
+  }
+
+  async function sincronizarRecursosSalaAoVivo(){
+    if(!window.ShinobiOnline?.atualizarMeuParticipanteAoVivo) return;
+    const sessao=sessaoAtual();
+    if(sessao?.role!=="player"||!sessao.roomId) return;
+    if(salaAoVivoSincronizando){
+      salaAoVivoPendente=true;
+      return;
+    }
+    salaAoVivoSincronizando=true;
+    try{
+      await window.ShinobiOnline.atualizarMeuParticipanteAoVivo();
+    }catch(erro){
+      window.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:window.ShinobiOnline?.erroAmigavel?.(erro)||String(erro)}}));
+    }finally{
+      salaAoVivoSincronizando=false;
+      if(salaAoVivoPendente){
+        salaAoVivoPendente=false;
+        setTimeout(()=>sincronizarRecursosSalaAoVivo(),30);
+      }
+    }
+  }
+
+  function agendarRecursosSalaAoVivo(campos,atraso=35){
+    if(!possuiCampoSalaAoVivo(campos)) return;
+    clearTimeout(timerSalaAoVivo);
+    timerSalaAoVivo=setTimeout(()=>{
+      timerSalaAoVivo=null;
+      sincronizarRecursosSalaAoVivo();
+    },Math.max(0,Number(atraso)||0));
+  }
+
   let resumoSincronizando=false;
   let resumoPendente=false;
 
@@ -184,6 +225,11 @@
     if(!detalhe.confirmada||!campo)return;
     const nome=texto(detalhe.sheetName)||fichaAtualNome();
 
+    /* PV/Chakra e defesas precisam continuar ao vivo na mesa mesmo quando o
+       restante da ficha está sendo consolidado por turno. É uma escrita pequena
+       e independente da sincronização item-level/fields. */
+    agendarRecursosSalaAoVivo(campo,20);
+
     /* Coleções item-level continuam emitindo persistência para o backup estrutural,
        mas seus arrays completos não entram mais no realtime de fields. */
     if(campo==="notasTopicos"||campo==="inventarioItens"||campo==="jutsus"||campo==="armados"||campo==="kekkeiGenkai"||campo==="carteira"||campo==="carteiraHistorico"||campo==="efeitosBatalhaAtivos") return;
@@ -267,6 +313,13 @@
       enviarItemColecaoConfirmado(evento?.detail||{}).catch(()=>{});
     });
 
+    /* Se outro aparelho da mesma conta vencer a reconciliação de PV/Chakra,
+       republicamos apenas os recursos leves na sala. Assim o mestre vê o valor
+       canônico do realtime, não apenas a última tentativa local de um aparelho. */
+    window.addEventListener("shinobi:realtime-aplicado",evento=>{
+      agendarRecursosSalaAoVivo(evento?.detail?.campos||[],45);
+    });
+
     /* Receber uma alteração remota não agenda novo userSheets neste aparelho.
        O dispositivo autor já mantém o backup estrutural; regravar aqui criava
        amplificação de escrita e podia promover snapshots atrasados. */
@@ -285,6 +338,7 @@
     });
     window.addEventListener("online",()=>{
       drenarBackupsEstruturaisAposRealtime("backup-automatico-reconexao").catch(()=>{});
+      agendarRecursosSalaAoVivo([...CAMPOS_SALA_AO_VIVO],260);
     });
     window.addEventListener("shinobi:online:auth",()=>{
       setTimeout(()=>drenarBackupsEstruturaisAposRealtime("backup-automatico-login").catch(()=>{}),1500);
