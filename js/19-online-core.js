@@ -1127,6 +1127,17 @@
     return saida;
   }
 
+  function nomeExibicaoSalaDaFicha(ficha){
+    const nomeLocal=texto(ficha?.name);
+    const nomePersonagem=texto(ficha?.data?.nome);
+    /* Em fichas nomeadas/duplicadas, o nome local é a identidade escolhida pelo
+       jogador para aquela ficha. A Principal mantém o nome do personagem.
+       Isso evita uma cópia "Pipo" aparecer na sala como o personagem da ficha
+       de origem apenas porque o campo interno `nome` foi copiado. */
+    if(nomeLocal&&nomeLocal!=="Principal") return nomeLocal;
+    return nomePersonagem||nomeLocal||"Personagem";
+  }
+
   function resumoBatalhaDaFicha(ficha){
     const d=ficha?.data||{};
     const numero=(v,p=0)=>Number.isFinite(Number(v))?Number(v):p;
@@ -1134,7 +1145,7 @@
       sourceType:"sheet",
       sourceSheetId:ficha.sheetId,
       sourceSheetName:ficha.name,
-      displayName:texto(d.nome)||ficha.name,
+      displayName:nomeExibicaoSalaDaFicha(ficha),
       level:numero(d.nivel,1),
       rank:texto(d.rank),
       pv:numero(d.pv),
@@ -1323,10 +1334,23 @@
     return id;
   }
 
+  function validarVinculoFichaDaSessao(sessao){
+    const participantId=texto(sessao?.participantId)||texto(estadoOnline.user?.uid);
+    const participante=participantId?estadoOnline.sala?.participants?.[participantId]:null;
+    const sheetSessao=texto(sessao?.sheetId);
+    const sheetSala=texto(participante?.sheetId);
+    const ok=!participante||!sheetSessao||!sheetSala||sheetSessao===sheetSala;
+    return {ok,participantId,participante,sheetSessao,sheetSala};
+  }
+
   async function atualizarMeuParticipante(){
     exigirUsuario();
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||sessao.role!=="player") return {skipped:true};
+    const vinculo=validarVinculoFichaDaSessao(sessao);
+    if(!vinculo.ok){
+      return {skipped:true,reason:"room-bound-to-another-sheet",sheetId:vinculo.sheetSessao,roomSheetId:vinculo.sheetSala};
+    }
     const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)||listarFichasLocais().find(f=>f.name===sessao.localSheetName)||fichaAtualLocal();
     if(!ficha) return {skipped:true};
     const resumo=resumoBatalhaDaFicha(ficha);
@@ -1349,6 +1373,10 @@
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||sessao.role!=="player") return {skipped:true};
     if(estadoOnline.salaId!==sessao.roomId||!estadoOnline.sala?.participants?.[estadoOnline.user.uid]) return {skipped:true};
+    const vinculo=validarVinculoFichaDaSessao(sessao);
+    if(!vinculo.ok){
+      return {skipped:true,reason:"room-bound-to-another-sheet",sheetId:vinculo.sheetSessao,roomSheetId:vinculo.sheetSala};
+    }
     const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)
       ||listarFichasLocais().find(f=>f.name===sessao.localSheetName)
       ||fichaAtualLocal();
@@ -1356,6 +1384,7 @@
     const resumo=resumoBatalhaDaFicha(ficha);
     const refParticipante=estadoOnline.api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${estadoOnline.user.uid}`);
     await estadoOnline.api.update(refParticipante,{
+      displayName:resumo.displayName,
       "battle/pv":resumo.pv,
       "battle/pvMax":resumo.pvMax,
       "battle/chakra":resumo.chakra,
@@ -1451,6 +1480,9 @@
     const combat=estadoOnline.sala?.combat||{};
     if(!combat.started) throw new Error("O combate ainda não foi iniciado.");
     if(!permitirForaDoTurno&&!ehMeuTurno()) throw new Error("Este não é o seu turno agora.");
+
+    const vinculo=validarVinculoFichaDaSessao(sessao);
+    if(!vinculo.ok) throw new Error("Esta sala foi vinculada a outra ficha desta conta. Saia e entre novamente na sala escolhendo a ficha correta.");
 
     const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)
       ||listarFichasLocais().find(f=>f.name===sessao.localSheetName)
