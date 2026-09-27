@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.125",
-  "name": "Jutsus incrementais",
-  "notes": "Mantém snapshot completo apenas na hidratação inicial de jutsus e, depois, recebe cada jutsu por child_added/child_changed. Preserva jutsuId, imagem/imagemId locais, tombstones e convergência inicial sem alterar sala, XP, carteira, backups ou identidade.",
+  "version": "2.5.8.127",
+  "name": "Fluxo de cartas de jutsu",
+  "notes": "Mantém o direcionamento automático para jutsus recém-criados e, ao fechar uma carta de jutsu, fixa novamente a aba Jutsus para evitar saltos de navegação causados pela mudança de altura da página.",
   "date": "2026-09-27"
 }
