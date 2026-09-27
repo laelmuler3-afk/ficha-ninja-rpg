@@ -311,6 +311,57 @@ function indiceJutsuFocoPendente(){
   const fallback=Number(alvo.indiceInicial);
   return Number.isInteger(fallback)&&fallback>=0&&fallback<lista.length?fallback:-1;
 }
+function ativarAbaJutsusSemRolar(){
+  const pagina=document.getElementById("jutsus");
+  if(!pagina)return;
+  const main=document.querySelector("main");
+  if(!main?.classList?.contains("scrollPages")){
+    fixarAbaJutsus();
+    return;
+  }
+  document.querySelectorAll(".pagina").forEach(p=>p.classList.toggle("ativa",p===pagina));
+  const botoes=Array.from(document.querySelectorAll(".menu button"));
+  botoes.forEach(b=>b.classList.remove("ativo"));
+  const botao=botoes.find(b=>{const onclick=b.getAttribute("onclick")||"";return onclick.includes("'jutsus'")||onclick.includes('"jutsus"');});
+  botao?.classList?.add("ativo");
+  if(Array.isArray(window.abasSwipe)){
+    const indice=window.abasSwipe.indexOf("jutsus");
+    if(indice>=0)window.abaSwipeAtual=indice;
+  }
+}
+function localizarCardJutsuFoco(alvo,indice){
+  const lista=document.getElementById("listaJutsus");
+  if(!lista)return null;
+  const id=String(alvo?.jutsuId||"").trim();
+  if(id){
+    const cards=lista.querySelectorAll(".jutsuListaCard[data-jutsu-id]");
+    for(const card of cards){
+      if(String(card?.dataset?.jutsuId||"")===id)return card;
+    }
+  }
+  return lista.querySelector(`.jutsuListaCard[data-jutsu-index="${indice}"]`)||lista.querySelectorAll(".jutsuListaCard")?.[indice]||null;
+}
+function rolarAteCardJutsu(card,alvo){
+  if(!card)return false;
+  ativarAbaJutsusSemRolar();
+  const alvoVisual=card.querySelector(".jutsuDetalhesCompactos")||card;
+  const rect=alvoVisual.getBoundingClientRect();
+  if(!Number.isFinite(rect.top))return false;
+  if(alvo&&!alvo.scrollConcluido){
+    const alturaTopo=document.querySelector(".topo")?.getBoundingClientRect?.().height||0;
+    const margem=Math.max(12,alturaTopo+12);
+    const destino=Math.max(0,(window.scrollY||window.pageYOffset||0)+rect.top-margem);
+    const reduzir=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
+    try{window.scrollTo({top:destino,behavior:reduzir?"auto":"smooth"});}
+    catch(_erro){try{window.scrollTo(0,destino);}catch(_erro2){}}
+    alvo.scrollConcluido=true;
+  }
+  const resumo=card.querySelector(".jutsuLinhaResumo");
+  if(resumo&&typeof resumo.focus==="function"){
+    try{resumo.focus({preventScroll:true});}catch(_erro){try{resumo.focus();}catch(_erro2){}}
+  }
+  return true;
+}
 function aplicarFocoJutsuPendente(){
   const alvo=shinobiJutsuFocoPendente;
   if(!alvo)return false;
@@ -323,23 +374,7 @@ function aplicarFocoJutsuPendente(){
   if(precisaRender){
     try{renderizarJutsus();}catch(_erro){}
   }
-  fixarAbaJutsus();
-  const localizar=()=>{
-    const lista=document.getElementById("listaJutsus");
-    if(!lista)return false;
-    const cards=lista.querySelectorAll(".jutsuListaCard");
-    const card=cards?.[indice];
-    if(!card)return false;
-    try{
-      const reduzir=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
-      card.scrollIntoView({behavior:reduzir?"auto":"smooth",block:"center",inline:"nearest"});
-    }catch(_erro){try{card.scrollIntoView();}catch(_erro2){}}
-    const resumo=card.querySelector(".jutsuLinhaResumo");
-    if(resumo&&typeof resumo.focus==="function"){
-      try{resumo.focus({preventScroll:true});}catch(_erro){try{resumo.focus();}catch(_erro2){}}
-    }
-    return true;
-  };
+  const localizar=()=>rolarAteCardJutsu(localizarCardJutsuFoco(alvo,indice),alvo);
   if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>requestAnimationFrame(localizar));
   else setTimeout(localizar,0);
   return true;
@@ -349,9 +384,10 @@ function direcionarJutsuRecemCriado(i,jutsuId=""){
   shinobiJutsuFocoPendente={
     jutsuId:String(jutsuId||"").trim(),
     indiceInicial:Number(i),
-    expiraEm:Date.now()+4000
+    expiraEm:Date.now()+4000,
+    scrollConcluido:false
   };
-  [0,80,240,600,1200,2200].forEach(atraso=>setTimeout(aplicarFocoJutsuPendente,atraso));
+  [0,80,180,360,700,1200].forEach(atraso=>setTimeout(aplicarFocoJutsuPendente,atraso));
   shinobiJutsuFocoLimpezaTimer=setTimeout(()=>cancelarFocoJutsuPendente(),4300);
 }
 if(!window.__shinobiJutsuFocoRealtimeV128){
@@ -384,7 +420,7 @@ function adicionarArmado(){estado.armados=estado.armados||[],estado.armados.push
     if(typeof requestAnimationFrame==="function")requestAnimationFrame(voltarParaJutsus);
     else setTimeout(voltarParaJutsus,0);
   }
-}function renderizarJutsus(){const box=document.getElementById("listaJutsus");if(!box)return;const html=[];(estado.jutsus||[]).forEach((j,i)=>{const aberto=jutsuAberto(i),dados=dadosElementoJutsu(j.elemento||"katon"),nome=escaparHtmlShinobi(valorJutsu(j,"nome","Novo jutsu")),custo=escaparHtmlShinobi(valorJutsu(j,"custo","0")),rank=escaparHtmlShinobi(valorJutsu(j,"rank","Rank")),dano=escaparHtmlShinobi(valorJutsu(j,"dano","—")),totalDano=escaparHtmlShinobi(formatarDanoTotal(j.dano,j.bonusDano)),alcance=escaparHtmlShinobi(valorJutsu(j,"alcance","—")),raio=escaparHtmlShinobi(valorJutsu(j,"raio","—")),duracao=escaparHtmlShinobi(valorJutsu(j,"duracao","—")),bonusAcerto=escaparHtmlShinobi(valorJutsu(j,"bonusAcerto","—")),bonusDano=escaparHtmlShinobi(valorJutsu(j,"bonusDano","—")),acao=escaparHtmlShinobi(valorJutsu(j,"acao","—")),resistencia=escaparHtmlShinobi(valorJutsu(j,"resistencia","—")),alvo=escaparHtmlShinobi(valorJutsu(j,"alvo","—")),descricao=escaparHtmlShinobi(valorJutsu(j,"descricao","Toque para editar efeitos")),imagem=normalizarImagemJutsuSegura(j.imagem),estiloImagem=imagem?`style="background-image:url('${imagem}')"`:"";html.push(`\n      <div class="jutsuCard jutsuCardCompacto jutsuListaCard ${aberto?"jutsuAberto":""} ${imagem?"comImagem":"semImagem"} ${dados.classe}">\n        <div class="jutsuCartaFundo" ${estiloImagem}></div>\n        <button class="jutsuLinhaResumo" onclick="alternarJutsuAberto(${i})">\n          <span class="jutsuLinhaIcone">${dados.icone}</span>\n\n          <span class="jutsuLinhaTexto">\n            <strong>${nome}</strong>\n            <small>${dados.nome} • ${rank} • ${custo} CH</small>\n          </span>\n\n          <span class="jutsuLinhaSeta">${aberto?"▲":"▼"}</span>\n        </button>\n\n        <div class="jutsuDetalhesCompactos">\n          <div class="jutsuTopo jutsuTopoEditavel">\n            <button class="jutsuIcone jutsuEditavel" onclick="escolherElementoJutsuPrompt(${i})" title="Editar elemento">${dados.icone}</button>\n\n            <div class="jutsuTitulo jutsuNomeEditavel" onclick="editarCampoJutsuPrompt(${i},'nome','Nome do jutsu')">\n              <h3>${nome}</h3>\n              <span class="jutsuElementoLabel">${dados.nome}</span>\n            </div>\n\n            <button class="jutsuRankPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'rank','Rank do jutsu')">${rank}</button>\n            <button class="jutsuCustoPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'custo','Custo de Chakra')">${custo} CH</button>\n          </div>\n\n          <div class="jutsuCartaImagemAcoes">\n            <button type="button" onclick="abrirUploadImagemJutsu(${i})">🖼 Fundo da carta</button>\n            <button type="button" onclick="removerImagemJutsu(${i})">Remover fundo</button>\n          </div>\n\n          <div class="jutsuResumo jutsuResumoEditavel">\n            <button onclick="editarCampoJutsuPrompt(${i},'dano','Dano')"><b>Dano</b>${dano}</button>\n            <button class="danoTotalBox" onclick="editarCampoJutsuPrompt(${i},'bonusDano','Bônus de dano')"><b>Dano total</b>${totalDano}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'alcance','Alcance')"><b>Alcance</b>${alcance}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'raio','Raio / Área')"><b>Raio</b>${raio}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'duracao','Duração')"><b>Duração</b>${duracao}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'bonusAcerto','Bônus de acerto')"><b>Acerto</b>${bonusAcerto}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'bonusDano','Bônus de dano')"><b>Bônus dano</b>${bonusDano}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'acao','Tipo de ação')"><b>Ação</b>${acao}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'resistencia','Teste / Resistência')"><b>Teste</b>${resistencia}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'alvo','Alvo')"><b>Alvo</b>${alvo}</button>\n            <button class="jutsuResumoFull" onclick="editarCampoJutsuPrompt(${i},'descricao','Outros bônus / efeitos')"><b>Efeitos</b>${descricao}</button>\n          </div>\n\n          <div class="jutsuAcoes jutsuAcoesCompactas">\n            <button class="btn btnUsarJutsu" onclick="usarJutsu(${i})">USAR JUTSU</button>\n            <button class="btn perigo btnRemoverJutsu" onclick="removerJutsu(${i})">Remover</button>\n          </div>\n        </div>\n      </div>\n    `)}),box.innerHTML=html.join("")}async function usarJutsu(i){
+}function renderizarJutsus(){const box=document.getElementById("listaJutsus");if(!box)return;const html=[];(estado.jutsus||[]).forEach((j,i)=>{const aberto=jutsuAberto(i),dados=dadosElementoJutsu(j.elemento||"katon"),nome=escaparHtmlShinobi(valorJutsu(j,"nome","Novo jutsu")),custo=escaparHtmlShinobi(valorJutsu(j,"custo","0")),rank=escaparHtmlShinobi(valorJutsu(j,"rank","Rank")),dano=escaparHtmlShinobi(valorJutsu(j,"dano","—")),totalDano=escaparHtmlShinobi(formatarDanoTotal(j.dano,j.bonusDano)),alcance=escaparHtmlShinobi(valorJutsu(j,"alcance","—")),raio=escaparHtmlShinobi(valorJutsu(j,"raio","—")),duracao=escaparHtmlShinobi(valorJutsu(j,"duracao","—")),bonusAcerto=escaparHtmlShinobi(valorJutsu(j,"bonusAcerto","—")),bonusDano=escaparHtmlShinobi(valorJutsu(j,"bonusDano","—")),acao=escaparHtmlShinobi(valorJutsu(j,"acao","—")),resistencia=escaparHtmlShinobi(valorJutsu(j,"resistencia","—")),alvo=escaparHtmlShinobi(valorJutsu(j,"alvo","—")),descricao=escaparHtmlShinobi(valorJutsu(j,"descricao","Toque para editar efeitos")),imagem=normalizarImagemJutsuSegura(j.imagem),estiloImagem=imagem?`style="background-image:url('${imagem}')"`:"";const jutsuIdAttr=escaparHtmlShinobi(String(j?.jutsuId||""));html.push(`\n      <div class="jutsuCard jutsuCardCompacto jutsuListaCard ${aberto?"jutsuAberto":""} ${imagem?"comImagem":"semImagem"} ${dados.classe}" data-jutsu-id="${jutsuIdAttr}" data-jutsu-index="${i}">\n        <div class="jutsuCartaFundo" ${estiloImagem}></div>\n        <button class="jutsuLinhaResumo" onclick="alternarJutsuAberto(${i})">\n          <span class="jutsuLinhaIcone">${dados.icone}</span>\n\n          <span class="jutsuLinhaTexto">\n            <strong>${nome}</strong>\n            <small>${dados.nome} • ${rank} • ${custo} CH</small>\n          </span>\n\n          <span class="jutsuLinhaSeta">${aberto?"▲":"▼"}</span>\n        </button>\n\n        <div class="jutsuDetalhesCompactos">\n          <div class="jutsuTopo jutsuTopoEditavel">\n            <button class="jutsuIcone jutsuEditavel" onclick="escolherElementoJutsuPrompt(${i})" title="Editar elemento">${dados.icone}</button>\n\n            <div class="jutsuTitulo jutsuNomeEditavel" onclick="editarCampoJutsuPrompt(${i},'nome','Nome do jutsu')">\n              <h3>${nome}</h3>\n              <span class="jutsuElementoLabel">${dados.nome}</span>\n            </div>\n\n            <button class="jutsuRankPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'rank','Rank do jutsu')">${rank}</button>\n            <button class="jutsuCustoPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'custo','Custo de Chakra')">${custo} CH</button>\n          </div>\n\n          <div class="jutsuCartaImagemAcoes">\n            <button type="button" onclick="abrirUploadImagemJutsu(${i})">🖼 Fundo da carta</button>\n            <button type="button" onclick="removerImagemJutsu(${i})">Remover fundo</button>\n          </div>\n\n          <div class="jutsuResumo jutsuResumoEditavel">\n            <button onclick="editarCampoJutsuPrompt(${i},'dano','Dano')"><b>Dano</b>${dano}</button>\n            <button class="danoTotalBox" onclick="editarCampoJutsuPrompt(${i},'bonusDano','Bônus de dano')"><b>Dano total</b>${totalDano}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'alcance','Alcance')"><b>Alcance</b>${alcance}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'raio','Raio / Área')"><b>Raio</b>${raio}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'duracao','Duração')"><b>Duração</b>${duracao}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'bonusAcerto','Bônus de acerto')"><b>Acerto</b>${bonusAcerto}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'bonusDano','Bônus de dano')"><b>Bônus dano</b>${bonusDano}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'acao','Tipo de ação')"><b>Ação</b>${acao}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'resistencia','Teste / Resistência')"><b>Teste</b>${resistencia}</button>\n            <button onclick="editarCampoJutsuPrompt(${i},'alvo','Alvo')"><b>Alvo</b>${alvo}</button>\n            <button class="jutsuResumoFull" onclick="editarCampoJutsuPrompt(${i},'descricao','Outros bônus / efeitos')"><b>Efeitos</b>${descricao}</button>\n          </div>\n\n          <div class="jutsuAcoes jutsuAcoesCompactas">\n            <button class="btn btnUsarJutsu" onclick="usarJutsu(${i})">USAR JUTSU</button>\n            <button class="btn perigo btnRemoverJutsu" onclick="removerJutsu(${i})">Remover</button>\n          </div>\n        </div>\n      </div>\n    `)}),box.innerHTML=html.join("")}async function usarJutsu(i){
   const j=(estado.jutsus||[])[i];
   if(!j)return;
 
