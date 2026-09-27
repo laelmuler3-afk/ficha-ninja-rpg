@@ -1005,7 +1005,12 @@
       const atual=estadoRT.listener;
       if(atual){try{atual.ref.off("value",atual.callback);}catch(_e){}}
       const notas=estadoRT.listenerNotas;
-      if(notas){try{notas.ref.off("value",notas.callback);}catch(_e){}}
+      if(notas){
+        try{if(notas.callback)notas.ref.off("value",notas.callback);}catch(_e){}
+        try{if(notas.callbackValue)notas.ref.off("value",notas.callbackValue);}catch(_e){}
+        try{if(notas.callbackChildAdded)notas.ref.off("child_added",notas.callbackChildAdded);}catch(_e){}
+        try{if(notas.callbackChildChanged)notas.ref.off("child_changed",notas.callbackChildChanged);}catch(_e){}
+      }
       const inventario=estadoRT.listenerInventario;
       if(inventario){try{inventario.ref.off("value",inventario.callback);}catch(_e){}}
       const jutsus=estadoRT.listenerJutsus;
@@ -1086,14 +1091,53 @@
       estadoRT.listener={uid,sheetId,ref,callback};
 
       const refNotas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/notas`);
-      const callbackNotas=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"notas",snap.val()||{});marcarConvergencia(sheetId,"notas");}catch(erro){console.warn("Falha ao aplicar notas item-level.",erro);}
-      };
-      refNotas.on("value",callbackNotas,erro=>{
+      let notasIncrementaisAtivas=false;
+      const erroNotas=erro=>{
         console.warn("Realtime item-level de notas indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização das notas indisponível. As notas locais continuam salvas neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerNotas={uid,sheetId,ref:refNotas,callback:callbackNotas};
+      };
+      const aplicarNotaIncremental=snap=>{
+        if(!notasIncrementaisAtivas)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"notas",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar nota incremental.",erro);
+        }
+      };
+      const callbackNotasChildAdded=snap=>aplicarNotaIncremental(snap);
+      const callbackNotasChildChanged=snap=>aplicarNotaIncremental(snap);
+      const callbackNotasValue=snap=>{
+        try{
+          /* A primeira hidratação continua sendo um snapshot completo. Só depois
+             dela trocamos as notas para eventos por item. Isso preserva a
+             convergência de boot/restauração e evita uma mudança arquitetural
+             maior numa única versão. */
+          aplicarSnapshotColecao(sheetId,"notas",snap.val()||{});
+          marcarConvergencia(sheetId,"notas");
+          if(!notasIncrementaisAtivas){
+            notasIncrementaisAtivas=true;
+            /* child_added é necessário para tópicos criados depois da hidratação.
+               Os tópicos já existentes também são emitidos uma vez ao registrar
+               o listener, mas são descartados pelo controle de versão já gravado
+               pelo snapshot inicial. Tombstones chegam por child_changed. */
+            refNotas.on("child_added",callbackNotasChildAdded,erroNotas);
+            refNotas.on("child_changed",callbackNotasChildChanged,erroNotas);
+            refNotas.off("value",callbackNotasValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar notas item-level.",erro);
+        }
+      };
+      refNotas.on("value",callbackNotasValue,erroNotas);
+      estadoRT.listenerNotas={
+        uid,sheetId,ref:refNotas,
+        callbackValue:callbackNotasValue,
+        callbackChildAdded:callbackNotasChildAdded,
+        callbackChildChanged:callbackNotasChildChanged
+      };
 
       const refInventario=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/inventario`);
       const callbackInventario=snap=>{
