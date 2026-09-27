@@ -1028,7 +1028,12 @@
         try{if(armados.callbackChildChanged)armados.ref.off("child_changed",armados.callbackChildChanged);}catch(_e){}
       }
       const kekkeiGenkai=estadoRT.listenerKekkeiGenkai;
-      if(kekkeiGenkai){try{kekkeiGenkai.ref.off("value",kekkeiGenkai.callback);}catch(_e){}}
+      if(kekkeiGenkai){
+        try{if(kekkeiGenkai.callback)kekkeiGenkai.ref.off("value",kekkeiGenkai.callback);}catch(_e){}
+        try{if(kekkeiGenkai.callbackValue)kekkeiGenkai.ref.off("value",kekkeiGenkai.callbackValue);}catch(_e){}
+        try{if(kekkeiGenkai.callbackChildAdded)kekkeiGenkai.ref.off("child_added",kekkeiGenkai.callbackChildAdded);}catch(_e){}
+        try{if(kekkeiGenkai.callbackChildChanged)kekkeiGenkai.ref.off("child_changed",kekkeiGenkai.callbackChildChanged);}catch(_e){}
+      }
       const carteiraMoedas=estadoRT.listenerCarteiraMoedas;
       if(carteiraMoedas){try{carteiraMoedas.ref.off("value",carteiraMoedas.callback);}catch(_e){}}
       const carteiraHistorico=estadoRT.listenerCarteiraHistorico;
@@ -1256,14 +1261,51 @@
       };
 
       const refKekkeiGenkai=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/kekkeiGenkai`);
-      const callbackKekkeiGenkai=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"kekkeiGenkai",snap.val()||{});marcarConvergencia(sheetId,"kekkeiGenkai");}catch(erro){console.warn("Falha ao aplicar Kekkei Genkai item-level.",erro);}
-      };
-      refKekkeiGenkai.on("value",callbackKekkeiGenkai,erro=>{
+      let kekkeiIncrementalAtiva=false;
+      const erroKekkeiGenkai=erro=>{
         console.warn("Realtime item-level de Kekkei Genkai indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização de Kekkei Genkai indisponível. Os dados locais continuam salvos neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerKekkeiGenkai={uid,sheetId,ref:refKekkeiGenkai,callback:callbackKekkeiGenkai};
+      };
+      const aplicarKekkeiIncremental=snap=>{
+        if(!kekkeiIncrementalAtiva)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"kekkeiGenkai",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar Kekkei Genkai incremental.",erro);
+        }
+      };
+      const callbackKekkeiChildAdded=snap=>aplicarKekkeiIncremental(snap);
+      const callbackKekkeiChildChanged=snap=>aplicarKekkeiIncremental(snap);
+      const callbackKekkeiValue=snap=>{
+        try{
+          /* A hidratação inicial continua completa para preservar convergência,
+             migração e ordenação já validadas. Depois dela, cada Kekkei Genkai
+             passa a ser recebida isoladamente pelo próprio kekkeiId. */
+          aplicarSnapshotColecao(sheetId,"kekkeiGenkai",snap.val()||{});
+          marcarConvergencia(sheetId,"kekkeiGenkai");
+          if(!kekkeiIncrementalAtiva){
+            kekkeiIncrementalAtiva=true;
+            /* child_added cobre novos registros após a hidratação. Os registros
+               já conhecidos são ignorados pelo controle de versão preenchido no
+               snapshot inicial; tombstones chegam por child_changed. */
+            refKekkeiGenkai.on("child_added",callbackKekkeiChildAdded,erroKekkeiGenkai);
+            refKekkeiGenkai.on("child_changed",callbackKekkeiChildChanged,erroKekkeiGenkai);
+            refKekkeiGenkai.off("value",callbackKekkeiValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar Kekkei Genkai item-level.",erro);
+        }
+      };
+      refKekkeiGenkai.on("value",callbackKekkeiValue,erroKekkeiGenkai);
+      estadoRT.listenerKekkeiGenkai={
+        uid,sheetId,ref:refKekkeiGenkai,
+        callbackValue:callbackKekkeiValue,
+        callbackChildAdded:callbackKekkeiChildAdded,
+        callbackChildChanged:callbackKekkeiChildChanged
+      };
 
       const refCarteiraMoedas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraMoedas`);
       const callbackCarteiraMoedas=snap=>{
