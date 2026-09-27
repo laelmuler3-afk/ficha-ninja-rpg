@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.119 — Kekkei Genkai realtime incremental com hidratação segura.
+/* Ficha Ninja RPG 2.5.8.120 — carteira por moeda realtime incremental com hidratação segura.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.119";
+const APP_VERSION = "2.5.8.120";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
