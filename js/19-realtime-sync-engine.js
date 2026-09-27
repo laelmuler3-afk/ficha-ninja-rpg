@@ -1042,7 +1042,12 @@
         try{if(carteiraMoedas.callbackChildChanged)carteiraMoedas.ref.off("child_changed",carteiraMoedas.callbackChildChanged);}catch(_e){}
       }
       const carteiraHistorico=estadoRT.listenerCarteiraHistorico;
-      if(carteiraHistorico){try{carteiraHistorico.ref.off("value",carteiraHistorico.callback);}catch(_e){}}
+      if(carteiraHistorico){
+        try{if(carteiraHistorico.callback)carteiraHistorico.ref.off("value",carteiraHistorico.callback);}catch(_e){}
+        try{if(carteiraHistorico.callbackValue)carteiraHistorico.ref.off("value",carteiraHistorico.callbackValue);}catch(_e){}
+        try{if(carteiraHistorico.callbackChildAdded)carteiraHistorico.ref.off("child_added",carteiraHistorico.callbackChildAdded);}catch(_e){}
+        try{if(carteiraHistorico.callbackChildChanged)carteiraHistorico.ref.off("child_changed",carteiraHistorico.callbackChildChanged);}catch(_e){}
+      }
       const efeitosBatalha=estadoRT.listenerEfeitosBatalha;
       if(efeitosBatalha){try{efeitosBatalha.ref.off("value",efeitosBatalha.callback);}catch(_e){}}
       estadoRT.listener=null;
@@ -1361,14 +1366,52 @@
       };
 
       const refCarteiraHistorico=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraHistorico`);
-      const callbackCarteiraHistorico=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"carteiraHistorico",snap.val()||{});marcarConvergencia(sheetId,"carteiraHistorico");}catch(erro){console.warn("Falha ao aplicar histórico da carteira item-level.",erro);}
-      };
-      refCarteiraHistorico.on("value",callbackCarteiraHistorico,erro=>{
+      let carteiraHistoricoIncrementalAtivo=false;
+      const erroCarteiraHistorico=erro=>{
         console.warn("Realtime item-level do histórico da carteira indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização do histórico da carteira indisponível. O histórico local continua salvo neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerCarteiraHistorico={uid,sheetId,ref:refCarteiraHistorico,callback:callbackCarteiraHistorico};
+      };
+      const aplicarCarteiraHistoricoIncremental=snap=>{
+        if(!carteiraHistoricoIncrementalAtivo)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"carteiraHistorico",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar lançamento incremental do histórico da carteira.",erro);
+        }
+      };
+      const callbackCarteiraHistoricoChildAdded=snap=>aplicarCarteiraHistoricoIncremental(snap);
+      const callbackCarteiraHistoricoChildChanged=snap=>aplicarCarteiraHistoricoIncremental(snap);
+      const callbackCarteiraHistoricoValue=snap=>{
+        try{
+          /* O histórico mantém uma hidratação completa inicial para preservar
+             a convergência, a ordenação e o limite local de 40 lançamentos já
+             validados. Depois dela, cada movimentação chega isoladamente. */
+          aplicarSnapshotColecao(sheetId,"carteiraHistorico",snap.val()||{});
+          marcarConvergencia(sheetId,"carteiraHistorico");
+          if(!carteiraHistoricoIncrementalAtivo){
+            carteiraHistoricoIncrementalAtivo=true;
+            /* child_added cobre novos lançamentos. Registros já existentes podem
+               ser reemitidos ao registrar o listener, mas o controle de versão
+               preenchido no snapshot inicial os descarta. Tombstones continuam
+               chegando por child_changed do próprio lançamento. */
+            refCarteiraHistorico.on("child_added",callbackCarteiraHistoricoChildAdded,erroCarteiraHistorico);
+            refCarteiraHistorico.on("child_changed",callbackCarteiraHistoricoChildChanged,erroCarteiraHistorico);
+            refCarteiraHistorico.off("value",callbackCarteiraHistoricoValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar histórico da carteira item-level.",erro);
+        }
+      };
+      refCarteiraHistorico.on("value",callbackCarteiraHistoricoValue,erroCarteiraHistorico);
+      estadoRT.listenerCarteiraHistorico={
+        uid,sheetId,ref:refCarteiraHistorico,
+        callbackValue:callbackCarteiraHistoricoValue,
+        callbackChildAdded:callbackCarteiraHistoricoChildAdded,
+        callbackChildChanged:callbackCarteiraHistoricoChildChanged
+      };
 
       const refEfeitosBatalha=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/efeitosBatalha`);
       const callbackEfeitosBatalha=snap=>{
