@@ -1012,7 +1012,12 @@
         try{if(notas.callbackChildChanged)notas.ref.off("child_changed",notas.callbackChildChanged);}catch(_e){}
       }
       const inventario=estadoRT.listenerInventario;
-      if(inventario){try{inventario.ref.off("value",inventario.callback);}catch(_e){}}
+      if(inventario){
+        try{if(inventario.callback)inventario.ref.off("value",inventario.callback);}catch(_e){}
+        try{if(inventario.callbackValue)inventario.ref.off("value",inventario.callbackValue);}catch(_e){}
+        try{if(inventario.callbackChildAdded)inventario.ref.off("child_added",inventario.callbackChildAdded);}catch(_e){}
+        try{if(inventario.callbackChildChanged)inventario.ref.off("child_changed",inventario.callbackChildChanged);}catch(_e){}
+      }
       const jutsus=estadoRT.listenerJutsus;
       if(jutsus){try{jutsus.ref.off("value",jutsus.callback);}catch(_e){}}
       const armados=estadoRT.listenerArmados;
@@ -1140,14 +1145,52 @@
       };
 
       const refInventario=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/inventario`);
-      const callbackInventario=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"inventario",snap.val()||{});marcarConvergencia(sheetId,"inventario");}catch(erro){console.warn("Falha ao aplicar inventário item-level.",erro);}
-      };
-      refInventario.on("value",callbackInventario,erro=>{
+      let inventarioIncrementalAtivo=false;
+      const erroInventario=erro=>{
         console.warn("Realtime item-level do inventário indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização do inventário indisponível. Os itens locais continuam salvos neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerInventario={uid,sheetId,ref:refInventario,callback:callbackInventario};
+      };
+      const aplicarInventarioIncremental=snap=>{
+        if(!inventarioIncrementalAtivo)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"inventario",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar item incremental do inventário.",erro);
+        }
+      };
+      const callbackInventarioChildAdded=snap=>aplicarInventarioIncremental(snap);
+      const callbackInventarioChildChanged=snap=>aplicarInventarioIncremental(snap);
+      const callbackInventarioValue=snap=>{
+        try{
+          /* Assim como nas notas, a primeira hidratação permanece completa para
+             preservar a convergência de boot/restauração já validada. Depois
+             dela, alterações do inventário passam a chegar item por item. */
+          aplicarSnapshotColecao(sheetId,"inventario",snap.val()||{});
+          marcarConvergencia(sheetId,"inventario");
+          if(!inventarioIncrementalAtivo){
+            inventarioIncrementalAtivo=true;
+            /* Registros já existentes podem ser emitidos por child_added logo
+               após o registro dos listeners. O controle de versão já preenchido
+               pelo snapshot inicial descarta esses eventos repetidos. Tombstones
+               continuam chegando como child_changed do próprio item. */
+            refInventario.on("child_added",callbackInventarioChildAdded,erroInventario);
+            refInventario.on("child_changed",callbackInventarioChildChanged,erroInventario);
+            refInventario.off("value",callbackInventarioValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar inventário item-level.",erro);
+        }
+      };
+      refInventario.on("value",callbackInventarioValue,erroInventario);
+      estadoRT.listenerInventario={
+        uid,sheetId,ref:refInventario,
+        callbackValue:callbackInventarioValue,
+        callbackChildAdded:callbackInventarioChildAdded,
+        callbackChildChanged:callbackInventarioChildChanged
+      };
 
       const refJutsus=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/jutsus`);
       const callbackJutsus=snap=>{
