@@ -1021,7 +1021,12 @@
       const jutsus=estadoRT.listenerJutsus;
       if(jutsus){try{jutsus.ref.off("value",jutsus.callback);}catch(_e){}}
       const armados=estadoRT.listenerArmados;
-      if(armados){try{armados.ref.off("value",armados.callback);}catch(_e){}}
+      if(armados){
+        try{if(armados.callback)armados.ref.off("value",armados.callback);}catch(_e){}
+        try{if(armados.callbackValue)armados.ref.off("value",armados.callbackValue);}catch(_e){}
+        try{if(armados.callbackChildAdded)armados.ref.off("child_added",armados.callbackChildAdded);}catch(_e){}
+        try{if(armados.callbackChildChanged)armados.ref.off("child_changed",armados.callbackChildChanged);}catch(_e){}
+      }
       const kekkeiGenkai=estadoRT.listenerKekkeiGenkai;
       if(kekkeiGenkai){try{kekkeiGenkai.ref.off("value",kekkeiGenkai.callback);}catch(_e){}}
       const carteiraMoedas=estadoRT.listenerCarteiraMoedas;
@@ -1203,14 +1208,52 @@
       estadoRT.listenerJutsus={uid,sheetId,ref:refJutsus,callback:callbackJutsus};
 
       const refArmados=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/armados`);
-      const callbackArmados=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"armados",snap.val()||{});marcarConvergencia(sheetId,"armados");}catch(erro){console.warn("Falha ao aplicar ataques item-level.",erro);}
-      };
-      refArmados.on("value",callbackArmados,erro=>{
+      let armadosIncrementaisAtivos=false;
+      const erroArmados=erro=>{
         console.warn("Realtime item-level de ataques indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização dos ataques indisponível. Os ataques locais continuam salvos neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerArmados={uid,sheetId,ref:refArmados,callback:callbackArmados};
+      };
+      const aplicarArmadoIncremental=snap=>{
+        if(!armadosIncrementaisAtivos)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"armados",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar ataque incremental.",erro);
+        }
+      };
+      const callbackArmadosChildAdded=snap=>aplicarArmadoIncremental(snap);
+      const callbackArmadosChildChanged=snap=>aplicarArmadoIncremental(snap);
+      const callbackArmadosValue=snap=>{
+        try{
+          /* Mantém o snapshot completo somente na primeira hidratação, igual às
+             coleções de notas e inventário já validadas. Depois dela, cada
+             ataque chega isoladamente sem reprocessar a lista inteira. */
+          aplicarSnapshotColecao(sheetId,"armados",snap.val()||{});
+          marcarConvergencia(sheetId,"armados");
+          if(!armadosIncrementaisAtivos){
+            armadosIncrementaisAtivos=true;
+            /* child_added cobre ataques criados depois da hidratação. Eventos
+               repetidos dos registros já existentes são descartados pelo
+               controle de versão preenchido pelo snapshot inicial. Tombstones
+               continuam chegando por child_changed do próprio ataque. */
+            refArmados.on("child_added",callbackArmadosChildAdded,erroArmados);
+            refArmados.on("child_changed",callbackArmadosChildChanged,erroArmados);
+            refArmados.off("value",callbackArmadosValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar ataques item-level.",erro);
+        }
+      };
+      refArmados.on("value",callbackArmadosValue,erroArmados);
+      estadoRT.listenerArmados={
+        uid,sheetId,ref:refArmados,
+        callbackValue:callbackArmadosValue,
+        callbackChildAdded:callbackArmadosChildAdded,
+        callbackChildChanged:callbackArmadosChildChanged
+      };
 
       const refKekkeiGenkai=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/kekkeiGenkai`);
       const callbackKekkeiGenkai=snap=>{
