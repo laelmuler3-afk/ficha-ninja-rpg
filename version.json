@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.128",
-  "name": "Fluxo consolidado das cartas de jutsu",
-  "notes": "Consolida a criação manual e o fechamento das cartas: o novo jutsu é localizado pelo ID permanente, permanece aberto mesmo após o eco do realtime e recebe foco automático; ao fechar, o foco pendente é cancelado e a navegação retorna à aba Jutsus.",
+  "version": "2.5.8.129",
+  "name": "Direcionamento visual da carta de jutsu",
+  "notes": "Ao criar um jutsu manualmente, localiza a carta pelo jutsuId, mantém a carta aberta após o eco do realtime e direciona o viewport diretamente para a área editável da nova carta, sem disputar scroll com a navegação da aba. Ao fechar a carta, retorna para Jutsus.",
   "date": "2026-09-27"
 }
