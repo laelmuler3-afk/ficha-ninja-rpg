@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.114",
-  "name": "IDs canônicos dos participantes da mesa",
-  "notes": "Corrige ações do mestre em salas antigas usando a chave participants/{participantId} como identidade canônica. Saneia combat.order para nunca enviar undefined ao Firebase e normaliza participantes sem campo interno id, restaurando iniciativa, turnos, XP, nível, efeitos e remoção.",
+  "version": "2.5.8.115",
+  "name": "Ficha ativa correta na Mesa Online",
+  "notes": "Corrige a raiz do vínculo incorreto entre a ficha visualmente ativa e a ficha usada pelo módulo online. Expõe de forma segura o estado lexical do core e faz a Mesa Online usar a chave ativa persistida como fonte autoritativa, impedindo Pipo de ser tratado como Principal/Luffy e fazendo PV, EKO e eventos de XP atingirem a ficha correta.",
   "date": "2026-09-26"
 }
