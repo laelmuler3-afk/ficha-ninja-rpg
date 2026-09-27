@@ -1035,7 +1035,12 @@
         try{if(kekkeiGenkai.callbackChildChanged)kekkeiGenkai.ref.off("child_changed",kekkeiGenkai.callbackChildChanged);}catch(_e){}
       }
       const carteiraMoedas=estadoRT.listenerCarteiraMoedas;
-      if(carteiraMoedas){try{carteiraMoedas.ref.off("value",carteiraMoedas.callback);}catch(_e){}}
+      if(carteiraMoedas){
+        try{if(carteiraMoedas.callback)carteiraMoedas.ref.off("value",carteiraMoedas.callback);}catch(_e){}
+        try{if(carteiraMoedas.callbackValue)carteiraMoedas.ref.off("value",carteiraMoedas.callbackValue);}catch(_e){}
+        try{if(carteiraMoedas.callbackChildAdded)carteiraMoedas.ref.off("child_added",carteiraMoedas.callbackChildAdded);}catch(_e){}
+        try{if(carteiraMoedas.callbackChildChanged)carteiraMoedas.ref.off("child_changed",carteiraMoedas.callbackChildChanged);}catch(_e){}
+      }
       const carteiraHistorico=estadoRT.listenerCarteiraHistorico;
       if(carteiraHistorico){try{carteiraHistorico.ref.off("value",carteiraHistorico.callback);}catch(_e){}}
       const efeitosBatalha=estadoRT.listenerEfeitosBatalha;
@@ -1308,14 +1313,52 @@
       };
 
       const refCarteiraMoedas=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraMoedas`);
-      const callbackCarteiraMoedas=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"carteiraMoedas",snap.val()||{});marcarConvergencia(sheetId,"carteiraMoedas");}catch(erro){console.warn("Falha ao aplicar carteira por moeda.",erro);}
-      };
-      refCarteiraMoedas.on("value",callbackCarteiraMoedas,erro=>{
+      let carteiraMoedasIncrementalAtiva=false;
+      const erroCarteiraMoedas=erro=>{
         console.warn("Realtime item-level da carteira indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização da carteira indisponível. O saldo local continua salvo neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerCarteiraMoedas={uid,sheetId,ref:refCarteiraMoedas,callback:callbackCarteiraMoedas};
+      };
+      const aplicarCarteiraMoedaIncremental=snap=>{
+        if(!carteiraMoedasIncrementalAtiva)return;
+        try{
+          const chave=texto(snap?.key).toLowerCase();
+          const registro=snap?.val?.();
+          if(!["pd","po","pp","pc"].includes(chave)||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"carteiraMoedas",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar moeda incremental da carteira.",erro);
+        }
+      };
+      const callbackCarteiraMoedasChildAdded=snap=>aplicarCarteiraMoedaIncremental(snap);
+      const callbackCarteiraMoedasChildChanged=snap=>aplicarCarteiraMoedaIncremental(snap);
+      const callbackCarteiraMoedasValue=snap=>{
+        try{
+          /* A carteira mantém uma hidratação completa inicial para preservar a
+             convergência já validada. Depois dela, cada uma das quatro moedas
+             passa a chegar isoladamente, sem reprocessar os outros saldos. */
+          aplicarSnapshotColecao(sheetId,"carteiraMoedas",snap.val()||{});
+          marcarConvergencia(sheetId,"carteiraMoedas");
+          if(!carteiraMoedasIncrementalAtiva){
+            carteiraMoedasIncrementalAtiva=true;
+            /* child_added cobre uma moeda criada após a hidratação. Os quatro
+               registros existentes são reemitidos ao registrar o listener, mas
+               o controle de versão do snapshot inicial os descarta. Tombstones
+               continuam chegando por child_changed e zeram apenas aquela moeda. */
+            refCarteiraMoedas.on("child_added",callbackCarteiraMoedasChildAdded,erroCarteiraMoedas);
+            refCarteiraMoedas.on("child_changed",callbackCarteiraMoedasChildChanged,erroCarteiraMoedas);
+            refCarteiraMoedas.off("value",callbackCarteiraMoedasValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar carteira por moeda.",erro);
+        }
+      };
+      refCarteiraMoedas.on("value",callbackCarteiraMoedasValue,erroCarteiraMoedas);
+      estadoRT.listenerCarteiraMoedas={
+        uid,sheetId,ref:refCarteiraMoedas,
+        callbackValue:callbackCarteiraMoedasValue,
+        callbackChildAdded:callbackCarteiraMoedasChildAdded,
+        callbackChildChanged:callbackCarteiraMoedasChildChanged
+      };
 
       const refCarteiraHistorico=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/carteiraHistorico`);
       const callbackCarteiraHistorico=snap=>{
