@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.120",
-  "name": "Carteira por moeda realtime incremental",
-  "notes": "Mantém a hidratação completa inicial da carteira para preservar a convergência já validada e, depois do primeiro snapshot, troca somente os quatro saldos de moeda para eventos incrementais por chave. Alterar PD, PO, PP ou PC passa a trafegar apenas a moeda modificada, sem alterar o histórico da carteira, jutsus, sala, XP, imagens, backups ou identidade.",
+  "version": "2.5.8.121",
+  "name": "Histórico da carteira realtime incremental",
+  "notes": "Mantém a hidratação completa inicial do histórico da carteira para preservar convergência, ordenação e limite local de 40 lançamentos; depois do primeiro snapshot, novos lançamentos, alterações e tombstones passam a chegar por item, sem reprocessar toda a coleção. Não altera moedas, jutsus, sala, XP, imagens, backups ou identidade.",
   "date": "2026-09-27"
 }
