@@ -762,7 +762,12 @@
     const confirmado=typeof modalShinobi==="function"?await modalShinobi("Confirmar alteração?",mensagem):confirm(mensagem);
     if(!confirmado){renderizarCarteira();return;}
     carteira[chave]=novo;
-    persistirEstadoSeguro({confirmada:true,origem:"carteira",campo:"carteira",motivo:"alteracao-confirmada"});
+    registrarHistoricoCarteira({
+      tipo:"ajuste",
+      titulo:`${String(chave).toUpperCase()} ajustado`,
+      detalhe:`${formatarNumero(atual)} ${String(chave).toUpperCase()} → ${formatarNumero(novo)} ${String(chave).toUpperCase()}`
+    });
+    persistirEstadoSeguro({confirmada:true,origem:"carteira",campos:["carteira","carteiraHistorico"],motivo:"alteracao-confirmada"});
     renderizarCarteira();
     renderizarSaldoLoja();
   };
@@ -777,7 +782,12 @@
     const confirmado=typeof modalShinobi==="function"?await modalShinobi("Confirmar alteração?",mensagem):confirm(mensagem);
     if(!confirmado) return;
     carteira[chave]=novo;
-    persistirEstadoSeguro({confirmada:true,origem:"carteira",campo:"carteira",motivo:"alteracao-confirmada"});
+    registrarHistoricoCarteira({
+      tipo:"ajuste",
+      titulo:`${String(chave).toUpperCase()} ajustado`,
+      detalhe:`${formatarNumero(atual)} ${String(chave).toUpperCase()} → ${formatarNumero(novo)} ${String(chave).toUpperCase()}`
+    });
+    persistirEstadoSeguro({confirmada:true,origem:"carteira",campos:["carteira","carteiraHistorico"],motivo:"alteracao-confirmada"});
     renderizarCarteira();
     renderizarSaldoLoja();
   };
