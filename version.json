@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.115",
-  "name": "Ficha ativa correta na Mesa Online",
-  "notes": "Corrige a raiz do vínculo incorreto entre a ficha visualmente ativa e a ficha usada pelo módulo online. Expõe de forma segura o estado lexical do core e faz a Mesa Online usar a chave ativa persistida como fonte autoritativa, impedindo Pipo de ser tratado como Principal/Luffy e fazendo PV, EKO e eventos de XP atingirem a ficha correta.",
-  "date": "2026-09-26"
+  "version": "2.5.8.116",
+  "name": "Notas realtime incrementais",
+  "notes": "Mantém a hidratação completa inicial das notas para preservar a convergência já validada e, depois do primeiro snapshot, troca somente essa coleção para eventos incrementais por tópico. Criar, editar e tombstone de notas passam a trafegar um item por vez sem alterar jutsus, inventário, sala, XP, imagens ou backups.",
+  "date": "2026-09-27"
 }

@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.115 — IDs canônicos dos participantes da mesa.
+/* Ficha Ninja RPG 2.5.8.116 — notas realtime incrementais com hidratação segura.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.115";
+const APP_VERSION = "2.5.8.116";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
