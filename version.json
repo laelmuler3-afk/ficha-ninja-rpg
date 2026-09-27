@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.122",
-  "name": "Histórico da carteira registra ajustes manuais",
-  "notes": "Corrige o fluxo de edição manual de PL/PO/PP/PC para registrar cada alteração confirmada no histórico da carteira e persistir carteira + carteiraHistorico na mesma operação. Mantém o listener incremental da 121 sem mudanças e não altera jutsus, sala, XP, imagens, backups ou identidade.",
+  "version": "2.5.8.123",
+  "name": "Correção de corrida no histórico da carteira",
+  "notes": "Corrige uma condição de corrida entre carteiraMoedas e carteiraHistorico: o eco realtime de uma moeda não pode avançar o baseline do histórico antes que o lançamento local seja publicado. Mantém moedas e histórico com baselines independentes e não altera outras coleções.",
   "date": "2026-09-27"
 }
