@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.127 — direcionamento do jutsu manual.
+/* Ficha Ninja RPG 2.5.8.128 — fluxo consolidado das cartas de jutsu.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.127";
+const APP_VERSION = "2.5.8.128";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
