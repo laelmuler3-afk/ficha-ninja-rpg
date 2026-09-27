@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.123 — histórico da carteira registra ajustes manuais.
+/* Ficha Ninja RPG 2.5.8.124 — efeitos de batalha incrementais.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.123";
+const APP_VERSION = "2.5.8.124";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.123",
-  "name": "Correção de corrida no histórico da carteira",
-  "notes": "Corrige uma condição de corrida entre carteiraMoedas e carteiraHistorico: o eco realtime de uma moeda não pode avançar o baseline do histórico antes que o lançamento local seja publicado. Mantém moedas e histórico com baselines independentes e não altera outras coleções.",
+  "version": "2.5.8.124",
+  "name": "Efeitos de batalha incrementais",
+  "notes": "Mantém snapshot completo apenas na hidratação inicial de efeitos de batalha e, depois, recebe cada efeito por child_added/child_changed. Preserva tombstones, IDs permanentes e convergência inicial sem alterar jutsus, sala, XP, carteira ou backups.",
   "date": "2026-09-27"
 }
