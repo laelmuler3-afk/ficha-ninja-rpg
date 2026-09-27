@@ -153,6 +153,20 @@
         return true;
       }catch(_erro){return false;}
     }
+    function reiniciarBaselineMoedas({legado=true}={}){
+      garantirEstadoLocal({legado});
+      try{
+        baselineMoedas=snapshotMoedasPuro(estado.carteira);
+        baselineChave=chaveAtual();
+      }catch(_erro){baselineMoedas={};baselineChave=chaveAtual();}
+    }
+    function reiniciarBaselineHistorico({legado=true}={}){
+      garantirEstadoLocal({legado});
+      try{
+        baselineHistorico=snapshotHistoricoPuro(estado.carteiraHistorico);
+        baselineChave=chaveAtual();
+      }catch(_erro){baselineHistorico={};baselineChave=chaveAtual();}
+    }
     function reiniciarBaseline({legado=true}={}){
       garantirEstadoLocal({legado});
       try{
@@ -210,8 +224,14 @@
     });
     root.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
       const collection=texto(evento?.detail?.collection);
-      if(collection!=="carteiraMoedas"&&collection!=="carteiraHistorico")return;
-      reiniciarBaseline({legado:false});
+      /* Moedas e histórico são persistidos juntos em algumas ações, mas possuem
+         filas item-level independentes. Um eco remoto de carteiraMoedas pode
+         ocorrer antes do evento local de carteiraHistorico; reiniciar os dois
+         baselines nesse ponto fazia o lançamento recém-criado parecer já
+         conhecido e ele nunca era publicado. Cada coleção só pode avançar o
+         próprio baseline. */
+      if(collection==="carteiraMoedas"){reiniciarBaselineMoedas({legado:false});return;}
+      if(collection==="carteiraHistorico")reiniciarBaselineHistorico({legado:false});
     });
 
     reiniciarBaseline({legado:true});
