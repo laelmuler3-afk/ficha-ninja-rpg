@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.121",
-  "name": "Histórico da carteira realtime incremental",
-  "notes": "Mantém a hidratação completa inicial do histórico da carteira para preservar convergência, ordenação e limite local de 40 lançamentos; depois do primeiro snapshot, novos lançamentos, alterações e tombstones passam a chegar por item, sem reprocessar toda a coleção. Não altera moedas, jutsus, sala, XP, imagens, backups ou identidade.",
+  "version": "2.5.8.122",
+  "name": "Histórico da carteira registra ajustes manuais",
+  "notes": "Corrige o fluxo de edição manual de PL/PO/PP/PC para registrar cada alteração confirmada no histórico da carteira e persistir carteira + carteiraHistorico na mesma operação. Mantém o listener incremental da 121 sem mudanças e não altera jutsus, sala, XP, imagens, backups ou identidade.",
   "date": "2026-09-27"
 }
