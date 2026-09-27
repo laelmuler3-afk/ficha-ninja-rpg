@@ -1019,7 +1019,11 @@
         try{if(inventario.callbackChildChanged)inventario.ref.off("child_changed",inventario.callbackChildChanged);}catch(_e){}
       }
       const jutsus=estadoRT.listenerJutsus;
-      if(jutsus){try{jutsus.ref.off("value",jutsus.callback);}catch(_e){}}
+      if(jutsus){
+        try{if(jutsus.callbackValue)jutsus.ref.off("value",jutsus.callbackValue);}catch(_e){}
+        try{if(jutsus.callbackChildAdded)jutsus.ref.off("child_added",jutsus.callbackChildAdded);}catch(_e){}
+        try{if(jutsus.callbackChildChanged)jutsus.ref.off("child_changed",jutsus.callbackChildChanged);}catch(_e){}
+      }
       const armados=estadoRT.listenerArmados;
       if(armados){
         try{if(armados.callback)armados.ref.off("value",armados.callback);}catch(_e){}
@@ -1218,14 +1222,56 @@
       };
 
       const refJutsus=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/jutsus`);
-      const callbackJutsus=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"jutsus",snap.val()||{});marcarConvergencia(sheetId,"jutsus");}catch(erro){console.warn("Falha ao aplicar jutsus item-level.",erro);}
-      };
-      refJutsus.on("value",callbackJutsus,erro=>{
+      let jutsusIncrementaisAtivos=false;
+      const erroJutsus=erro=>{
         console.warn("Realtime item-level de jutsus indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização dos jutsus indisponível. Os jutsus locais continuam salvos neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerJutsus={uid,sheetId,ref:refJutsus,callback:callbackJutsus};
+      };
+      const aplicarJutsuIncremental=snap=>{
+        if(!jutsusIncrementaisAtivos)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          /* O merge por item preserva imagem/imagemId da cópia local quando o
+             jutsuId é o mesmo. A nuvem continua sem carregar blobs ou IDs de
+             imagem; esta mudança altera somente a granularidade da leitura. */
+          aplicarSnapshotColecao(sheetId,"jutsus",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar jutsu incremental.",erro);
+        }
+      };
+      const callbackJutsusChildAdded=snap=>aplicarJutsuIncremental(snap);
+      const callbackJutsusChildChanged=snap=>aplicarJutsuIncremental(snap);
+      const callbackJutsusValue=snap=>{
+        try{
+          /* Jutsus mantêm a hidratação inicial completa — o caminho já validado
+             para boot, migração e restauração. Só depois dessa convergência
+             ativamos eventos por jutsu, reduzindo leitura/reprocessamento sem
+             alterar IDs permanentes, tombstones ou o armazenamento de imagens. */
+          aplicarSnapshotColecao(sheetId,"jutsus",snap.val()||{});
+          marcarConvergencia(sheetId,"jutsus");
+          if(!jutsusIncrementaisAtivos){
+            jutsusIncrementaisAtivos=true;
+            /* child_added cobre jutsus criados após a hidratação. Os registros
+               existentes emitidos ao registrar o listener são descartados pelo
+               controle de versão preenchido pelo snapshot inicial. Tombstones
+               seguem chegando por child_changed do mesmo jutsuId. */
+            refJutsus.on("child_added",callbackJutsusChildAdded,erroJutsus);
+            refJutsus.on("child_changed",callbackJutsusChildChanged,erroJutsus);
+            refJutsus.off("value",callbackJutsusValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar jutsus item-level.",erro);
+        }
+      };
+      refJutsus.on("value",callbackJutsusValue,erroJutsus);
+      estadoRT.listenerJutsus={
+        uid,sheetId,ref:refJutsus,
+        callbackValue:callbackJutsusValue,
+        callbackChildAdded:callbackJutsusChildAdded,
+        callbackChildChanged:callbackJutsusChildChanged
+      };
 
       const refArmados=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/armados`);
       let armadosIncrementaisAtivos=false;
