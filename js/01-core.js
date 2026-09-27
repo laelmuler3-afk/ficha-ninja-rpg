@@ -280,34 +280,87 @@ async function resetarBatalha(){
 
   await avisoShinobi("Batalha resetada","A área de batalha foi restaurada.");
 }
-function direcionarJutsuRecemCriado(i){
+let shinobiJutsuFocoPendente=null;
+let shinobiJutsuFocoLimpezaTimer=null;
+function fixarAbaJutsus(){
+  try{
+    if(typeof window.abrirPagina==="function")window.abrirPagina("jutsus");
+    else if(typeof abrirPagina==="function")abrirPagina("jutsus");
+  }catch(_erro){}
+}
+function cancelarFocoJutsuPendente(i){
+  if(!shinobiJutsuFocoPendente)return;
+  if(Number.isInteger(Number(i))){
+    const indice=Number(i),jutsu=(estado.jutsus||[])[indice];
+    const id=String(jutsu?.jutsuId||"").trim();
+    const mesmoId=id&&id===shinobiJutsuFocoPendente.jutsuId;
+    const mesmoIndice=!shinobiJutsuFocoPendente.jutsuId&&indice===shinobiJutsuFocoPendente.indiceInicial;
+    if(!mesmoId&&!mesmoIndice)return;
+  }
+  shinobiJutsuFocoPendente=null;
+  if(shinobiJutsuFocoLimpezaTimer){clearTimeout(shinobiJutsuFocoLimpezaTimer);shinobiJutsuFocoLimpezaTimer=null;}
+}
+function indiceJutsuFocoPendente(){
+  const alvo=shinobiJutsuFocoPendente;
+  if(!alvo)return-1;
+  const lista=Array.isArray(estado.jutsus)?estado.jutsus:[];
+  if(alvo.jutsuId){
+    const porId=lista.findIndex(j=>String(j?.jutsuId||"").trim()===alvo.jutsuId);
+    if(porId>=0)return porId;
+  }
+  const fallback=Number(alvo.indiceInicial);
+  return Number.isInteger(fallback)&&fallback>=0&&fallback<lista.length?fallback:-1;
+}
+function aplicarFocoJutsuPendente(){
+  const alvo=shinobiJutsuFocoPendente;
+  if(!alvo)return false;
+  if(Date.now()>alvo.expiraEm){cancelarFocoJutsuPendente();return false;}
+  const indice=indiceJutsuFocoPendente();
+  if(indice<0)return false;
+  estado.jutsusAbertos=estado.jutsusAbertos||{};
+  const precisaRender=!estado.jutsusAbertos[indice];
+  estado.jutsusAbertos[indice]=true;
+  if(precisaRender){
+    try{renderizarJutsus();}catch(_erro){}
+  }
+  fixarAbaJutsus();
   const localizar=()=>{
     const lista=document.getElementById("listaJutsus");
     if(!lista)return false;
     const cards=lista.querySelectorAll(".jutsuListaCard");
-    const card=cards?.[i];
+    const card=cards?.[indice];
     if(!card)return false;
     try{
       const reduzir=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
       card.scrollIntoView({behavior:reduzir?"auto":"smooth",block:"center",inline:"nearest"});
-    }catch(_erro){
-      try{card.scrollIntoView();}catch(_erro2){}
-    }
+    }catch(_erro){try{card.scrollIntoView();}catch(_erro2){}}
     const resumo=card.querySelector(".jutsuLinhaResumo");
     if(resumo&&typeof resumo.focus==="function"){
       try{resumo.focus({preventScroll:true});}catch(_erro){try{resumo.focus();}catch(_erro2){}}
     }
     return true;
   };
-  const agendar=()=>{
-    if(localizar())return;
-    setTimeout(localizar,60);
+  if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>requestAnimationFrame(localizar));
+  else setTimeout(localizar,0);
+  return true;
+}
+function direcionarJutsuRecemCriado(i,jutsuId=""){
+  cancelarFocoJutsuPendente();
+  shinobiJutsuFocoPendente={
+    jutsuId:String(jutsuId||"").trim(),
+    indiceInicial:Number(i),
+    expiraEm:Date.now()+4000
   };
-  if(typeof requestAnimationFrame==="function"){
-    requestAnimationFrame(()=>requestAnimationFrame(agendar));
-  }else{
-    setTimeout(agendar,0);
-  }
+  [0,80,240,600,1200,2200].forEach(atraso=>setTimeout(aplicarFocoJutsuPendente,atraso));
+  shinobiJutsuFocoLimpezaTimer=setTimeout(()=>cancelarFocoJutsuPendente(),4300);
+}
+if(!window.__shinobiJutsuFocoRealtimeV128){
+  window.__shinobiJutsuFocoRealtimeV128=true;
+  window.addEventListener("shinobi:realtime-colecao-aplicada",evento=>{
+    if(String(evento?.detail?.collection||"")!=="jutsus"||!shinobiJutsuFocoPendente)return;
+    setTimeout(aplicarFocoJutsuPendente,0);
+    setTimeout(aplicarFocoJutsuPendente,120);
+  });
 }
 function adicionarJutsu(){
   estado.jutsus=estado.jutsus||[];
@@ -316,20 +369,18 @@ function adicionarJutsu(){
   estado.jutsusAbertos=estado.jutsusAbertos||{};
   estado.jutsusAbertos[indice]=true;
   persistirListas("jutsus");
-  direcionarJutsuRecemCriado(indice);
-}function adicionarArmado(){estado.armados=estado.armados||[],estado.armados.push({nome:"",tipo:"armado",bonusAcerto:"",dano:"",bonusDano:"",obs:"",itemInventario:"",quantidadeUso:"1"}),persistirListas("armados")}async function removerJutsu(i){const j=(estado.jutsus||[])[i];if(!j)return;const nome=String(j.nome||"Jutsu");const ok=typeof modalShinobi==="function"?await modalShinobi("Remover jutsu?",`Remover “${nome}” da ficha?`):confirm(`Remover "${nome}" da ficha?`);if(!ok)return;estado.jutsus.splice(i,1),estado.jutsusAbertos={},persistirListas("jutsus")}async function removerArmado(i){const a=(estado.armados||[])[i];if(!a)return;const nome=String(a.nome||"Ataque");const ok=typeof modalShinobi==="function"?await modalShinobi("Remover ataque?",`Remover “${nome}” da ficha?`):confirm(`Remover "${nome}" da ficha?`);if(!ok)return;estado.armados.splice(i,1),estado.ataquesAbertos={},persistirListas("armados")}function persistirSemRender(contexto={}){persistirEstadoLocal(contexto)}function persistirListas(campo){persistirEstadoLocal({confirmada:true,origem:"colecao",campo:String(campo||""),motivo:"alteracao-confirmada"}),renderizarJutsus(),renderizarArmados()}function dadosElementoJutsu(elemento){const mapa={katon:{nome:"KATON",icone:"🔥",classe:"jutsu-katon"},raiton:{nome:"RAITON",icone:"⚡",classe:"jutsu-raiton"},fuuton:{nome:"FUUTON",icone:"🌪️",classe:"jutsu-fuuton"},suiton:{nome:"SUITON",icone:"💧",classe:"jutsu-suiton"},doton:{nome:"DOTON",icone:"🪨",classe:"jutsu-doton"},yin:{nome:"YINTON",icone:"🌑",classe:"jutsu-yin"},yang:{nome:"YOUTON",icone:"☀️",classe:"jutsu-yang"},neutro:{nome:"NEUTRO",icone:"✨",classe:"jutsu-neutro"}};return mapa[elemento]||mapa.neutro}function limparNumeroDano(valor){const texto=String(valor||"").trim().replace(",",".");if(!texto)return 0;const match=texto.match(/[-+]?\d+(\.\d+)?/);return match?Number(match[0]):0}function formatarDanoTotal(dano,bonus){const danoTexto=String(dano||"").trim(),bonusTexto=String(bonus||"").trim(),bonusNum=limparNumeroDano(bonusTexto);if(!danoTexto&&!bonusTexto)return"—";const danoEhNumero=/^[-+]?\d+([.,]\d+)?$/.test(danoTexto),bonusEhNumero=/^[-+]?\d+([.,]\d+)?$/.test(bonusTexto);return danoEhNumero&&bonusEhNumero?String(limparNumeroDano(danoTexto)+bonusNum):danoTexto&&bonusNum?danoTexto+" + "+bonusNum:danoTexto||(bonusTexto||"—")}function valorJutsu(j,campo,padrao="—"){return(j&&void 0!==j[campo]?String(j[campo]).trim():"")||padrao}function editarCampoJutsuPrompt(i,campo,rotulo,padrao=""){const j=(estado.jutsus||[])[i];if(!j)return;const atual=j[campo]||"",novo=prompt(rotulo,atual);null!==novo&&(j[campo]=novo.trim(),persistirSemRender({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"}),renderizarJutsus())}function escolherElementoJutsuPrompt(i){const j=(estado.jutsus||[])[i];if(!j)return;const atual=j.elemento||"katon",escolha=prompt(`Escolha o elemento:\n1 - Katon\n2 - Raiton\n3 - Fuuton\n4 - Suiton\n5 - Doton\n6 - Yinton\n7 - Youton\n8 - Neutro\n\nAtual: ${atual}`,"");if(null===escolha)return;const novo={1:"katon",2:"raiton",3:"fuuton",4:"suiton",5:"doton",6:"yin",7:"yang",8:"neutro"}[String(escolha).trim()]||String(escolha).trim().toLowerCase();["katon","raiton","fuuton","suiton","doton","yin","yang","neutro"].includes(novo)?(j.elemento=novo,persistirSemRender({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"}),renderizarJutsus()):alert("Elemento inválido.")}function jutsuAberto(i){return estado.jutsusAbertos=estado.jutsusAbertos||{},!!estado.jutsusAbertos[i]}function alternarJutsuAberto(i){
+  const jutsuId=String(estado.jutsus?.[indice]?.jutsuId||"").trim();
+  direcionarJutsuRecemCriado(indice,jutsuId);
+}
+function adicionarArmado(){estado.armados=estado.armados||[],estado.armados.push({nome:"",tipo:"armado",bonusAcerto:"",dano:"",bonusDano:"",obs:"",itemInventario:"",quantidadeUso:"1"}),persistirListas("armados")}async function removerJutsu(i){const j=(estado.jutsus||[])[i];if(!j)return;const nome=String(j.nome||"Jutsu");const ok=typeof modalShinobi==="function"?await modalShinobi("Remover jutsu?",`Remover “${nome}” da ficha?`):confirm(`Remover "${nome}" da ficha?`);if(!ok)return;estado.jutsus.splice(i,1),estado.jutsusAbertos={},persistirListas("jutsus")}async function removerArmado(i){const a=(estado.armados||[])[i];if(!a)return;const nome=String(a.nome||"Ataque");const ok=typeof modalShinobi==="function"?await modalShinobi("Remover ataque?",`Remover “${nome}” da ficha?`):confirm(`Remover "${nome}" da ficha?`);if(!ok)return;estado.armados.splice(i,1),estado.ataquesAbertos={},persistirListas("armados")}function persistirSemRender(contexto={}){persistirEstadoLocal(contexto)}function persistirListas(campo){persistirEstadoLocal({confirmada:true,origem:"colecao",campo:String(campo||""),motivo:"alteracao-confirmada"}),renderizarJutsus(),renderizarArmados()}function dadosElementoJutsu(elemento){const mapa={katon:{nome:"KATON",icone:"🔥",classe:"jutsu-katon"},raiton:{nome:"RAITON",icone:"⚡",classe:"jutsu-raiton"},fuuton:{nome:"FUUTON",icone:"🌪️",classe:"jutsu-fuuton"},suiton:{nome:"SUITON",icone:"💧",classe:"jutsu-suiton"},doton:{nome:"DOTON",icone:"🪨",classe:"jutsu-doton"},yin:{nome:"YINTON",icone:"🌑",classe:"jutsu-yin"},yang:{nome:"YOUTON",icone:"☀️",classe:"jutsu-yang"},neutro:{nome:"NEUTRO",icone:"✨",classe:"jutsu-neutro"}};return mapa[elemento]||mapa.neutro}function limparNumeroDano(valor){const texto=String(valor||"").trim().replace(",",".");if(!texto)return 0;const match=texto.match(/[-+]?\d+(\.\d+)?/);return match?Number(match[0]):0}function formatarDanoTotal(dano,bonus){const danoTexto=String(dano||"").trim(),bonusTexto=String(bonus||"").trim(),bonusNum=limparNumeroDano(bonusTexto);if(!danoTexto&&!bonusTexto)return"—";const danoEhNumero=/^[-+]?\d+([.,]\d+)?$/.test(danoTexto),bonusEhNumero=/^[-+]?\d+([.,]\d+)?$/.test(bonusTexto);return danoEhNumero&&bonusEhNumero?String(limparNumeroDano(danoTexto)+bonusNum):danoTexto&&bonusNum?danoTexto+" + "+bonusNum:danoTexto||(bonusTexto||"—")}function valorJutsu(j,campo,padrao="—"){return(j&&void 0!==j[campo]?String(j[campo]).trim():"")||padrao}function editarCampoJutsuPrompt(i,campo,rotulo,padrao=""){const j=(estado.jutsus||[])[i];if(!j)return;const atual=j[campo]||"",novo=prompt(rotulo,atual);null!==novo&&(j[campo]=novo.trim(),persistirSemRender({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"}),renderizarJutsus())}function escolherElementoJutsuPrompt(i){const j=(estado.jutsus||[])[i];if(!j)return;const atual=j.elemento||"katon",escolha=prompt(`Escolha o elemento:\n1 - Katon\n2 - Raiton\n3 - Fuuton\n4 - Suiton\n5 - Doton\n6 - Yinton\n7 - Youton\n8 - Neutro\n\nAtual: ${atual}`,"");if(null===escolha)return;const novo={1:"katon",2:"raiton",3:"fuuton",4:"suiton",5:"doton",6:"yin",7:"yang",8:"neutro"}[String(escolha).trim()]||String(escolha).trim().toLowerCase();["katon","raiton","fuuton","suiton","doton","yin","yang","neutro"].includes(novo)?(j.elemento=novo,persistirSemRender({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"}),renderizarJutsus()):alert("Elemento inválido.")}function jutsuAberto(i){return estado.jutsusAbertos=estado.jutsusAbertos||{},!!estado.jutsusAbertos[i]}function alternarJutsuAberto(i){
   estado.jutsusAbertos=estado.jutsusAbertos||{};
   const estavaAberto=!!estado.jutsusAbertos[i];
   estado.jutsusAbertos[i]=!estavaAberto;
+  if(estavaAberto)cancelarFocoJutsuPendente(i);
   persistirEstadoLocal({emitir:false,confirmada:true,origem:"ui",motivo:"jutsu-aberto"});
   renderizarJutsus();
   if(estavaAberto){
-    const voltarParaJutsus=()=>{
-      try{
-        if(typeof window.abrirPagina==="function")window.abrirPagina("jutsus");
-        else if(typeof abrirPagina==="function")abrirPagina("jutsus");
-      }catch(_erro){}
-    };
+    const voltarParaJutsus=()=>fixarAbaJutsus();
     if(typeof requestAnimationFrame==="function")requestAnimationFrame(voltarParaJutsus);
     else setTimeout(voltarParaJutsus,0);
   }
