@@ -1080,8 +1080,14 @@
   }
 
   function fichaAtualLocal(){
-    const atual=(()=>{try{return window.fichaAtual;}catch(_erro){return localStorage.getItem("ficha_ninja_ativa_v1")||"Principal";}})();
-    return listarFichasLocais().find(f=>f.name===atual)||listarFichasLocais()[0];
+    /* A fonte autoritativa do nome ativo é a mesma usada pelo restante do motor.
+       `fichaAtual` é um `let` global do 01-core e, sem uma ponte explícita, não
+       existe em window. Ler apenas window.fichaAtual fazia esta função cair na
+       primeira ficha da lista (normalmente Principal), mesmo com outra ficha
+       aberta na interface. */
+    const atual=fichaAtivaNomeSeguro();
+    const locais=listarFichasLocais();
+    return locais.find(f=>f.name===atual)||locais[0]||null;
   }
 
   function prepararIdentidadeFichaParaConta(nomeFicha){
@@ -2062,11 +2068,21 @@
 
   async function processarEventosXp(){
     if(estadoOnline.processandoXp) return;
-    const room=estadoOnline.sala,user=estadoOnline.user,api=estadoOnline.api;
-    const sessao=lerJson(CHAVE_SESSAO,null);
+    let room=estadoOnline.sala;
+    const user=estadoOnline.user,api=estadoOnline.api;
+    let sessao=lerJson(CHAVE_SESSAO,null);
     if(!room||!user||sessao?.role!=="player"||sessao.roomId!==room.id) return;
     estadoOnline.processandoXp=true;
     try{
+      /* Nunca aplique XP/nível usando uma sessão que ainda aponta para outra
+         ficha desta conta. Antes, a falha de identificação da ficha ativa fazia
+         o aviso de XP aparecer enquanto o valor era salvo na Principal/Luffy. */
+      if(!fichaAtivaCompativelComSessao(sessao).ok){
+        const reconciliada=await reconciliarSessaoDaSalaComFichaAtiva().catch(()=>null);
+        sessao=lerJson(CHAVE_SESSAO,null);
+        room=estadoOnline.sala;
+        if(reconciliada?.ok!==true||!room||sessao?.role!=="player"||sessao.roomId!==room.id||!fichaAtivaCompativelComSessao(sessao).ok) return;
+      }
       const processados=lerJson(CHAVE_XP_PROCESSADO,{})||{};
       const eventos=Object.values(room.events||{})
         .filter(e=>{
