@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.117",
-  "name": "Inventário realtime incremental",
-  "notes": "Mantém a hidratação completa inicial do inventário para preservar a convergência já validada e, depois do primeiro snapshot, troca somente essa coleção para eventos incrementais por item. Criar, editar e tombstone do inventário passam a trafegar um item por vez sem alterar notas, jutsus, sala, XP, imagens ou backups.",
+  "version": "2.5.8.118",
+  "name": "Ataques realtime incrementais",
+  "notes": "Mantém a hidratação completa inicial dos ataques/armados para preservar a convergência já validada e, depois do primeiro snapshot, troca somente essa coleção para eventos incrementais por ataque. Criar, editar e tombstone de ataques passam a trafegar um item por vez sem alterar jutsus, Kekkei Genkai, sala, XP, imagens ou backups.",
   "date": "2026-09-27"
 }
