@@ -1049,7 +1049,12 @@
         try{if(carteiraHistorico.callbackChildChanged)carteiraHistorico.ref.off("child_changed",carteiraHistorico.callbackChildChanged);}catch(_e){}
       }
       const efeitosBatalha=estadoRT.listenerEfeitosBatalha;
-      if(efeitosBatalha){try{efeitosBatalha.ref.off("value",efeitosBatalha.callback);}catch(_e){}}
+      if(efeitosBatalha){
+        try{if(efeitosBatalha.callback)efeitosBatalha.ref.off("value",efeitosBatalha.callback);}catch(_e){}
+        try{if(efeitosBatalha.callbackValue)efeitosBatalha.ref.off("value",efeitosBatalha.callbackValue);}catch(_e){}
+        try{if(efeitosBatalha.callbackChildAdded)efeitosBatalha.ref.off("child_added",efeitosBatalha.callbackChildAdded);}catch(_e){}
+        try{if(efeitosBatalha.callbackChildChanged)efeitosBatalha.ref.off("child_changed",efeitosBatalha.callbackChildChanged);}catch(_e){}
+      }
       estadoRT.listener=null;
       estadoRT.listenerNotas=null;
       estadoRT.listenerInventario=null;
@@ -1414,14 +1419,53 @@
       };
 
       const refEfeitosBatalha=db.ref(`sheetRealtime/${uid}/${sheetId}/collections/efeitosBatalha`);
-      const callbackEfeitosBatalha=snap=>{
-        try{aplicarSnapshotColecao(sheetId,"efeitosBatalha",snap.val()||{});marcarConvergencia(sheetId,"efeitosBatalha");}catch(erro){console.warn("Falha ao aplicar efeitos de batalha item-level.",erro);}
-      };
-      refEfeitosBatalha.on("value",callbackEfeitosBatalha,erro=>{
+      let efeitosBatalhaIncrementaisAtivos=false;
+      const erroEfeitosBatalha=erro=>{
         console.warn("Realtime item-level dos efeitos de batalha indisponível.",erro?.code||erro?.message||erro);
         try{root.dispatchEvent(new CustomEvent("shinobi:online:erro-sync",{detail:{mensagem:"Sincronização dos efeitos de batalha indisponível. Os efeitos locais continuam salvos neste aparelho."}}));}catch(_e){}
-      });
-      estadoRT.listenerEfeitosBatalha={uid,sheetId,ref:refEfeitosBatalha,callback:callbackEfeitosBatalha};
+      };
+      const aplicarEfeitoBatalhaIncremental=snap=>{
+        if(!efeitosBatalhaIncrementaisAtivos)return;
+        try{
+          const chave=texto(snap?.key);
+          const registro=snap?.val?.();
+          if(!chave||!registro||typeof registro!=="object")return;
+          aplicarSnapshotColecao(sheetId,"efeitosBatalha",{[chave]:registro});
+        }catch(erro){
+          console.warn("Falha ao aplicar efeito de batalha incremental.",erro);
+        }
+      };
+      const callbackEfeitosBatalhaChildAdded=snap=>aplicarEfeitoBatalhaIncremental(snap);
+      const callbackEfeitosBatalhaChildChanged=snap=>aplicarEfeitoBatalhaIncremental(snap);
+      const callbackEfeitosBatalhaValue=snap=>{
+        try{
+          /* Efeitos de batalha preservam a hidratação completa inicial para que
+             a ficha, os bônus derivados e a convergência de boot/restauração
+             continuem exatamente como nas versões anteriores. Depois dela, cada
+             efeito passa a ser recebido isoladamente pelo próprio ID. */
+          aplicarSnapshotColecao(sheetId,"efeitosBatalha",snap.val()||{});
+          marcarConvergencia(sheetId,"efeitosBatalha");
+          if(!efeitosBatalhaIncrementaisAtivos){
+            efeitosBatalhaIncrementaisAtivos=true;
+            /* child_added cobre efeitos criados depois da hidratação. Os efeitos
+               já existentes podem ser reemitidos ao registrar o listener, mas
+               o controle de versão preenchido no snapshot inicial os descarta.
+               Tombstones continuam chegando por child_changed. */
+            refEfeitosBatalha.on("child_added",callbackEfeitosBatalhaChildAdded,erroEfeitosBatalha);
+            refEfeitosBatalha.on("child_changed",callbackEfeitosBatalhaChildChanged,erroEfeitosBatalha);
+            refEfeitosBatalha.off("value",callbackEfeitosBatalhaValue);
+          }
+        }catch(erro){
+          console.warn("Falha ao aplicar efeitos de batalha item-level.",erro);
+        }
+      };
+      refEfeitosBatalha.on("value",callbackEfeitosBatalhaValue,erroEfeitosBatalha);
+      estadoRT.listenerEfeitosBatalha={
+        uid,sheetId,ref:refEfeitosBatalha,
+        callbackValue:callbackEfeitosBatalhaValue,
+        callbackChildAdded:callbackEfeitosBatalhaChildAdded,
+        callbackChildChanged:callbackEfeitosBatalhaChildChanged
+      };
       await processarOutbox().catch(()=>{});
       return {ok:true,sheetId};
     }
