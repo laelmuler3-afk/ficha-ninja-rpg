@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.124",
-  "name": "Efeitos de batalha incrementais",
-  "notes": "Mantém snapshot completo apenas na hidratação inicial de efeitos de batalha e, depois, recebe cada efeito por child_added/child_changed. Preserva tombstones, IDs permanentes e convergência inicial sem alterar jutsus, sala, XP, carteira ou backups.",
+  "version": "2.5.8.125",
+  "name": "Jutsus incrementais",
+  "notes": "Mantém snapshot completo apenas na hidratação inicial de jutsus e, depois, recebe cada jutsu por child_added/child_changed. Preserva jutsuId, imagem/imagemId locais, tombstones e convergência inicial sem alterar sala, XP, carteira, backups ou identidade.",
   "date": "2026-09-27"
 }
