@@ -28,6 +28,10 @@
     try{return localStorage.getItem("ficha_ninja_ativa_v1")||"Principal";}catch(_erro){return "Principal";}
   }
 
+  function transicaoFichaAtiva(){
+    return window.__shinobiSheetTransition===true;
+  }
+
   const CHAVE_TURNO_PENDENTE="shinobi_turn_pending_v1";
   function marcarTurnoLocalPendente(){
     const sessao=sessaoAtual();
@@ -75,6 +79,10 @@
   }
 
   function salvarEstadoSemLoop(){
+    /* Callbacks de efeitos podem terminar depois que o usuário iniciou uma
+       troca de ficha. Nesse intervalo CHAVE já pode apontar ao destino e estado
+       ainda representar a origem; portanto a mesma trava global vale aqui. */
+    if(transicaoFichaAtiva())return false;
     try{
       localStorage.setItem(CHAVE,JSON.stringify(estado));
       return true;
@@ -92,6 +100,7 @@
   }
 
   async function sincronizarRecursosSalaAoVivo(){
+    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
     if(!window.ShinobiOnline?.atualizarMeuParticipanteAoVivo) return;
     const sessao=sessaoAtual();
     if(sessao?.role!=="player"||!sessao.roomId) return;
@@ -114,6 +123,7 @@
   }
 
   function agendarRecursosSalaAoVivo(campos,atraso=35){
+    if(transicaoFichaAtiva()) return;
     if(!possuiCampoSalaAoVivo(campos)) return;
     clearTimeout(timerSalaAoVivo);
     timerSalaAoVivo=setTimeout(()=>{
@@ -126,6 +136,7 @@
   let resumoPendente=false;
 
   async function sincronizarResumoParticipante(){
+    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
     if(!window.ShinobiOnline?.atualizarMeuParticipante) return;
     if(resumoSincronizando){
       resumoPendente=true;
@@ -146,6 +157,7 @@
   }
 
   function agendarResumoParticipante(atraso=140){
+    if(transicaoFichaAtiva()) return;
     clearTimeout(timerResumo);
     timerResumo=setTimeout(()=>sincronizarResumoParticipante(),atraso);
   }
@@ -182,44 +194,73 @@
     return "";
   }
 
-  function executarBackupEstrutural(nome){
+  function referenciaFichaLocal(nome){
+    const alvo=texto(nome)||fichaAtualNome();
+    const ficha=(window.ShinobiOnline?.listarFichasLocais?.()||[]).find(item=>texto(item?.name)===alvo)||null;
+    if(!ficha)return {name:alvo,sheetId:""};
+    return {name:texto(ficha.name),sheetId:texto(ficha.sheetId)};
+  }
+
+  function executarBackupEstrutural(referencia){
+    if(transicaoFichaAtiva()) return;
     if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.atualizarBackupEstrutural!=="function") return;
+    const ref=typeof referencia==="string"?{name:referencia,sheetId:""}:(referencia||{});
+    let nome=texto(ref.name);
+    if(ref.sheetId){
+      const ficha=(window.ShinobiOnline?.listarFichasLocais?.()||[]).find(item=>texto(item?.sheetId)===texto(ref.sheetId))||null;
+      if(!ficha)return;
+      nome=texto(ficha.name);
+    }else{
+      const atual=referenciaFichaLocal(nome);
+      if(!atual.name)return;
+      nome=atual.name;
+    }
     window.ShinobiOnline.atualizarBackupEstrutural(nome,{
       motivo:"backup-automatico-estrutural"
     }).catch(()=>{});
   }
 
   function agendarBackupEstrutural(detalhe={}){
+    if(transicaoFichaAtiva()) return;
     if(!detalhe.confirmada||!campoExigeBackupEstrutural(detalhe.campo)) return;
     if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.atualizarBackupEstrutural!=="function") return;
-    const nome=texto(detalhe.sheetName)||fichaAtualNome();
-    const anterior=timersBackupEstrutural.get(nome);
-    if(anterior) clearTimeout(anterior);
+    const referencia=referenciaFichaLocal(texto(detalhe.sheetName)||fichaAtualNome());
+    const chave=referencia.sheetId||`name:${referencia.name}`;
+    const anterior=timersBackupEstrutural.get(chave);
+    if(anterior?.timer) clearTimeout(anterior.timer);
+    else if(anterior) clearTimeout(anterior);
     const timer=setTimeout(()=>{
-      timersBackupEstrutural.delete(nome);
-      executarBackupEstrutural(nome);
+      timersBackupEstrutural.delete(chave);
+      executarBackupEstrutural(referencia);
     },ATRASO_BACKUP_ESTRUTURAL_MS);
-    timersBackupEstrutural.set(nome,timer);
+    timersBackupEstrutural.set(chave,{timer,referencia});
   }
 
   function enviarBackupsEstruturaisPendentes(){
-    [...timersBackupEstrutural.entries()].forEach(([nome,timer])=>{
+    [...timersBackupEstrutural.entries()].forEach(([chave,registro])=>{
+      const timer=registro?.timer||registro;
+      const referencia=registro?.referencia||String(chave||"").replace(/^name:/,"");
       clearTimeout(timer);
-      timersBackupEstrutural.delete(nome);
-      executarBackupEstrutural(nome);
+      timersBackupEstrutural.delete(chave);
+      executarBackupEstrutural(referencia);
     });
   }
 
   function valorAtualDoCampo(nomeFicha,campo,detalhe={}){
     if(Object.prototype.hasOwnProperty.call(detalhe,"depois")) return detalhe.depois;
     try{
-      const ficha=(window.ShinobiOnline?.listarFichasLocais?.()||[]).find(f=>f.name===nomeFicha)
-        ||window.ShinobiOnline?.fichaAtualLocal?.();
+      const nome=texto(nomeFicha);
+      const ficha=nome
+        ?(window.ShinobiOnline?.listarFichasLocais?.()||[]).find(f=>f.name===nome)||null
+        :window.ShinobiOnline?.fichaAtualLocal?.();
+      /* Evento atrasado de uma ficha que já foi trocada/excluída não pode usar
+         a nova ficha ativa como substituta silenciosa. */
       return ficha?.data?.[campo];
     }catch(_erro){return undefined;}
   }
 
   async function enviarAlteracaoConfirmada(detalhe={}){
+    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
     if(!window.ShinobiOnline) return;
     const campo=texto(detalhe.campo);
     if(!detalhe.confirmada||!campo)return;
@@ -257,6 +298,7 @@
   }
 
   async function enviarItemColecaoConfirmado(detalhe={}){
+    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
     if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
     const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
     if(!["notas","inventario","jutsus","armados","kekkeiGenkai","carteiraMoedas","carteiraHistorico","efeitosBatalha"].includes(collection)||!itemId) return;
@@ -327,12 +369,19 @@
     document.addEventListener("visibilitychange",()=>{
       if(document.visibilityState==="hidden"){
         clearTimeout(timerResumo);
+        clearTimeout(timerSalaAoVivo);
+        /* Durante criação/troca/renomeação de ficha, os globais já podem
+           apontar para o destino enquanto a sessão da sala ainda pertence à
+           origem. Nenhuma escrita online é permitida nessa janela. */
+        if(transicaoFichaAtiva()) return;
         enviarBackupsEstruturaisPendentes();
         if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
       }
     });
     window.addEventListener("pagehide",()=>{
       clearTimeout(timerResumo);
+      clearTimeout(timerSalaAoVivo);
+      if(transicaoFichaAtiva()) return;
       enviarBackupsEstruturaisPendentes();
       if(!syncPorTurnoAtiva()) sincronizarResumoParticipante();
     });
@@ -348,11 +397,13 @@
   function executarBackupDiario(){
     clearTimeout(timerBackupDiario);
     timerBackupDiario=null;
+    if(transicaoFichaAtiva())return;
     if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.garantirBackupDiarioFichaAtiva!=="function")return;
     window.ShinobiOnline.garantirBackupDiarioFichaAtiva().catch(()=>{});
   }
 
   function agendarBackupDiario(atraso=6500){
+    if(transicaoFichaAtiva())return;
     clearTimeout(timerBackupDiario);
     timerBackupDiario=setTimeout(executarBackupDiario,Math.max(800,Number(atraso)||6500));
   }
@@ -376,11 +427,20 @@
     const participantes=online?.sala?.participants||{};
     if(sessao?.participantId&&participantes[sessao.participantId]) return participantes[sessao.participantId];
     const candidatos=Object.values(participantes).filter(p=>p?.type==="player"&&p?.ownerUid===online?.user?.uid);
-    if(sessao?.sheetId){
-      const mesmaFicha=candidatos.find(p=>p.sheetId===sessao.sheetId);
+    const characterId=texto(sessao?.characterId);
+    if(characterId){
+      const mesmoPersonagem=candidatos.find(p=>texto(p?.characterId)===characterId);
+      if(mesmoPersonagem)return mesmoPersonagem;
+    }
+    const sheetId=texto(sessao?.sheetId);
+    if(sheetId){
+      const mesmaFicha=candidatos.find(p=>texto(p?.sheetId)===sheetId);
       if(mesmaFicha) return mesmaFicha;
     }
-    return candidatos.length===1?candidatos[0]:null;
+    /* Ter somente um personagem da conta na sala não prova que ele é o da
+       sessão local. Falhamos fechado para não publicar buff/efeito em outra
+       ficha depois de uma troca, exclusão ou recuperação de sessão. */
+    return null;
   }
 
   function valorComSinal(valor){

@@ -576,7 +576,12 @@
     if(reparouDuplicatas){
       setTimeout(()=>{
         try{
-          if(typeof CHAVE!=="undefined") localStorage.setItem(CHAVE,JSON.stringify(estado));
+          if(window.__shinobiSheetTransition===true)return;
+          if(typeof persistirEstadoLocal==="function"){
+            persistirEstadoLocal({emitir:false,confirmada:false,origem:"efeitos",motivo:"reparo-ids-efeitos"});
+          }else if(typeof CHAVE!=="undefined"){
+            localStorage.setItem(CHAVE,JSON.stringify(estado));
+          }
         }catch(_erro){}
       },0);
     }

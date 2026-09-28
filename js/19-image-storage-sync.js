@@ -183,6 +183,7 @@
   }
 
   function enfileirarDetalhe(detalhe){
+    if(root.__shinobiSheetTransition===true)return {skipped:true,reason:"sheet-transition"};
     const alvo=alvoNormalizado(detalhe?.target);if(!alvo)return {skipped:true,reason:"alvo-invalido"};
     const user=usuarioAtual();
     if(!user){filaSemConta.push({...detalhe,target:alvo});return {queued:true,waitingAuth:true};}
@@ -190,6 +191,11 @@
     if(ownerUid&&ownerUid!==texto(user.uid))return {skipped:true,reason:"outra-conta"};
     const identidade=identidadePara(detalhe?.sheetName);
     if(!identidade)return {skipped:true,reason:"sem-identidade"};
+    /* O evento de imagem carrega a identidade observada no instante do clique.
+       Se uma migração/reparo trocou a identidade antes do callback assíncrono,
+       não reaproveitamos a imagem em outra personagem. */
+    const characterEvento=texto(detalhe?.characterId);
+    if(characterEvento&&characterEvento!==identidade.characterId)return {skipped:true,reason:"identidade-alterada"};
     const op=criarOperacaoPura({
       uid:identidade.uid,characterId:identidade.characterId,sheetName:identidade.sheetName,target:alvo,
       imageId:detalhe?.imageId,deleted:detalhe?.deleted===true,version:idAleatorio("img"),createdAt:detalhe?.savedAt||agora(),ownerUid:identidade.uid
@@ -231,7 +237,14 @@
     const aplicado=await root.ShinobiImagensLocal?.aplicarRemota?.({target:alvo,blob,deleted:false,version});
     if(aplicado!==false)registrarVersao(uid,characterId,alvo,version);
   }
-  async function aplicarSnapshot(uid,characterId,valor){
+  async function aplicarSnapshot(uid,characterId,valor,sheetName=""){
+    /* Um callback do listener antigo pode chegar depois de troca, renomeação ou
+       reparo de identidade. Antes de tocar no IndexedDB da ficha aberta,
+       confirmamos que o listener ainda representa exatamente a mesma ficha. */
+    const atual=identidadePara(sheetName);
+    if(!atual||texto(atual.uid)!==texto(uid)||texto(atual.characterId)!==texto(characterId)){
+      return {skipped:true,reason:"listener-identidade-obsoleta"};
+    }
     const tarefas=[];
     if(valor?.avatar)tarefas.push(aplicarRegistro(uid,characterId,{type:"avatar"},valor.avatar));
     if(valor?.["profile-cover"])tarefas.push(aplicarRegistro(uid,characterId,{type:"profile-cover"},valor["profile-cover"]));
@@ -239,6 +252,7 @@
       const jutsuId=texto(reg?.jutsuId);if(jutsuId)tarefas.push(aplicarRegistro(uid,characterId,{type:"jutsu-cover",jutsuId},reg));
     });
     await Promise.all(tarefas);
+    return {ok:true};
   }
   function desconectar(){
     if(listener){try{listener.ref.off("value",listener.callback);}catch(_e){}listener=null;}
@@ -249,15 +263,15 @@
     desconectar();
     const db=banco();if(!db)return {skipped:true,reason:"sem-db"};
     const ref=db.ref(`sheetMedia/${segmento(identidade.uid)}/${segmento(identidade.characterId)}`);
-    const callback=snap=>{aplicarSnapshot(identidade.uid,identidade.characterId,snap.val()||{}).catch(erro=>console.warn("Falha ao aplicar imagem remota.",erro));};
+    const callback=snap=>{aplicarSnapshot(identidade.uid,identidade.characterId,snap.val()||{},identidade.sheetName).catch(erro=>console.warn("Falha ao aplicar imagem remota.",erro));};
     ref.on("value",callback,erro=>console.warn("Metadados de imagens indisponíveis.",erro?.code||erro?.message||erro));
-    listener={uid:identidade.uid,characterId:identidade.characterId,ref,callback};
+    listener={uid:identidade.uid,characterId:identidade.characterId,sheetName:identidade.sheetName,ref,callback};
     return {ok:true};
   }
   function agendarAtivacao(){root.clearTimeout(timerAtivacao);timerAtivacao=root.setTimeout(()=>{drenarFilaSemConta();ativarObservador().catch(()=>{});processarOutbox().catch(()=>{});},120);}
   function reaplicarSnapshotAtual(){
     if(!listener?.ref?.once)return Promise.resolve({skipped:true});
-    return listener.ref.once("value").then(snap=>aplicarSnapshot(listener.uid,listener.characterId,snap.val()||{}));
+    return listener.ref.once("value").then(snap=>aplicarSnapshot(listener.uid,listener.characterId,snap.val()||{},listener.sheetName||""));
   }
 
   function install(){

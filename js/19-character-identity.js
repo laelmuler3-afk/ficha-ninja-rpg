@@ -28,7 +28,10 @@
       id=rt;
       source="realtime-migration";
     }else if(conta&&typeof deterministicId==="function"){
-      id=texto(deterministicId(conta,nome));
+      /* O nome é apenas apresentação. A fábrica de identidade recebe somente
+         a conta; o identificador estável da ficha deve ser fechado pelo caller
+         (hoje: sheetId). Assim um nome reutilizado nunca reconecta personagem. */
+      id=texto(deterministicId(conta));
     }
 
     return {

@@ -82,6 +82,16 @@
     const arquivo=input?.files?.[0];
     if(!arquivo) return;
 
+    /* A importação é assíncrona (FileReader + IndexedDB). Guardamos o destino
+       exato no momento em que o usuário escolheu o arquivo para que uma troca
+       de ficha durante a leitura nunca faça o backup cair em outra ficha. */
+    const destinoNome=String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal");
+    const destinoChave=String(typeof CHAVE!=="undefined"?CHAVE:"");
+    const destinoAindaAtivo=()=>
+      window.__shinobiSheetTransition!==true&&
+      String(typeof fichaAtual!=="undefined"?fichaAtual:"Principal")===destinoNome&&
+      String(typeof CHAVE!=="undefined"?CHAVE:"")===destinoChave;
+
     if(arquivo.size>LIMITE_ARQUIVO_BYTES){
       alert("O backup ultrapassa o limite de 8 MB. Verifique se o arquivo é realmente uma ficha exportada pelo aplicativo.");
       input.value="";
@@ -94,6 +104,7 @@
       input.value="";
     };
     leitor.onload=async evento=>{
+      if(!destinoAindaAtivo()) return;
       const estadoAnterior=clonarSeguro(estado);
       try{
         const dados=JSON.parse(String(evento.target?.result||""));
@@ -110,6 +121,7 @@
           await window.shinobiMigrarEstadoImagensParaIndexedDB({persistir:false});
         }
 
+        if(!destinoAindaAtivo()) return;
         if(!persistirEstadoLocal({emitir:false,origem:"importacao",motivo:"importacao-local"})){
           throw new Error("O armazenamento local não aceitou os dados importados.");
         }
@@ -117,7 +129,7 @@
         location.reload();
       }catch(erro){
         console.error("Falha ao importar backup:",erro);
-        estado=estadoAnterior;
+        if(destinoAindaAtivo()) estado=estadoAnterior;
         alert(`Não foi possível importar a ficha. ${erro?.message||"O arquivo precisa ser um JSON válido."}`);
       }finally{
         input.value="";

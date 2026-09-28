@@ -641,6 +641,23 @@
         return atual;
       }catch(_e){return null;}
     }
+    function obterFichaSolicitada(localSheetName="",preparar=false){
+      const nome=texto(localSheetName);
+      if(!nome)return obterFichaAtiva(preparar);
+      try{
+        const locais=root.ShinobiOnline?.listarFichasLocais?.()||[];
+        const ficha=locais.find(item=>texto(item?.name)===nome)||null;
+        if(!ficha)return null;
+        if(!fichaPodeUsarRealtime(ficha))return ficha;
+        if(preparar&&uidAtual()){
+          /* Nome aqui é apenas a chave local explicitamente recebida do evento.
+             Se ela deixou de existir, falhamos fechado; nunca caímos na ficha
+             que por acaso ficou ativa depois de uma troca/exclusão. */
+          return root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(nome)||null;
+        }
+        return ficha;
+      }catch(_e){return null;}
+    }
     function registrarVersao(sheetId,campo,registro,uid=uidAtual()){
       if(!uid||!sheetId||!campo||!registro)return;
       const todos=lerVersoes(uid);
@@ -1605,11 +1622,11 @@
       if(!campoPermitido(nome))return {skipped:true,reason:"campo-invalido"};
       const user=usuarioAtual();
       if(!user)return {skipped:true,reason:"sem-conta-google"};
-      const base=obterFichaAtiva(false);
-      if(!fichaPodeUsarRealtime(base))return {skipped:true,reason:"ficha-legada-ou-desativada"};
-      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(localSheetName)||obterFichaAtiva(true);
+      const ficha=obterFichaSolicitada(localSheetName,true);
+      if(!ficha)return {skipped:true,reason:"ficha-solicitada-nao-encontrada"};
+      if(!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-legada-ou-desativada"};
       const realtimeId=realtimeIdDaFicha(ficha);
-      if(!realtimeId||!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-indisponivel"};
+      if(!realtimeId)return {skipped:true,reason:"ficha-indisponivel"};
       const uid=texto(user.uid);
       const editAt=proximoEditAtPuro(
         timestampEdicao(),
@@ -1634,11 +1651,11 @@
       itemIdParaChaveFirebasePura(id);
       const user=usuarioAtual();
       if(!user)return {skipped:true,reason:"sem-conta-google"};
-      const base=obterFichaAtiva(false);
-      if(!fichaPodeUsarRealtime(base))return {skipped:true,reason:"ficha-legada-ou-desativada"};
-      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(localSheetName)||obterFichaAtiva(true);
+      const ficha=obterFichaSolicitada(localSheetName,true);
+      if(!ficha)return {skipped:true,reason:"ficha-solicitada-nao-encontrada"};
+      if(!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-legada-ou-desativada"};
       const realtimeId=realtimeIdDaFicha(ficha);
-      if(!realtimeId||!fichaPodeUsarRealtime(ficha))return {skipped:true,reason:"ficha-indisponivel"};
+      if(!realtimeId)return {skipped:true,reason:"ficha-indisponivel"};
       const uid=texto(user.uid);
       const editAt=proximoEditAtColecaoPuro(
         timestampEdicao(),
@@ -1683,11 +1700,11 @@
       if(root.navigator?.onLine===false)throw new Error("Conecte este aparelho à internet para restaurar um backup histórico.");
       const user=usuarioAtual(),db=banco();
       if(!user||!db)throw new Error("Entre com sua Conta Google antes de restaurar um backup histórico.");
-      const base=obterFichaAtiva(false);
-      if(!fichaPodeUsarRealtime(base))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
-      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(texto(localSheetName)||base?.name)||obterFichaAtiva(true);
+      const ficha=obterFichaSolicitada(localSheetName,true);
+      if(!ficha)throw new Error("A ficha escolhida para restauração não existe mais neste aparelho.");
+      if(!fichaPodeUsarRealtime(ficha))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
       const sheetId=realtimeIdDaFicha(ficha),uid=texto(user.uid);
-      if(!sheetId||!fichaPodeUsarRealtime(ficha))throw new Error("Ficha ativa indisponível para restauração.");
+      if(!sheetId)throw new Error("Ficha escolhida indisponível para restauração.");
       const dados=snapshot&&typeof snapshot==="object"&&!Array.isArray(snapshot)?clonar(snapshot):{};
       const ref=db.ref(`sheetRealtime/${uid}/${sheetId}`);
       const snap=await ref.once("value");
@@ -1709,10 +1726,9 @@
       if(root.navigator?.onLine===false)throw new Error("Conecte este aparelho à internet para regularizar a ficha.");
       const user=usuarioAtual(),db=banco();
       if(!user||!db)throw new Error("Entre com a mesma Conta Google usada nos outros aparelhos antes de regularizar a ficha.");
-      const fichaBase=obterFichaAtiva(false);
-      if(!fichaPodeUsarRealtime(fichaBase))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
-      const ficha=root.ShinobiOnline?.garantirIdentidadeFichaRealtime?.(texto(localSheetName)||fichaBase?.name)||obterFichaAtiva(true);
-      if(!ficha||!fichaPodeUsarRealtime(ficha))throw new Error("Ficha ativa indisponível para regularização.");
+      const ficha=obterFichaSolicitada(localSheetName,true);
+      if(!ficha)throw new Error("A ficha escolhida para regularização não existe mais neste aparelho.");
+      if(!fichaPodeUsarRealtime(ficha))throw new Error("Esta cópia antiga está preservada e não pode substituir a ficha principal.");
       const uid=texto(user.uid),realtimeId=realtimeIdDaFicha(ficha),backupSheetId=texto(ficha.sheetId);
       if(!realtimeId||!backupSheetId)throw new Error("A ficha ainda não possui identidade de sincronização completa.");
 

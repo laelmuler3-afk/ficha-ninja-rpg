@@ -163,10 +163,13 @@
     const igualPrincipal=conteudoEquivalente(registro?.data,principalData);
     const copiaUsuario=online.userCopy===true;
 
-    if(explicitamenteLegado)return "segura";
-    if(nomeGerado&&mesmaIdentidade)return "segura";
-    if(nomeGerado&&igualPrincipal&&!copiaUsuario)return "segura";
-    if(nomeGerado||mesmaIdentidade)return "revisar";
+    /* Nome, conteúdo igual ou identidade compartilhada podem ser justamente o
+       resultado do bug que estamos reparando. Portanto nenhum desses sinais,
+       isoladamente, autoriza exclusão automática. Só uma entrada já marcada
+       explicitamente como legado E ainda byte-logicamente igual à Principal é
+       considerada segura; qualquer divergência vai para revisão humana. */
+    if(explicitamenteLegado&&igualPrincipal&&!copiaUsuario)return "segura";
+    if(explicitamenteLegado||nomeGerado||mesmaIdentidade)return "revisar";
     return "normal";
   }
 
@@ -230,6 +233,10 @@
 
   function iniciarTravaExclusao(nome){
     const limpo=limparNome(nome);
+    /* A exclusão da ficha ativa é também uma transição de identidade. Isso faz
+       todos os módulos (realtime, backup, imagens e pagehide) falharem fechado
+       enquanto a chave removida está sendo trocada pela Principal. */
+    root.__shinobiSheetTransition=true;
     root.__ekoExclusaoFichaEmAndamento={
       name:limpo,
       keys:chavesFisicasDaFicha(limpo),
@@ -240,6 +247,7 @@
 
   function encerrarTravaExclusao(){
     try{delete root.__ekoExclusaoFichaEmAndamento;}catch(_erro){root.__ekoExclusaoFichaEmAndamento=null;}
+    try{delete root.__shinobiSheetTransition;}catch(_erro){root.__shinobiSheetTransition=false;}
   }
 
   function bloquearSalvamentoDeSaida(evento){

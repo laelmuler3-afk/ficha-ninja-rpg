@@ -170,9 +170,9 @@
 
   function chaveLogicaFicha(ficha){
     const dados=ficha?.data&&typeof ficha.data==="object"?ficha.data:{};
-    /* O nome da ficha é o identificador lógico mais estável entre aparelhos.
-       O nome do personagem pode estar vazio numa cópia zerada ou mudar durante
-       a campanha. Sufixos "Nuvem 2/3/4" eram gerados pelo bug antigo. */
+    /* Esta chave existe SOMENTE para localizar cópias legadas com sufixo
+       "Nuvem 2/3/4" durante a ferramenta de limpeza local. Ela nunca pode ser
+       usada para decidir que duas fichas representam a mesma personagem. */
     const base=texto(ficha?.name)||texto(dados.nome)||texto(ficha?.characterName)||"Ficha";
     return nomeSemSufixoNuvem(base).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
   }
@@ -243,16 +243,17 @@
   }
 
   function agruparRegistrosNuvem(valor){
-    const grupos=new Map();
-    Object.entries(valor||{}).forEach(([sheetId,cloud])=>{
-      if(!cloud||typeof cloud!=="object"||cloud.deleted===true) return;
-      const chave=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data})||sheetId;
-      if(!grupos.has(chave)) grupos.set(chave,[]);
-      grupos.get(chave).push({sheetId,cloud});
-    });
-    return [...grupos.entries()].map(([chave,itens])=>{
-      const canonico=selecionarRegistroCanonico(itens);
-      return {chave,itens,canonico,duplicatas:itens.filter(item=>item.sheetId!==canonico?.sheetId)};
+    /* v2.5.8.137 — uma identidade de ficha nunca é inferida pelo nome.
+       Cada sheetId remoto é tratado como uma ficha independente. A limpeza
+       antiga agrupava registros por nome (inclusive removendo sufixos
+       "Nuvem") e podia fundir personagens distintos ou ressuscitar uma ficha
+       antiga quando o usuário reutilizava o mesmo nome. Duplicatas legadas
+       continuam preservadas para revisão, em vez de serem mescladas/apagadas
+       automaticamente. */
+    return Object.entries(valor||{}).flatMap(([sheetId,cloud])=>{
+      if(!cloud||typeof cloud!=="object"||cloud.deleted===true) return [];
+      const item={sheetId,cloud};
+      return [{chave:`sheet:${sheetId}`,itens:[item],canonico:item,duplicatas:[]}];
     });
   }
   function lerJson(chave,padrao){
@@ -275,11 +276,12 @@
       .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"principal";
   }
 
-  function sheetIdDeterministico(uid,nome){
-    const conta=texto(uid),chave=chaveIdentidadeFicha(nome);
-    const a=hashLeve(`eko:v2:${conta}:${chave}`);
-    const b=hashLeve(`${chave}:${conta}:personagem`);
-    return `sheet_${a}${b}`;
+  function characterIdPorSheetId(uid,sheetId){
+    const conta=texto(uid),ficha=texto(sheetId);
+    if(!conta||!ficha) return idAleatorio("char");
+    const a=hashLeve(`eko:v3:character:${conta}:${ficha}`);
+    const b=hashLeve(`${ficha}:${conta}:stable-character`);
+    return `char_${a}${b}`;
   }
 
   function descricaoDispositivo(){
@@ -617,9 +619,17 @@
   }
 
   async function restaurarSalaDepoisDoLogin(sessao){
-    if(sessao?.role!=="player"||!sessao.code||!sessao.localSheetName) return;
+    if(sessao?.role!=="player"||!sessao.code) return;
+    /* Uma sessão antiga não pode ser retomada escolhendo uma ficha apenas pelo
+       mesmo nome. Se a ficha original foi apagada e o nome reutilizado, exigimos
+       que o usuário entre novamente na sala com a nova personagem. */
+    const fichaSessao=fichaLocalDaSessao(sessao);
+    if(!fichaSessao){
+      emitir("erro",{mensagem:"A ficha originalmente vinculada a esta sala não está mais neste aparelho. Entre novamente na sala escolhendo a ficha correta."});
+      return;
+    }
     try{
-      await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName,membershipMode:sessao.membershipMode||"session"});
+      await entrarSala({code:sessao.code,localSheetName:fichaSessao.name,membershipMode:sessao.membershipMode||"session"});
     }catch(erroSala){
       emitir("erro",{
         mensagem:`Conta conectada, mas não foi possível voltar à sala: ${erroAmigavel(erroSala)}`,
@@ -1164,6 +1174,63 @@
       }catch(_erro){}
     });
 
+    /* v2.5.8.137 — defesa geral contra duas fichas locais apontarem para a
+       mesma identidade realtime. Não existe cenário válido em que duas chaves
+       locais diferentes precisem editar o mesmo personagem. Mantemos como
+       canônica a ficha com vínculo/sincronização mais forte e retiramos apenas
+       a identidade realtime das demais; nenhum conteúdo da ficha é apagado. */
+    const gruposCharacter=new Map();
+    fichasValidas.forEach(ficha=>{
+      const online=ficha?.data?.__online||{};
+      const id=texto(online.characterId)||texto(online.realtimeId);
+      if(!id) return;
+      const owner=texto(online.characterOwnerUid)||texto(online.realtimeOwnerUid)||texto(online.ownerUid)||uidContaAtiva()||"local";
+      const chave=`${owner}::${id}`;
+      if(!gruposCharacter.has(chave)) gruposCharacter.set(chave,[]);
+      gruposCharacter.get(chave).push(ficha);
+    });
+    const syncLocal=estadoSync();
+    gruposCharacter.forEach(itens=>{
+      const idsSheet=new Set(itens.map(item=>texto(item.sheetId)).filter(Boolean));
+      if(itens.length<2||idsSheet.size<2) return;
+      const pontuar=item=>{
+        const online=item?.data?.__online||{};
+        const meta=syncLocal?.[item.sheetId]||{};
+        let pontos=Number(meta.revision||0)*1000;
+        if(texto(meta.lastHash)) pontos+=250;
+        if(texto(online.ownerUid)) pontos+=120;
+        if(item.name==="Principal") pontos+=20;
+        pontos+=Math.min(100,pontuacaoConteudoFicha(item.data));
+        if(online.userCopy===true||texto(online.sourceSheetId)) pontos-=500;
+        if(online.syncDisabled===true||online.legacyAutoCopy===true) pontos-=1000;
+        return pontos;
+      };
+      const ordenadas=[...itens].sort((a,b)=>pontuar(b)-pontuar(a)||a.name.localeCompare(b.name));
+      const canonica=ordenadas[0];
+      const idCanonico=texto(canonica?.data?.__online?.characterId)||texto(canonica?.data?.__online?.realtimeId);
+      ordenadas.slice(1).forEach(ficha=>{
+        if(texto(ficha.sheetId)===texto(canonica.sheetId)) return;
+        const online=ficha?.data?.__online;
+        const idAtual=texto(online?.characterId)||texto(online?.realtimeId);
+        if(!online||!idAtual||idAtual!==idCanonico) return;
+        online.sourceCharacterId=idAtual;
+        delete online.characterId;
+        delete online.characterOwnerUid;
+        delete online.characterIdentityVersion;
+        delete online.realtimeId;
+        delete online.realtimeOwnerUid;
+        delete online.realtimeIdentityVersion;
+        online.characterSplitVersion=2;
+        online.characterSplitReason="duplicate-local-character-id";
+        try{
+          localStorage.setItem(ficha.key,JSON.stringify(ficha.data));
+          if(ficha.name===ativa&&typeof window.estado!=="undefined"&&window.estado&&typeof window.estado==="object"){
+            window.estado.__online=clonar(online);
+          }
+        }catch(_erro){}
+      });
+    });
+
     /* Remove somente referências fantasmas da lista. Nenhum conteúdo existente
        é apagado aqui. */
     try{
@@ -1179,42 +1246,10 @@
   }
 
   function prepararCopiasLocaisLegadas(){
-    const locais=listarFichasLocais();
-    const grupos=new Map();
-    locais.forEach(ficha=>{
-      const chave=chaveLogicaFicha(ficha)||ficha.sheetId;
-      if(!grupos.has(chave)) grupos.set(chave,[]);
-      grupos.get(chave).push(ficha);
-    });
-    const ativa=fichaAtivaNomeSeguro();
-    grupos.forEach(itens=>{
-      if(itens.length<2) return;
-      const suspeitas=itens.filter(item=>ehNomeCopiaAutomatica(item.name));
-      if(!suspeitas.length) return;
-      const normais=itens.filter(item=>!ehNomeCopiaAutomatica(item.name));
-      const candidatas=normais.length?normais:itens;
-      const principal=[...candidatas].sort((a,b)=>{
-        if(a.name===ativa&&b.name!==ativa) return -1;
-        if(b.name===ativa&&a.name!==ativa) return 1;
-        return pontuacaoConteudoFicha(b.data)-pontuacaoConteudoFicha(a.data);
-      })[0];
-      itens.forEach(item=>{
-        const deveDesativar=item!==principal&&ehNomeCopiaAutomatica(item.name);
-        const atual=fichaBloqueadaNuvem(item);
-        if(atual===deveDesativar) return;
-        const data=clonar(item.data||{});
-        data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
-        if(deveDesativar){
-          data.__online.syncDisabled=true;
-          data.__online.legacyAutoCopy=true;
-        }else{
-          delete data.__online.syncDisabled;
-          delete data.__online.legacyAutoCopy;
-        }
-        localStorage.setItem(item.key,JSON.stringify(data));
-        if(item.name===ativa){try{if(typeof window.estado!=="undefined") window.estado.__online=clonar(data.__online);}catch(_erro){}}
-      });
-    });
+    /* v2.5.8.137 — não classificamos mais uma ficha como cópia automática pelo
+       nome, pelo sufixo "Nuvem" ou porque o conteúdo coincide com outra. Flags
+       legadas já existentes continuam sendo respeitadas por fichaBloqueadaNuvem,
+       mas novas decisões destrutivas/isoladoras exigem evidência explícita. */
     return listarFichasLocais();
   }
 
@@ -1270,14 +1305,18 @@
   }
 
   function fichaAtualLocal(){
-    /* A fonte autoritativa do nome ativo é a mesma usada pelo restante do motor.
-       `fichaAtual` é um `let` global do 01-core e, sem uma ponte explícita, não
-       existe em window. Ler apenas window.fichaAtual fazia esta função cair na
-       primeira ficha da lista (normalmente Principal), mesmo com outra ficha
-       aberta na interface. */
+    /* A ficha ativa precisa existir exatamente sob a chave ativa. Cair para a
+       primeira ficha (normalmente Principal) quando essa chave desaparece pode
+       transformar uma fila/tarefa atrasada em escrita na personagem errada. */
     const atual=fichaAtivaNomeSeguro();
     const locais=listarFichasLocais();
-    return locais.find(f=>f.name===atual)||locais[0]||null;
+    return locais.find(f=>f.name===atual)||null;
+  }
+
+  function fichaLocalSolicitada(localSheetName=""){
+    const nome=texto(localSheetName);
+    if(nome) return listarFichasLocais().find(f=>f.name===nome)||null;
+    return fichaAtualLocal();
   }
 
   function prepararIdentidadeFichaParaConta(nomeFicha){
@@ -1291,9 +1330,10 @@
     const data=clonar(ficha.data||{});
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     const idAntigo=texto(data.__online.sheetId)||idAleatorio("sheet");
-    const metaAntiga=estadoSync()[idAntigo]||{};
-    const jaSincronizada=Boolean(metaAntiga.lastHash||Number(metaAntiga.revision||0)>0);
-    const idNovo=!ownerUid&&!jaSincronizada?sheetIdDeterministico(uid,data.__online.name||ficha.name):idAntigo;
+    /* O sheetId nasce aleatório e permanece estável. Não o convertemos mais
+       para um hash de UID + nome ao entrar na conta: reutilizar um nome deve
+       criar outra ficha, não reconectar a personagem antiga. */
+    const idNovo=idAntigo;
 
     data.__online.sheetId=idNovo;
     data.__online.ownerUid=uid;
@@ -1495,8 +1535,9 @@
     if(!estadoOnline.user) await entrarAnonimo();
     exigirUsuario();
     const encontrada=await buscarSalaPorCodigo(code);
-    let ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
-    if(!ficha) throw new Error("Escolha uma ficha para entrar na sala.");
+    const nomeSolicitado=texto(localSheetName);
+    let ficha=nomeSolicitado?listarFichasLocais().find(f=>f.name===nomeSolicitado):fichaAtualLocal();
+    if(!ficha) throw new Error(nomeSolicitado?"A ficha escolhida não existe mais neste aparelho. Escolha outra ficha.":"Escolha uma ficha para entrar na sala.");
     const api=estadoOnline.api;
 
     const identidade=identidadePersonagemDaFicha(ficha);
@@ -2049,12 +2090,30 @@
     return Boolean(atual&&atual===sessao.participantId);
   }
 
+  function fichaLocalDaSessao(sessao){
+    const referencia=sessao&&typeof sessao==="object"?sessao:{};
+    const locais=listarFichasLocais();
+    /* O sheetId é a referência local mais específica da sessão. characterId
+       existe como ponte para fichas legadas/migradas, nunca nome da ficha. */
+    const sheetId=texto(referencia.sheetId);
+    if(sheetId){
+      const porFicha=locais.find(f=>texto(f.sheetId)===sheetId);
+      if(porFicha) return porFicha;
+    }
+    const characterId=texto(referencia.characterId);
+    if(characterId){
+      return locais.find(f=>{
+        const online=f?.data?.__online||{};
+        return texto(online.characterId||online.realtimeId)===characterId;
+      })||null;
+    }
+    return null;
+  }
+
   function resumoMudancasMeuTurno(){
     const sessao=lerJson(CHAVE_SESSAO,null);
     const participante=meuParticipanteNaSala();
-    const ficha=listarFichasLocais().find(f=>f.sheetId===sessao?.sheetId)
-      ||listarFichasLocais().find(f=>f.name===sessao?.localSheetName)
-      ||fichaAtualLocal();
+    const ficha=fichaLocalDaSessao(sessao);
     if(!ficha) return {turnKey:chaveTurnoAtual(),lines:["Ficha local não encontrada."],changed:false};
     const antes=participante?.battle||{};
     const depois=resumoBatalhaDaFicha(ficha);
@@ -2113,9 +2172,7 @@
     const vinculo=validarVinculoFichaDaSessao(sessao);
     if(!vinculo.ok) throw new Error("Esta sala foi vinculada a outra ficha desta conta. Saia e entre novamente na sala escolhendo a ficha correta.");
 
-    const ficha=listarFichasLocais().find(f=>f.sheetId===sessao.sheetId)
-      ||listarFichasLocais().find(f=>f.name===sessao.localSheetName)
-      ||fichaAtualLocal();
+    const ficha=fichaLocalDaSessao(sessao);
     if(!ficha) throw new Error("Ficha local não encontrada.");
 
     const chave=texto(turnKey)||chaveTurnoAtual(combat);
@@ -2432,7 +2489,10 @@
 
   function referenciaFichaDoParticipante(p){
     return {
+      characterId:texto(p?.characterId),
       sheetId:texto(p?.sheetId||p?.battle?.sourceSheetId||p?.sourceSheetId),
+      /* Mantido apenas para exibição/compatibilidade de payload. Nunca é usado
+         para localizar a ficha que receberá XP ou nível. */
       localSheetName:texto(p?.localSheetName||p?.battle?.sourceSheetName||p?.sourceSheetName)
     };
   }
@@ -2453,7 +2513,7 @@
       const eventRef=api.push(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/events`));
       updates[`rooms/${estadoOnline.salaId}/events/${eventRef.key}`]={
         id:eventRef.key,type:"XP_GRANTED",createdBy:estadoOnline.user.uid,createdAt:agora(),
-        payload:{participantId,targetUid:ownerUid,sheetId:ficha.sheetId,localSheetName:ficha.localSheetName,amount:valor,reason:texto(reason).slice(0,160)}
+        payload:{participantId,targetUid:ownerUid,characterId:ficha.characterId,sheetId:ficha.sheetId,localSheetName:ficha.localSheetName,amount:valor,reason:texto(reason).slice(0,160)}
       };
     });
     await api.update(api.ref(estadoOnline.db),updates);
@@ -2477,7 +2537,7 @@
     updates[`rooms/${estadoOnline.salaId}/events/${eventRef.key}`]={
       id:eventRef.key,type:"LEVEL_SET",createdBy:estadoOnline.user.uid,createdAt:agora(),
       payload:{
-        participantId,targetUid:ownerUid,sheetId:ficha.sheetId,localSheetName:ficha.localSheetName,
+        participantId,targetUid:ownerUid,characterId:ficha.characterId,sheetId:ficha.sheetId,localSheetName:ficha.localSheetName,
         level:valor,reason:texto(reason).slice(0,160)
       }
     };
@@ -2540,19 +2600,23 @@
       const eventos=Object.values(room.events||{})
         .filter(e=>{
           if(!["XP_GRANTED","LEVEL_SET"].includes(e.type)||e.payload?.targetUid!==user.uid) return false;
-          const alvoParticipante=texto(e.payload?.participantId);
+          const alvoPersonagem=texto(e.payload?.characterId);
           const alvoFicha=texto(e.payload?.sheetId);
-          return (alvoParticipante&&alvoParticipante===texto(sessao.participantId)) || (alvoFicha&&alvoFicha===texto(sessao.sheetId));
+          /* participantId/UID e nome não são identidade suficiente para aplicar
+             uma recompensa em dados permanentes. Eventos legados sem sheetId
+             ou characterId ficam preservados na sala, mas não são aplicados
+             automaticamente a uma ficha diferente. */
+          return (alvoPersonagem&&alvoPersonagem===texto(sessao.characterId)) || (alvoFicha&&alvoFicha===texto(sessao.sheetId));
         })
         .sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
 
       for(const evento of eventos){
+        const characterId=texto(evento.payload?.characterId);
         const sheetId=texto(evento.payload?.sheetId);
-        const nome=texto(evento.payload?.localSheetName);
         let fichasLocais=listarFichasLocais();
         let ficha=sheetId
-          ?fichasLocais.find(f=>f.sheetId===sheetId)
-          :fichasLocais.find(f=>f.name===nome);
+          ?fichasLocais.find(f=>texto(f.sheetId)===sheetId)
+          :(characterId?fichasLocais.find(f=>texto(f.data?.__online?.characterId||f.data?.__online?.realtimeId)===characterId):null);
         if(!ficha) continue;
 
         const ackAtual=room.eventAcks?.[evento.id]?.[user.uid];
@@ -2571,8 +2635,8 @@
              ter chegado enquanto o Firebase concluía a transação. */
           fichasLocais=listarFichasLocais();
           ficha=sheetId
-            ?fichasLocais.find(f=>f.sheetId===sheetId)
-            :fichasLocais.find(f=>f.name===nome);
+            ?fichasLocais.find(f=>texto(f.sheetId)===sheetId)
+            :(characterId?fichasLocais.find(f=>texto(f.data?.__online?.characterId||f.data?.__online?.realtimeId)===characterId):null);
           if(!ficha){
             await liberarReivindicacaoXp(claim.refAck,claim.deviceId);
             continue;
@@ -2768,7 +2832,7 @@
 
   function marcarFichaPendente(localSheetName,{motivo="alteracao",modo="imediato"}={}){
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return null;
-    const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    const ficha=fichaLocalSolicitada(localSheetName);
     if(!ficha||fichaBloqueadaNuvem(ficha)) return null;
     estadoOnline.dirtySheets.add(ficha.sheetId);
     adicionarOutbox(ficha.sheetId,"upsert",{name:ficha.name,reason:texto(motivo),mode:texto(modo)||"imediato"});
@@ -2817,69 +2881,59 @@
     const existente=locais.find(f=>f.sheetId===sheetId);
     if(existente) return {linked:true,localName:existente.name,reusedLocal:true,divergent:false,alreadyLinked:true};
 
-    const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
-    const grupoIds=new Set(groupIds.map(texto));
     const uid=uidContaAtiva();
-    const mesmaPersonagem=locais.filter(local=>{
-      const ownerUid=texto(local.data?.__online?.ownerUid);
-      return chaveLogicaFicha(local)===chaveCloud&&(!ownerUid||ownerUid===uid);
-    });
-    let candidato=[...mesmaPersonagem].sort((a,b)=>{
-      const aDes=fichaBloqueadaNuvem(a),bDes=fichaBloqueadaNuvem(b);
-      if(aDes!==bDes) return Number(aDes)-Number(bDes);
-      const aNormal=!ehNomeCopiaAutomatica(a.name),bNormal=!ehNomeCopiaAutomatica(b.name);
-      if(aNormal!==bNormal) return Number(bNormal)-Number(aNormal);
-      const ativa=fichaAtivaNomeSeguro();
-      if(a.name===ativa&&b.name!==ativa) return -1;
-      if(b.name===ativa&&a.name!==ativa) return 1;
-      const aGrupo=grupoIds.has(texto(a.sheetId)),bGrupo=grupoIds.has(texto(b.sheetId));
-      if(aGrupo!==bGrupo) return Number(bGrupo)-Number(aGrupo);
-      return pontuacaoConteudoFicha(b.data)-pontuacaoConteudoFicha(a.data);
-    })[0];
 
-    if(candidato){
-      const antigoId=candidato.sheetId;
-      const data=clonar(candidato.data||{});
+    /* v2.5.8.137 — sheetId é a identidade autoritativa do backup.
+       Nunca transformamos uma ficha local já existente em outra ficha remota
+       só porque nome ou characterId coincidem: ambos já puderam ser herdados
+       por cópias defeituosas em versões antigas. */
+    let placeholder=null;
+    if(texto(cloud.name)==="Principal"){
+      const principal=locais.find(local=>local.name==="Principal");
+      if(principal&&!fichaBloqueadaNuvem(principal)){
+        const meta=estadoSync()[principal.sheetId]||{};
+        const semHistorico=!texto(meta.lastHash)&&Number(meta.revision||0)===0;
+        const onlineLocal=principal.data?.__online||{};
+        const semVinculoRemoto=!texto(onlineLocal.ownerUid)&&!texto(onlineLocal.characterId)&&!texto(onlineLocal.realtimeId);
+        if(semHistorico&&semVinculoRemoto&&pontuacaoConteudoFicha(principal.data)<=4) placeholder=principal;
+      }
+    }
+
+    if(placeholder){
+      const antigoId=placeholder.sheetId;
+      /* O slot Principal está vazio: copiamos o snapshot remoto inteiro, em vez
+         de preservar a identidade aleatória do placeholder. */
+      const data=clonar(cloud.data||{});
       data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
       data.__online.sheetId=sheetId;
-      data.__online.ownerUid=uidContaAtiva();
+      data.__online.ownerUid=uid;
       data.__online.identityVersion=2;
-      data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(candidato.name);
-      data.__online.name=candidato.name;
+      data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(placeholder.name);
+      data.__online.name=placeholder.name;
       delete data.__online.syncDisabled;
       delete data.__online.legacyAutoCopy;
-      localStorage.setItem(candidato.key,JSON.stringify(data));
-      const ativa=fichaAtivaNomeSeguro()===candidato.name;
-      if(ativa){try{if(typeof window.estado!=="undefined") window.estado.__online=clonar(data.__online);}catch(_erro){}}
+      localStorage.setItem(placeholder.key,JSON.stringify(data));
+      if(fichaAtivaNomeSeguro()===placeholder.name){
+        try{if(typeof window.estado!=="undefined") window.estado=clonar(data);}catch(_erro){}
+      }
 
-      const localHashSemVinculo=hashFichaSemVinculo(data);
-      const cloudHashSemVinculo=hashFichaSemVinculo(cloud.data);
-      const identica=localHashSemVinculo===cloudHashSemVinculo;
       const sync=estadoSync();
       const metaAntiga=sync[antigoId]||{};
       if(antigoId!==sheetId) delete sync[antigoId];
-      if(identica){
-        sync[sheetId]={
-          ...metaAntiga,revision:Number(cloud.revision||0),
-          lastHash:hashFicha(data),lastSyncedAt:Number(cloud.updatedAt||agora()),
-          deviceId:texto(cloud.deviceId),syncStatus:1,phase:"synced",pendingMode:"",pendingReason:"",statusUpdatedAt:agora()
-        };
-        estadoOnline.dirtySheets.delete(antigoId);
-        estadoOnline.dirtySheets.delete(sheetId);
-      }else{
-        sync[sheetId]={
-          ...metaAntiga,revision:0,lastHash:"",lastSyncedAt:Number(metaAntiga.lastSyncedAt||0),
-          syncStatus:0,phase:"pending",pendingMode:"imediato",pendingReason:"primeiro-vinculo",statusUpdatedAt:agora()
-        };
-        if(estadoOnline.dirtySheets.has(antigoId)) estadoOnline.dirtySheets.add(sheetId);
-        estadoOnline.dirtySheets.delete(antigoId);
-      }
+      sync[sheetId]={
+        ...metaAntiga,revision:Number(cloud.revision||0),
+        lastHash:hashFicha(data),lastSyncedAt:Number(cloud.updatedAt||agora()),
+        deviceId:texto(cloud.deviceId),syncStatus:1,phase:"synced",pendingMode:"",pendingReason:"",statusUpdatedAt:agora()
+      };
       gravarEstadoSync(sync);
+      estadoOnline.dirtySheets.delete(antigoId);
+      estadoOnline.dirtySheets.delete(sheetId);
+      removerOutbox(antigoId,{});
       emitir("ficha-vinculada-nuvem",{
-        sheetId,name:candidato.name,characterName:texto(data.nome)||texto(cloud.characterName)||candidato.name,
-        revision:Number(cloud.revision||0),reusedLocal:true,divergent:!identica,oldSheetId:antigoId
+        sheetId,name:placeholder.name,characterName:texto(data.nome)||texto(cloud.characterName)||placeholder.name,
+        revision:Number(cloud.revision||0),reusedLocal:true,placeholder:true,divergent:false,oldSheetId:antigoId
       });
-      return {linked:true,localName:candidato.name,reusedLocal:true,divergent:!identica,oldSheetId:antigoId};
+      return {linked:true,localName:placeholder.name,reusedLocal:true,placeholder:true,divergent:false,oldSheetId:antigoId};
     }
 
     const data=clonar(cloud.data||{});
@@ -2887,7 +2941,7 @@
     const nome=nomeLocalDisponivel(nomeCloud);
     data.__online=data.__online&&typeof data.__online==="object"?data.__online:{};
     data.__online.sheetId=sheetId;
-    data.__online.ownerUid=uidContaAtiva();
+    data.__online.ownerUid=uid;
     data.__online.identityVersion=2;
     data.__online.originKey=data.__online.originKey||chaveIdentidadeFicha(nome);
     data.__online.name=nome;
@@ -3110,21 +3164,6 @@
       const localHash=hashFicha(local.data||{});
       const cloudHash=hashFicha(cloud?.data||{});
 
-      /* No primeiro encontro entre dois aparelhos, o mesmo personagem pode ter
-         sido editado antes de receber a identidade da nuvem. Em vez de criar
-         "Nuvem 2/3/4", vinculamos ao mesmo sheetId e só decidimos o conteúdo. */
-      if(vinculo?.divergent){
-        const pontosLocal=pontuacaoConteudoFicha(local.data);
-        const pontosCloud=pontuacaoConteudoFicha(cloud.data);
-        if(pontosLocal<=4&&pontosCloud>pontosLocal){
-          if(await aplicarFichaDaNuvemNoLocal(sheetId,cloud,local,{motivo:"primeiro-vinculo"})) marcarFichaLimpa(sheetId);
-        }else{
-          definirStatusSync(sheetId,0,"conflict",{pendingMode:"imediato",pendingReason:"primeiro-vinculo-divergente"});
-          emitir("conflito-ficha",{sheetId,local,cloud,reason:alteracaoPareceEsvaziamento(cloud.data,local.data)?"cloud-data-loss":"first-link-divergent"});
-        }
-        continue;
-      }
-
       const meta=sync[sheetId]||estadoSync()[sheetId]||{};
       const localRevision=Number(meta.revision||0);
       if(cloudRevision<=localRevision){
@@ -3235,9 +3274,10 @@
       characterOwnerUid:texto(dados.__online.characterOwnerUid),
       realtimeId:texto(dados.__online.realtimeId),
       realtimeOwnerUid:texto(dados.__online.realtimeOwnerUid),
-      deterministicId:(conta,nomeFicha)=>sheetIdDeterministico(conta,nomeFicha).replace(/^sheet_/,"rt_")
+      /* O fallback usa o sheetId persistente, nunca o nome da ficha. */
+      deterministicId:()=>characterIdPorSheetId(uid,dados.__online.sheetId)
     }):null;
-    const realtimeId=texto(resolvida?.realtimeId)||texto(dados.__online.realtimeId)||sheetIdDeterministico(uid,nome).replace(/^sheet_/,"rt_");
+    const realtimeId=texto(resolvida?.realtimeId)||texto(dados.__online.realtimeId)||characterIdPorSheetId(uid,dados.__online.sheetId);
     const characterId=texto(resolvida?.characterId)||realtimeId;
     dados.__online.characterId=characterId;
     dados.__online.characterOwnerUid=uid;
@@ -3274,7 +3314,7 @@
     exigirContaGoogle();
     capturarEstadoAtualAntesDaSincronizacao(localSheetName);
     prepararIdentidadeFichaParaConta(localSheetName);
-    const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    const ficha=fichaLocalSolicitada(localSheetName);
     if(!ficha) throw new Error("Ficha local não encontrada.");
     const ownerUid=texto(ficha.data?.__online?.ownerUid);
     if(ownerUid&&ownerUid!==uidContaAtiva()) throw new Error("Esta ficha local pertence a outra Conta Google neste aparelho.");
@@ -3356,7 +3396,7 @@
 
   function sincronizarFicha(localSheetName,opcoes={}){
     exigirContaGoogle();
-    const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    const ficha=fichaLocalSolicitada(localSheetName);
     if(!ficha) return Promise.reject(new Error("Ficha local não encontrada."));
     if(fichaBloqueadaNuvem(ficha)) return Promise.resolve({skipped:true,legacyRecovery:true});
     const sheetId=ficha.sheetId;
@@ -3377,7 +3417,7 @@
 
   async function atualizarBackupEstrutural(localSheetName,{motivo="backup-automatico-estrutural"}={}){
     exigirContaGoogle();
-    let ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    let ficha=fichaLocalSolicitada(localSheetName);
     if(!ficha) throw new Error("Ficha local não encontrada.");
     if(fichaBloqueadaNuvem(ficha)) return {skipped:true,legacyRecovery:true};
 
@@ -3406,7 +3446,7 @@
     }
 
     capturarEstadoAtualAntesDaSincronizacao(ficha.name);
-    ficha=listarFichasLocais().find(f=>f.name===ficha.name)||fichaAtualLocal();
+    ficha=listarFichasLocais().find(f=>f.name===ficha.name)||null;
     if(!ficha||fichaBloqueadaNuvem(ficha)) return {skipped:true,legacyRecovery:true};
     const data=garantirMetadadosFichaLocal(ficha.name,ficha.data);
     const conteudoHash=hashFicha(data);
@@ -3453,7 +3493,9 @@
     for(const op of Object.values(pendentes)){
       const sheetId=texto(op?.sheetId);
       if(!sheetId) continue;
-      const ficha=listarFichasLocais().find(f=>f.sheetId===sheetId)||listarFichasLocais().find(f=>f.name===texto(op?.name));
+      /* Uma pendência pertence ao sheetId que a criou. Se essa ficha foi
+         removida, reutilizar o mesmo nome em outra ficha não pode herdar a fila. */
+      const ficha=listarFichasLocais().find(f=>f.sheetId===sheetId);
       if(!ficha){removerBackupEstruturalPendente(sheetId,uid);continue;}
       if(fichaBloqueadaNuvem(ficha)){removerBackupEstruturalPendente(sheetId,uid);continue;}
       /* Não abrimos/sincronizamos fichas de fundo apenas para fazer backup. A
@@ -3590,7 +3632,7 @@
     exigirContaGoogle();
     capturarEstadoAtualAntesDaSincronizacao(localSheetName);
     prepararIdentidadeFichaParaConta(localSheetName||fichaAtivaNomeSeguro());
-    const ficha=listarFichasLocais().find(f=>f.name===(texto(localSheetName)||fichaAtivaNomeSeguro()))||fichaAtualLocal();
+    const ficha=fichaLocalSolicitada(localSheetName);
     if(!ficha)throw new Error("Ficha local não encontrada.");
     if(fichaBloqueadaNuvem(ficha))return {skipped:true,legacyRecovery:true};
     const resultado=await criarBackupFicha(ficha,{reason:texto(motivo)||"manual",type:"manual"});
@@ -3616,7 +3658,7 @@
     try{if(localStorage.getItem(chaveOk)===dayKey)return {ok:true,created:false,skipped:true,sheetId:ficha.sheetId,backupId,dayKey};}catch(_erro){}
     const refBackup=api.ref(estadoOnline.db,`sheetBackups/${uid}/${ficha.sheetId}/${backupId}`);
     capturarEstadoAtualAntesDaSincronizacao(ficha.name);
-    const atualizada=listarFichasLocais().find(f=>f.name===ficha.name)||fichaAtualLocal()||ficha;
+    const atualizada=listarFichasLocais().find(f=>f.name===ficha.name)||ficha;
     const registro={
       name:atualizada.name,characterName:atualizada.characterName,revision:Number((estadoSync()[atualizada.sheetId]||{}).revision||0),
       createdAt:agora(),reason:"automatico-diario",type:"daily",dayKey,
@@ -3670,7 +3712,7 @@
     if(!registro.data||typeof registro.data!=="object"||Array.isArray(registro.data))throw new Error("Este backup histórico não contém uma ficha válida.");
 
     capturarEstadoAtualAntesDaSincronizacao(atual.name);
-    const antes=listarFichasLocais().find(f=>f.name===atual.name)||fichaAtualLocal()||atual;
+    const antes=listarFichasLocais().find(f=>f.name===atual.name)||atual;
     const preparar=backupUtils().prepararSnapshotRestaurado;
     const restaurada=typeof preparar==="function"?preparar(registro.data,antes.data):clonar(registro.data);
     restaurada.__online=clonar(antes.data?.__online||{});
@@ -3759,16 +3801,11 @@
     const locais=prepararCopiasLocaisLegadas();
     const uid=uidContaAtiva();
     const identidadeApi=window.EkoCharacterIdentity;
-    const chaveCloud=chaveLogicaFicha({name:cloud.name,characterName:cloud.characterName,data:cloud.data});
     const vinculada=locais.find(f=>f.sheetId===sheetId);
-    const mesmaIdentidade=!asCopy&&typeof identidadeApi?.sameCharacterIdentity==="function"
-      ?locais.find(f=>!fichaBloqueadaNuvem(f)&&identidadeApi.sameCharacterIdentity(f.data?.__online||{},data.__online||{},uid))
-      :null;
-    const mesmaPersonagem=locais.find(f=>{
-      const ownerUid=texto(f.data?.__online?.ownerUid);
-      return chaveLogicaFicha(f)===chaveCloud&&!fichaBloqueadaNuvem(f)&&(!ownerUid||ownerUid===uid);
-    });
-    let nome=vinculada?.name||mesmaIdentidade?.name||mesmaPersonagem?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
+    /* Restaurar um backup remoto só substitui uma ficha que já possua exatamente
+       o mesmo sheetId. characterId igual não é suficiente para sobrescrever uma
+       chave local, pois versões antigas puderam duplicá-lo por engano. */
+    let nome=vinculada?.name||texto(cloud.name)||texto(cloud.characterName)||"Ficha restaurada";
 
     if(asCopy){
       const base=`${nome} Cópia`,nMax=1000;let n=2,candidato=base;
@@ -3779,7 +3816,10 @@
       data.__online.userCopy=true;
       data.__online.sourceSheetId=sheetId;
     }else{
-      const anterior=vinculada||mesmaIdentidade||mesmaPersonagem;
+      /* Sem correspondência explícita de sheetId, baixar uma ficha nunca
+         substitui outra apenas porque nome ou characterId são iguais. */
+      if(!vinculada) nome=nomeLocalDisponivel(nome);
+      const anterior=vinculada;
       if(anterior&&pontuacaoConteudoFicha(anterior.data)>=8){
         try{await criarBackupFicha(anterior,{reason:"antes-restaurar-nuvem",revision:Number((estadoSync()[anterior.sheetId]||{}).revision||0)});}catch(_erro){}
       }
@@ -3787,7 +3827,7 @@
       if(typeof identidadeApi?.resolveCloudCharacterIdentity==="function"){
         const identidade=identidadeApi.resolveCloudCharacterIdentity({
           uid,name:nome,online:data.__online,
-          deterministicId:(conta,nomeFicha)=>sheetIdDeterministico(conta,nomeFicha).replace(/^sheet_/,"rt_")
+          deterministicId:()=>characterIdPorSheetId(uid,sheetId)
         });
         if(texto(identidade?.characterId)){
           data.__online.characterId=identidade.characterId;
@@ -3914,14 +3954,18 @@
 
   function agendarSincronizacaoFicha(localSheetName,{imediata=false,motivo="autosave"}={}){
     if(!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.configurado) return;
-    const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    const ficha=fichaLocalSolicitada(localSheetName);
     if(!ficha||fichaBloqueadaNuvem(ficha)) return;
     const sheetId=ficha.sheetId;
     marcarFichaPendente(ficha.name,{motivo,modo:"imediato"});
     limparAgendamentoSync(sheetId);
     const timer=setTimeout(()=>{
       estadoOnline.syncTimers.delete(sheetId);
-      sincronizarFicha(ficha.name,{motivo}).catch(erro=>{
+      /* A tarefa pertence ao sheetId que a criou. Se o nome foi reutilizado
+         por outra ficha antes do timer disparar, não enviamos a nova ficha. */
+      const alvo=listarFichasLocais().find(item=>texto(item.sheetId)===texto(sheetId));
+      if(!alvo)return;
+      sincronizarFicha(alvo.name,{motivo}).catch(erro=>{
         estadoOnline.dirtySheets.add(sheetId);
         emitir("erro-sync",{mensagem:erroAmigavel(erro),erro});
       });
