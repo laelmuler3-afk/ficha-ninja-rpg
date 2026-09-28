@@ -472,3 +472,28 @@ body.onlineAberto{overflow:hidden}
 .onlineCampanhaMembroIcone{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(54,215,125,.08);border:1px solid rgba(54,215,125,.16);color:#83d39f;font:900 15px/1 serif}
 .onlineCampanhaMembro>div:last-child{min-width:0;display:grid;gap:2px}.onlineCampanhaMembro small{color:#75c792;font:800 8px/1 system-ui;letter-spacing:.08em}.onlineCampanhaMembro strong{color:#f1e3cf;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.onlineCampanhaMembro span{color:#8d806e;font-size:9px}
 @media(max-width:560px){.onlineCampanhaMembrosTitulo{align-items:flex-start;flex-direction:column;gap:3px}.onlineCampanhaMembrosTitulo small{text-align:left}.onlineVinculoOpcao{padding:8px}}
+
+/* v2.5.8.135 — biblioteca permanente de NPCs da campanha. */
+.onlineCampanhaNpcTitulo{margin-top:18px}
+.onlineCampanhaNpcs{display:grid;gap:8px}
+.onlineCampanhaNpc{padding:11px;border:1px solid rgba(225,168,92,.18);border-radius:12px;background:linear-gradient(145deg,rgba(225,168,92,.035),#0b0f13 58%)}
+.onlineCampanhaNpcTopo{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.onlineCampanhaNpcTopo>div:first-child{min-width:0;display:grid;gap:2px}
+.onlineCampanhaNpcTopo small{color:#d2a15f;font:800 8px/1 system-ui;letter-spacing:.09em}
+.onlineCampanhaNpcTopo strong{color:#f1dfc6;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.onlineCampanhaNpcTopo span{color:#897966;font-size:9px}
+.onlineCampanhaNpcAcoes{display:flex;align-items:center;gap:3px;flex:0 0 auto}
+.onlineCampanhaNpcAcoes .perigo{color:#d98982!important}
+.onlineCampanhaNpcStats{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.onlineCampanhaNpcStats span{padding:5px 7px;border:1px solid rgba(255,255,255,.06);border-radius:999px;background:#0d1115;color:#8e8171;font-size:9px}
+.onlineCampanhaNpcStats b{color:#e9dac5}
+.onlineCampanhaNpcNota{margin:8px 0 0!important;padding:8px 9px;border-left:2px solid rgba(225,168,92,.32);border-radius:0 8px 8px 0;background:rgba(225,168,92,.035);color:#8f8170!important;font-size:9px!important;line-height:1.4!important}
+.onlineCampanhaNpcNota b{color:#c7a373}
+.onlineNpcBibliotecaCriar{margin-top:10px}
+.onlineNpcDaBiblioteca{margin-bottom:10px;border-color:rgba(54,215,125,.15)!important;background:linear-gradient(145deg,rgba(54,215,125,.035),#0b0f13)!important}
+.onlineNpcTemporario{margin-top:2px}
+@media(max-width:560px){
+  .onlineCampanhaNpcTopo{display:grid;grid-template-columns:minmax(0,1fr) auto}
+  .onlineCampanhaNpcAcoes{align-self:start}
+  .onlineCampanhaNpcStats{gap:4px}
+}
