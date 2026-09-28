@@ -1130,6 +1130,40 @@
       });
     });
 
+    /* v2.5.8.136 — reparo de identidade herdada durante criação/troca de ficha.
+       A falha antiga podia salvar o estado da ficha de origem na chave recém-
+       criada durante pagehide. A colisão de sheetId já era separada acima, mas
+       characterId/realtimeId permaneciam iguais e faziam duas fichas editar o
+       mesmo personagem. Só rompemos a identidade quando há evidência forte:
+       userCopy + sourceSheetId apontando para uma ficha local e a identidade de
+       personagem ainda é exatamente a mesma da origem. O conteúdo nunca é
+       apagado automaticamente. */
+    const porSheetId=new Map(fichasValidas.map(item=>[texto(item.sheetId),item]));
+    fichasValidas.forEach(ficha=>{
+      const online=ficha?.data?.__online;
+      if(!online||online.userCopy!==true||!texto(online.sourceSheetId)||online.characterSplitVersion===1) return;
+      const origem=porSheetId.get(texto(online.sourceSheetId));
+      if(!origem||origem===ficha) return;
+      const idAtual=texto(online.characterId)||texto(online.realtimeId);
+      const idOrigem=texto(origem.data?.__online?.characterId)||texto(origem.data?.__online?.realtimeId);
+      if(!idAtual||!idOrigem||idAtual!==idOrigem) return;
+      online.sourceCharacterId=idAtual;
+      delete online.characterId;
+      delete online.characterOwnerUid;
+      delete online.characterIdentityVersion;
+      delete online.realtimeId;
+      delete online.realtimeOwnerUid;
+      delete online.realtimeIdentityVersion;
+      online.characterSplitVersion=1;
+      online.characterSplitReason="local-sheet-copy-collision";
+      try{
+        localStorage.setItem(ficha.key,JSON.stringify(ficha.data));
+        if(ficha.name===ativa&&typeof window.estado!=="undefined"&&window.estado&&typeof window.estado==="object"){
+          window.estado.__online=clonar(online);
+        }
+      }catch(_erro){}
+    });
+
     /* Remove somente referências fantasmas da lista. Nenhum conteúdo existente
        é apagado aqui. */
     try{

@@ -6,6 +6,13 @@
   window.__performanceV3Ativa = true;
 
   window.salvarImediatoV3 = function(){
+    /* Durante criação/troca/renomeação de ficha, CHAVE pode já apontar para
+       o destino enquanto `estado` ainda representa a ficha de origem. Salvar
+       nesse intervalo copia a ficha antiga para a nova e também herda a
+       identidade online. A transição explícita já salvou a origem antes. */
+    if(window.__shinobiSheetTransition===true){
+      return false;
+    }
     if(
       typeof estado === "undefined" ||
       typeof CHAVE === "undefined"
