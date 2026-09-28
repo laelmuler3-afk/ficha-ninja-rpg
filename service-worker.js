@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.133 — Mesa do Mestre 2.0 — campanha permanente.
+/* Ficha Ninja RPG 2.5.8.134 — Mesa do Mestre 2.0 — campaignMembers.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.133";
+const APP_VERSION = "2.5.8.134";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

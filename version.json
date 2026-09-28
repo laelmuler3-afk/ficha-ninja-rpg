@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.133",
-  "name": "Mesa do Mestre 2.0 — campanha permanente",
-  "notes": "Cria a Área do Mestre independente da sala: campanhas podem ser abertas sem iniciar sessão, a criação e retomada de salas ficam dentro da campanha e campanhas legadas recebem migração aditiva de schema ao serem abertas. Jogadores permanentes, NPCs e XP continuam reservados para as próximas etapas.",
+  "version": "2.5.8.134",
+  "name": "Mesa do Mestre 2.0 — jogadores permanentes",
+  "notes": "Ativa campaignMembers: personagens autenticados podem ser vinculados permanentemente à campanha por userId + characterId, continuam reconhecidos em sessões futuras, personagens temporários podem entrar somente na sessão e a Área do Mestre passa a listar os jogadores permanentes. Salas legadas permanecem compatíveis sem migração destrutiva de participantes em combate.",
   "date": "2026-09-28"
 }
