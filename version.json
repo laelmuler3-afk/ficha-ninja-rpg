@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.132",
-  "name": "Mesa do Mestre 2.0 — organização por contexto",
-  "notes": "Separa a sala do mestre em modos Combate e Gestão sem alterar o modelo de dados ou os handlers Firebase. Combate concentra rodada, participantes e efeitos; Gestão reúne convite, NPCs, XP e encerramento da sala.",
+  "version": "2.5.8.133",
+  "name": "Mesa do Mestre 2.0 — campanha permanente",
+  "notes": "Cria a Área do Mestre independente da sala: campanhas podem ser abertas sem iniciar sessão, a criação e retomada de salas ficam dentro da campanha e campanhas legadas recebem migração aditiva de schema ao serem abertas. Jogadores permanentes, NPCs e XP continuam reservados para as próximas etapas.",
   "date": "2026-09-28"
 }
