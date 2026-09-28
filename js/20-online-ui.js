@@ -47,6 +47,11 @@
       if(campanhaMestreId)localStorage.setItem(CHAVE_CAMPANHA_MESTRE,campanhaMestreId);
       else localStorage.removeItem(CHAVE_CAMPANHA_MESTRE);
     }catch(_erro){}
+    if(campanhaMestreId){
+      window.ShinobiOnline?.observarMembrosCampanha?.(campanhaMestreId).catch(()=>{});
+    }else{
+      window.ShinobiOnline?.pararObservacaoMembrosCampanha?.();
+    }
   }
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
   function participanteAtual(st){const o=ordem(st);return st?.sala?.participants?.[o[num(st?.sala?.combat?.turnIndex)]]||null;}
@@ -556,12 +561,28 @@
 
   function renderEntradaSala(st){
     const codigoUrl=window.ShinobiOnline?.codigoDaUrl?.()||"";
+    const contaPermanente=Boolean(st?.user&&!st.user.anonymous);
+    const vinculo=contaPermanente?`
+      <fieldset class="onlineVinculoCampanha">
+        <legend>Vínculo do personagem</legend>
+        <label class="onlineVinculoOpcao">
+          <input type="radio" name="membershipMode" value="campaign" checked>
+          <span><b>Adicionar à campanha</b><small>Fica reconhecido nas próximas sessões desta campanha.</small></span>
+        </label>
+        <label class="onlineVinculoOpcao">
+          <input type="radio" name="membershipMode" value="session">
+          <span><b>Somente nesta sessão</b><small>Entra na sala sem criar um vínculo permanente novo.</small></span>
+        </label>
+      </fieldset>`:`
+      <input type="hidden" name="membershipMode" value="session">
+      <p class="onlineAjuda onlineVinculoTemporario">Sem Conta Google, o personagem entra somente nesta sessão.</p>`;
     return `<section class="onlineCard">
       <span class="onlineCardSelo">ENTRAR EM UMA SALA</span>
       <h3>Código ou QR Code</h3>
       <form data-form="join-room" class="onlineForm">
         <label>Código da sala<input name="code" maxlength="6" autocomplete="off" value="${esc(codigoUrl)}" placeholder="ABC234" required></label>
         <label>Ficha usada na mesa<select name="localSheetName">${opcoesFichasLocais()}</select></label>
+        ${vinculo}
         <div class="onlineAcoesLinha">
           <button class="onlineBtn primario" type="submit">Entrar na sala</button>
           <button class="onlineBtn secundario" type="button" data-action="scan-qr">Escanear QR</button>
@@ -614,6 +635,11 @@
   }
 
   function renderCampanhaMestre(st,campanha){
+    if(st.membrosCampanhaId!==campanha.id){
+      window.ShinobiOnline?.observarMembrosCampanha?.(campanha.id).catch(()=>{});
+    }
+    const membrosCarregados=st.membrosCampanhaId===campanha.id;
+    const membros=(membrosCarregados?st.membrosCampanha:[]).filter(m=>m?.status!=="inactive");
     const sessoes=Object.entries(campanha.rooms||{}).map(([id,sala])=>({id,...(sala||{})})).sort((a,b)=>num(b.createdAt)-num(a.createdAt));
     const abertas=sessoes.filter(s=>s.status==="open");
     const encerradas=sessoes.filter(s=>s.status!=="open");
@@ -630,6 +656,14 @@
         ${aberta?`<button type="button" class="onlineBtn ${atual?"primario":"secundario"} compacto" data-action="open-campaign-room" data-campaign-id="${esc(campanha.id)}" data-room-id="${esc(sessao.id)}">${atual?"Abrir sala atual":"Entrar como mestre"}</button>`:""}
       </article>`;
     };
+    const listaMembros=!membrosCarregados
+      ? `<p class="onlineVazio">Carregando jogadores da campanha...</p>`
+      : membros.length
+        ? `<div class="onlineCampanhaMembros">${membros.map(membro=>`<article class="onlineCampanhaMembro">
+            <div class="onlineCampanhaMembroIcone">忍</div>
+            <div><small>PERSONAGEM DA CAMPANHA</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>Vínculo permanente${membro.joinedAt?` • desde ${esc(formatarDataSessao(membro.joinedAt))}`:""}</span></div>
+          </article>`).join("")}</div>`
+        : `<p class="onlineVazio">Nenhum personagem permanente ainda. O primeiro vínculo será criado quando um jogador entrar em uma sala escolhendo “Adicionar à campanha”.</p>`;
     return `<div class="onlineDestinoPagina" data-online-destino="area-mestre">
       ${cabecalhoConta(st)}
       <section class="onlineCard onlineCampanhaHero">
@@ -644,14 +678,16 @@
       </section>
 
       <section class="onlineCard onlineCampanhaArquitetura">
-        <div class="onlineCardTitulo"><div><span class="onlineCardSelo">GESTÃO PERMANENTE</span><h3>Base da campanha</h3></div><small>Estrutura preparada</small></div>
-        <p>Esta área agora é independente das salas. Os módulos permanentes serão ativados nas próximas etapas sem depender de combate aberto.</p>
+        <div class="onlineCardTitulo"><div><span class="onlineCardSelo">GESTÃO PERMANENTE</span><h3>Base da campanha</h3></div><small>${membros.length} personagem(s)</small></div>
+        <p>Jogadores permanentes agora pertencem à campanha, não à sala. NPCs, XP e encontros entram nas próximas etapas.</p>
         <div class="onlineCampanhaModulos">
-          <div><b>Jogadores</b><span>Vínculos permanentes</span><em>Próxima etapa</em></div>
+          <div class="ativo"><b>Jogadores</b><span>Vínculos permanentes</span><em>Ativo</em></div>
           <div><b>NPCs</b><span>Biblioteca da campanha</span><em>Próxima etapa</em></div>
           <div><b>XP</b><span>Histórico e recompensas</span><em>Próxima etapa</em></div>
           <div><b>Encontros e notas</b><span>Preparação do mestre</span><em>Próxima etapa</em></div>
         </div>
+        <div class="onlineCampanhaMembrosTitulo"><strong>Jogadores da campanha</strong><small>Reconhecidos por conta + personagem</small></div>
+        ${listaMembros}
       </section>
 
       <section class="onlineCard">
@@ -1610,7 +1646,8 @@
           const sessao=sessaoLocal();
           if(sessao?.role==="player"&&fichaEscolhida&&fichaEscolhida!==String(sessao.localSheetName||"")){
             return executar(async()=>{
-              await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:fichaEscolhida});
+              const resultado=await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:fichaEscolhida,membershipMode:dados.get("membershipMode")});
+              if(resultado?.campaignMemberCreated) await avisar("Personagem adicionado à campanha",`${window.ShinobiOnline.fichaAtualLocal()?.characterName||fichaEscolhida} ficará reconhecido nas próximas sessões desta campanha.`);
               pararScanner();
               destinoAtual="sala-atual";
             });
@@ -1622,7 +1659,8 @@
       }
       return executar(async()=>{
         if(obterEstado().sala)await window.ShinobiOnline.sairDaSala({silencioso:true});
-        await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:dados.get("localSheetName")});
+        const resultado=await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:dados.get("localSheetName"),membershipMode:dados.get("membershipMode")});
+        if(resultado?.campaignMemberCreated) await avisar("Personagem adicionado à campanha","Este personagem agora possui um vínculo permanente e será reconhecido nas próximas sessões desta campanha.");
         pararScanner();
         destinoAtual="sala-atual";
       });
@@ -1711,7 +1749,7 @@
   function instalarEventos(){
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
-    ["status","pronto","auth","campanhas","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
+    ["status","pronto","auth","campanhas","membros-campanha","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
     window.ShinobiOnline.on("erro",e=>{
       document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");
       console.warn("Modo online indisponível:",e.detail.mensagem);

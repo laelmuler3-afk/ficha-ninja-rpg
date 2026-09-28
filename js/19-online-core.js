@@ -11,7 +11,7 @@
   const CHAVE_XP_PROCESSADO = "shinobi_xp_events_v1";
   const CHAVE_RESTORE_RESERVA_PREFIX = "shinobi_restore_reserve_v1__";
   const LIMITE_RESERVA_RESTORE_MS = 30*60*1000;
-  const CAMPAIGN_SCHEMA_VERSION = 2;
+  const CAMPAIGN_SCHEMA_VERSION = 3;
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const CACHE_BACKUPS_HISTORICOS = new Map();
@@ -30,10 +30,13 @@
     sala:null,
     presencas:{},
     campanhas:[],
+    membrosCampanha:[],
+    membrosCampanhaId:null,
     fichasNuvem:[],
     unsubscribeSala:null,
     unsubscribePresenca:null,
     unsubscribeCampanhas:null,
+    unsubscribeMembrosCampanha:null,
     unsubscribeFichas:null,
     unsubscribeEventos:null,
     unsubscribeConnected:null,
@@ -538,6 +541,8 @@
       sala:clonar(estadoOnline.sala),
       presencas:clonar(estadoOnline.presencas),
       campanhas:clonar(estadoOnline.campanhas),
+      membrosCampanha:clonar(estadoOnline.membrosCampanha),
+      membrosCampanhaId:estadoOnline.membrosCampanhaId,
       fichasNuvem:clonar(estadoOnline.fichasNuvem),
       syncAtual:clonar(statusSincronizacaoAtual()),
       ultimoErro:estadoOnline.ultimoErro
@@ -609,7 +614,7 @@
   async function restaurarSalaDepoisDoLogin(sessao){
     if(sessao?.role!=="player"||!sessao.code||!sessao.localSheetName) return;
     try{
-      await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName});
+      await entrarSala({code:sessao.code,localSheetName:sessao.localSheetName,membershipMode:sessao.membershipMode||"session"});
     }catch(erroSala){
       emitir("erro",{
         mensagem:`Conta conectada, mas não foi possível voltar à sala: ${erroAmigavel(erroSala)}`,
@@ -733,6 +738,55 @@
     },erro=>emitir("erro",{mensagem:erroAmigavel(erro),erro}));
   }
 
+  function normalizarMembrosCampanha(valor,campaignId=""){
+    const saida=[];
+    Object.entries(valor&&typeof valor==="object"?valor:{}).forEach(([userId,personagens])=>{
+      Object.entries(personagens&&typeof personagens==="object"?personagens:{}).forEach(([characterId,membro])=>{
+        if(!membro||typeof membro!=="object"||Array.isArray(membro)) return;
+        saida.push({
+          ...membro,
+          campaignId:texto(membro.campaignId)||texto(campaignId),
+          userId:texto(membro.userId)||texto(userId),
+          characterId:texto(membro.characterId)||texto(characterId)
+        });
+      });
+    });
+    return saida.sort((a,b)=>{
+      const statusA=a.status==="active"?0:1,statusB=b.status==="active"?0:1;
+      if(statusA!==statusB)return statusA-statusB;
+      return texto(a.displayName).localeCompare(texto(b.displayName),"pt-BR");
+    });
+  }
+
+  function pararObservacaoMembrosCampanha(){
+    estadoOnline.unsubscribeMembrosCampanha?.();
+    estadoOnline.unsubscribeMembrosCampanha=null;
+    estadoOnline.membrosCampanha=[];
+    estadoOnline.membrosCampanhaId=null;
+    emitir("membros-campanha",snapshot());
+  }
+
+  async function observarMembrosCampanha(campaignId){
+    exigirContaGoogle();
+    const id=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===id);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    if(estadoOnline.membrosCampanhaId===id&&estadoOnline.unsubscribeMembrosCampanha) return snapshot();
+    estadoOnline.unsubscribeMembrosCampanha?.();
+    estadoOnline.membrosCampanhaId=id;
+    estadoOnline.membrosCampanha=[];
+    const api=estadoOnline.api;
+    estadoOnline.unsubscribeMembrosCampanha=api.onValue(api.ref(estadoOnline.db,`campaignMembers/${id}`),snap=>{
+      estadoOnline.membrosCampanha=normalizarMembrosCampanha(snap.val()||{},id);
+      emitir("membros-campanha",snapshot());
+    },erro=>{
+      estadoOnline.membrosCampanha=[];
+      emitir("erro",{mensagem:erroAmigavel(erro),erro});
+      emitir("membros-campanha",snapshot());
+    });
+    return snapshot();
+  }
+
   async function criarCampanha(nome){
     exigirUsuario();
     if(estadoOnline.user.anonymous) throw new Error("Entre com Google para criar campanhas como mestre.");
@@ -818,6 +872,7 @@
       if(code&&codeExists)updates[`roomCodes/${code}/status`]="closed";
       salasEncerradas+=1;
     });
+    updates[`campaignMembers/${id}`]=null;
     updates[`campaigns/${id}`]=null;
     await api.update(api.ref(estadoOnline.db),updates);
 
@@ -854,7 +909,7 @@
     const base={
       masterUid:estadoOnline.user.uid,
       campaignId,
-      schemaVersion:1,
+      schemaVersion:2,
       code,
       title:titulo,
       status:"open",
@@ -892,6 +947,16 @@
     const sala=snap.val()||{};
     if(sala.masterUid!==estadoOnline.user.uid||sala.campaignId!==idCampanha) throw new Error("Esta sala não pertence à sua campanha.");
     if(sala.status!=="open") throw new Error("Esta sessão já foi encerrada.");
+    /* Salas criadas antes da campanha permanente não possuíam campaignId em
+       roomPublic. O mestre faz um backfill aditivo ao reabrir a sessão para que
+       jogadores novos possam criar vínculos permanentes com segurança. */
+    await api.update(api.ref(estadoOnline.db,`roomPublic/${idSala}`),{
+      campaignId:idCampanha,
+      campaignName:texto(campanha.name),
+      title:texto(sala.title),
+      code:texto(sala.code),
+      status:"open"
+    });
     await api.set(api.ref(estadoOnline.db,`roomMemberships/${idSala}/${estadoOnline.user.uid}`),{role:"master",joinedAt:agora()});
     salvarJson(CHAVE_SESSAO,{roomId:idSala,participantId:"",role:"master",code:texto(sala.code)});
     await observarSala(idSala);
@@ -1231,27 +1296,18 @@
     };
   }
 
-  function participantIdDaFicha(uid,sheetId,masterUid=estadoOnline.sala?.masterUid){
-    const dono=texto(uid),ficha=texto(sheetId),mestre=texto(masterUid);
+  function participantIdDaFicha(uid,sheetId,masterUid=estadoOnline.sala?.masterUid,characterId=""){
+    const dono=texto(uid),ficha=texto(sheetId),mestre=texto(masterUid),personagem=texto(characterId);
     if(!dono||!ficha) return "";
-    /* Para jogadores comuns mantemos o UID como participantId por compatibilidade
-       com as Rules e com salas antigas. A colisão existe quando a MESMA conta é
-       simultaneamente mestre e jogador; só nesse caso usamos uma identidade da
-       ficha separada do UID do mestre. */
+    /* A partir da Campanha 2.0, personagens autenticados usam characterId como
+       participantId. Assim a mesma Conta Google pode possuir vários personagens
+       na campanha sem transformar UID, nome ou aparelho em identidade da ficha.
+       Sessões anônimas/legadas continuam no fallback antigo. */
+    if(personagem) return personagem;
     if(mestre&&mestre===dono) return `player_${hashLeve(`${dono}|${ficha}`)}`;
     return dono;
   }
 
-  function normalizarOrdemComTroca(raw,antigoId,novoId){
-    const lista=Array.isArray(raw)?raw:Object.keys(raw||{}).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]);
-    const saida=[];
-    lista.forEach(id=>{
-      const atual=texto(id);
-      const valor=texto(atual===texto(antigoId)?novoId:atual);
-      if(valor&&!saida.includes(valor)) saida.push(valor);
-    });
-    return saida;
-  }
 
   function normalizarParticipantesSala(raw){
     const saida={};
@@ -1268,18 +1324,80 @@
     return saida;
   }
 
-  async function migrarParticipanteDaSessao({roomId,antigoId,novoId,ficha,resumo}){
+  function modoVinculoCampanha(valor){
+    return texto(valor)==="session"?"session":"campaign";
+  }
+
+  function identidadePersonagemDaFicha(ficha){
+    if(!ficha||!estadoOnline.user||estadoOnline.user.anonymous) return {ficha,characterId:""};
+    const identificada=garantirIdentidadeFichaRealtime(ficha.name)||ficha;
+    const online=identificada?.data?.__online||{};
+    const characterId=texto(identificada.characterId)||texto(online.characterId)||texto(online.realtimeId);
+    return {ficha:identificada,characterId};
+  }
+
+  async function resolverVinculoCampanhaDoJogador({roomId,campaignId,ficha,resumo,membershipMode="campaign"}={}){
+    const uid=texto(estadoOnline.user?.uid);
+    const campanhaId=texto(campaignId);
+    const salaId=texto(roomId);
+    const solicitado=modoVinculoCampanha(membershipMode);
+    if(!uid||estadoOnline.user?.anonymous){
+      return {membershipType:"session",membershipMode:"session",campaignId:campanhaId,characterId:"",member:null,created:false};
+    }
+
+    const identidade=identidadePersonagemDaFicha(ficha);
+    const characterId=texto(identidade.characterId);
+    if(!characterId) throw new Error("Não foi possível estabelecer a identidade permanente deste personagem.");
+    if(!campanhaId){
+      return {membershipType:"session",membershipMode:"session",campaignId:"",characterId,member:null,created:false,legacyRoom:true,ficha:identidade.ficha};
+    }
+
+    const api=estadoOnline.api;
+    const refMembro=api.ref(estadoOnline.db,`campaignMembers/${campanhaId}/${uid}/${characterId}`);
+    const snap=await api.get(refMembro).catch(()=>null);
+    const existente=snap?.exists?.()?snap.val():null;
+    const ativo=existente&&existente.status!=="inactive";
+    if(ativo){
+      const atualizacoes={lastSeenAt:agora(),updatedAt:agora()};
+      const nome=texto(resumo?.displayName);
+      if(nome&&nome!==texto(existente.displayName)) atualizacoes.displayName=nome;
+      if(texto(identidade.ficha?.sheetId)&&texto(identidade.ficha?.sheetId)!==texto(existente.legacySheetId)) atualizacoes.legacySheetId=texto(identidade.ficha.sheetId);
+      await api.update(refMembro,atualizacoes).catch(()=>{});
+      return {membershipType:"campaign",membershipMode:"campaign",campaignId:campanhaId,characterId,member:{...existente,...atualizacoes},created:false,ficha:identidade.ficha};
+    }
+
+    if(solicitado!=="campaign"){
+      return {membershipType:"session",membershipMode:"session",campaignId:campanhaId,characterId,member:null,created:false,ficha:identidade.ficha};
+    }
+
+    const membro={
+      campaignId:campanhaId,userId:uid,characterId,displayName:texto(resumo?.displayName)||"Personagem",
+      joinedAt:agora(),joinedViaRoomId:salaId,status:"active",
+      legacySheetId:texto(identidade.ficha?.sheetId),lastSeenAt:agora(),updatedAt:agora()
+    };
+    await api.set(refMembro,membro);
+    return {membershipType:"campaign",membershipMode:"campaign",campaignId:campanhaId,characterId,member:membro,created:true,ficha:identidade.ficha};
+  }
+
+  async function migrarParticipanteDaSessao({roomId,antigoId,novoId,ficha,resumo,characterId="",campaignId="",membershipType="session"}){
     if(!roomId||!novoId||!ficha||!resumo) return {skipped:true};
     const api=estadoOnline.api;
     const sala=estadoOnline.sala||{};
     const participantesSala=sala.participants||{};
     const antigo=antigoId?participantesSala[antigoId]:null;
+    if(antigo&&antigoId!==novoId){
+      const ordem=Array.isArray(sala?.combat?.order)?sala.combat.order:Object.values(sala?.combat?.order||{});
+      const referenciado=ordem.map(texto).includes(texto(antigoId))||Object.values(sala.effects||{}).some(e=>texto(e?.participantId)===texto(antigoId));
+      if(referenciado) return {skipped:true,reason:"participant-referenced-by-combat"};
+    }
     const existenteNovo=participantesSala[novoId]||null;
     const base=existenteNovo||antigo||{};
     const participante={
       ...base,
       id:novoId,ownerUid:estadoOnline.user.uid,type:"player",connected:true,
       sheetId:ficha.sheetId,localSheetName:ficha.name,displayName:resumo.displayName,
+      ...(texto(characterId)?{characterId:texto(characterId)}:{}),
+      ...(texto(campaignId)?{campaignId:texto(campaignId)}:{}),membershipType:membershipType==="campaign"?"campaign":"session",
       initiativeBonus:resumo.initiativeBonus,
       initiative:base?.initiative??null,
       battle:resumo,
@@ -1287,77 +1405,106 @@
     };
     const updates={};
     updates[`rooms/${roomId}/participants/${novoId}`]=participante;
-    if(antigoId&&antigoId!==novoId&&antigo){
-      updates[`rooms/${roomId}/participants/${antigoId}`]=null;
-      const ordem=normalizarOrdemComTroca(sala?.combat?.order||[],antigoId,novoId);
-      updates[`rooms/${roomId}/combat/order`]=ordem;
-      Object.entries(sala.effects||{}).forEach(([effectId,efeito])=>{
-        if(efeito?.participantId===antigoId){
-          updates[`rooms/${roomId}/effects/${effectId}/participantId`]=novoId;
-        }
-      });
-    }
+    if(antigoId&&antigoId!==novoId&&antigo) updates[`rooms/${roomId}/participants/${antigoId}`]=null;
     await api.update(api.ref(estadoOnline.db),updates);
     return {ok:true,participantId:novoId,migrated:Boolean(antigoId&&antigoId!==novoId)};
   }
 
-  async function entrarSala({code,localSheetName}){
+  async function entrarSala({code,localSheetName,membershipMode="campaign"}){
     if(!estadoOnline.user) await entrarAnonimo();
     exigirUsuario();
     const encontrada=await buscarSalaPorCodigo(code);
-    const ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
+    let ficha=listarFichasLocais().find(f=>f.name===localSheetName)||fichaAtualLocal();
     if(!ficha) throw new Error("Escolha uma ficha para entrar na sala.");
     const api=estadoOnline.api;
-    const participantId=participantIdDaFicha(estadoOnline.user.uid,ficha.sheetId,encontrada.publico?.masterUid);
-    if(!participantId) throw new Error("Não foi possível identificar a ficha escolhida para a sala.");
 
-    /* Uma mesma Conta Google pode ser usada pelo mestre em um aparelho e por
-       uma ficha/jogador em outro. Nunca rebaixamos a associação do mestre para
-       'player'; o papel do aparelho fica na sessão local e a autenticação segue
-       sendo apenas a identidade da conta. */
+    const identidade=identidadePersonagemDaFicha(ficha);
+    ficha=identidade.ficha||ficha;
+    const characterId=texto(identidade.characterId);
+    const participantIdPreferido=participantIdDaFicha(estadoOnline.user.uid,ficha.sheetId,encontrada.publico?.masterUid,characterId);
+    if(!participantIdPreferido) throw new Error("Não foi possível identificar a ficha escolhida para a sala.");
+
+    /* roomMembership autoriza somente o acesso à sala. Ele não representa uma
+       personagem e, por isso, continua sendo indexado por UID. */
     const ehDonoDaSala=encontrada.publico?.masterUid===estadoOnline.user.uid;
     if(!ehDonoDaSala){
       await api.set(api.ref(estadoOnline.db,`roomMemberships/${encontrada.roomId}/${estadoOnline.user.uid}`),{
-        role:"player",joinedAt:agora(),sheetId:ficha.sheetId
+        role:"player",joinedAt:agora(),sheetId:ficha.sheetId,
+        ...(characterId?{characterId}:{}),
+        ...(texto(encontrada.publico?.campaignId)?{campaignId:texto(encontrada.publico.campaignId)}:{}),
+        membershipType:modoVinculoCampanha(membershipMode)
       });
     }
 
-    const resumo=resumoBatalhaDaFicha(ficha);
+    /* Depois da autorização podemos inspecionar a sala. Se ela já possui o
+       participante legado participants/{uid}, mantemos essa chave até o fim
+       daquela sessão. Isso evita reescrever iniciativa/efeitos no meio de um
+       combate só para migrar identidade. Salas novas usam characterId. */
+    const roomSnap=await api.get(api.ref(estadoOnline.db,`rooms/${encontrada.roomId}`));
+    const roomData=roomSnap.exists()?roomSnap.val()||{}:{};
+    const participantesRemotos=normalizarParticipantesSala(roomData.participants||{});
+    const legadoUid=participantesRemotos[estadoOnline.user.uid];
+    const ordemRemota=Array.isArray(roomData?.combat?.order)?roomData.combat.order:Object.values(roomData?.combat?.order||{});
+    const uidLegadoReferenciado=ordemRemota.map(texto).includes(texto(estadoOnline.user.uid))
+      ||Object.values(roomData.effects||{}).some(e=>texto(e?.participantId)===texto(estadoOnline.user.uid));
     const sessaoAnterior=lerJson(CHAVE_SESSAO,null);
-    const antigoId=(sessaoAnterior?.roomId===encontrada.roomId&&sessaoAnterior?.role==="player")
-      ?texto(sessaoAnterior.participantId)
-      :texto(estadoOnline.sala?.participants?.[estadoOnline.user.uid]?.ownerUid===estadoOnline.user.uid?estadoOnline.user.uid:"");
-    const refNovo=api.ref(estadoOnline.db,`rooms/${encontrada.roomId}/participants/${participantId}`);
-    const [snapNovo,snapLegado]=await Promise.all([
-      api.get(refNovo),
-      participantId!==estadoOnline.user.uid?api.get(api.ref(estadoOnline.db,`rooms/${encontrada.roomId}/participants/${estadoOnline.user.uid}`)):Promise.resolve(null)
-    ]);
-    const existenteNovo=snapNovo.exists()?snapNovo.val():null;
-    const legado=snapLegado?.exists?.()?snapLegado.val():null;
-    const antigoCompativel=antigoId&&antigoId!==participantId?antigoId:(legado?.ownerUid===estadoOnline.user.uid?estadoOnline.user.uid:"");
-    const base=existenteNovo||legado||{};
+    const antigoId=(sessaoAnterior?.roomId===encontrada.roomId&&sessaoAnterior?.role==="player")?texto(sessaoAnterior.participantId):"";
+    let participantId=participantIdPreferido;
+    /* Se uma sala antiga ainda referencia o UID na iniciativa/efeitos, mantemos
+       esse mesmo ID mesmo quando o participante havia saído e foi removido.
+       Reentrar com characterId nesse caso deixaria a ordem apontando para um
+       participante inexistente. Salas sem referências legadas adotam o novo ID. */
+    if(!participantesRemotos[participantIdPreferido]&&((legadoUid?.ownerUid===estadoOnline.user.uid)||uidLegadoReferenciado)){
+      participantId=estadoOnline.user.uid;
+    }
+
+    const antigo=antigoId&&antigoId!==participantId?participantesRemotos[antigoId]:null;
+    if(antigo&&texto(antigo.ownerUid)===texto(estadoOnline.user.uid)){
+      const ordem=Array.isArray(roomData?.combat?.order)?roomData.combat.order:Object.values(roomData?.combat?.order||{});
+      const referenciado=ordem.map(texto).includes(antigoId)||Object.values(roomData.effects||{}).some(e=>texto(e?.participantId)===antigoId);
+      if(referenciado){
+        throw new Error("O personagem atual já está vinculado ao combate desta sala. Para trocar de personagem com segurança, peça ao mestre para removê-lo do combate primeiro.");
+      }
+    }
+
+    const resumo=resumoBatalhaDaFicha(ficha);
+    const vinculo=await resolverVinculoCampanhaDoJogador({
+      roomId:encontrada.roomId,campaignId:encontrada.publico?.campaignId,
+      ficha,resumo,membershipMode
+    });
+    ficha=vinculo.ficha||ficha;
+    const characterIdFinal=texto(vinculo.characterId)||characterId;
+
+    if(!ehDonoDaSala){
+      await api.update(api.ref(estadoOnline.db,`roomMemberships/${encontrada.roomId}/${estadoOnline.user.uid}`),{
+        sheetId:ficha.sheetId,...(characterIdFinal?{characterId:characterIdFinal}:{}),
+        ...(texto(encontrada.publico?.campaignId)?{campaignId:texto(encontrada.publico.campaignId)}:{}),
+        membershipType:vinculo.membershipType
+      });
+    }
+
+    const existente=participantesRemotos[participantId]||null;
+    const base=existente||{};
     const participante={
       ...base,id:participantId,ownerUid:estadoOnline.user.uid,type:"player",connected:true,
       sheetId:ficha.sheetId,localSheetName:ficha.name,displayName:resumo.displayName,
+      ...(characterIdFinal?{characterId:characterIdFinal}:{}),
+      ...(texto(encontrada.publico?.campaignId)?{campaignId:texto(encontrada.publico.campaignId)}:{}),
+      membershipType:vinculo.membershipType,
       initiativeBonus:resumo.initiativeBonus,initiative:base?.initiative??null,battle:resumo,
       joinedAt:base?.joinedAt||agora(),updatedAt:agora()
     };
     const updates={};
     updates[`rooms/${encontrada.roomId}/participants/${participantId}`]=participante;
-    if(antigoCompativel&&antigoCompativel!==participantId){
-      updates[`rooms/${encontrada.roomId}/participants/${antigoCompativel}`]=null;
-      const roomSnap=estadoOnline.salaId===encontrada.roomId&&estadoOnline.sala
-        ?estadoOnline.sala
-        :((await api.get(api.ref(estadoOnline.db,`rooms/${encontrada.roomId}`))).val()||{});
-      updates[`rooms/${encontrada.roomId}/combat/order`]=normalizarOrdemComTroca(roomSnap?.combat?.order||[],antigoCompativel,participantId);
-      Object.entries(roomSnap.effects||{}).forEach(([effectId,efeito])=>{
-        if(efeito?.participantId===antigoCompativel) updates[`rooms/${encontrada.roomId}/effects/${effectId}/participantId`]=participantId;
-      });
-    }
+    if(antigo&&texto(antigo.ownerUid)===texto(estadoOnline.user.uid)) updates[`rooms/${encontrada.roomId}/participants/${antigoId}`]=null;
     await api.update(api.ref(estadoOnline.db),updates);
-    salvarJson(CHAVE_SESSAO,{roomId:encontrada.roomId,participantId,role:"player",sheetId:ficha.sheetId,localSheetName:ficha.name,code:encontrada.code});
+
+    salvarJson(CHAVE_SESSAO,{
+      roomId:encontrada.roomId,participantId,role:"player",sheetId:ficha.sheetId,localSheetName:ficha.name,code:encontrada.code,
+      characterId:characterIdFinal,campaignId:texto(encontrada.publico?.campaignId),membershipMode:vinculo.membershipType
+    });
     await observarSala(encontrada.roomId);
-    return encontrada;
+    return {...encontrada,membershipType:vinculo.membershipType,campaignMemberCreated:vinculo.created===true,characterId:characterIdFinal};
   }
 
   async function observarSala(roomId,{restaurar=false}={}){
@@ -1440,14 +1587,34 @@
     if(!sessao?.roomId||!estadoOnline.user){limparSessaoLocal();return;}
     const api=estadoOnline.api;
     try{
-      await api.remove(api.ref(estadoOnline.db,`presence/${sessao.roomId}/${estadoOnline.user.uid}`));
+      const uid=estadoOnline.user.uid;
+      const deviceId=obterDeviceId();
+      const userPresenceRef=api.ref(estadoOnline.db,`presence/${sessao.roomId}/${uid}`);
+      const devicePresenceRef=api.ref(estadoOnline.db,`presence/${sessao.roomId}/${uid}/devices/${deviceId}`);
+      try{await api.onDisconnect(devicePresenceRef).cancel();}catch(_erro){}
+      await api.remove(devicePresenceRef);
+
+      const presencaSnap=await api.get(userPresenceRef).catch(()=>null);
+      const devices=Object.values(presencaSnap?.exists?.()?presencaSnap.val()?.devices||{}:{});
+      const ativos=devices.filter(device=>device?.connected===true);
+      const participantId=texto(sessao.participantId)||uid;
+      const outroMesmoParticipante=ativos.some(device=>texto(device?.participantId)===participantId);
+      const outroDispositivoAtivo=ativos.length>0;
+
       if(sessao.role==="player"){
-        const participantId=texto(sessao.participantId)||estadoOnline.user.uid;
-        await api.remove(api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${participantId}`));
-        const membershipRef=api.ref(estadoOnline.db,`roomMemberships/${sessao.roomId}/${estadoOnline.user.uid}`);
-        const membership=await api.get(membershipRef).catch(()=>null);
-        if(membership?.exists?.()&&membership.val()?.role==="player") await api.remove(membershipRef);
+        /* Um aparelho não expulsa o mesmo personagem que continua aberto em
+           outro dispositivo. Isso preserva celular + tablet como uma única
+           personagem, embora cada aparelho mantenha sua própria presença. */
+        if(!outroMesmoParticipante){
+          await api.remove(api.ref(estadoOnline.db,`rooms/${sessao.roomId}/participants/${participantId}`));
+        }
+        if(!outroDispositivoAtivo){
+          const membershipRef=api.ref(estadoOnline.db,`roomMemberships/${sessao.roomId}/${uid}`);
+          const membership=await api.get(membershipRef).catch(()=>null);
+          if(membership?.exists?.()&&membership.val()?.role==="player") await api.remove(membershipRef);
+        }
       }
+      if(!outroDispositivoAtivo) await api.remove(userPresenceRef).catch(()=>{});
     }catch(erro){if(!silencioso) throw erro;}
     limparSessaoLocal();
   }
@@ -1503,10 +1670,16 @@
   function validarVinculoFichaDaSessao(sessao){
     const participantId=texto(sessao?.participantId)||texto(estadoOnline.user?.uid);
     const participante=participantId?estadoOnline.sala?.participants?.[participantId]:null;
+    const characterSessao=texto(sessao?.characterId);
+    const characterSala=texto(participante?.characterId);
     const sheetSessao=texto(sessao?.sheetId);
     const sheetSala=texto(participante?.sheetId);
-    const ok=!participante||!sheetSessao||!sheetSala||sheetSessao===sheetSala;
-    return {ok,participantId,participante,sheetSessao,sheetSala};
+    /* characterId é a identidade entre aparelhos. sheetId permanece apenas
+       como compatibilidade para participantes legados que ainda não possuem
+       identidade permanente gravada na sala. */
+    const usaCharacterId=Boolean(characterSessao&&characterSala);
+    const ok=!participante||(usaCharacterId?characterSessao===characterSala:(!sheetSessao||!sheetSala||sheetSessao===sheetSala));
+    return {ok,participantId,participante,characterSessao,characterSala,sheetSessao,sheetSala};
   }
 
   let reconciliacaoFichaSalaEmCurso=null;
@@ -1518,28 +1691,49 @@
       if(!sessao?.roomId||sessao.role!=="player") return {skipped:true,reason:"no-player-session"};
       if(estadoOnline.salaId!==sessao.roomId||!estadoOnline.sala) return {skipped:true,reason:"room-not-ready"};
 
-      const ativa=fichaAtualLocal();
+      let ativa=fichaAtualLocal();
       if(!ativa) return {skipped:true,reason:"active-sheet-not-found"};
-      const novoId=participantIdDaFicha(estadoOnline.user.uid,ativa.sheetId,estadoOnline.sala?.masterUid);
+      const identidade=identidadePersonagemDaFicha(ativa);
+      ativa=identidade.ficha||ativa;
+      const characterIdInicial=texto(identidade.characterId);
+      const idPreferido=participantIdDaFicha(estadoOnline.user.uid,ativa.sheetId,estadoOnline.sala?.masterUid,characterIdInicial);
       const atualId=texto(sessao.participantId)||estadoOnline.user.uid;
       const participanteAtual=estadoOnline.sala?.participants?.[atualId];
+      if(participanteAtual&&texto(participanteAtual.ownerUid)!==texto(estadoOnline.user.uid)){
+        return {skipped:true,reason:"participant-owner-mismatch"};
+      }
+      /* Trocar a ficha ativa não migra silenciosamente a identidade usada em um
+         combate já aberto. A troca intencional continua disponível pelo fluxo
+         Entrar em sala, onde conseguimos validar referências de combate. */
+      if(participanteAtual&&atualId!==idPreferido){
+        return {skipped:true,reason:"participant-id-change-requires-rejoin"};
+      }
+      const resumo=resumoBatalhaDaFicha(ativa);
+      const vinculo=await resolverVinculoCampanhaDoJogador({
+        roomId:sessao.roomId,campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId),
+        ficha:ativa,resumo,membershipMode:sessao.membershipMode||"session"
+      });
+      ativa=vinculo.ficha||ativa;
+      const characterId=texto(vinculo.characterId)||characterIdInicial;
+      const novoId=participantIdDaFicha(estadoOnline.user.uid,ativa.sheetId,estadoOnline.sala?.masterUid,characterId);
       const identidadeMudou=atualId!==novoId||texto(sessao.sheetId)!==texto(ativa.sheetId)||texto(sessao.localSheetName)!==texto(ativa.name);
       const faltaParticipante=!estadoOnline.sala?.participants?.[novoId];
       if(!identidadeMudou&&!faltaParticipante) return {ok:true,unchanged:true};
 
-      if(participanteAtual&&texto(participanteAtual.ownerUid)!==texto(estadoOnline.user.uid)){
-        return {skipped:true,reason:"participant-owner-mismatch"};
-      }
-      const resumo=resumoBatalhaDaFicha(ativa);
       const resultado=await migrarParticipanteDaSessao({
-        roomId:sessao.roomId,antigoId:atualId,novoId,ficha:ativa,resumo
+        roomId:sessao.roomId,antigoId:atualId,novoId,ficha:ativa,resumo,characterId,
+        campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId),membershipType:vinculo.membershipType
       });
+      if(resultado?.ok!==true) return resultado;
       const membershipRef=estadoOnline.api.ref(estadoOnline.db,`roomMemberships/${sessao.roomId}/${estadoOnline.user.uid}`);
       const membership=await estadoOnline.api.get(membershipRef).catch(()=>null);
       if(membership?.exists?.()&&membership.val()?.role==="player"){
-        await estadoOnline.api.update(membershipRef,{sheetId:ativa.sheetId});
+        await estadoOnline.api.update(membershipRef,{
+          sheetId:ativa.sheetId,...(characterId?{characterId}:{}),
+          campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId),membershipType:vinculo.membershipType
+        });
       }
-      salvarJson(CHAVE_SESSAO,{...sessao,participantId:novoId,sheetId:ativa.sheetId,localSheetName:ativa.name});
+      salvarJson(CHAVE_SESSAO,{...sessao,participantId:novoId,sheetId:ativa.sheetId,localSheetName:ativa.name,characterId,membershipMode:vinculo.membershipType,campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId)});
       return {...resultado,rebound:true,from:{participantId:atualId,sheetId:sessao.sheetId,name:sessao.localSheetName},to:{participantId:novoId,sheetId:ativa.sheetId,name:ativa.name}};
     })().finally(()=>{reconciliacaoFichaSalaEmCurso=null;});
     return reconciliacaoFichaSalaEmCurso;
@@ -3522,6 +3716,7 @@
 
   function limparObservadoresConta(){
     estadoOnline.unsubscribeCampanhas?.();estadoOnline.unsubscribeCampanhas=null;
+    estadoOnline.unsubscribeMembrosCampanha?.();estadoOnline.unsubscribeMembrosCampanha=null;
     estadoOnline.unsubscribeFichas?.();estadoOnline.unsubscribeFichas=null;
     estadoOnline.syncTimers.forEach(timer=>clearTimeout(timer));
     estadoOnline.syncTimers.clear();
@@ -3529,7 +3724,7 @@
     estadoOnline.dirtySheets.clear();
     estadoOnline.cloudQueue=Promise.resolve();
     limparSessaoLocal();
-    estadoOnline.campanhas=[];estadoOnline.fichasNuvem=[];
+    estadoOnline.campanhas=[];estadoOnline.membrosCampanha=[];estadoOnline.membrosCampanhaId=null;estadoOnline.fichasNuvem=[];
   }
 
   function linkDaSala(code){
@@ -3545,7 +3740,7 @@
 
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
-    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
+    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,observarMembrosCampanha,pararObservacaoMembrosCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,fichaPodeParticiparNuvem:ficha=>!fichaBloqueadaNuvem(ficha),resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
