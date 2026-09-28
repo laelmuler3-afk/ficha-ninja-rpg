@@ -18,8 +18,11 @@
   let backupsCarregando=false;
   let backupsErro="";
   let backupSheetId="";
+  let modoMesaMestre="combate";
 
   const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
+  const CHAVE_MODO_MESA_MESTRE="shinobi_master_room_view_v1";
+  try{modoMesaMestre=localStorage.getItem(CHAVE_MODO_MESA_MESTRE)==="gestao"?"gestao":"combate";}catch(_erro){}
 
   const esc=valor=>String(valor==null?"":valor).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const num=(v,p=0)=>Number.isFinite(Number(v))?Number(v):p;
@@ -1093,22 +1096,59 @@
     </details>`;
   }
 
+  function renderNavegacaoMesaMestre(st){
+    const combat=st.sala?.combat||{};
+    const rodada=Math.max(1,num(combat.round,1));
+    const ps=participantes(st);
+    return `<nav class="onlineMesaMestreTabs" aria-label="Área da mesa do mestre">
+      <button type="button" class="onlineMesaMestreTab ${modoMesaMestre==="combate"?"ativo":""}" data-action="master-room-view" data-view="combate" aria-pressed="${modoMesaMestre==="combate"?"true":"false"}">
+        <span>Combate</span><small>${combat.started?`Rodada ${rodada}`:`${ps.length} ${ps.length===1?"participante":"participantes"}`}</small>
+      </button>
+      <button type="button" class="onlineMesaMestreTab ${modoMesaMestre==="gestao"?"ativo":""}" data-action="master-room-view" data-view="gestao" aria-pressed="${modoMesaMestre==="gestao"?"true":"false"}">
+        <span>Gestão</span><small>Convite · NPCs · XP</small>
+      </button>
+    </nav>`;
+  }
+
+  function aplicarModoMesaMestre(conteudo=document.getElementById("shinobiOnlineConteudo")){
+    if(!conteudo)return;
+    conteudo.querySelectorAll("[data-master-room-panel]").forEach(painel=>{
+      painel.hidden=painel.dataset.masterRoomPanel!==modoMesaMestre;
+    });
+    conteudo.querySelectorAll("[data-action=\"master-room-view\"]").forEach(botao=>{
+      const ativo=botao.dataset.view===modoMesaMestre;
+      botao.classList.toggle("ativo",ativo);
+      botao.setAttribute("aria-pressed",ativo?"true":"false");
+    });
+  }
+
   function renderSala(st){
     const master=ehMestre(st);
     const ps=participantes(st);
-    return `<section class="onlineCard onlineSalaTopo onlineSalaTopoCompacta">
+    const topo=`<section class="onlineCard onlineSalaTopo onlineSalaTopoCompacta">
         <div><span class="onlineCardSelo">${master?"SALA DO MESTRE":"SALA ATUAL"}</span><h3>${esc(st.sala.title)}</h3><div class="onlineSalaMeta"><span class="onlineSalaStatus ${st.sala.status==="open"?"aberta":"fechada"}">${st.sala.status==="open"?"● Sala aberta":"Sala encerrada"}</span><span>${ps.length} ${ps.length===1?"participante":"participantes"}</span></div></div>
         <button type="button" class="onlineCodigoRapido" data-action="copy-code" title="Copiar código da sala"><small>CÓDIGO</small><strong>${esc(st.sala.code)}</strong></button>
-      </section>
-      ${master?renderConviteSala(st):""}
-      ${renderCombate(st,master)}
-      ${renderParticipantes(st,master)}
-      ${renderEfeitos(st,master)}
-      ${master?renderAdicionarNpc(st):""}
-      ${master?renderXp(st):""}
-      <section class="onlineCard onlineZonaPerigo onlineZonaPerigoCompacta">
-        ${master?`<button class="onlineBtn perigo" data-action="close-room">Encerrar sala</button>`:`<button class="onlineBtn perigo" data-action="leave-room">Sair da sala</button>`}
       </section>`;
+    if(!master){
+      return `${topo}
+        ${renderCombate(st,false)}
+        ${renderParticipantes(st,false)}
+        ${renderEfeitos(st,false)}
+        <section class="onlineCard onlineZonaPerigo onlineZonaPerigoCompacta"><button class="onlineBtn perigo" data-action="leave-room">Sair da sala</button></section>`;
+    }
+    return `${topo}
+      ${renderNavegacaoMesaMestre(st)}
+      <div class="onlineMesaMestrePainel" data-master-room-panel="combate" ${modoMesaMestre==="combate"?"":"hidden"}>
+        ${renderCombate(st,true)}
+        ${renderParticipantes(st,true)}
+        ${renderEfeitos(st,true)}
+      </div>
+      <div class="onlineMesaMestrePainel" data-master-room-panel="gestao" ${modoMesaMestre==="gestao"?"":"hidden"}>
+        ${renderConviteSala(st)}
+        ${renderAdicionarNpc(st)}
+        ${renderXp(st)}
+        <section class="onlineCard onlineZonaPerigo onlineZonaPerigoCompacta"><button class="onlineBtn perigo" data-action="close-room">Encerrar sala</button></section>
+      </div>`;
   }
 
   function renderHome(st){
@@ -1187,12 +1227,14 @@
     if(destinoHtml!==null){
       conteudo.innerHTML=destinoHtml;
       restaurarInteracao(conteudo,interacao);
+      aplicarModoMesaMestre(conteudo);
       requestAnimationFrame(()=>{renderQr();aplicarDestino();});
       return;
     }
     if(!st.user){conteudo.innerHTML=renderLogin();return;}
     conteudo.innerHTML=st.sala?renderSala(st):renderHome(st);
     restaurarInteracao(conteudo,interacao);
+    aplicarModoMesaMestre(conteudo);
     requestAnimationFrame(()=>{renderQr();});
   }
 
@@ -1242,6 +1284,12 @@
     if(acao==="go-join-room"){destinoAtual="entrar-sala";renderizar();return;}
     if(acao==="go-create-room"){destinoAtual="criar-sala";renderizar();return;}
     if(acao==="open-current-room"){destinoAtual="sala-atual";renderizar();return;}
+    if(acao==="master-room-view"){
+      modoMesaMestre=el.dataset.view==="gestao"?"gestao":"combate";
+      try{localStorage.setItem(CHAVE_MODO_MESA_MESTRE,modoMesaMestre);}catch(_erro){}
+      aplicarModoMesaMestre();
+      return;
+    }
     if(acao==="back-sync"){destinoAtual="sincronizacao";renderizar();verificarSincronizacaoAoAbrir();return;}
     if(acao==="manage-backups"){
       destinoAtual="backups";backupsHistoricos=[];backupsErro="";renderizar();
