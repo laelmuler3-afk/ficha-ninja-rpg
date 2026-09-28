@@ -346,13 +346,14 @@ function rolarAteCardJutsu(card,alvo){
   ativarAbaJutsusSemRolar();
   const alvoVisual=card.querySelector(".jutsuDetalhesCompactos")||card;
   const rect=alvoVisual.getBoundingClientRect();
-  if(!Number.isFinite(rect.top))return false;
+  if(!Number.isFinite(rect.top)||rect.height<=0||alvoVisual.getClientRects?.().length===0)return false;
   if(alvo&&!alvo.scrollConcluido){
     const alturaTopo=document.querySelector(".topo")?.getBoundingClientRect?.().height||0;
     const margem=Math.max(12,alturaTopo+12);
     const destino=Math.max(0,(window.scrollY||window.pageYOffset||0)+rect.top-margem);
-    const reduzir=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true;
-    try{window.scrollTo({top:destino,behavior:reduzir?"auto":"smooth"});}
+    /* Scroll imediato: o smooth podia ser interrompido pelo reagrupamento
+       síncrono/assíncrono das cartas e deixava a tela parada no topo da aba. */
+    try{window.scrollTo({top:destino,behavior:"auto"});}
     catch(_erro){try{window.scrollTo(0,destino);}catch(_erro2){}}
     alvo.scrollConcluido=true;
   }
@@ -361,6 +362,20 @@ function rolarAteCardJutsu(card,alvo){
     try{resumo.focus({preventScroll:true});}catch(_erro){try{resumo.focus();}catch(_erro2){}}
   }
   return true;
+}
+function abrirGrupoDoJutsuParaFoco(indice){
+  const jutsu=Array.isArray(estado.jutsus)?estado.jutsus[indice]:null;
+  const organizacao=window.ShinobiOrganizacaoRetratil;
+  if(!jutsu||!organizacao)return false;
+  try{
+    if(typeof organizacao.organizarJutsus==="function")organizacao.organizarJutsus();
+    const grupo=typeof organizacao.grupoDoJutsu==="function"?organizacao.grupoDoJutsu(jutsu):"";
+    if(grupo&&typeof organizacao.abrirGrupoJutsu==="function"){
+      organizacao.abrirGrupoJutsu(grupo,{rolar:false});
+      return true;
+    }
+  }catch(_erro){}
+  return false;
 }
 function aplicarFocoJutsuPendente(){
   const alvo=shinobiJutsuFocoPendente;
@@ -374,6 +389,11 @@ function aplicarFocoJutsuPendente(){
   if(precisaRender){
     try{renderizarJutsus();}catch(_erro){}
   }
+  /* A organização retrátil move as cartas para grupos por elemento. O card pode
+     estar aberto no estado e ainda assim invisível porque o grupo pai está
+     fechado. Antes de calcular o scroll, abra explicitamente o grupo da carta
+     recém-criada e limpe filtros que possam escondê-la. */
+  abrirGrupoDoJutsuParaFoco(indice);
   const localizar=()=>rolarAteCardJutsu(localizarCardJutsuFoco(alvo,indice),alvo);
   if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>requestAnimationFrame(localizar));
   else setTimeout(localizar,0);
