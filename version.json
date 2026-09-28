@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.131",
-  "name": "Limpeza final conservadora",
-  "notes": "Remove apenas resíduos confirmados sem uso no runtime: preloader Firebase morto do Service Worker e arquivos duplicados/obsoletos não carregados. Mantém fallbacks de sincronização e compatibilidade histórica.",
+  "version": "2.5.8.132",
+  "name": "Mesa do Mestre 2.0 — organização por contexto",
+  "notes": "Separa a sala do mestre em modos Combate e Gestão sem alterar o modelo de dados ou os handlers Firebase. Combate concentra rodada, participantes e efeitos; Gestão reúne convite, NPCs, XP e encerramento da sala.",
   "date": "2026-09-28"
 }
