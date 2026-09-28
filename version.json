@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.135",
-  "name": "Mesa do Mestre 2.0 — NPCs permanentes",
-  "notes": "Ativa a biblioteca permanente de NPCs da campanha. O mestre pode criar ou importar NPCs sem sala aberta, manter notas privadas fora das salas e adicionar instâncias temporárias desses NPCs a qualquer sessão. NPCs rápidos/temporários continuam disponíveis para compatibilidade e campanhas antigas permanecem preservadas.",
+  "version": "2.5.8.136",
+  "name": "Correção de isolamento entre fichas",
+  "notes": "Corrige criação e troca de fichas para impedir que o salvamento de saída grave a ficha de origem sobre a ficha de destino. Também separa characterId/realtimeId em cópias locais que herdaram indevidamente a identidade de outra ficha, sem apagar conteúdo existente.",
   "date": "2026-09-28"
 }
