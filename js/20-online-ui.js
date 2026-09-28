@@ -49,8 +49,10 @@
     }catch(_erro){}
     if(campanhaMestreId){
       window.ShinobiOnline?.observarMembrosCampanha?.(campanhaMestreId).catch(()=>{});
+      window.ShinobiOnline?.observarNpcsCampanha?.(campanhaMestreId).catch(()=>{});
     }else{
       window.ShinobiOnline?.pararObservacaoMembrosCampanha?.();
+      window.ShinobiOnline?.pararObservacaoNpcsCampanha?.();
     }
   }
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
@@ -638,8 +640,13 @@
     if(st.membrosCampanhaId!==campanha.id){
       window.ShinobiOnline?.observarMembrosCampanha?.(campanha.id).catch(()=>{});
     }
+    if(st.npcsCampanhaId!==campanha.id){
+      window.ShinobiOnline?.observarNpcsCampanha?.(campanha.id).catch(()=>{});
+    }
     const membrosCarregados=st.membrosCampanhaId===campanha.id;
     const membros=(membrosCarregados?st.membrosCampanha:[]).filter(m=>m?.status!=="inactive");
+    const npcsCarregados=st.npcsCampanhaId===campanha.id;
+    const npcs=(npcsCarregados?st.npcsCampanha:[]).filter(npc=>npc?.status!=="inactive");
     const sessoes=Object.entries(campanha.rooms||{}).map(([id,sala])=>({id,...(sala||{})})).sort((a,b)=>num(b.createdAt)-num(a.createdAt));
     const abertas=sessoes.filter(s=>s.status==="open");
     const encerradas=sessoes.filter(s=>s.status!=="open");
@@ -664,6 +671,19 @@
             <div><small>PERSONAGEM DA CAMPANHA</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>Vínculo permanente${membro.joinedAt?` • desde ${esc(formatarDataSessao(membro.joinedAt))}`:""}</span></div>
           </article>`).join("")}</div>`
         : `<p class="onlineVazio">Nenhum personagem permanente ainda. O primeiro vínculo será criado quando um jogador entrar em uma sala escolhendo “Adicionar à campanha”.</p>`;
+    const listaNpcs=!npcsCarregados
+      ? `<p class="onlineVazio">Carregando biblioteca de NPCs...</p>`
+      : npcs.length
+        ? `<div class="onlineCampanhaNpcs">${npcs.map(npc=>{
+            const b=npc.battleTemplate||{};
+            const origem=npc.sourceType==="sheet"?`Ficha importada${npc.sourceSheetName?` • ${esc(npc.sourceSheetName)}`:""}`:"Criado na campanha";
+            return `<article class="onlineCampanhaNpc">
+              <div class="onlineCampanhaNpcTopo"><div><small>NPC PERMANENTE</small><strong>${esc(npc.displayName||"NPC")}</strong><span>${origem}</span></div><div class="onlineCampanhaNpcAcoes"><button type="button" class="onlineBtn texto compacto" data-action="edit-campaign-npc" data-campaign-id="${esc(campanha.id)}" data-npc-id="${esc(npc.id)}">Editar</button><button type="button" class="onlineBtn texto perigo compacto" data-action="archive-campaign-npc" data-campaign-id="${esc(campanha.id)}" data-npc-id="${esc(npc.id)}">Arquivar</button></div></div>
+              <div class="onlineCampanhaNpcStats"><span>PV <b>${num(b.pvMax)}</b></span><span>Chakra <b>${num(b.chakraMax)}</b></span><span>CA <b>${num(b.ca,10)}</b></span><span>Init. <b>${num(b.initiativeBonus)>=0?"+":""}${num(b.initiativeBonus)}</b></span></div>
+              ${npc.privateNotes?`<p class="onlineCampanhaNpcNota"><b>Privado:</b> ${esc(String(npc.privateNotes).slice(0,180))}${String(npc.privateNotes).length>180?"…":""}</p>`:""}
+            </article>`;
+          }).join("")}</div>`
+        : `<p class="onlineVazio">Nenhum NPC permanente ainda. Crie um aqui ou importe uma ficha existente.</p>`;
     return `<div class="onlineDestinoPagina" data-online-destino="area-mestre">
       ${cabecalhoConta(st)}
       <section class="onlineCard onlineCampanhaHero">
@@ -679,15 +699,39 @@
 
       <section class="onlineCard onlineCampanhaArquitetura">
         <div class="onlineCardTitulo"><div><span class="onlineCardSelo">GESTÃO PERMANENTE</span><h3>Base da campanha</h3></div><small>${membros.length} personagem(s)</small></div>
-        <p>Jogadores permanentes agora pertencem à campanha, não à sala. NPCs, XP e encontros entram nas próximas etapas.</p>
+        <p>Jogadores e NPCs permanentes agora pertencem à campanha. A sala recebe apenas cópias temporárias para aquela sessão.</p>
         <div class="onlineCampanhaModulos">
           <div class="ativo"><b>Jogadores</b><span>Vínculos permanentes</span><em>Ativo</em></div>
-          <div><b>NPCs</b><span>Biblioteca da campanha</span><em>Próxima etapa</em></div>
+          <div class="ativo"><b>NPCs</b><span>Biblioteca da campanha</span><em>Ativo</em></div>
           <div><b>XP</b><span>Histórico e recompensas</span><em>Próxima etapa</em></div>
           <div><b>Encontros e notas</b><span>Preparação do mestre</span><em>Próxima etapa</em></div>
         </div>
         <div class="onlineCampanhaMembrosTitulo"><strong>Jogadores da campanha</strong><small>Reconhecidos por conta + personagem</small></div>
         ${listaMembros}
+        <div class="onlineCampanhaMembrosTitulo onlineCampanhaNpcTitulo"><strong>NPCs e inimigos</strong><small>${npcs.length} permanente(s) na biblioteca</small></div>
+        ${listaNpcs}
+        <details class="onlineSubDetails onlineNpcBibliotecaCriar">
+          <summary>Adicionar NPC à biblioteca</summary>
+          <div class="onlineGridDois">
+            <form data-form="save-campaign-npc-sheet" class="onlineForm onlineSubCard">
+              <input type="hidden" name="campaignId" value="${esc(campanha.id)}">
+              <h4>Importar ficha existente</h4>
+              <p>Salva um modelo permanente na campanha. A ficha original continua independente.</p>
+              <label>Ficha<select name="localSheetName">${opcoesFichasLocais()}</select></label>
+              <label>Nome na campanha<input name="displayName" maxlength="80" placeholder="Opcional"></label>
+              <label>Notas privadas do mestre<textarea name="privateNotes" maxlength="4000" placeholder="Segredos, objetivos, táticas... Não vão para os jogadores."></textarea></label>
+              <button class="onlineBtn primario" type="submit">Salvar NPC na campanha</button>
+            </form>
+            <form data-form="create-campaign-npc" class="onlineForm onlineSubCard">
+              <input type="hidden" name="campaignId" value="${esc(campanha.id)}">
+              <h4>Criar NPC permanente</h4>
+              <label>Nome<input name="displayName" maxlength="80" required placeholder="Mercenário da Névoa"></label>
+              <div class="onlineFormGrid"><label>PV máximo<input name="pvMax" type="number" min="0" value="20"></label><label>Chakra<input name="chakraMax" type="number" min="0" value="0"></label><label>CA<input name="ca" type="number" value="10"></label><label>Iniciativa<input name="initiativeBonus" type="number" value="0"></label></div>
+              <label>Notas privadas do mestre<textarea name="privateNotes" maxlength="4000" placeholder="Informações que só o mestre pode ver"></textarea></label>
+              <button class="onlineBtn secundario" type="submit">Criar na biblioteca</button>
+            </form>
+          </div>
+        </details>
       </section>
 
       <section class="onlineCard">
@@ -1099,23 +1143,40 @@
   }
 
   function renderAdicionarNpc(st){
+    const campaignId=String(st.sala?.campaignId||"");
+    if(campaignId&&st.npcsCampanhaId!==campaignId){
+      window.ShinobiOnline?.observarNpcsCampanha?.(campaignId).catch(()=>{});
+    }
+    const npcs=(st.npcsCampanhaId===campaignId?st.npcsCampanha||[]:[]).filter(npc=>npc?.status!=="inactive");
+    const opcoes=npcs.map(npc=>`<option value="${esc(npc.id)}">${esc(npc.displayName||"NPC")}</option>`).join("");
+    const biblioteca=campaignId?`<form data-form="add-campaign-npc-room" class="onlineForm onlineSubCard onlineNpcDaBiblioteca">
+          <h4>Biblioteca da campanha</h4>
+          <p>Adiciona uma cópia para esta sessão. Alterações de PV, Chakra e efeitos não mudam o NPC permanente.</p>
+          ${npcs.length?`<label>NPC<select name="campaignNpcId" required>${opcoes}</select></label><label>Nome nesta sessão<input name="displayName" maxlength="80" placeholder="Opcional"></label><button class="onlineBtn primario" type="submit">Adicionar à sessão</button>`:`<p class="onlineVazio">A biblioteca ainda está vazia. Crie NPCs permanentes na Área da Campanha.</p><button type="button" class="onlineBtn secundario" data-action="go-master-area">Abrir Área da Campanha</button>`}
+        </form>`:"";
     return `<details class="onlineCard onlineDetails" data-online-detail="npc">
-      <summary><span><b>Adicionar NPC ou inimigo</b><small>Importe uma ficha ou crie rapidamente</small></span></summary>
-      <div class="onlineDetailsConteudo onlineGridDois">
-        <form data-form="import-npc" class="onlineForm onlineSubCard">
-          <h4>Importar ficha existente</h4>
-          <p>Leva para a sala as informações principais de batalha sem alterar a ficha original.</p>
-          <label>Ficha<select name="localSheetName">${opcoesFichasLocais()}</select></label>
-          <label>Nome nesta batalha<input name="displayName" placeholder="Opcional"></label>
-          <button class="onlineBtn primario" type="submit">Importar para a sala</button>
-        </form>
-        <form data-form="quick-npc" class="onlineForm onlineSubCard">
-          <h4>Criar durante a mesa</h4>
-          <label>Nome<input name="displayName" required placeholder="Mercenário"></label>
-          <div class="onlineFormGrid"><label>PV máximo<input name="pvMax" type="number" min="0" value="20"></label><label>Chakra<input name="chakraMax" type="number" min="0" value="0"></label><label>CA<input name="ca" type="number" value="10"></label><label>Iniciativa<input name="initiativeBonus" type="number" value="0"></label></div>
-          <label>Observações<textarea name="notes" maxlength="600" placeholder="Ataques, habilidades ou lembretes rápidos"></textarea></label>
-          <button class="onlineBtn secundario" type="submit">Adicionar NPC rápido</button>
-        </form>
+      <summary><span><b>Adicionar NPC ou inimigo</b><small>${campaignId?"Use a biblioteca da campanha ou crie um temporário":"Importe uma ficha ou crie rapidamente"}</small></span></summary>
+      <div class="onlineDetailsConteudo">
+        ${biblioteca}
+        <details class="onlineSubDetails onlineNpcTemporario">
+          <summary>NPC somente nesta sessão</summary>
+          <div class="onlineGridDois">
+            <form data-form="import-npc" class="onlineForm onlineSubCard">
+              <h4>Importar ficha temporariamente</h4>
+              <p>Leva informações de batalha só para esta sala. Não cria NPC permanente.</p>
+              <label>Ficha<select name="localSheetName">${opcoesFichasLocais()}</select></label>
+              <label>Nome nesta batalha<input name="displayName" placeholder="Opcional"></label>
+              <button class="onlineBtn secundario" type="submit">Importar só nesta sessão</button>
+            </form>
+            <form data-form="quick-npc" class="onlineForm onlineSubCard">
+              <h4>Criar temporariamente</h4>
+              <label>Nome<input name="displayName" required placeholder="Mercenário"></label>
+              <div class="onlineFormGrid"><label>PV máximo<input name="pvMax" type="number" min="0" value="20"></label><label>Chakra<input name="chakraMax" type="number" min="0" value="0"></label><label>CA<input name="ca" type="number" value="10"></label><label>Iniciativa<input name="initiativeBonus" type="number" value="0"></label></div>
+              <label>Observações da sessão<textarea name="notes" maxlength="600" placeholder="Visíveis nos dados da sala; não use para segredos do mestre"></textarea></label>
+              <button class="onlineBtn texto" type="submit">Adicionar temporário</button>
+            </form>
+          </div>
+        </details>
       </div>
     </details>`;
   }
@@ -1518,6 +1579,14 @@
         await avisar("Campanha excluída",`A campanha foi removida.${complemento}`);
       });
     }
+    if(acao==="edit-campaign-npc")return editarNpcCampanha(el.dataset.campaignId,el.dataset.npcId);
+    if(acao==="archive-campaign-npc")return executar(async()=>{
+      const st=obterEstado(),npc=(st.npcsCampanha||[]).find(item=>String(item.id)===String(el.dataset.npcId));
+      if(!npc)return;
+      const ok=await confirmar("Arquivar NPC",`Arquivar “${npc.displayName||"NPC"}” da biblioteca? NPCs que já foram usados em sessões antigas não serão alterados.`);
+      if(!ok)return;
+      await window.ShinobiOnline.arquivarNpcCampanha(el.dataset.campaignId,el.dataset.npcId);
+    });
     if(acao==="copy-code")return copiar(obterEstado().sala?.code,"Código copiado.");
     if(acao==="copy-link")return copiar(window.ShinobiOnline.linkDaSala(obterEstado().sala?.code),"Link copiado.");
     if(acao==="sync-check")return executar(async()=>{
@@ -1665,6 +1734,20 @@
         destinoAtual="sala-atual";
       });
     })();
+    if(tipo==="save-campaign-npc-sheet")return executar(async()=>{
+      await window.ShinobiOnline.salvarFichaComoNpcCampanha(dados.get("campaignId"),dados.get("localSheetName"),{displayName:dados.get("displayName"),privateNotes:dados.get("privateNotes")});
+      form.reset();
+      await avisar("NPC salvo","A ficha foi adicionada à biblioteca permanente da campanha.");
+    });
+    if(tipo==="create-campaign-npc")return executar(async()=>{
+      await window.ShinobiOnline.criarNpcCampanha(dados.get("campaignId"),Object.fromEntries(dados.entries()));
+      form.reset();
+      await avisar("NPC criado","O NPC agora pertence à campanha e pode ser usado em qualquer sessão.");
+    });
+    if(tipo==="add-campaign-npc-room")return executar(async()=>{
+      await window.ShinobiOnline.adicionarNpcCampanhaNaSala(dados.get("campaignNpcId"),{displayName:dados.get("displayName")});
+      form.reset();
+    });
     if(tipo==="import-npc")return executar(async()=>{await window.ShinobiOnline.importarFichaComoNpc(dados.get("localSheetName"),{displayName:dados.get("displayName")});form.reset();});
     if(tipo==="quick-npc")return executar(async()=>{await window.ShinobiOnline.criarNpcRapido(Object.fromEntries(dados.entries()));form.reset();});
     if(tipo==="add-effect")return executar(async()=>{await window.ShinobiOnline.adicionarEfeito({participantId:dados.get("participantId"),name:dados.get("name"),duration:num(dados.get("duration"),1)});form.reset();});
@@ -1686,6 +1769,21 @@
     if(el.dataset.actionChange==="initiative")executar(()=>window.ShinobiOnline.definirIniciativa(el.dataset.participantId,el.value));
   }
 
+  async function editarNpcCampanha(campaignId,npcId){
+    const st=obterEstado(),npc=(st.npcsCampanha||[]).find(item=>String(item.id)===String(npcId));if(!npc)return;
+    const b=npc.battleTemplate||{};
+    const nome=prompt("Nome do NPC:",npc.displayName||"");if(nome===null)return;
+    const pvMax=prompt("PV máximo padrão:",String(num(b.pvMax)));if(pvMax===null)return;
+    const chakraMax=prompt("Chakra máximo padrão:",String(num(b.chakraMax)));if(chakraMax===null)return;
+    const ca=prompt("Classe de Armadura padrão:",String(num(b.ca,10)));if(ca===null)return;
+    const iniciativa=prompt("Bônus de iniciativa:",String(num(b.initiativeBonus)));if(iniciativa===null)return;
+    const notas=prompt("Notas privadas do mestre:",String(npc.privateNotes||""));if(notas===null)return;
+    return executar(async()=>{
+      await window.ShinobiOnline.atualizarNpcCampanha(campaignId,npcId,{displayName:nome,pvMax,chakraMax,ca,initiativeBonus:iniciativa,privateNotes:notas});
+      await avisar("NPC atualizado","As alterações foram salvas na biblioteca. Instâncias já adicionadas a uma sala não são alteradas.");
+    });
+  }
+
   async function editarNpc(id){
     const st=obterEstado(),p=st.sala?.participants?.[id];if(!p)return;
     const nome=prompt("Nome do NPC:",p.displayName||"");if(nome===null)return;
@@ -1695,7 +1793,7 @@
     const chakraMax=prompt("Chakra máximo:",String(num(p.battle?.chakraMax)));if(chakraMax===null)return;
     const ca=prompt("Classe de Armadura:",String(num(p.battle?.ca,10)));if(ca===null)return;
     const iniciativa=prompt("Bônus de iniciativa:",String(num(p.initiativeBonus)));if(iniciativa===null)return;
-    const notas=prompt("Observações rápidas:",String(p.battle?.notes||""));if(notas===null)return;
+    const notas=prompt("Observações da sessão (não privadas):",String(p.battle?.notes||""));if(notas===null)return;
     const battle={
       ...p.battle,displayName:String(nome).trim()||p.displayName,
       pv:Math.max(0,num(pv)),pvMax:Math.max(0,num(pvMax)),
@@ -1749,7 +1847,7 @@
   function instalarEventos(){
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
-    ["status","pronto","auth","campanhas","membros-campanha","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
+    ["status","pronto","auth","campanhas","membros-campanha","npcs-campanha","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
     window.ShinobiOnline.on("erro",e=>{
       document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");
       console.warn("Modo online indisponível:",e.detail.mensagem);

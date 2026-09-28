@@ -11,7 +11,7 @@
   const CHAVE_XP_PROCESSADO = "shinobi_xp_events_v1";
   const CHAVE_RESTORE_RESERVA_PREFIX = "shinobi_restore_reserve_v1__";
   const LIMITE_RESERVA_RESTORE_MS = 30*60*1000;
-  const CAMPAIGN_SCHEMA_VERSION = 3;
+  const CAMPAIGN_SCHEMA_VERSION = 4;
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const CACHE_BACKUPS_HISTORICOS = new Map();
@@ -32,11 +32,14 @@
     campanhas:[],
     membrosCampanha:[],
     membrosCampanhaId:null,
+    npcsCampanha:[],
+    npcsCampanhaId:null,
     fichasNuvem:[],
     unsubscribeSala:null,
     unsubscribePresenca:null,
     unsubscribeCampanhas:null,
     unsubscribeMembrosCampanha:null,
+    unsubscribeNpcsCampanha:null,
     unsubscribeFichas:null,
     unsubscribeEventos:null,
     unsubscribeConnected:null,
@@ -543,6 +546,8 @@
       campanhas:clonar(estadoOnline.campanhas),
       membrosCampanha:clonar(estadoOnline.membrosCampanha),
       membrosCampanhaId:estadoOnline.membrosCampanhaId,
+      npcsCampanha:clonar(estadoOnline.npcsCampanha),
+      npcsCampanhaId:estadoOnline.npcsCampanhaId,
       fichasNuvem:clonar(estadoOnline.fichasNuvem),
       syncAtual:clonar(statusSincronizacaoAtual()),
       ultimoErro:estadoOnline.ultimoErro
@@ -787,6 +792,47 @@
     return snapshot();
   }
 
+  function normalizarNpcsCampanha(valor,campaignId=""){
+    return Object.entries(valor&&typeof valor==="object"?valor:{}).map(([npcId,npc])=>({
+      ...(npc&&typeof npc==="object"&&!Array.isArray(npc)?npc:{}),
+      id:texto(npc?.id)||texto(npcId),
+      campaignId:texto(npc?.campaignId)||texto(campaignId)
+    })).filter(npc=>npc.id).sort((a,b)=>{
+      const statusA=a.status==="active"?0:1,statusB=b.status==="active"?0:1;
+      if(statusA!==statusB)return statusA-statusB;
+      return texto(a.displayName).localeCompare(texto(b.displayName),"pt-BR");
+    });
+  }
+
+  function pararObservacaoNpcsCampanha(){
+    estadoOnline.unsubscribeNpcsCampanha?.();
+    estadoOnline.unsubscribeNpcsCampanha=null;
+    estadoOnline.npcsCampanha=[];
+    estadoOnline.npcsCampanhaId=null;
+    emitir("npcs-campanha",snapshot());
+  }
+
+  async function observarNpcsCampanha(campaignId){
+    exigirContaGoogle();
+    const id=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===id);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    if(estadoOnline.npcsCampanhaId===id&&estadoOnline.unsubscribeNpcsCampanha) return snapshot();
+    estadoOnline.unsubscribeNpcsCampanha?.();
+    estadoOnline.npcsCampanhaId=id;
+    estadoOnline.npcsCampanha=[];
+    const api=estadoOnline.api;
+    estadoOnline.unsubscribeNpcsCampanha=api.onValue(api.ref(estadoOnline.db,`campaignNpcs/${id}`),snap=>{
+      estadoOnline.npcsCampanha=normalizarNpcsCampanha(snap.val()||{},id);
+      emitir("npcs-campanha",snapshot());
+    },erro=>{
+      estadoOnline.npcsCampanha=[];
+      emitir("erro",{mensagem:erroAmigavel(erro),erro});
+      emitir("npcs-campanha",snapshot());
+    });
+    return snapshot();
+  }
+
   async function criarCampanha(nome){
     exigirUsuario();
     if(estadoOnline.user.anonymous) throw new Error("Entre com Google para criar campanhas como mestre.");
@@ -873,6 +919,7 @@
       salasEncerradas+=1;
     });
     updates[`campaignMembers/${id}`]=null;
+    updates[`campaignNpcs/${id}`]=null;
     updates[`campaigns/${id}`]=null;
     await api.update(api.ref(estadoOnline.db),updates);
 
@@ -1629,6 +1676,140 @@
     updates[`roomPublic/${room.id}/status`]="closed";
     updates[`campaigns/${room.campaignId}/rooms/${room.id}/status`]="closed";
     await api.update(api.ref(estadoOnline.db),updates);
+  }
+
+  function numeroNpc(valor,padrao=0){
+    const n=Number(valor);return Number.isFinite(n)?n:padrao;
+  }
+
+  function templateNpcRapido(dados={}){
+    const nome=texto(dados.displayName).slice(0,80);
+    const pvMax=Math.max(0,numeroNpc(dados.pvMax,0));
+    const chakraMax=Math.max(0,numeroNpc(dados.chakraMax,0));
+    return {
+      sourceType:"quick",displayName:nome,level:Math.max(1,numeroNpc(dados.level,1)),rank:texto(dados.rank).slice(0,40),
+      pv:pvMax,pvMax,chakra:chakraMax,chakraMax,
+      ca:numeroNpc(dados.ca,10),cd:numeroNpc(dados.cd,10),initiativeBonus:numeroNpc(dados.initiativeBonus,0),
+      speed:Math.max(0,numeroNpc(dados.speed,0)),attributes:{},jutsus:[],attacks:[],resistances:[],natures:{}
+    };
+  }
+
+  function snapshotNpcCampanhaParaSala(npc,nomeExibicao=""){
+    const nome=texto(nomeExibicao)||texto(npc?.displayName)||"NPC";
+    const battle=clonar(npc?.battleTemplate&&typeof npc.battleTemplate==="object"?npc.battleTemplate:{});
+    /* Informações privadas vivem exclusivamente em campaignNpcs. Mesmo que uma
+       versão futura acrescente campos privados ao template, esta barreira evita
+       que eles vazem para rooms, ramo que os jogadores da sessão conseguem ler. */
+    ["privateNotes","notesPrivate","masterNotes","gmNotes"].forEach(chave=>delete battle[chave]);
+    battle.displayName=nome;
+    battle.campaignNpcId=texto(npc?.id);
+    battle.sourceType=texto(npc?.sourceType)==="sheet"?"campaign-sheet":"campaign-quick";
+    return limparDadosParaSala(battle);
+  }
+
+  async function salvarFichaComoNpcCampanha(campaignId,localSheetName,{displayName,privateNotes}={}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    const ficha=listarFichasLocais().find(f=>f.name===localSheetName);
+    if(!ficha) throw new Error("Ficha local não encontrada.");
+    const resumo=resumoBatalhaDaFicha(ficha);
+    const npcId=idAleatorio("npc");
+    const nome=texto(displayName).slice(0,80)||resumo.displayName||"NPC";
+    const api=estadoOnline.api,instante=agora();
+    const npc={
+      id:npcId,campaignId:idCampanha,ownerUid:estadoOnline.user.uid,status:"active",
+      displayName:nome,sourceType:"sheet",sourceSheetId:texto(ficha.sheetId),sourceSheetName:texto(ficha.name).slice(0,80),
+      battleTemplate:{...resumo,displayName:nome},privateNotes:texto(privateNotes).slice(0,4000),
+      createdAt:instante,updatedAt:instante
+    };
+    await api.set(api.ref(estadoOnline.db,`campaignNpcs/${idCampanha}/${npcId}`),npc);
+    await api.update(api.ref(estadoOnline.db,`campaigns/${idCampanha}`),{updatedAt:instante});
+    return npcId;
+  }
+
+  async function criarNpcCampanha(campaignId,dados={}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    const nome=texto(dados.displayName).slice(0,80);
+    if(!nome) throw new Error("Informe o nome do NPC ou inimigo.");
+    const npcId=idAleatorio("npc"),api=estadoOnline.api,instante=agora();
+    const npc={
+      id:npcId,campaignId:idCampanha,ownerUid:estadoOnline.user.uid,status:"active",displayName:nome,sourceType:"quick",
+      battleTemplate:templateNpcRapido({...dados,displayName:nome}),privateNotes:texto(dados.privateNotes).slice(0,4000),
+      createdAt:instante,updatedAt:instante
+    };
+    await api.set(api.ref(estadoOnline.db,`campaignNpcs/${idCampanha}/${npcId}`),npc);
+    await api.update(api.ref(estadoOnline.db,`campaigns/${idCampanha}`),{updatedAt:instante});
+    return npcId;
+  }
+
+  async function atualizarNpcCampanha(campaignId,npcId,dados={}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId),idNpc=texto(npcId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    const api=estadoOnline.api,refNpc=api.ref(estadoOnline.db,`campaignNpcs/${idCampanha}/${idNpc}`);
+    const snap=await api.get(refNpc);
+    if(!snap.exists()) throw new Error("NPC da campanha não encontrado.");
+    const atual={id:idNpc,...snap.val()};
+    const nome=texto(dados.displayName).slice(0,80)||texto(atual.displayName)||"NPC";
+    const battle=clonar(atual.battleTemplate||{});
+    battle.displayName=nome;
+    const ajustarNumero=(chave,{min=null,padrao=0,espelhar=null}={})=>{
+      if(dados[chave]===undefined||dados[chave]===null||dados[chave]==="")return;
+      let valor=numeroNpc(dados[chave],padrao);if(min!==null)valor=Math.max(min,valor);battle[chave]=valor;
+      if(espelhar)battle[espelhar]=valor;
+    };
+    ajustarNumero("level",{min:1,padrao:1});
+    if(dados.rank!==undefined)battle.rank=texto(dados.rank).slice(0,40);
+    ajustarNumero("pvMax",{min:0,padrao:0,espelhar:"pv"});
+    ajustarNumero("chakraMax",{min:0,padrao:0,espelhar:"chakra"});
+    ajustarNumero("ca",{padrao:10});ajustarNumero("cd",{padrao:10});ajustarNumero("initiativeBonus");ajustarNumero("speed",{min:0});
+    const updates={displayName:nome,battleTemplate:battle,updatedAt:agora()};
+    if(dados.privateNotes!==undefined)updates.privateNotes=texto(dados.privateNotes).slice(0,4000);
+    await api.update(refNpc,updates);
+    await api.update(api.ref(estadoOnline.db,`campaigns/${idCampanha}`),{updatedAt:agora()});
+    return {ok:true,npcId:idNpc};
+  }
+
+  async function arquivarNpcCampanha(campaignId,npcId){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId),idNpc=texto(npcId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    const api=estadoOnline.api,refNpc=api.ref(estadoOnline.db,`campaignNpcs/${idCampanha}/${idNpc}`);
+    const snap=await api.get(refNpc);
+    if(!snap.exists()) throw new Error("NPC da campanha não encontrado.");
+    await api.update(refNpc,{status:"inactive",updatedAt:agora()});
+    await api.update(api.ref(estadoOnline.db,`campaigns/${idCampanha}`),{updatedAt:agora()});
+    return {ok:true,npcId:idNpc};
+  }
+
+  async function adicionarNpcCampanhaNaSala(npcId,{displayName}={}){
+    exigirMestre();
+    const idNpc=texto(npcId),idCampanha=texto(estadoOnline.sala?.campaignId);
+    if(!idCampanha) throw new Error("Esta sala não está vinculada a uma campanha permanente.");
+    if(estadoOnline.sala?.status!=="open") throw new Error("A sala já foi encerrada.");
+    const api=estadoOnline.api,snap=await api.get(api.ref(estadoOnline.db,`campaignNpcs/${idCampanha}/${idNpc}`));
+    if(!snap.exists()) throw new Error("NPC da campanha não encontrado.");
+    const npc={id:idNpc,...snap.val()};
+    if(texto(npc.campaignId)!==idCampanha||npc.status!=="active") throw new Error("Este NPC não está disponível nesta campanha.");
+    const nome=texto(displayName).slice(0,80)||texto(npc.displayName)||"NPC";
+    const battle=snapshotNpcCampanhaParaSala(npc,nome);
+    const participantId=idAleatorio("npc");
+    const participante={
+      id:participantId,ownerUid:estadoOnline.user.uid,type:"npc-campaign",displayName:nome,
+      campaignId:idCampanha,campaignNpcId:idNpc,initiativeBonus:numeroNpc(battle.initiativeBonus,0),initiative:null,battle,
+      ...(texto(npc.sourceSheetId)?{sourceSheetId:texto(npc.sourceSheetId)}:{}),
+      ...(texto(npc.sourceSheetName)?{sourceSheetName:texto(npc.sourceSheetName)}:{}),
+      createdAt:agora(),updatedAt:agora()
+    };
+    await api.set(api.ref(estadoOnline.db,`rooms/${estadoOnline.salaId}/participants/${participantId}`),participante);
+    return participantId;
   }
 
   async function importarFichaComoNpc(localSheetName,{displayName}={}){
@@ -3717,6 +3898,7 @@
   function limparObservadoresConta(){
     estadoOnline.unsubscribeCampanhas?.();estadoOnline.unsubscribeCampanhas=null;
     estadoOnline.unsubscribeMembrosCampanha?.();estadoOnline.unsubscribeMembrosCampanha=null;
+    estadoOnline.unsubscribeNpcsCampanha?.();estadoOnline.unsubscribeNpcsCampanha=null;
     estadoOnline.unsubscribeFichas?.();estadoOnline.unsubscribeFichas=null;
     estadoOnline.syncTimers.forEach(timer=>clearTimeout(timer));
     estadoOnline.syncTimers.clear();
@@ -3724,7 +3906,7 @@
     estadoOnline.dirtySheets.clear();
     estadoOnline.cloudQueue=Promise.resolve();
     limparSessaoLocal();
-    estadoOnline.campanhas=[];estadoOnline.membrosCampanha=[];estadoOnline.membrosCampanhaId=null;estadoOnline.fichasNuvem=[];
+    estadoOnline.campanhas=[];estadoOnline.membrosCampanha=[];estadoOnline.membrosCampanhaId=null;estadoOnline.npcsCampanha=[];estadoOnline.npcsCampanhaId=null;estadoOnline.fichasNuvem=[];
   }
 
   function linkDaSala(code){
@@ -3740,8 +3922,9 @@
 
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
-    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,observarMembrosCampanha,pararObservacaoMembrosCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
+    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,observarMembrosCampanha,pararObservacaoMembrosCampanha,observarNpcsCampanha,pararObservacaoNpcsCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,fichaPodeParticiparNuvem:ficha=>!fichaBloqueadaNuvem(ficha),resumoBatalhaDaFicha,
+    salvarFichaComoNpcCampanha,criarNpcCampanha,atualizarNpcCampanha,arquivarNpcCampanha,adicionarNpcCampanhaNaSala,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
