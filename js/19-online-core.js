@@ -11,6 +11,7 @@
   const CHAVE_XP_PROCESSADO = "shinobi_xp_events_v1";
   const CHAVE_RESTORE_RESERVA_PREFIX = "shinobi_restore_reserve_v1__";
   const LIMITE_RESERVA_RESTORE_MS = 30*60*1000;
+  const CAMPAIGN_SCHEMA_VERSION = 2;
   const EVENTO = new EventTarget();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const CACHE_BACKUPS_HISTORICOS = new Map();
@@ -739,9 +740,32 @@
     if(!nomeLimpo) throw new Error("Informe o nome da campanha.");
     const api=estadoOnline.api;
     const nova=api.push(api.ref(estadoOnline.db,"campaigns"));
-    const dados={masterUid:estadoOnline.user.uid,name:nomeLimpo,createdAt:api.serverTimestamp(),updatedAt:api.serverTimestamp(),status:"active"};
+    const dados={
+      masterUid:estadoOnline.user.uid,
+      name:nomeLimpo,
+      schemaVersion:CAMPAIGN_SCHEMA_VERSION,
+      createdAt:api.serverTimestamp(),
+      updatedAt:api.serverTimestamp(),
+      status:"active"
+    };
     await api.set(nova,dados);
     return nova.key;
+  }
+
+  async function prepararCampanhaPermanente(campaignId){
+    exigirContaGoogle();
+    const id=texto(campaignId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===id);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    const versao=Number(campanha.schemaVersion||0);
+    if(versao>=CAMPAIGN_SCHEMA_VERSION) return {ok:true,campaignId:id,migrated:false,schemaVersion:versao};
+    const api=estadoOnline.api;
+    await api.update(api.ref(estadoOnline.db,`campaigns/${id}`),{
+      schemaVersion:CAMPAIGN_SCHEMA_VERSION,
+      migratedAt:api.serverTimestamp(),
+      updatedAt:api.serverTimestamp()
+    });
+    return {ok:true,campaignId:id,migrated:true,schemaVersion:CAMPAIGN_SCHEMA_VERSION};
   }
 
   async function editarCampanha(campaignId,nome){
@@ -819,6 +843,7 @@
   async function criarSala({campaignId,title}){
     exigirUsuario();
     if(estadoOnline.user.anonymous) throw new Error("Entre com Google para criar uma sala como mestre.");
+    if(estadoOnline.sala) throw new Error("Saia da sala atual antes de criar uma nova sessão.");
     const campanha=estadoOnline.campanhas.find(c=>c.id===campaignId);
     if(!campanha) throw new Error("Selecione uma campanha válida.");
     const api=estadoOnline.api;
@@ -829,6 +854,7 @@
     const base={
       masterUid:estadoOnline.user.uid,
       campaignId,
+      schemaVersion:1,
       code,
       title:titulo,
       status:"open",
@@ -842,7 +868,7 @@
     const updates={};
     updates[`rooms/${roomId}`]=base;
     updates[`roomCodes/${code}`]={roomId,masterUid:estadoOnline.user.uid,status:"open",createdAt:agora()};
-    updates[`roomPublic/${roomId}`]={masterUid:estadoOnline.user.uid,title:titulo,campaignName:campanha.name,code,status:"open",createdAt:agora()};
+    updates[`roomPublic/${roomId}`]={masterUid:estadoOnline.user.uid,campaignId,title:titulo,campaignName:campanha.name,code,status:"open",createdAt:agora()};
     updates[`campaigns/${campaignId}/rooms/${roomId}`]={title:titulo,code,status:"open",createdAt:agora()};
     updates[`campaigns/${campaignId}/updatedAt`]=agora();
     await api.update(api.ref(estadoOnline.db),updates);
@@ -852,6 +878,24 @@
     salvarJson(CHAVE_SESSAO,{roomId,participantId:"",role:"master",code});
     await observarSala(roomId);
     return {roomId,code};
+  }
+
+  async function abrirSalaComoMestre({campaignId,roomId}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId),idSala=texto(roomId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
+    if(!campanha.rooms?.[idSala]) throw new Error("Esta sessão não pertence à campanha selecionada.");
+    const api=estadoOnline.api;
+    const snap=await api.get(api.ref(estadoOnline.db,`rooms/${idSala}`));
+    if(!snap.exists()) throw new Error("A sala desta sessão não existe mais.");
+    const sala=snap.val()||{};
+    if(sala.masterUid!==estadoOnline.user.uid||sala.campaignId!==idCampanha) throw new Error("Esta sala não pertence à sua campanha.");
+    if(sala.status!=="open") throw new Error("Esta sessão já foi encerrada.");
+    await api.set(api.ref(estadoOnline.db,`roomMemberships/${idSala}/${estadoOnline.user.uid}`),{role:"master",joinedAt:agora()});
+    salvarJson(CHAVE_SESSAO,{roomId:idSala,participantId:"",role:"master",code:texto(sala.code)});
+    await observarSala(idSala);
+    return {roomId:idSala,code:texto(sala.code)};
   }
 
   async function buscarSalaPorCodigo(codigo){
@@ -3501,7 +3545,7 @@
 
   window.ShinobiOnline={
     iniciar,on:(tipo,fn)=>{EVENTO.addEventListener(tipo,fn);return()=>EVENTO.removeEventListener(tipo,fn);},snapshot,
-    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,editarCampanha,excluirCampanha,criarSala,buscarSalaPorCodigo,entrarSala,observarSala,
+    entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,fichaPodeParticiparNuvem:ficha=>!fichaBloqueadaNuvem(ficha),resumoBatalhaDaFicha,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,

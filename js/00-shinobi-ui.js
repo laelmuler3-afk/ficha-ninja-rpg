@@ -277,10 +277,10 @@
         </div>
 
         <div class="shinobiDrawerGrupo">
-          <h3>SALA</h3>
+          <h3>MESA ONLINE</h3>
           <button type="button" class="shinobiDrawerItem" data-drawer-action="create-room">
             <span class="shinobiDrawerItemIcon">${iconHTML("plus")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Criar sala</b><small>Para iniciar uma mesa como mestre</small></span>
+            <span class="shinobiDrawerItemTexto"><b>Área do Mestre</b><small>Campanhas, sessões e gestão permanente</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
           <button type="button" class="shinobiDrawerItem" data-drawer-action="join-room">
@@ -375,7 +375,7 @@
       if(acao==="sync"){void abrirPainelOnline("sincronizacao",botao);return;}
       if(acao==="account"){void abrirPainelOnline("login",botao);return;}
       if(acao==="login"){void abrirPainelOnline("conta-conectada",botao);return;}
-      if(acao==="create-room"){void abrirPainelOnline("criar-sala",botao);return;}
+      if(acao==="create-room"){void abrirPainelOnline("area-mestre",botao);return;}
       if(acao==="join-room"){void abrirPainelOnline("entrar-sala",botao);return;}
       if(acao==="current-room"){void abrirPainelOnline("sala-atual",botao);return;}
       if(acao==="settings"){alternarConfiguracoesDrawer();return;}

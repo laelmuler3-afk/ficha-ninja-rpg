@@ -19,10 +19,13 @@
   let backupsErro="";
   let backupSheetId="";
   let modoMesaMestre="combate";
+  let campanhaMestreId="";
 
   const CHAVE_PAINEL_FLUTUANTE="shinobi_online_widget_v1";
   const CHAVE_MODO_MESA_MESTRE="shinobi_master_room_view_v1";
+  const CHAVE_CAMPANHA_MESTRE="shinobi_master_campaign_v1";
   try{modoMesaMestre=localStorage.getItem(CHAVE_MODO_MESA_MESTRE)==="gestao"?"gestao":"combate";}catch(_erro){}
+  try{campanhaMestreId=String(localStorage.getItem(CHAVE_CAMPANHA_MESTRE)||"");}catch(_erro){}
 
   const esc=valor=>String(valor==null?"":valor).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
   const num=(v,p=0)=>Number.isFinite(Number(v))?Number(v):p;
@@ -37,6 +40,14 @@
     return Boolean(st?.user&&st?.sala&&st.sala.masterUid===st.user.uid&&sessao?.role==="master"&&(!sessao.roomId||sessao.roomId===st.sala.id));
   }
   function participantes(st){return participantesComId(st?.sala?.participants).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"pt-BR"));}
+  function campanhaMestreAtual(st){return (st?.campanhas||[]).find(c=>String(c.id)===String(campanhaMestreId))||null;}
+  function selecionarCampanhaMestre(campaignId){
+    campanhaMestreId=String(campaignId||"");
+    try{
+      if(campanhaMestreId)localStorage.setItem(CHAVE_CAMPANHA_MESTRE,campanhaMestreId);
+      else localStorage.removeItem(CHAVE_CAMPANHA_MESTRE);
+    }catch(_erro){}
+  }
   function ordem(st){return window.ShinobiOnline?.normalizarOrdem?.()||[];}
   function participanteAtual(st){const o=ordem(st);return st?.sala?.participants?.[o[num(st?.sala?.combat?.turnIndex)]]||null;}
   function presencaConectada(registro,participantId=""){
@@ -358,7 +369,8 @@
   function normalizarDestino(destino){
     const valor=String(destino||"").trim().toLowerCase();
     if(valor==="conta")return "conta-conectada"; // compatibilidade com atalhos antigos
-    const permitidos=new Set(["login","conta-conectada","sincronizacao","backups","criar-sala","entrar-sala","sala-atual"]);
+    if(valor==="criar-sala")return "area-mestre"; // atalho legado agora abre a área permanente da campanha
+    const permitidos=new Set(["login","conta-conectada","sincronizacao","backups","area-mestre","entrar-sala","sala-atual"]);
     return permitidos.has(valor)?valor:null;
   }
 
@@ -370,7 +382,7 @@
         "conta-conectada":"[data-online-destino=\"conta-conectada\"]",
         "sincronizacao":"[data-online-destino=\"sincronizacao\"]",
         "backups":"[data-online-destino=\"backups\"]",
-        "criar-sala":"[data-online-destino=\"criar-sala\"]",
+        "area-mestre":"[data-online-destino=\"area-mestre\"]",
         "entrar-sala":"form[data-form=\"join-room\"]",
         "sala-atual":".onlineSalaTopo,[data-online-destino=\"sala-atual\"]"
       };
@@ -391,7 +403,7 @@
       "conta-conectada":["CONTA","Conta conectada"],
       "sincronizacao":["NUVEM","Sincronização"],
       "backups":["NUVEM","Backups da ficha"],
-      "criar-sala":["SALA","Criar sala"],
+      "area-mestre":["CAMPANHA","Área do Mestre"],
       "entrar-sala":["SALA","Entrar em sala"],
       "sala-atual":["SALA","Sala atual"]
     };
@@ -558,6 +570,13 @@
     </section>`;
   }
 
+  function formatarDataSessao(timestamp){
+    const valor=Number(timestamp||0);
+    if(!valor)return "Data indisponível";
+    try{return new Date(valor).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"});}
+    catch(_erro){return new Date(valor).toLocaleDateString("pt-BR");}
+  }
+
   function renderMestreHome(st){
     const campanhas=st.campanhas||[];
     const listaCampanhas=campanhas.length?`
@@ -567,13 +586,14 @@
           const salas=Object.values(c.rooms||{});
           const abertas=salas.filter(sala=>sala?.status==="open").length;
           const menuAberto=campanhaMenuAberto===c.id;
-          return `<article class="onlineCampanhaItem ${menuAberto?"menuAberto":""}">
+          return `<article class="onlineCampanhaItem onlineCampanhaItemAbrir ${menuAberto?"menuAberto":""}">
             <button type="button" class="onlineCampanhaMenuBtn" data-action="toggle-campaign-menu" data-campaign-id="${esc(c.id)}" aria-label="Opções da campanha ${esc(c.name)}" aria-expanded="${menuAberto?"true":"false"}">⋮</button>
             <div class="onlineCampanhaInfo">
               <small>CAMPANHA</small>
               <strong>${esc(c.name)}</strong>
               <span>${salas.length?`${salas.length} sessão(ões)${abertas?` • ${abertas} aberta(s)`:""}`:"Nenhuma sessão criada"}</span>
             </div>
+            <button type="button" class="onlineBtn secundario compacto onlineCampanhaAbrirBtn" data-action="open-campaign" data-campaign-id="${esc(c.id)}">Abrir campanha</button>
             ${menuAberto?`<div class="onlineCampanhaMenu" role="menu">
               <button type="button" data-action="edit-campaign" data-campaign-id="${esc(c.id)}" role="menuitem">Editar nome</button>
               <button type="button" class="perigo" data-action="delete-campaign" data-campaign-id="${esc(c.id)}" role="menuitem">Excluir campanha</button>
@@ -582,19 +602,69 @@
         }).join("")}
       </div>`:"";
     return `<section class="onlineCard destaqueMestre">
-      <span class="onlineCardSelo">PAINEL DO MESTRE</span>
-      <h3>Campanhas e salas</h3>
+      <span class="onlineCardSelo">ÁREA DO MESTRE</span>
+      <h3>Campanhas</h3>
+      <p>Abra uma campanha para administrar sua estrutura permanente. Criar uma sala passa a ser uma ação dentro da campanha.</p>
       <form data-form="create-campaign" class="onlineForm onlineFormLinha">
         <label>Nova campanha<input name="name" maxlength="80" placeholder="Crônicas de Konoha" required></label>
         <button class="onlineBtn secundario" type="submit">Criar campanha</button>
       </form>
-      ${listaCampanhas}
-      ${campanhas.length?`<form data-form="create-room" class="onlineForm onlineCriarSalaForm">
-        <label>Campanha<select name="campaignId">${campanhas.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("")}</select></label>
-        <label>Nome da sessão<input name="title" maxlength="80" placeholder="Batalha da ponte"></label>
-        <button class="onlineBtn primario" type="submit">Criar sala e QR Code</button>
-      </form>`:`<p class="onlineVazio">Crie a primeira campanha para abrir uma sala.</p>`}
+      ${listaCampanhas||`<p class="onlineVazio">Crie a primeira campanha para começar a Área do Mestre.</p>`}
     </section>`;
+  }
+
+  function renderCampanhaMestre(st,campanha){
+    const sessoes=Object.entries(campanha.rooms||{}).map(([id,sala])=>({id,...(sala||{})})).sort((a,b)=>num(b.createdAt)-num(a.createdAt));
+    const abertas=sessoes.filter(s=>s.status==="open");
+    const encerradas=sessoes.filter(s=>s.status!=="open");
+    const sessaoAtualId=String(st.sala?.id||st.salaId||"");
+    const cardSessao=sessao=>{
+      const aberta=sessao.status==="open";
+      const atual=aberta&&sessaoAtualId===String(sessao.id);
+      return `<article class="onlineCampanhaSessao ${aberta?"aberta":"encerrada"}">
+        <div>
+          <small>${aberta?"SESSÃO ABERTA":"SESSÃO ENCERRADA"}</small>
+          <strong>${esc(sessao.title||"Sessão")}</strong>
+          <span>${esc(formatarDataSessao(sessao.createdAt))}${sessao.code?` • ${esc(sessao.code)}`:""}</span>
+        </div>
+        ${aberta?`<button type="button" class="onlineBtn ${atual?"primario":"secundario"} compacto" data-action="open-campaign-room" data-campaign-id="${esc(campanha.id)}" data-room-id="${esc(sessao.id)}">${atual?"Abrir sala atual":"Entrar como mestre"}</button>`:""}
+      </article>`;
+    };
+    return `<div class="onlineDestinoPagina" data-online-destino="area-mestre">
+      ${cabecalhoConta(st)}
+      <section class="onlineCard onlineCampanhaHero">
+        <div class="onlineCampanhaHeroTopo">
+          <button type="button" class="onlineBtn texto compacto" data-action="back-campaigns">‹ Campanhas</button>
+          <span class="onlineCampanhaVersao">Campanha permanente</span>
+        </div>
+        <span class="onlineCardSelo">ÁREA DO MESTRE</span>
+        <h3>${esc(campanha.name)}</h3>
+        <p>A campanha existe mesmo sem uma sala aberta. As salas abaixo são sessões temporárias ligadas a ela.</p>
+        ${st.sala?.campaignId===campanha.id?`<div class="onlineCampanhaSalaAtiva"><span>● Sessão ativa agora</span><strong>${esc(st.sala.title||"Sala atual")}</strong><button type="button" class="onlineBtn secundario compacto" data-action="open-current-room">Abrir sala</button></div>`:""}
+      </section>
+
+      <section class="onlineCard onlineCampanhaArquitetura">
+        <div class="onlineCardTitulo"><div><span class="onlineCardSelo">GESTÃO PERMANENTE</span><h3>Base da campanha</h3></div><small>Estrutura preparada</small></div>
+        <p>Esta área agora é independente das salas. Os módulos permanentes serão ativados nas próximas etapas sem depender de combate aberto.</p>
+        <div class="onlineCampanhaModulos">
+          <div><b>Jogadores</b><span>Vínculos permanentes</span><em>Próxima etapa</em></div>
+          <div><b>NPCs</b><span>Biblioteca da campanha</span><em>Próxima etapa</em></div>
+          <div><b>XP</b><span>Histórico e recompensas</span><em>Próxima etapa</em></div>
+          <div><b>Encontros e notas</b><span>Preparação do mestre</span><em>Próxima etapa</em></div>
+        </div>
+      </section>
+
+      <section class="onlineCard">
+        <div class="onlineCardTitulo"><div><span class="onlineCardSelo">SESSÕES</span><h3>Salas de jogo</h3></div><small>${abertas.length} aberta(s) • ${encerradas.length} encerrada(s)</small></div>
+        <p>Uma sala guarda apenas o estado temporário daquela sessão. Encerrar uma sala não encerra esta campanha.</p>
+        ${sessoes.length?`<div class="onlineCampanhaSessoes">${abertas.map(cardSessao).join("")}${encerradas.map(cardSessao).join("")}</div>`:`<p class="onlineVazio">Nenhuma sessão criada nesta campanha.</p>`}
+        ${st.sala?`<div class="onlineVazio">Você já está conectado a uma sala. Saia ou encerre a sala atual antes de criar uma nova sessão.</div>`:`<form data-form="create-room" class="onlineForm onlineCriarSalaForm">
+          <input type="hidden" name="campaignId" value="${esc(campanha.id)}">
+          <label>Nome da nova sessão<input name="title" maxlength="80" placeholder="Batalha da ponte"></label>
+          <button class="onlineBtn primario" type="submit">Criar sala e entrar como mestre</button>
+        </form>`}
+      </section>
+    </div>`;
   }
 
   function renderMinhaConta(st){
@@ -657,31 +727,22 @@
     </div>`;
   }
 
-  function renderCriarSalaDestino(st){
+  function renderAreaMestreDestino(st){
     if(!st.user||st.user.anonymous){
-      return `<div class="onlineDestinoPagina" data-online-destino="criar-sala">
+      return `<div class="onlineDestinoPagina" data-online-destino="area-mestre">
         ${st.user?cabecalhoConta(st):""}
         <section class="onlineCard onlineEstadoVazio">
-          <span class="onlineCardSelo">CRIAR SALA</span><h3>Entre com Google para ser mestre</h3>
-          <p>A criação e o gerenciamento das salas ficam vinculados à sua conta.</p>
+          <span class="onlineCardSelo">ÁREA DO MESTRE</span><h3>Entre com Google para administrar campanhas</h3>
+          <p>Campanhas permanentes e suas sessões ficam vinculadas à sua conta.</p>
           <button type="button" class="onlineBtn primario" data-action="login-google">Entrar com Google</button>
         </section>
       </div>`;
     }
-    if(st.sala){
-      const master=ehMestre(st);
-      return `<div class="onlineDestinoPagina" data-online-destino="criar-sala">
-        ${cabecalhoConta(st)}
-        <section class="onlineCard onlineSalaGerenciador">
-          <span class="onlineCardSelo">${master?"GERENCIADOR DA SALA":"SALA ATIVA"}</span>
-          <h3>${esc(st.sala.title||"Sala atual")}</h3>
-          ${master?`<p>Compartilhe o código ou o QR Code com os jogadores.</p>${qrHtml(st)}`:`<p>Você já está conectado à sala <strong>${esc(st.sala.code||"")}</strong>. Saia dela antes de criar uma sala como mestre.</p>`}
-          <button type="button" class="onlineBtn secundario" data-action="open-current-room">Abrir sala atual</button>
-        </section>
-      </div>`;
-    }
-    return `<div class="onlineDestinoPagina" data-online-destino="criar-sala">
+    const campanha=campanhaMestreAtual(st);
+    if(campanha)return renderCampanhaMestre(st,campanha);
+    return `<div class="onlineDestinoPagina" data-online-destino="area-mestre">
       ${cabecalhoConta(st)}
+      ${st.sala?`<section class="onlineCard onlineCampanhaSalaAtivaResumo"><span class="onlineCardSelo">SALA ATIVA</span><h3>${esc(st.sala.title||"Sala atual")}</h3><p>Você pode continuar administrando suas campanhas sem encerrar esta sala.</p><button type="button" class="onlineBtn secundario" data-action="open-current-room">Abrir sala atual</button></section>`:""}
       ${renderMestreHome(st)}
     </div>`;
   }
@@ -785,7 +846,7 @@
   function renderDestino(st){
     if(destinoAtual==="login")return renderMinhaConta(st);
     if(destinoAtual==="conta-conectada")return renderContaConectada(st);
-    if(destinoAtual==="criar-sala")return renderCriarSalaDestino(st);
+    if(destinoAtual==="area-mestre")return renderAreaMestreDestino(st);
     if(destinoAtual==="entrar-sala")return renderEntrarSalaDestino(st);
     if(destinoAtual==="sala-atual")return renderSalaAtualDestino(st);
     if(destinoAtual==="sincronizacao")return renderSincronizacaoDestino(st);
@@ -1126,7 +1187,7 @@
     const master=ehMestre(st);
     const ps=participantes(st);
     const topo=`<section class="onlineCard onlineSalaTopo onlineSalaTopoCompacta">
-        <div><span class="onlineCardSelo">${master?"SALA DO MESTRE":"SALA ATUAL"}</span><h3>${esc(st.sala.title)}</h3><div class="onlineSalaMeta"><span class="onlineSalaStatus ${st.sala.status==="open"?"aberta":"fechada"}">${st.sala.status==="open"?"● Sala aberta":"Sala encerrada"}</span><span>${ps.length} ${ps.length===1?"participante":"participantes"}</span></div></div>
+        <div><span class="onlineCardSelo">${master?"SALA DO MESTRE":"SALA ATUAL"}</span><h3>${esc(st.sala.title)}</h3><div class="onlineSalaMeta"><span class="onlineSalaStatus ${st.sala.status==="open"?"aberta":"fechada"}">${st.sala.status==="open"?"● Sala aberta":"Sala encerrada"}</span><span>${ps.length} ${ps.length===1?"participante":"participantes"}</span>${master&&st.sala.campaignId?`<button type="button" class="onlineSalaCampanhaLink" data-action="go-master-area">Área da campanha</button>`:""}</div></div>
         <button type="button" class="onlineCodigoRapido" data-action="copy-code" title="Copiar código da sala"><small>CÓDIGO</small><strong>${esc(st.sala.code)}</strong></button>
       </section>`;
     if(!master){
@@ -1282,7 +1343,11 @@
     if(acao==="logout")return executar(()=>window.ShinobiOnline.sair());
     if(acao==="go-login"){destinoAtual="login";renderizar();return;}
     if(acao==="go-join-room"){destinoAtual="entrar-sala";renderizar();return;}
-    if(acao==="go-create-room"){destinoAtual="criar-sala";renderizar();return;}
+    if(acao==="go-create-room"){destinoAtual="area-mestre";renderizar();return;}
+    if(acao==="go-master-area"){
+      if(obterEstado().sala?.campaignId)selecionarCampanhaMestre(obterEstado().sala.campaignId);
+      destinoAtual="area-mestre";renderizar();return;
+    }
     if(acao==="open-current-room"){destinoAtual="sala-atual";renderizar();return;}
     if(acao==="master-room-view"){
       modoMesaMestre=el.dataset.view==="gestao"?"gestao":"combate";
@@ -1354,6 +1419,38 @@
       agendarRender();
       return;
     }
+    if(acao==="open-campaign"){
+      const id=String(el.dataset.campaignId||"");
+      campanhaMenuAberto=null;
+      return executar(async()=>{
+        await window.ShinobiOnline.prepararCampanhaPermanente(id);
+        selecionarCampanhaMestre(id);
+        destinoAtual="area-mestre";
+      });
+    }
+    if(acao==="back-campaigns"){
+      selecionarCampanhaMestre("");
+      campanhaMenuAberto=null;
+      destinoAtual="area-mestre";
+      renderizar();
+      return;
+    }
+    if(acao==="open-campaign-room")return (async()=>{
+      const campaignId=String(el.dataset.campaignId||"");
+      const roomId=String(el.dataset.roomId||"");
+      const st=obterEstado();
+      if(String(st.sala?.id||st.salaId||"")===roomId){destinoAtual="sala-atual";renderizar();return;}
+      if(st.sala){
+        const ok=await confirmar("Trocar de sala",`Você está conectado à sala “${st.sala.title||st.sala.code||"atual"}”. Deseja sair dela e abrir esta sessão como mestre?`);
+        if(!ok)return;
+      }
+      return executar(async()=>{
+        if(obterEstado().sala)await window.ShinobiOnline.sairDaSala({silencioso:true});
+        await window.ShinobiOnline.abrirSalaComoMestre({campaignId,roomId});
+        selecionarCampanhaMestre(campaignId);
+        destinoAtual="sala-atual";
+      });
+    })();
     if(acao==="edit-campaign"){
       const id=el.dataset.campaignId;
       const campanha=obterEstado().campanhas?.find(item=>item.id===id);
@@ -1380,6 +1477,7 @@
       campanhaMenuAberto=null;
       return executar(async()=>{
         const resultado=await window.ShinobiOnline.excluirCampanha(id);
+        if(campanhaMestreId===id)selecionarCampanhaMestre("");
         const complemento=resultado?.closedRooms?` ${resultado.closedRooms} sala(s) vinculada(s) foram encerradas.`:"";
         await avisar("Campanha excluída",`A campanha foi removida.${complemento}`);
       });
@@ -1491,10 +1589,16 @@
   async function tratarSubmit(evento){
     const form=evento.target.closest("form[data-form]");if(!form)return;evento.preventDefault();
     const dados=new FormData(form),tipo=form.dataset.form;
-    if(tipo==="create-campaign")return executar(async()=>{await window.ShinobiOnline.criarCampanha(dados.get("name"));form.reset();});
+    if(tipo==="create-campaign")return executar(async()=>{
+      const id=await window.ShinobiOnline.criarCampanha(dados.get("name"));
+      selecionarCampanhaMestre(id);
+      destinoAtual="area-mestre";
+      form.reset();
+    });
     if(tipo==="create-room")return executar(async()=>{
       await window.ShinobiOnline.criarSala({campaignId:dados.get("campaignId"),title:dados.get("title")});
-      destinoAtual="criar-sala";
+      selecionarCampanhaMestre(dados.get("campaignId"));
+      destinoAtual="sala-atual";
     });
     if(tipo==="join-room")return (async()=>{
       const codigo=String(dados.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
