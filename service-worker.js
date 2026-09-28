@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.130 — fluxo consolidado das cartas de jutsu.
+/* Ficha Ninja RPG 2.5.8.131 — limpeza final conservadora.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.130";
+const APP_VERSION = "2.5.8.131";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -12,16 +12,6 @@ const CACHE_VERSOES_RETIDAS = 6;
 const FIREBASE_VERSION = "12.16.0";
 const FIREBASE_GSTATIC_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 const FIREBASE_JSDELIVR_BASE = `https://cdn.jsdelivr.net/npm/firebase@${FIREBASE_VERSION}`;
-const FIREBASE_FILES = [
-  "firebase-app-compat.js",
-  "firebase-auth-compat.js",
-  "firebase-database-compat.js"
-];
-const FIREBASE_URLS = FIREBASE_FILES.flatMap(nome=>[
-  `${FIREBASE_GSTATIC_BASE}/${nome}`,
-  `${FIREBASE_JSDELIVR_BASE}/${nome}`
-]);
-
 const APP_SHELL = [
   `./index.html?v=${APP_VERSION}`,
   `./manifest.json?v=${APP_VERSION}`,
@@ -397,27 +387,6 @@ async function baixarFirebase(url){
     return response;
   }finally{
     clearTimeout(timer);
-  }
-}
-
-async function prepararCacheFirebase(){
-  const cache=await caches.open(FIREBASE_CACHE);
-  for(const nome of FIREBASE_FILES){
-    const principal=`${FIREBASE_GSTATIC_BASE}/${nome}`;
-    const secundario=`${FIREBASE_JSDELIVR_BASE}/${nome}`;
-    try{
-      const response=await baixarFirebase(principal);
-      await cache.put(principal,response.clone());
-      await cache.put(secundario,response.clone());
-    }catch(_erroPrincipal){
-      try{
-        const response=await baixarFirebase(secundario);
-        await cache.put(secundario,response.clone());
-        await cache.put(principal,response.clone());
-      }catch(erroSecundario){
-        console.warn("Firebase SDK não foi pré-carregado:",nome,erroSecundario);
-      }
-    }
   }
 }
 
