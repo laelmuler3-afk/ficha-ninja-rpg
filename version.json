@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.134",
-  "name": "Mesa do Mestre 2.0 — jogadores permanentes",
-  "notes": "Ativa campaignMembers: personagens autenticados podem ser vinculados permanentemente à campanha por userId + characterId, continuam reconhecidos em sessões futuras, personagens temporários podem entrar somente na sessão e a Área do Mestre passa a listar os jogadores permanentes. Salas legadas permanecem compatíveis sem migração destrutiva de participantes em combate.",
+  "version": "2.5.8.135",
+  "name": "Mesa do Mestre 2.0 — NPCs permanentes",
+  "notes": "Ativa a biblioteca permanente de NPCs da campanha. O mestre pode criar ou importar NPCs sem sala aberta, manter notas privadas fora das salas e adicionar instâncias temporárias desses NPCs a qualquer sessão. NPCs rápidos/temporários continuam disponíveis para compatibilidade e campanhas antigas permanecem preservadas.",
   "date": "2026-09-28"
 }
