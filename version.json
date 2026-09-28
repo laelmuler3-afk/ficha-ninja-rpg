@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.136",
-  "name": "Correção de isolamento entre fichas",
-  "notes": "Corrige criação e troca de fichas para impedir que o salvamento de saída grave a ficha de origem sobre a ficha de destino. Também separa characterId/realtimeId em cópias locais que herdaram indevidamente a identidade de outra ficha, sem apagar conteúdo existente.",
+  "version": "2.5.8.137",
+  "name": "Auditoria de identidade e isolamento",
+  "notes": "Endurece a separação entre fichas em todo o app: identidade não usa nome, tarefas atrasadas não podem escrever em outra ficha, sala/XP/realtime/imagens resolvem a ficha por IDs estáveis e NPCs/importações permanecem isolados.",
   "date": "2026-09-28"
 }

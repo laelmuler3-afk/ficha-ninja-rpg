@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.136 — Correção de isolamento entre fichas.
+/* Ficha Ninja RPG 2.5.8.137 — Auditoria de identidade e isolamento.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.136";
+const APP_VERSION = "2.5.8.137";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
