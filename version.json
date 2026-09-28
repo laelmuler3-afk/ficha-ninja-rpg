@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.129",
-  "name": "Direcionamento visual da carta de jutsu",
-  "notes": "Ao criar um jutsu manualmente, localiza a carta pelo jutsuId, mantém a carta aberta após o eco do realtime e direciona o viewport diretamente para a área editável da nova carta, sem disputar scroll com a navegação da aba. Ao fechar a carta, retorna para Jutsus.",
+  "version": "2.5.8.130",
+  "name": "Foco visual da carta nova por grupo",
+  "notes": "Ao criar um jutsu manualmente, abre explicitamente o grupo retrátil do elemento da nova carta, limpa filtros que possam ocultá-la e só então posiciona o viewport na área editável. Mantém o retorno para a aba Jutsus ao fechar a carta.",
   "date": "2026-09-27"
 }
