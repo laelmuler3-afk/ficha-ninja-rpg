@@ -178,6 +178,32 @@ body.onlineAberto{overflow:hidden}
 .onlineCampanhaMenu button.perigo{color:#ef918a}.onlineCampanhaMenu button.perigo:active,.onlineCampanhaMenu button.perigo:hover{background:rgba(215,90,82,.12)}
 .onlineCriarSalaForm{padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
 
+/* v2.5.8.133 — campanha permanente e Área do Mestre separada da sala. */
+.onlineCampanhaItemAbrir{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+.onlineCampanhaAbrirBtn{align-self:center;white-space:nowrap}
+.onlineCampanhaHero{background:linear-gradient(145deg,#21170f,#12100e);border-color:rgba(225,168,92,.42)}
+.onlineCampanhaHeroTopo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-4px 0 8px}
+.onlineCampanhaVersao{color:#8fd6a8;font:800 9px/1 system-ui;letter-spacing:.08em;text-transform:uppercase}
+.onlineCampanhaSalaAtiva,.onlineCampanhaSalaAtivaResumo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.onlineCampanhaSalaAtiva{margin-top:12px;padding:10px 11px;background:#0c1210;border:1px solid rgba(54,215,125,.2);border-radius:12px}
+.onlineCampanhaSalaAtiva>span{color:#79d79a;font:800 9px/1 system-ui;letter-spacing:.06em}.onlineCampanhaSalaAtiva>strong{flex:1;min-width:140px;color:#edf5ef;font-size:12px}
+.onlineCampanhaArquitetura .onlineCardTitulo small{color:#8b7c68;font-size:9px}
+.onlineCampanhaModulos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.onlineCampanhaModulos>div{display:grid;gap:3px;padding:11px;background:#0d1115;border:1px solid rgba(255,255,255,.07);border-radius:12px}
+.onlineCampanhaModulos b{color:#f1ddc2;font-size:12px}.onlineCampanhaModulos span{color:#948674;font-size:10px}.onlineCampanhaModulos em{margin-top:4px;color:#b58b56;font:800 8px/1 system-ui;font-style:normal;letter-spacing:.08em;text-transform:uppercase}
+.onlineCampanhaSessoes{display:grid;gap:8px;margin:12px 0 14px}
+.onlineCampanhaSessao{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;background:#0d1115;border:1px solid rgba(255,255,255,.08);border-radius:13px}
+.onlineCampanhaSessao.aberta{border-color:rgba(54,215,125,.18)}.onlineCampanhaSessao.encerrada{opacity:.72}
+.onlineCampanhaSessao>div{min-width:0;display:grid;gap:3px}.onlineCampanhaSessao small{color:#9d8b74;font:800 8px/1 system-ui;letter-spacing:.1em}.onlineCampanhaSessao.aberta small{color:#78ce96}
+.onlineCampanhaSessao strong{color:#f5e4ca;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.onlineCampanhaSessao span{color:#8f8170;font-size:9px}
+.onlineSalaCampanhaLink{appearance:none;border:0;background:transparent;color:#e4b878;padding:0;font:800 10px/1.2 system-ui;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+@media(max-width:560px){
+  .onlineCampanhaItemAbrir{grid-template-columns:1fr}.onlineCampanhaAbrirBtn{width:100%}
+  .onlineCampanhaModulos{grid-template-columns:1fr 1fr}
+  .onlineCampanhaSessao{align-items:flex-start;flex-direction:column}.onlineCampanhaSessao .onlineBtn{width:100%}
+}
+
 
 /* v2.5.8.2 — progressão manual do mestre e XP para convidados */
 .onlineProgressaoConteudo{display:grid;gap:16px}
