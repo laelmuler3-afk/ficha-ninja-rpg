@@ -454,3 +454,21 @@ body.onlineAberto{overflow:hidden}
 .onlineMesaMestrePainel[hidden]{display:none!important}
 .onlineMesaMestrePainel{display:block}
 @media(max-width:560px){.onlineMesaMestreTab{padding:9px 10px}.onlineMesaMestreTab small{font-size:9px}}
+
+/* v2.5.8.134 — campaignMembers: personagens permanentes da campanha. */
+.onlineVinculoCampanha{display:grid;gap:8px;margin:2px 0 0;padding:10px;border:1px solid rgba(225,168,92,.18);border-radius:12px;background:#090d10}
+.onlineVinculoCampanha legend{padding:0 5px;color:#bca17d;font:800 9px/1 system-ui;letter-spacing:.08em;text-transform:uppercase}
+.onlineVinculoOpcao{display:grid!important;grid-template-columns:18px minmax(0,1fr);align-items:start;gap:8px!important;padding:8px 9px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:#0d1115;cursor:pointer}
+.onlineVinculoOpcao input{width:16px!important;height:16px!important;margin:2px 0 0!important;accent-color:#d79542;box-shadow:none!important}
+.onlineVinculoOpcao span{display:grid;gap:2px}.onlineVinculoOpcao b{color:#f0dcc0;font-size:11px}.onlineVinculoOpcao small{color:#8f8170;font-size:9px;line-height:1.35}
+.onlineVinculoOpcao:has(input:checked){border-color:rgba(225,168,92,.34);background:rgba(225,168,92,.06)}
+.onlineVinculoTemporario{margin:0;padding:8px 10px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:#0b0f13}
+.onlineCampanhaModulos>div.ativo{border-color:rgba(54,215,125,.22);background:linear-gradient(145deg,rgba(54,215,125,.055),#0d1115 54%)}
+.onlineCampanhaModulos>div.ativo em{color:#7fd29b}
+.onlineCampanhaMembrosTitulo{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:15px 0 8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}
+.onlineCampanhaMembrosTitulo strong{color:#ead8bd;font-size:12px}.onlineCampanhaMembrosTitulo small{color:#857765;font-size:9px;text-align:right}
+.onlineCampanhaMembros{display:grid;gap:7px}
+.onlineCampanhaMembro{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:10px;padding:10px 11px;border:1px solid rgba(54,215,125,.14);border-radius:12px;background:#0b1011}
+.onlineCampanhaMembroIcone{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:rgba(54,215,125,.08);border:1px solid rgba(54,215,125,.16);color:#83d39f;font:900 15px/1 serif}
+.onlineCampanhaMembro>div:last-child{min-width:0;display:grid;gap:2px}.onlineCampanhaMembro small{color:#75c792;font:800 8px/1 system-ui;letter-spacing:.08em}.onlineCampanhaMembro strong{color:#f1e3cf;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.onlineCampanhaMembro span{color:#8d806e;font-size:9px}
+@media(max-width:560px){.onlineCampanhaMembrosTitulo{align-items:flex-start;flex-direction:column;gap:3px}.onlineCampanhaMembrosTitulo small{text-align:left}.onlineVinculoOpcao{padding:8px}}
