@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.140",
-  "name": "Ficha ativa e presença correta na sala",
-  "notes": "Corrige a entrada na Mesa Online para usar sempre a ficha realmente ativa no app e impede callbacks antigos de presença de recolocar outro personagem do mesmo aparelho como online.",
+  "version": "2.5.8.141",
+  "name": "XP permanente da campanha",
+  "notes": "Adiciona histórico permanente de XP por campanha, operações de adicionar/remover/corrigir, entrega para personagens offline via inbox e integração da sala com o ledger para membros permanentes.",
   "date": "2026-09-29"
 }

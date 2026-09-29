@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.140 — Ficha ativa = personagem da sala e presença sem corrida.
+/* Ficha Ninja RPG 2.5.8.141 — XP permanente da campanha com histórico e entrega offline.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.140";
+const APP_VERSION = "2.5.8.141";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
