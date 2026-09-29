@@ -497,3 +497,20 @@ body.onlineAberto{overflow:hidden}
   .onlineCampanhaNpcAcoes{align-self:start}
   .onlineCampanhaNpcStats{gap:4px}
 }
+
+/* v2.5.8.141 — XP permanente da campanha. */
+.onlineCampanhaXpTitulo{margin-top:18px}
+.onlineCampanhaXpGrid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:10px;align-items:start}
+.onlineCampanhaXpForm,.onlineCampanhaXpHistorico{padding:11px;border:1px solid rgba(96,156,231,.16);border-radius:12px;background:linear-gradient(145deg,rgba(73,125,196,.04),#0b0f13 58%)}
+.onlineCampanhaXpJogadores{display:grid;gap:6px;margin-bottom:9px;max-height:190px;overflow:auto;padding-right:2px}
+.onlineCampanhaXpJogadores label{display:grid!important;grid-template-columns:18px minmax(0,1fr);align-items:center;gap:8px!important;padding:8px 9px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:#0d1115;color:#e8dccb;font-size:10px;cursor:pointer}
+.onlineCampanhaXpJogadores input{width:15px!important;height:15px!important;margin:0!important;accent-color:#5e9bd8;box-shadow:none!important}
+.onlineCampanhaXpJogadores label:has(input:checked){border-color:rgba(96,156,231,.28);background:rgba(73,125,196,.055)}
+.onlineAjudaCompacta{margin:8px 0 0!important;color:#756e66!important;font-size:8.5px!important;line-height:1.4!important}
+.onlineCampanhaXpHistoricoTopo{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-bottom:8px}
+.onlineCampanhaXpHistoricoTopo strong{color:#ead8bd;font-size:12px}.onlineCampanhaXpHistoricoTopo small{color:#786f64;font-size:8.5px}
+.onlineCampanhaXpLista{display:grid;gap:6px;max-height:330px;overflow:auto;padding-right:2px}
+.onlineCampanhaXpItem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid rgba(255,255,255,.055);border-radius:10px;background:#0d1115}
+.onlineCampanhaXpItem>div{min-width:0;display:grid;gap:2px}.onlineCampanhaXpItem strong{color:#eee1ce;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.onlineCampanhaXpItem span{color:#928675;font-size:8.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.onlineCampanhaXpItem small{color:#665f57;font-size:8px}
+.onlineCampanhaXpItem>b{flex:0 0 auto;font-size:11px}.onlineCampanhaXpItem>b.positivo{color:#72d394}.onlineCampanhaXpItem>b.negativo{color:#dd857e}
+@media(max-width:760px){.onlineCampanhaXpGrid{grid-template-columns:1fr}.onlineCampanhaXpLista{max-height:260px}}
