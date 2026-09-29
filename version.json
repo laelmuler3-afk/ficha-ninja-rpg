@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.139",
-  "name": "Múltiplas fichas na mesma sala",
-  "notes": "Corrige a troca entre várias fichas da mesma conta no mesmo aparelho: entrar com uma nova personagem não remove nem substitui as anteriores. roomMemberships volta a representar somente autorização da conta; identidade permanece em participants/{characterId}.",
+  "version": "2.5.8.140",
+  "name": "Ficha ativa e presença correta na sala",
+  "notes": "Corrige a entrada na Mesa Online para usar sempre a ficha realmente ativa no app e impede callbacks antigos de presença de recolocar outro personagem do mesmo aparelho como online.",
   "date": "2026-09-29"
 }
