@@ -1539,13 +1539,16 @@
     const sala=estadoOnline.sala||{};
     const participantesSala=sala.participants||{};
     const antigo=antigoId?participantesSala[antigoId]:null;
-    if(antigo&&antigoId!==novoId){
+    const antigoEhMesmaFicha=Boolean(antigo&&participanteRepresentaFicha(antigo,ficha,characterId));
+    if(antigo&&antigoId!==novoId&&antigoEhMesmaFicha){
       const ordem=Array.isArray(sala?.combat?.order)?sala.combat.order:Object.values(sala?.combat?.order||{});
       const referenciado=ordem.map(texto).includes(texto(antigoId))||Object.values(sala.effects||{}).some(e=>texto(e?.participantId)===texto(antigoId));
       if(referenciado) return {skipped:true,reason:"participant-referenced-by-combat"};
     }
     const existenteNovo=participantesSala[novoId]||null;
-    const base=existenteNovo||antigo||{};
+    /* Nunca use outra personagem da mesma conta como base de migração. Isso
+       carregaria initiative/joinedAt/campos extras de uma ficha para outra. */
+    const base=existenteNovo||(antigoEhMesmaFicha?antigo:null)||{};
     const participante={
       ...base,
       id:novoId,ownerUid:estadoOnline.user.uid,type:"player",connected:true,
@@ -1559,9 +1562,9 @@
     };
     const updates={};
     updates[`rooms/${roomId}/participants/${novoId}`]=participante;
-    if(antigoId&&antigoId!==novoId&&antigo) updates[`rooms/${roomId}/participants/${antigoId}`]=null;
+    if(antigoId&&antigoId!==novoId&&antigoEhMesmaFicha) updates[`rooms/${roomId}/participants/${antigoId}`]=null;
     await api.update(api.ref(estadoOnline.db),updates);
-    return {ok:true,participantId:novoId,migrated:Boolean(antigoId&&antigoId!==novoId)};
+    return {ok:true,participantId:novoId,migrated:Boolean(antigoId&&antigoId!==novoId&&antigoEhMesmaFicha)};
   }
 
   async function entrarSala({code,localSheetName,membershipMode="campaign"}){
@@ -1579,15 +1582,13 @@
     const participantIdPreferido=participantIdDaFicha(estadoOnline.user.uid,ficha.sheetId,encontrada.publico?.masterUid,characterId);
     if(!participantIdPreferido) throw new Error("Não foi possível identificar a ficha escolhida para a sala.");
 
-    /* roomMembership autoriza somente o acesso à sala. Ele não representa uma
-       personagem e, por isso, continua sendo indexado por UID. */
+    /* roomMembership autoriza somente a CONTA a ler/entrar na sala. Nunca
+       representa personagem, ficha ou aparelho. Uma mesma conta pode manter
+       vários characters em participants sem que este nó escolha um deles. */
     const ehDonoDaSala=encontrada.publico?.masterUid===estadoOnline.user.uid;
     if(!ehDonoDaSala){
       await api.set(api.ref(estadoOnline.db,`roomMemberships/${encontrada.roomId}/${estadoOnline.user.uid}`),{
-        role:"player",joinedAt:agora(),sheetId:ficha.sheetId,
-        ...(characterId?{characterId}:{}),
-        ...(texto(encontrada.publico?.campaignId)?{campaignId:texto(encontrada.publico.campaignId)}:{}),
-        membershipType:modoVinculoCampanha(membershipMode)
+        role:"player",joinedAt:agora()
       });
     }
 
@@ -1630,18 +1631,19 @@
       const referenciado=ordem.map(texto).includes(antigoId)||Object.values(roomData.effects||{}).some(e=>texto(e?.participantId)===antigoId);
       const mesmaFicha=participanteRepresentaFicha(antigo,ficha,characterId);
       if(mesmaFicha&&referenciado){
-        /* Este caso só deve ocorrer em dados legados muito antigos. Falhamos
-           fechado para não quebrar uma ordem de iniciativa já em andamento. */
+        /* Migração de identidade da MESMA ficha durante um combate: preserva a
+           chave antiga para não quebrar iniciativa/efeitos já referenciados. */
         participantId=antigoId;
-      }else if(!referenciado){
-        /* Se este aparelho estava usando outro personagem, removemos a entrada
-           antiga somente quando nenhum outro aparelho da mesma conta ainda o
-           representa. Isso permite celular + tablet com personagens distintos. */
+      }else if(mesmaFicha&&!referenciado){
+        /* Só removemos a chave anterior quando ela é comprovadamente a MESMA
+           personagem sob uma identidade legada (ex.: uid -> characterId).
+           Trocar de ficha no mesmo celular NÃO remove o personagem anterior:
+           várias fichas da mesma conta podem coexistir na mesma sala. */
         const outroDispositivo=await outroDispositivoUsaParticipante(encontrada.roomId,antigoId);
         removerAntigo=!outroDispositivo;
       }
-      /* Se for outra ficha e estiver no combate, ela permanece na sala. A nova
-         ficha entra em paralelo com seu characterId, em vez de sobrescrevê-la. */
+      /* Se `antigo` representa outra ficha/characterId, ele sempre permanece.
+         O device apenas muda qual participantId anuncia como presença ativa. */
     }
 
     const resumo=resumoBatalhaDaFicha(ficha);
@@ -1652,13 +1654,9 @@
     ficha=vinculo.ficha||ficha;
     const characterIdFinal=texto(vinculo.characterId)||characterId;
 
-    if(!ehDonoDaSala){
-      await api.update(api.ref(estadoOnline.db,`roomMemberships/${encontrada.roomId}/${estadoOnline.user.uid}`),{
-        sheetId:ficha.sheetId,...(characterIdFinal?{characterId:characterIdFinal}:{}),
-        ...(texto(encontrada.publico?.campaignId)?{campaignId:texto(encontrada.publico.campaignId)}:{}),
-        membershipType:vinculo.membershipType
-      });
-    }
+    /* Não grave identidade de personagem em roomMemberships. A autorização da
+       conta já foi criada acima; o vínculo da personagem vive exclusivamente em
+       participants/{characterId} e, quando permanente, campaignMembers. */
 
     const existente=participantesRemotos[participantId]||null;
     const base=existente||{};
@@ -2042,14 +2040,8 @@
         campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId),membershipType:vinculo.membershipType
       });
       if(resultado?.ok!==true) return resultado;
-      const membershipRef=estadoOnline.api.ref(estadoOnline.db,`roomMemberships/${sessao.roomId}/${estadoOnline.user.uid}`);
-      const membership=await estadoOnline.api.get(membershipRef).catch(()=>null);
-      if(membership?.exists?.()&&membership.val()?.role==="player"){
-        await estadoOnline.api.update(membershipRef,{
-          sheetId:ativa.sheetId,...(characterId?{characterId}:{}),
-          campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId),membershipType:vinculo.membershipType
-        });
-      }
+      /* roomMemberships é autorização por UID, não estado da ficha. Não altere
+         esse nó quando a personagem ativa muda/reconcilia. */
       salvarJson(CHAVE_SESSAO,{...sessao,participantId:novoId,sheetId:ativa.sheetId,localSheetName:ativa.name,characterId,membershipMode:vinculo.membershipType,campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId)});
       return {...resultado,rebound:true,from:{participantId:atualId,sheetId:sessao.sheetId,name:sessao.localSheetName},to:{participantId:novoId,sheetId:ativa.sheetId,name:ativa.name}};
     })().finally(()=>{reconciliacaoFichaSalaEmCurso=null;});
