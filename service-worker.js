@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.138 — Identidade de personagem por ficha na sala.
+/* Ficha Ninja RPG 2.5.8.139 — Múltiplas fichas independentes na mesma sala.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.138";
+const APP_VERSION = "2.5.8.139";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

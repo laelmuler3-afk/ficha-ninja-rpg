@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.138",
-  "name": "Identidade de personagem por ficha na sala",
-  "notes": "Impede salas legadas de reutilizarem o UID/e-mail como identidade de outra ficha. Cada ficha autenticada entra com seu characterId; presença multi-dispositivo é separada por participantId e a troca de ficha exige entrada explícita sem sobrescrever a personagem anterior.",
-  "date": "2026-09-28"
+  "version": "2.5.8.139",
+  "name": "Múltiplas fichas na mesma sala",
+  "notes": "Corrige a troca entre várias fichas da mesma conta no mesmo aparelho: entrar com uma nova personagem não remove nem substitui as anteriores. roomMemberships volta a representar somente autorização da conta; identidade permanece em participants/{characterId}.",
+  "date": "2026-09-29"
 }
