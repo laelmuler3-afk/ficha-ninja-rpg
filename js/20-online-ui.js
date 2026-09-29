@@ -662,10 +662,15 @@
     if(st.npcsCampanhaId!==campanha.id){
       window.ShinobiOnline?.observarNpcsCampanha?.(campanha.id).catch(()=>{});
     }
+    if(st.xpLedgerCampanhaId!==campanha.id){
+      window.ShinobiOnline?.observarXpCampanha?.(campanha.id).catch(()=>{});
+    }
     const membrosCarregados=st.membrosCampanhaId===campanha.id;
     const membros=(membrosCarregados?st.membrosCampanha:[]).filter(m=>m?.status!=="inactive");
     const npcsCarregados=st.npcsCampanhaId===campanha.id;
     const npcs=(npcsCarregados?st.npcsCampanha:[]).filter(npc=>npc?.status!=="inactive");
+    const xpCarregado=st.xpLedgerCampanhaId===campanha.id;
+    const historicoXp=xpCarregado?(st.xpLedgerCampanha||[]):[];
     const sessoes=Object.entries(campanha.rooms||{}).map(([id,sala])=>({id,...(sala||{})})).sort((a,b)=>num(b.createdAt)-num(a.createdAt));
     const abertas=sessoes.filter(s=>s.status==="open");
     const encerradas=sessoes.filter(s=>s.status!=="open");
@@ -722,7 +727,7 @@
         <div class="onlineCampanhaModulos">
           <div class="ativo"><b>Jogadores</b><span>Vínculos permanentes</span><em>Ativo</em></div>
           <div class="ativo"><b>NPCs</b><span>Biblioteca da campanha</span><em>Ativo</em></div>
-          <div><b>XP</b><span>Histórico e recompensas</span><em>Próxima etapa</em></div>
+          <div class="ativo"><b>XP</b><span>Histórico e recompensas</span><em>Ativo</em></div>
           <div><b>Encontros e notas</b><span>Preparação do mestre</span><em>Próxima etapa</em></div>
         </div>
         <div class="onlineCampanhaMembrosTitulo"><strong>Jogadores da campanha</strong><small>Reconhecidos por conta + personagem</small></div>
@@ -751,6 +756,28 @@
             </form>
           </div>
         </details>
+
+        <div class="onlineCampanhaMembrosTitulo onlineCampanhaXpTitulo"><strong>XP da campanha</strong><small>Funciona mesmo sem sala aberta</small></div>
+        <div class="onlineCampanhaXpGrid">
+          <form data-form="campaign-xp" class="onlineForm onlineCampanhaXpForm">
+            <input type="hidden" name="campaignId" value="${esc(campanha.id)}">
+            <div class="onlineXpJogadores onlineCampanhaXpJogadores">${membros.length?membros.map(membro=>`<label><input type="checkbox" name="memberKeys" value="${esc(`${membro.userId}::${membro.characterId}`)}" checked><span>${esc(membro.displayName||"Personagem")}</span></label>`).join(""):`<p class="onlineVazio">Adicione jogadores permanentes à campanha para distribuir XP.</p>`}</div>
+            <div class="onlineFormGrid">
+              <label>Operação<select name="type"><option value="grant">Adicionar XP</option><option value="remove">Remover XP</option><option value="correction">Correção (+/-)</option></select></label>
+              <label>Quantidade<input name="amount" type="number" value="500" step="1" required></label>
+            </div>
+            <label>Motivo<input name="reason" maxlength="160" placeholder="Missão Rank B"></label>
+            <button class="onlineBtn primario" type="submit" ${membros.length?"":"disabled"}>Registrar XP</button>
+            <p class="onlineAjudaCompacta">O lançamento fica no histórico e será entregue quando a ficha do jogador voltar a sincronizar. Level Up continua usando o fluxo normal da ficha.</p>
+          </form>
+          <div class="onlineCampanhaXpHistorico">
+            <div class="onlineCampanhaXpHistoricoTopo"><strong>Histórico</strong><small>${xpCarregado?`${historicoXp.length} lançamento(s) recente(s)`:"Carregando..."}</small></div>
+            ${!xpCarregado?`<p class="onlineVazio">Carregando histórico de XP...</p>`:historicoXp.length?`<div class="onlineCampanhaXpLista">${historicoXp.slice(0,30).map(item=>{
+              const valor=num(item.amount),tipo=item.type==="remove"?"Remoção":item.type==="correction"?"Correção":"Recompensa";
+              return `<article class="onlineCampanhaXpItem"><div><strong>${esc(item.displayName||"Personagem")}</strong><span>${esc(tipo)}${item.reason?` • ${esc(item.reason)}`:""}</span><small>${esc(formatarDataSessao(item.createdAt))}${item.sessionId?" • sessão":""}</small></div><b class="${valor<0?"negativo":"positivo"}">${valor>0?"+":""}${valor} XP</b></article>`;
+            }).join("")}</div>`:`<p class="onlineVazio">Nenhum XP registrado nesta campanha.</p>`}
+          </div>
+        </div>
       </section>
 
       <section class="onlineCard">
@@ -1772,6 +1799,14 @@
     if(tipo==="import-npc")return executar(async()=>{await window.ShinobiOnline.importarFichaComoNpc(dados.get("localSheetName"),{displayName:dados.get("displayName")});form.reset();});
     if(tipo==="quick-npc")return executar(async()=>{await window.ShinobiOnline.criarNpcRapido(Object.fromEntries(dados.entries()));form.reset();});
     if(tipo==="add-effect")return executar(async()=>{await window.ShinobiOnline.adicionarEfeito({participantId:dados.get("participantId"),name:dados.get("name"),duration:num(dados.get("duration"),1)});form.reset();});
+    if(tipo==="campaign-xp")return executar(async()=>{
+      const chaves=dados.getAll("memberKeys"),tipoXp=String(dados.get("type")||"grant"),quantidade=dados.get("amount");
+      const resultado=await window.ShinobiOnline.alterarXpCampanha({
+        campaignId:dados.get("campaignId"),memberKeys:chaves,amount:quantidade,reason:dados.get("reason"),type:tipoXp
+      });
+      const verbo=resultado.type==="remove"?"removido":resultado.type==="correction"?"corrigido":"adicionado";
+      await avisar("XP registrado",`XP ${verbo} para ${resultado.count} personagem(ns). O histórico foi salvo e a entrega acontecerá pela conta de cada jogador.`);
+    });
     if(tipo==="set-player-level")return executar(async()=>{
       const participantId=form.dataset.participantId;
       const resultado=await window.ShinobiOnline.definirNivelJogador({participantId,nivel:dados.get("level")});
@@ -1868,7 +1903,7 @@
   function instalarEventos(){
     if(!window.ShinobiOnline||window.__shinobiOnlineUIEventos)return;
     window.__shinobiOnlineUIEventos=true;
-    ["status","pronto","auth","campanhas","membros-campanha","npcs-campanha","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
+    ["status","pronto","auth","campanhas","membros-campanha","npcs-campanha","xp-campanha","xp-inbox","fichas-nuvem","ficha-atualizada-nuvem","ficha-sincronizada","status-sync","turno-finalizado","turno-sincronizado","sala","presenca","configuracao-pendente","sala-encerrada"].forEach(tipo=>window.ShinobiOnline.on(tipo,agendarRender));
     window.ShinobiOnline.on("erro",e=>{
       document.querySelector("[data-drawer-sync]")?.classList.add("onlineErro");
       console.warn("Modo online indisponível:",e.detail.mensagem);
