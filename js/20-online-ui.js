@@ -578,6 +578,9 @@
   function renderEntradaSala(st){
     const codigoUrl=window.ShinobiOnline?.codigoDaUrl?.()||"";
     const contaPermanente=Boolean(st?.user&&!st.user.anonymous);
+    const fichaAtiva=nomeFichaAtiva();
+    const fichaAtivaInfo=(window.ShinobiOnline?.listarFichasLocais?.()||[]).find(f=>String(f.name)===String(fichaAtiva));
+    const personagemAtivo=String(fichaAtivaInfo?.characterName||fichaAtiva);
     const vinculo=contaPermanente?`
       <fieldset class="onlineVinculoCampanha">
         <legend>Vínculo do personagem</legend>
@@ -597,7 +600,9 @@
       <h3>Código ou QR Code</h3>
       <form data-form="join-room" class="onlineForm">
         <label>Código da sala<input name="code" maxlength="6" autocomplete="off" value="${esc(codigoUrl)}" placeholder="ABC234" required></label>
-        <label>Ficha usada na mesa<select name="localSheetName">${opcoesFichasLocais()}</select></label>
+        <label>Ficha usada na mesa<input value="${esc(personagemAtivo)} — ${esc(fichaAtiva)}" readonly></label>
+        <input type="hidden" name="localSheetName" value="${esc(fichaAtiva)}">
+        <p class="onlineAjuda">A sala usa sempre a ficha que está aberta no aplicativo. Para entrar com outra personagem, troque de ficha primeiro.</p>
         ${vinculo}
         <div class="onlineAcoesLinha">
           <button class="onlineBtn primario" type="submit">Entrar na sala</button>
@@ -1721,11 +1726,13 @@
     });
     if(tipo==="join-room")return (async()=>{
       const codigo=String(dados.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+      /* A ficha ativa é a fonte de verdade. Não usamos uma opção antiga do
+         formulário para decidir quem entra na sala. */
+      const fichaEscolhida=nomeFichaAtiva();
       const st=obterEstado();
       if(st.sala){
         const atual=String(st.sala.code||"").toUpperCase();
         if(codigo===atual){
-          const fichaEscolhida=String(dados.get("localSheetName")||"");
           const sessao=sessaoLocal();
           if(sessao?.role==="player"&&fichaEscolhida&&fichaEscolhida!==String(sessao.localSheetName||"")){
             return executar(async()=>{
@@ -1742,7 +1749,7 @@
       }
       return executar(async()=>{
         if(obterEstado().sala)await window.ShinobiOnline.sairDaSala({silencioso:true});
-        const resultado=await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:dados.get("localSheetName"),membershipMode:dados.get("membershipMode")});
+        const resultado=await window.ShinobiOnline.entrarSala({code:codigo,localSheetName:fichaEscolhida,membershipMode:dados.get("membershipMode")});
         if(resultado?.campaignMemberCreated) await avisar("Personagem adicionado à campanha","Este personagem agora possui um vínculo permanente e será reconhecido nas próximas sessões desta campanha.");
         pararScanner();
         destinoAtual="sala-atual";

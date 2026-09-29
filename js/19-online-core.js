@@ -43,6 +43,7 @@
     unsubscribeFichas:null,
     unsubscribeEventos:null,
     unsubscribeConnected:null,
+    presenceGeneration:0,
     syncTimers:new Map(),
     syncQueues:new Map(),
     dirtySheets:new Set(),
@@ -1571,9 +1572,18 @@
     if(!estadoOnline.user) await entrarAnonimo();
     exigirUsuario();
     const encontrada=await buscarSalaPorCodigo(code);
-    const nomeSolicitado=texto(localSheetName);
-    let ficha=nomeSolicitado?listarFichasLocais().find(f=>f.name===nomeSolicitado):fichaAtualLocal();
-    if(!ficha) throw new Error(nomeSolicitado?"A ficha escolhida não existe mais neste aparelho. Escolha outra ficha.":"Escolha uma ficha para entrar na sala.");
+    const nomeAtivo=fichaAtivaNomeSeguro();
+    const nomeSolicitado=texto(localSheetName)||nomeAtivo;
+    /* A sessão online pertence à ficha que está realmente aberta no app.
+       Permitir entrar com outra ficha apenas pelo seletor da Mesa cria uma
+       contradição: hooks, realtime e presença continuam lendo a ficha ativa e
+       acabam anunciando/atualizando outro personagem. Para usar outra ficha, o
+       usuário deve primeiro torná-la ativa no gerenciador de fichas. */
+    if(nomeSolicitado!==nomeAtivo){
+      throw new Error(`Abra a ficha "${nomeSolicitado}" no aplicativo antes de entrar na sala.`);
+    }
+    let ficha=fichaAtualLocal();
+    if(!ficha) throw new Error("A ficha ativa não existe mais neste aparelho. Abra uma ficha válida antes de entrar na sala.");
     const api=estadoOnline.api;
 
     const identidade=identidadePersonagemDaFicha(ficha);
@@ -1732,24 +1742,36 @@
     const api=estadoOnline.api;
     const connectedRef=api.ref(estadoOnline.db,".info/connected");
     const deviceId=obterDeviceId();
+    const geracao=++estadoOnline.presenceGeneration;
     const myUserPresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}`);
     const myDevicePresence=api.ref(estadoOnline.db,`presence/${roomId}/${estadoOnline.user.uid}/devices/${deviceId}`);
     estadoOnline.unsubscribeConnected=api.onValue(connectedRef,async snap=>{
-      if(snap.val()!==true) return;
+      if(snap.val()!==true||geracao!==estadoOnline.presenceGeneration) return;
       try{
-        /* Cada aparelho mantém a própria presença. Fechar o celular não deixa
-           o personagem offline se o tablet com o mesmo e-mail continuar aberto. */
+        const sessaoInicial=lerJson(CHAVE_SESSAO,{})||{};
+        if(texto(sessaoInicial.roomId)!==texto(roomId)) return;
+        /* Cada aparelho mantém a própria presença. A geração impede que um
+           callback antigo, já em voo durante a troca de ficha/sessão, grave de
+           volta o participantId anterior depois da presença nova. */
         await api.update(myUserPresence,{connected:null,lastSeen:null,deviceId:null,participantId:null});
+        if(geracao!==estadoOnline.presenceGeneration) return;
         await api.onDisconnect(myDevicePresence).remove();
+        if(geracao!==estadoOnline.presenceGeneration){
+          try{await api.onDisconnect(myDevicePresence).cancel();}catch(_erro){}
+          return;
+        }
+        const sessaoAtual=lerJson(CHAVE_SESSAO,{})||{};
+        if(texto(sessaoAtual.roomId)!==texto(roomId)) return;
         await api.set(myDevicePresence,{
           connected:true,lastSeen:api.serverTimestamp(),deviceId,
-          participantId:lerJson(CHAVE_SESSAO,{})?.participantId||""
+          participantId:sessaoAtual.role==="player"?texto(sessaoAtual.participantId):""
         });
       }catch(_erro){}
     });
   }
 
   function limparSessaoLocal(){
+    estadoOnline.presenceGeneration+=1;
     localStorage.removeItem(CHAVE_SESSAO);
     estadoOnline.unsubscribeSala?.();estadoOnline.unsubscribeSala=null;
     estadoOnline.unsubscribePresenca?.();estadoOnline.unsubscribePresenca=null;
@@ -1760,6 +1782,9 @@
   }
 
   async function sairDaSala({silencioso=false}={}){
+    /* Invalida imediatamente qualquer callback de .info/connected ainda em voo
+       antes de remover a presença deste aparelho. */
+    estadoOnline.presenceGeneration+=1;
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||!estadoOnline.user){limparSessaoLocal();return;}
     const api=estadoOnline.api;
