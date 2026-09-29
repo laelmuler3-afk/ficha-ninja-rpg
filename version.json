@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.137",
-  "name": "Auditoria de identidade e isolamento",
-  "notes": "Endurece a separação entre fichas em todo o app: identidade não usa nome, tarefas atrasadas não podem escrever em outra ficha, sala/XP/realtime/imagens resolvem a ficha por IDs estáveis e NPCs/importações permanecem isolados.",
+  "version": "2.5.8.138",
+  "name": "Identidade de personagem por ficha na sala",
+  "notes": "Impede salas legadas de reutilizarem o UID/e-mail como identidade de outra ficha. Cada ficha autenticada entra com seu characterId; presença multi-dispositivo é separada por participantId e a troca de ficha exige entrada explícita sem sobrescrever a personagem anterior.",
   "date": "2026-09-28"
 }
