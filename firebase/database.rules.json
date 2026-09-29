@@ -205,6 +205,41 @@
         },
         ".write": "auth != null && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid"
       }
+    },
+    "xpLedger": {
+      "$campaignId": {
+        ".read": "auth != null && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid",
+        ".indexOn": [
+          "createdAt"
+        ],
+        "$ledgerId": {
+          ".write": "auth != null && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid && ((!data.exists() && newData.exists()) || (data.exists() && !newData.exists()))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['id','campaignId','userId','characterId','displayName','amount','reason','type','createdAt','createdBy']) && newData.child('id').val() === $ledgerId && newData.child('campaignId').val() === $campaignId && newData.child('userId').isString() && newData.child('userId').val().length > 0 && newData.child('userId').val().length <= 128 && newData.child('characterId').isString() && newData.child('characterId').val().length > 0 && newData.child('characterId').val().length <= 100 && newData.child('displayName').isString() && newData.child('displayName').val().length > 0 && newData.child('displayName').val().length <= 120 && newData.child('amount').isNumber() && newData.child('amount').val() !== 0 && newData.child('amount').val() >= -1000000 && newData.child('amount').val() <= 1000000 && newData.child('reason').isString() && newData.child('reason').val().length <= 160 && (newData.child('type').val() === 'grant' || newData.child('type').val() === 'remove' || newData.child('type').val() === 'correction') && newData.child('createdAt').isNumber() && newData.child('createdAt').val() > 0 && newData.child('createdBy').val() === auth.uid && root.child('campaignMembers').child($campaignId).child(newData.child('userId').val()).child(newData.child('characterId').val()).child('status').val() === 'active' && (!newData.child('sourceSheetId').exists() || (newData.child('sourceSheetId').isString() && newData.child('sourceSheetId').val().length <= 120)) && (!newData.child('sessionId').exists() || (newData.child('sessionId').isString() && newData.child('sessionId').val().length <= 120)))"
+        },
+        ".write": "auth != null && data.exists() && !newData.exists() && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid"
+      }
+    },
+    "xpInbox": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$characterId": {
+          "$ledgerId": {
+            ".write": "auth != null && ((!data.exists() && newData.exists() && root.child('campaigns').child(newData.child('campaignId').val()).child('masterUid').val() === auth.uid && root.child('campaignMembers').child(newData.child('campaignId').val()).child($uid).child($characterId).child('status').val() === 'active') || (data.exists() && !newData.exists() && ((auth.uid === $uid && root.child('xpAcks').child($uid).child($characterId).child($ledgerId).child('status').val() === 'done') || root.child('campaigns').child(data.child('campaignId').val()).child('masterUid').val() === auth.uid)))",
+            ".validate": "!newData.exists() || (newData.hasChildren(['id','campaignId','userId','characterId','displayName','amount','reason','type','createdAt','createdBy']) && newData.child('id').val() === $ledgerId && newData.child('userId').val() === $uid && newData.child('characterId').val() === $characterId && newData.child('campaignId').isString() && newData.child('campaignId').val().length > 0 && newData.child('campaignId').val().length <= 120 && newData.child('displayName').isString() && newData.child('displayName').val().length > 0 && newData.child('displayName').val().length <= 120 && newData.child('amount').isNumber() && newData.child('amount').val() !== 0 && newData.child('amount').val() >= -1000000 && newData.child('amount').val() <= 1000000 && newData.child('reason').isString() && newData.child('reason').val().length <= 160 && (newData.child('type').val() === 'grant' || newData.child('type').val() === 'remove' || newData.child('type').val() === 'correction') && newData.child('createdAt').isNumber() && newData.child('createdAt').val() > 0 && newData.child('createdBy').isString() && newData.child('createdBy').val().length > 0 && (!newData.child('sourceSheetId').exists() || (newData.child('sourceSheetId').isString() && newData.child('sourceSheetId').val().length <= 120)) && (!newData.child('sessionId').exists() || (newData.child('sessionId').isString() && newData.child('sessionId').val().length <= 120)))"
+          }
+        }
+      }
+    },
+    "xpAcks": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$characterId": {
+          "$ledgerId": {
+            ".write": "auth != null && auth.uid === $uid && (data.exists() || root.child('xpInbox').child($uid).child($characterId).child($ledgerId).exists())",
+            ".validate": "!newData.exists() || (newData.hasChildren(['status','deviceId']) && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && (!newData.child('baseXp').exists() || (newData.child('baseXp').isNumber() && newData.child('baseXp').val() >= 0)) && (!newData.child('targetXp').exists() || (newData.child('targetXp').isNumber() && newData.child('targetXp').val() >= 0)) && (!newData.child('xpMax').exists() || (newData.child('xpMax').isNumber() && newData.child('xpMax').val() >= 0)) && ((newData.child('status').val() === 'processing' && newData.child('claimedAt').isNumber() && newData.child('claimedAt').val() > 0 && !newData.child('completedAt').exists()) || (newData.child('status').val() === 'done' && data.child('status').val() === 'processing' && newData.child('deviceId').val() === data.child('deviceId').val() && newData.child('completedAt').isNumber() && newData.child('completedAt').val() > 0)))"
+          }
+        }
+      }
     }
   }
 }
