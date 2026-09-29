@@ -1429,6 +1429,39 @@
     return dono;
   }
 
+  function participanteRepresentaFicha(participante,ficha,characterId=""){
+    if(!participante||!ficha) return false;
+    const personagemSala=texto(participante.characterId);
+    const personagemFicha=texto(characterId);
+    if(personagemSala&&personagemFicha) return personagemSala===personagemFicha;
+    const sheetSala=texto(participante.sheetId);
+    const sheetFicha=texto(ficha.sheetId);
+    return Boolean(sheetSala&&sheetFicha&&sheetSala===sheetFicha);
+  }
+
+  async function outroDispositivoUsaParticipante(roomId,participantId){
+    const uid=texto(estadoOnline.user?.uid),salaId=texto(roomId),alvo=texto(participantId);
+    if(!uid||!salaId||!alvo||!estadoOnline.api||!estadoOnline.db) return false;
+    try{
+      const snap=await estadoOnline.api.get(estadoOnline.api.ref(estadoOnline.db,`presence/${salaId}/${uid}/devices`));
+      const devices=snap?.exists?.()?snap.val()||{}:{};
+      const atual=obterDeviceId();
+      return Object.entries(devices).some(([deviceId,device])=>
+        texto(deviceId)!==texto(atual)&&device?.connected===true&&texto(device?.participantId)===alvo
+      );
+    }catch(_erro){return false;}
+  }
+
+  async function desvincularPresencaDesteDispositivo(roomId){
+    const uid=texto(estadoOnline.user?.uid),salaId=texto(roomId);
+    if(!uid||!salaId||!estadoOnline.api||!estadoOnline.db) return false;
+    try{
+      const ref=estadoOnline.api.ref(estadoOnline.db,`presence/${salaId}/${uid}/devices/${obterDeviceId()}`);
+      await estadoOnline.api.update(ref,{participantId:"",lastSeen:estadoOnline.api.serverTimestamp()});
+      return true;
+    }catch(_erro){return false;}
+  }
+
 
   function normalizarParticipantesSala(raw){
     const saida={};
@@ -1569,24 +1602,46 @@
     const ordemRemota=Array.isArray(roomData?.combat?.order)?roomData.combat.order:Object.values(roomData?.combat?.order||{});
     const uidLegadoReferenciado=ordemRemota.map(texto).includes(texto(estadoOnline.user.uid))
       ||Object.values(roomData.effects||{}).some(e=>texto(e?.participantId)===texto(estadoOnline.user.uid));
+    const legadoEhMesmaFicha=Boolean(
+      legadoUid&&texto(legadoUid.ownerUid)===texto(estadoOnline.user.uid)&&
+      participanteRepresentaFicha(legadoUid,ficha,characterId)
+    );
     const sessaoAnterior=lerJson(CHAVE_SESSAO,null);
-    const antigoId=(sessaoAnterior?.roomId===encontrada.roomId&&sessaoAnterior?.role==="player")?texto(sessaoAnterior.participantId):"";
+    let antigoId=(sessaoAnterior?.roomId===encontrada.roomId&&sessaoAnterior?.role==="player")?texto(sessaoAnterior.participantId):"";
     let participantId=participantIdPreferido;
-    /* Se uma sala antiga ainda referencia o UID na iniciativa/efeitos, mantemos
-       esse mesmo ID mesmo quando o participante havia saído e foi removido.
-       Reentrar com characterId nesse caso deixaria a ordem apontando para um
-       participante inexistente. Salas sem referências legadas adotam o novo ID. */
-    if(!participantesRemotos[participantIdPreferido]&&((legadoUid?.ownerUid===estadoOnline.user.uid)||uidLegadoReferenciado)){
+
+    /* Compatibilidade de sala antiga sem voltar a usar e-mail/UID como identidade
+       de personagem. O UID legado só é preservado quando conseguimos provar por
+       characterId/sheetId que ele representa ESTA MESMA ficha e quando já está
+       referenciado pelo combate. Uma ficha diferente da mesma conta entra sempre
+       com seu próprio characterId. */
+    if(!participantesRemotos[participantIdPreferido]&&legadoEhMesmaFicha&&uidLegadoReferenciado){
       participantId=estadoOnline.user.uid;
+    }else if(!antigoId&&!uidLegadoReferenciado&&legadoEhMesmaFicha&&participantId!==estadoOnline.user.uid){
+      /* Fora de combate, uma entrada legada da mesma ficha pode ser promovida
+         com segurança de participants/{uid} para participants/{characterId}. */
+      antigoId=estadoOnline.user.uid;
     }
 
     const antigo=antigoId&&antigoId!==participantId?participantesRemotos[antigoId]:null;
+    let removerAntigo=false;
     if(antigo&&texto(antigo.ownerUid)===texto(estadoOnline.user.uid)){
       const ordem=Array.isArray(roomData?.combat?.order)?roomData.combat.order:Object.values(roomData?.combat?.order||{});
       const referenciado=ordem.map(texto).includes(antigoId)||Object.values(roomData.effects||{}).some(e=>texto(e?.participantId)===antigoId);
-      if(referenciado){
-        throw new Error("O personagem atual já está vinculado ao combate desta sala. Para trocar de personagem com segurança, peça ao mestre para removê-lo do combate primeiro.");
+      const mesmaFicha=participanteRepresentaFicha(antigo,ficha,characterId);
+      if(mesmaFicha&&referenciado){
+        /* Este caso só deve ocorrer em dados legados muito antigos. Falhamos
+           fechado para não quebrar uma ordem de iniciativa já em andamento. */
+        participantId=antigoId;
+      }else if(!referenciado){
+        /* Se este aparelho estava usando outro personagem, removemos a entrada
+           antiga somente quando nenhum outro aparelho da mesma conta ainda o
+           representa. Isso permite celular + tablet com personagens distintos. */
+        const outroDispositivo=await outroDispositivoUsaParticipante(encontrada.roomId,antigoId);
+        removerAntigo=!outroDispositivo;
       }
+      /* Se for outra ficha e estiver no combate, ela permanece na sala. A nova
+         ficha entra em paralelo com seu characterId, em vez de sobrescrevê-la. */
     }
 
     const resumo=resumoBatalhaDaFicha(ficha);
@@ -1618,7 +1673,9 @@
     };
     const updates={};
     updates[`rooms/${encontrada.roomId}/participants/${participantId}`]=participante;
-    if(antigo&&texto(antigo.ownerUid)===texto(estadoOnline.user.uid)) updates[`rooms/${encontrada.roomId}/participants/${antigoId}`]=null;
+    if(removerAntigo&&antigo&&texto(antigo.ownerUid)===texto(estadoOnline.user.uid)){
+      updates[`rooms/${encontrada.roomId}/participants/${antigoId}`]=null;
+    }
     await api.update(api.ref(estadoOnline.db),updates);
 
     salvarJson(CHAVE_SESSAO,{
@@ -1962,6 +2019,10 @@
          combate já aberto. A troca intencional continua disponível pelo fluxo
          Entrar em sala, onde conseguimos validar referências de combate. */
       if(participanteAtual&&atualId!==idPreferido){
+        /* A ficha ativa mudou. Não transformamos a personagem antiga na nova
+           silenciosamente. Este aparelho deixa de anunciar presença para a
+           personagem anterior e aguarda o usuário entrar com a ficha escolhida. */
+        await desvincularPresencaDesteDispositivo(sessao.roomId);
         return {skipped:true,reason:"participant-id-change-requires-rejoin"};
       }
       const resumo=resumoBatalhaDaFicha(ativa);

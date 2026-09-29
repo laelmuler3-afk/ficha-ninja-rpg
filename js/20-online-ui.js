@@ -35,6 +35,10 @@
 
   function obterEstado(){return window.ShinobiOnline?.snapshot?.()||{};}
   function sessaoLocal(){try{return JSON.parse(localStorage.getItem("shinobi_online_session_v1")||"null");}catch(_erro){return null;}}
+  function nomeFichaAtiva(){try{return String(localStorage.getItem("ficha_ninja_ativa_v1")||"Principal");}catch(_erro){return "Principal";}}
+  function fichaAtivaDifereDaSessao(sessao){
+    return Boolean(sessao?.role==="player"&&sessao?.localSheetName&&String(sessao.localSheetName)!==nomeFichaAtiva());
+  }
   function ehMestre(st){
     const sessao=sessaoLocal();
     return Boolean(st?.user&&st?.sala&&st.sala.masterUid===st.user.uid&&sessao?.role==="master"&&(!sessao.roomId||sessao.roomId===st.sala.id));
@@ -61,7 +65,13 @@
     const alvo=String(participantId||"");
     const devices=Object.values(registro?.devices||{});
     if(devices.length){
-      return devices.some(device=>device?.connected===true&&(!alvo||!device?.participantId||String(device.participantId)===alvo));
+      if(!alvo)return devices.some(device=>device?.connected===true);
+      /* Em contas com vários personagens, um aparelho conectado não pode fazer
+         todos os personagens daquele mesmo UID parecerem online. Se ao menos um
+         device usa o formato moderno, participantId precisa coincidir. */
+      const modernos=devices.filter(device=>device&&Object.prototype.hasOwnProperty.call(device,"participantId"));
+      if(modernos.length)return modernos.some(device=>device?.connected===true&&String(device.participantId||"")===alvo);
+      return devices.some(device=>device?.connected===true); // presença legada sem participantId
     }
     return registro?.connected===true; // compatibilidade com versões antigas
   }
@@ -275,9 +285,13 @@
     const master=ehMestre(st),combat=st.sala?.combat||{},lista=ordem(st);
     const atual=participanteAtual(st),proximo=proximoParticipante(st);
     const rodada=Math.max(1,num(combat.round,1));
-    const meuId=sessao?.participantId,meuTurno=Boolean(combat.started&&meuId&&atual?.id===meuId);
+    const fichaTrocada=fichaAtivaDifereDaSessao(sessao);
+    const fichaAtiva=nomeFichaAtiva();
+    const meuId=sessao?.participantId,meuTurno=Boolean(!fichaTrocada&&combat.started&&meuId&&atual?.id===meuId);
     const conexao=conexaoPainel(st);
-    const statusTurno=combat.started?(meuTurno?"É o seu turno":`Turno de ${atual?.displayName||"—"}`):"Combate ainda não iniciado";
+    const statusTurno=fichaTrocada
+      ?`${fichaAtiva} ainda não entrou nesta sala`
+      :(combat.started?(meuTurno?"É o seu turno":`Turno de ${atual?.displayName||"—"}`):"Combate ainda não iniciado");
     const efeitos=efeitosDoPainel(st).slice(0,3);
     const efeitosHtml=efeitos.length?efeitos.map(efeito=>{
       const participante=st.sala?.participants?.[efeito.participantId];
@@ -304,7 +318,7 @@
       </div>
       <footer class="shinobiTurnoWidgetRodape">
         ${master?(combat.started?`<div class="shinobiTurnoWidgetControles"><button type="button" class="onlineBtn secundario" data-widget-action="turno-anterior">‹ Anterior</button><button type="button" class="onlineBtn primario" data-widget-action="proximo-turno">Próximo ›</button></div>`:`<button type="button" class="onlineBtn primario" data-widget-action="iniciar-combate">Iniciar combate</button>`):""}
-        <button type="button" class="onlineBtn secundario entrarSala" data-widget-action="abrir-sala">Entrar na sala</button>
+        <button type="button" class="onlineBtn secundario entrarSala" data-widget-action="abrir-sala">${fichaTrocada?`Entrar com ${esc(fichaAtiva)}`:"Abrir sala"}</button>
       </footer>`:`
       <button type="button" class="shinobiTurnoWidgetMini" data-widget-action="alternar" data-widget-drag aria-label="Expandir mostrador da mesa online">
         <span class="shinobiTurnoWidgetDot ${conexao}" aria-hidden="true"></span>
