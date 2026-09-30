@@ -980,30 +980,15 @@
     return null;
   }
 
-  function chaveVisualFicha(ficha){
-    return String(ficha?.name||ficha?.characterName||"Ficha")
-      .replace(/(?:\s+nuvem(?:\s+\d+)?)+$/i,"")
-      .trim().toLocaleLowerCase("pt-BR").replace(/\s+/g," ");
-  }
-
   function agruparFichasNuvem(nuvem,locais){
-    const grupos=new Map();
-    (nuvem||[]).forEach(ficha=>{
-      const chave=chaveVisualFicha(ficha);
+    /* sheetId é a identidade da ficha na nuvem. Nomes iguais podem pertencer a
+       personagens diferentes, então a interface também não pode agrupá-los por
+       nome. Cada registro remoto aparece individualmente e pode ser revisado ou
+       removido sem afetar outro personagem homônimo. */
+    return (nuvem||[]).map(ficha=>{
       const vinculada=(locais||[]).some(local=>local.sheetId===ficha.id);
       const item={...ficha,vinculada};
-      if(!grupos.has(chave))grupos.set(chave,[]);
-      grupos.get(chave).push(item);
-    });
-    return [...grupos.values()].map(itens=>{
-      itens.sort((a,b)=>{
-        if(Boolean(b.vinculada)!==Boolean(a.vinculada))return Number(Boolean(b.vinculada))-Number(Boolean(a.vinculada));
-        const dataDiff=num(b.updatedAt)-num(a.updatedAt);
-        if(dataDiff)return dataDiff;
-        return num(b.revision)-num(a.revision);
-      });
-      const principal=itens[0];
-      return {principal,itens,duplicatas:itens.slice(1),vinculada:itens.some(item=>item.vinculada)};
+      return {principal:item,itens:[item],duplicatas:[],vinculada};
     }).sort((a,b)=>{
       if(Boolean(b.vinculada)!==Boolean(a.vinculada))return Number(Boolean(b.vinculada))-Number(Boolean(a.vinculada));
       return num(b.principal?.updatedAt)-num(a.principal?.updatedAt);
@@ -1016,7 +1001,7 @@
     if(sync.phase==="syncing")return {classe:"sincronizando",rotulo:"Sincronizando…",detalhe:"Enviando as alterações desta ficha."};
     if(sync.phase==="pending")return {classe:"pendente",rotulo:"Aguardando envio",detalhe:navigator.onLine===false?"Será enviada quando a internet voltar.":"A sincronização automática está preparando o envio."};
     if(sync.syncStatus===1)return {classe:"ok",rotulo:"Tudo sincronizado",detalhe:"As alterações são enviadas e recebidas automaticamente."};
-    return {classe:"ok",rotulo:"Sincronização entre dispositivos",detalhe:"Alterações confirmadas da ficha ativa são enviadas e recebidas por campo."};
+    return {classe:"ok",rotulo:"Sincronização entre dispositivos",detalhe:"Não há envio pendente da ficha ativa. Alterações confirmadas são sincronizadas automaticamente."};
   }
 
   function renderFichaNuvemGrupo(grupo){
@@ -1029,14 +1014,8 @@
       : `${nomeFicha} • disponível na nuvem`;
     const acao=grupo.vinculada
       ? `<span class="onlineSyncBadge ok">Automática</span>`
-      : `<button type="button" class="onlineBtn secundario compacto" data-action="restore-cloud" data-sheet-id="${esc(ficha.id)}">Adicionar</button>`;
-    const duplicatas=antigas.length?`
-      <details class="onlineSyncDuplicatas">
-        <summary>${antigas.length} ${antigas.length===1?"cópia antiga oculta":"cópias antigas ocultas"}</summary>
-        <div class="onlineSyncDuplicatasLista">
-          ${antigas.map(item=>`<div class="onlineSyncDuplicata"><span><b>${esc(item.name||item.characterName||"Ficha")}</b><small>Revisão ${num(item.revision,1)}</small></span>${item.vinculada?`<span class="onlineSyncBadge neutro">Neste aparelho</span>`:`<button type="button" class="onlineBtn texto compacto" data-action="restore-cloud" data-sheet-id="${esc(item.id)}">Adicionar</button>`}</div>`).join("")}
-        </div>
-      </details>`:"";
+      : `<div class="onlineAcoesLinha"><button type="button" class="onlineBtn secundario compacto" data-action="restore-cloud" data-sheet-id="${esc(ficha.id)}">Adicionar</button><button type="button" class="onlineBtn texto perigo compacto" data-action="delete-cloud-sheet" data-sheet-id="${esc(ficha.id)}" data-sheet-name="${esc(nomeFicha)}">Excluir da nuvem</button></div>`;
+    const duplicatas="";
     return `<article class="onlineSyncFicha ${grupo.vinculada?"vinculada":"disponivel"}">
       <div class="onlineSyncFichaTopo">
         <div class="onlineSyncFichaTexto"><strong>${esc(nome)}</strong><small>${esc(subtitulo)}</small></div>
@@ -1686,6 +1665,13 @@
         await window.ShinobiOnline.restaurarFichaDaNuvem(el.dataset.sheetId,{asCopy:false});
         await avisar("Ficha completa baixada","A ficha foi aberta neste aparelho com notas, inventário, carteira, jutsus e demais dados da nuvem.");
       }
+    });
+    if(acao==="delete-cloud-sheet")return executar(async()=>{
+      const nome=String(el.dataset.sheetName||"Ficha");
+      const ok=await confirmar("Excluir da nuvem",`Remover “${nome}” da lista de sincronização?\n\nUse esta opção para fichas que já foram excluídas dos seus aparelhos. Backups históricos continuam preservados.`);
+      if(!ok)return;
+      await window.ShinobiOnline.excluirFichaDaNuvem(el.dataset.sheetId);
+      await avisar("Ficha removida da nuvem","Ela não aparecerá mais como personagem disponível para adicionar neste aparelho.");
     });
     if(acao==="resolve-conflict")return executar(async()=>{await window.ShinobiOnline.resolverConflito(el.dataset.sheetId,el.dataset.choice);conflitoAtual=null;});
     if(acao==="sort-initiative")return executar(()=>window.ShinobiOnline.ordenarIniciativa());

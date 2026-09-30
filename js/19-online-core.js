@@ -3097,33 +3097,42 @@
     return {targetXp:Math.max(0,Math.trunc(Number(salvo.targetXp))),xpMax:Math.max(0,Math.trunc(Number(salvo.xpMax||limite))),baseXp:Math.max(0,Math.trunc(Number(salvo.baseXp||base)))};
   }
 
+  function aliasesIdentidadeFichaXp(ficha){
+    const online=ficha?.data?.__online&&typeof ficha.data.__online==="object"?ficha.data.__online:{};
+    const ownerUid=texto(online.ownerUid)||texto(online.characterOwnerUid)||texto(online.realtimeOwnerUid);
+    return {
+      ownerUid,
+      characterIds:new Set([
+        texto(online.characterId),texto(online.realtimeId),texto(online.sourceCharacterId)
+      ].filter(Boolean)),
+      sheetIds:new Set([
+        texto(ficha?.sheetId),texto(online.sheetId),texto(online.sourceSheetId),texto(online.originSheetId)
+      ].filter(Boolean))
+    };
+  }
+
   function fichaLocalDoXpCampanha(item){
     const characterId=texto(item?.characterId),sheetId=texto(item?.sourceSheetId),uid=texto(estadoOnline.user?.uid);
     const fichas=listarFichasLocais();
-    const porPersonagem=fichas.filter(f=>texto(f.data?.__online?.characterId||f.data?.__online?.realtimeId)===characterId);
-    if(porPersonagem.length===1)return porPersonagem[0];
-    if(porPersonagem.length>1)return null;
+    const candidatas=fichas.map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
+      !uid||!aliases.ownerUid||aliases.ownerUid===uid
+    );
 
-    if(sheetId){
-      /* campaignMembers guarda também o sheetId que originou o vínculo. Ele é a
-         ponte segura para campanhas criadas antes dos reparos de identidade das
-         versões 2.5.8.136–140. Nesses casos o member/inbox pode conservar um
-         characterId antigo enquanto a MESMA ficha local já possui a identidade
-         reparada. Exigir igualdade de characterId aqui fazia o XP ficar preso
-         para sempre no inbox.
+    /* v2.5.8.144 — os reparos de identidade das versões 136–140 preservaram
+       os identificadores anteriores em sourceCharacterId/sourceSheetId. O XP
+       permanente ainda procurava somente os IDs atuais, então um lançamento já
+       criado podia ficar eternamente no inbox mesmo apontando para a mesma ficha.
+       Agora os aliases explícitos também são aceitos, sempre por igualdade exata
+       e somente quando identificam uma única ficha. Nome e dispositivo continuam
+       proibidos como critério de identidade. */
+    const porPersonagem=characterId?candidatas.filter(({aliases})=>aliases.characterIds.has(characterId)):[];
+    const porSheet=sheetId?candidatas.filter(({aliases})=>aliases.sheetIds.has(sheetId)):[];
 
-         O fallback só é aceito quando existe exatamente uma ficha desta conta
-         com o sheetId exato. Nome, dispositivo e posição na lista nunca entram
-         na decisão. Assim recuperamos a continuidade sem permitir que o XP caia
-         em outra ficha do mesmo usuário. */
-      const porSheet=fichas.filter(f=>{
-        if(texto(f.sheetId)!==sheetId)return false;
-        const ownerUid=texto(f.data?.__online?.ownerUid);
-        return !uid||!ownerUid||ownerUid===uid;
-      });
-      if(porSheet.length===1)return porSheet[0];
-    }
-    return null;
+    if(porPersonagem.length>1||porSheet.length>1)return null;
+    const fichaPersonagem=porPersonagem.length===1?porPersonagem[0].ficha:null;
+    const fichaSheet=porSheet.length===1?porSheet[0].ficha:null;
+    if(fichaPersonagem&&fichaSheet&&fichaPersonagem.key!==fichaSheet.key)return null;
+    return fichaPersonagem||fichaSheet||null;
   }
 
   function mapaXpCampanhaAplicado(dados){
@@ -3352,14 +3361,20 @@
     if(!ficha) return {syncStatus:1,phase:"synced",sheetId:"",revision:0};
     const meta=estadoSync()[ficha.sheetId]||{};
     const hashAtual=hashFicha(ficha.data||{});
-    const sincronizado=Boolean(meta.lastHash&&meta.lastHash===hashAtual&&!estadoOnline.dirtySheets.has(ficha.sheetId));
+    const op=estadoOutbox()[ficha.sheetId];
+    const pendenteReal=estadoOnline.dirtySheets.has(ficha.sheetId)||texto(op?.type)==="upsert"||estadoOnline.syncTimers.has(ficha.sheetId);
+    const sincronizado=Boolean(meta.lastHash&&meta.lastHash===hashAtual&&!pendenteReal);
+    let phase="idle";
+    if(texto(meta.phase)==="conflict")phase="conflict";
+    else if(pendenteReal)phase=texto(meta.phase)==="syncing"?"syncing":"pending";
+    else if(sincronizado||Number(meta.syncStatus||0)===1)phase="synced";
     return {
       sheetId:ficha.sheetId,
       name:ficha.name,
       revision:Number(meta.revision||0),
-      syncStatus:sincronizado?1:Number(meta.syncStatus||0),
-      phase:sincronizado?"synced":texto(meta.phase)||"pending",
-      pendingMode:texto(meta.pendingMode),
+      syncStatus:phase==="synced"?1:0,
+      phase,
+      pendingMode:pendenteReal?texto(meta.pendingMode):"",
       lastSyncedAt:Number(meta.lastSyncedAt||0),
       statusUpdatedAt:Number(meta.statusUpdatedAt||0)
     };
@@ -3641,6 +3656,36 @@
       }
     }
     return resultados;
+  }
+
+  async function excluirFichaDaNuvem(sheetId){
+    exigirContaGoogle();
+    const uid=uidContaAtiva(),id=texto(sheetId);
+    if(!uid||!id)throw new Error("Ficha da nuvem inválida.");
+    if(listarFichasLocais().some(f=>texto(f.sheetId)===id)){
+      throw new Error("Esta ficha ainda existe neste aparelho. Exclua a ficha pelo gerenciador local para remover também a versão sincronizada.");
+    }
+    const api=estadoOnline.api,refFicha=api.ref(estadoOnline.db,`userSheets/${uid}/${id}`);
+    const resultado=await api.runTransaction(refFicha,atual=>{
+      if(!atual||atual.deleted===true)return;
+      return {
+        name:texto(atual.name)||"Ficha",
+        characterName:texto(atual.characterName),
+        revision:Number(atual.revision||0)+1,updatedAt:api.serverTimestamp(),deviceId:obterDeviceId(),
+        deleted:true,deletedAt:api.serverTimestamp(),appVersion:texto(window.APP_VERSION)
+      };
+    },{applyLocally:false});
+    const valor=resultado.snapshot?.val?.();
+    if(!resultado.committed&&valor?.deleted!==true){
+      const snap=await api.get(refFicha).catch(()=>null);
+      if(snap?.exists?.()&&snap.val()?.deleted!==true)throw new Error("Não foi possível excluir esta ficha da nuvem.");
+    }
+    removerOutbox(id,{},uid);
+    removerBackupEstruturalPendente(id,uid);
+    const sync=estadoSync(uid);delete sync[id];gravarEstadoSync(sync,uid);
+    estadoOnline.dirtySheets.delete(id);
+    limparAgendamentoSync(id);
+    return {ok:true,sheetId:id};
   }
 
   function aplicarExclusoesNuvem(valor){
@@ -4546,7 +4591,7 @@
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,alterarXpCampanha,processarXpCampanhaPendente,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
-    restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,statusSincronizacaoAtual,
+    restaurarFichaDaNuvem,resolverConflito,agendarSincronizacaoFicha,marcarFichaPendente,registrarExclusaoLocal,processarExclusoesPendentes,excluirFichaDaNuvem,statusSincronizacaoAtual,
     sincronizarPendenciasAgora,reconciliarSincronizacaoConta,atualizarBackupEstrutural,processarBackupsEstruturaisPendentes,ativarBackupsNuvem,garantirIdentidadeFichaRealtime,
     listarBackupsHistoricos,criarBackupHistoricoAtual,garantirBackupDiarioFichaAtiva,excluirBackupHistorico,restaurarBackupHistorico,
     resumoMudancasMeuTurno,finalizarMeuTurno,ehMeuTurno,chaveTurnoAtual,linkDaSala,codigoDaUrl,erroAmigavel,

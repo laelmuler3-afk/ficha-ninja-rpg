@@ -297,14 +297,23 @@
     }
 
     const confirmar=typeof root.modalShinobi==="function"
-      ? await root.modalShinobi("Excluir ficha?",`Excluir “${nome}”? A ficha Principal será mantida. A exclusão é somente deste aparelho; backups da nuvem não serão apagados.`)
-      : root.confirm?.(`Excluir "${nome}" deste aparelho?`);
+      ? await root.modalShinobi("Excluir ficha?",`Excluir “${nome}”? A ficha Principal será mantida. Se esta ficha estiver vinculada à sua Conta Google, ela também será removida da lista de sincronização. Backups históricos continuam preservados.`)
+      : root.confirm?.(`Excluir "${nome}"? Se estiver sincronizada, a versão da nuvem também será removida.`);
     if(!confirmar)return false;
 
     /* A trava precisa nascer ANTES da remoção. Ao chamar reload(), navegadores
        disparam visibilitychange/pagehide; versões anteriores deixavam o runtime
        salvar a ficha velha nesse intervalo e, assim, ressuscitá-la. */
     iniciarTravaExclusao(nome);
+
+    /* Registra a exclusão usando a identidade ANTES de apagar a chave local.
+       A operação fica persistida no outbox; se o aparelho estiver offline, o
+       tombstone será enviado no próximo login/reconciliação. */
+    const fichaAntes=obterFichaPorNome(nome);
+    try{
+      root.ShinobiOnline?.registrarExclusaoLocal?.(nome,fichaAntes?.data||{});
+      await root.ShinobiOnline?.processarExclusoesPendentes?.();
+    }catch(_erro){}
 
     /* Não chamamos salvar() aqui: em aliases antigos cujo nome foi truncado,
        salvar antes da exclusão podia criar uma NOVA chave canônica e manter a
