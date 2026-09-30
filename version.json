@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.143",
-  "name": "Correção da entrega de XP da campanha",
-  "notes": "Corrige XP permanente preso no inbox quando uma campanha antiga referencia o characterId anterior de uma ficha cuja identidade foi reparada; usa o sheetId estável como ponte segura e adiciona retry após o boot.",
+  "version": "2.5.8.144",
+  "name": "Correção de XP pendente e limpeza da nuvem",
+  "notes": "Entrega XP permanente por aliases explícitos de identidade preservados nos reparos recentes, remove falso estado de envio pendente e integra a exclusão de fichas com a nuvem, incluindo limpeza manual de registros remotos antigos.",
   "date": "2026-09-30"
 }
