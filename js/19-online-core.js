@@ -49,6 +49,7 @@
     unsubscribeEventos:null,
     unsubscribeConnected:null,
     presenceGeneration:0,
+    sessionGeneration:0,
     syncTimers:new Map(),
     syncQueues:new Map(),
     dirtySheets:new Set(),
@@ -530,7 +531,7 @@
           observarCampanhas();
           if(!user.isAnonymous) observarXpInbox();
           const sessao=lerJson(CHAVE_SESSAO,null);
-          if(sessao?.roomId) observarSala(sessao.roomId,{restaurar:true}).catch(()=>limparSessaoLocal());
+          if(sessao?.roomId) restaurarSalaSalva(sessao).catch(()=>{});
         }else{
           limparObservadoresConta();
         }
@@ -585,6 +586,28 @@
   }
   function sessaoSalaAtual(){
     return lerJson(CHAVE_SESSAO,null);
+  }
+
+  async function restaurarSalaSalva(sessao){
+    if(!sessao?.roomId||!estadoOnline.user) return {skipped:true};
+    const roomId=texto(sessao.roomId);
+    try{
+      /* Uma sessão local só pode ser restaurada se a sala continuar aberta no
+         índice público. Isso impede uma CHAVE_SESSAO residual de ressuscitar na
+         interface uma sala que o mestre já encerrou ou da qual o jogador saiu. */
+      const publico=await estadoOnline.api.get(estadoOnline.api.ref(estadoOnline.db,`roomPublic/${roomId}`));
+      if(!publico.exists()||publico.val()?.status!=="open"){
+        const atual=lerJson(CHAVE_SESSAO,null);
+        if(texto(atual?.roomId)===roomId) limparSessaoLocal();
+        return {ok:true,closed:true};
+      }
+    }catch(erro){
+      /* Em falha transitória de rede, preserve a sessão e deixe o listener do
+         Firebase tentar a restauração. Só um estado remoto explicitamente
+         encerrado deve limpar a sessão salva. */
+      if(navigator.onLine!==false) console.warn("Não foi possível validar a sala salva antes de restaurar.",erro?.code||erro);
+    }
+    return observarSala(roomId,{restaurar:true});
   }
 
   function sessaoEhMestre(sala=estadoOnline.sala){
@@ -1082,6 +1105,7 @@
     /* A associação é criada depois que roomPublic já existe, permitindo que
        as regras do banco confirmem com segurança quem é o mestre. */
     await api.set(api.ref(estadoOnline.db,`roomMemberships/${roomId}/${estadoOnline.user.uid}`),{role:"master",joinedAt:agora()});
+    estadoOnline.sessionGeneration+=1;
     salvarJson(CHAVE_SESSAO,{roomId,participantId:"",role:"master",code});
     await observarSala(roomId);
     return {roomId,code};
@@ -1110,6 +1134,7 @@
       status:"open"
     });
     await api.set(api.ref(estadoOnline.db,`roomMemberships/${idSala}/${estadoOnline.user.uid}`),{role:"master",joinedAt:agora()});
+    estadoOnline.sessionGeneration+=1;
     salvarJson(CHAVE_SESSAO,{roomId:idSala,participantId:"",role:"master",code:texto(sala.code)});
     await observarSala(idSala);
     return {roomId:idSala,code:texto(sala.code)};
@@ -1780,6 +1805,7 @@
     }
     await api.update(api.ref(estadoOnline.db),updates);
 
+    estadoOnline.sessionGeneration+=1;
     salvarJson(CHAVE_SESSAO,{
       roomId:encontrada.roomId,participantId,role:"player",sheetId:ficha.sheetId,localSheetName:ficha.name,code:encontrada.code,
       characterId:characterIdFinal,campaignId:texto(encontrada.publico?.campaignId),membershipMode:vinculo.membershipType
@@ -1804,6 +1830,24 @@
         return;
       }
       const salaRemota=snap.val()||{};
+      if(salaRemota.status!=="open"){
+        estadoOnline.sala={
+          id:roomId,
+          ...salaRemota,
+          participants:normalizarParticipantesSala(salaRemota.participants)
+        };
+        emitir("sala-encerrada",snapshot());
+        const sessaoAtual=lerJson(CHAVE_SESSAO,null);
+        if(texto(sessaoAtual?.roomId)===texto(roomId)){
+          /* A sala encerrada deixa de ser uma sessão ativa neste aparelho.
+             Removemos presença e estado local, mas preservamos o snapshot final
+             dos participantes para o histórico da sessão. */
+          sairDaSala({silencioso:true,preservarParticipante:true}).catch(()=>limparSessaoLocal());
+        }else{
+          limparSessaoLocal();
+        }
+        return;
+      }
       estadoOnline.sala={
         id:roomId,
         ...salaRemota,
@@ -1817,7 +1861,16 @@
       reconciliarSessaoDaSalaComFichaAtiva().catch(()=>{});
       deduplicarEfeitosDaSala().catch(()=>{});
       processarEventosXp().catch(()=>{});
-    },erro=>emitir("erro",{mensagem:erroAmigavel(erro),erro}));
+    },erro=>{
+      const codigo=texto(erro?.code).toLowerCase();
+      if(restaurar&&codigo.includes("permission-denied")){
+        /* Se a associação da conta já foi removida, uma sessão local residual
+           não pode deixar o PWA preso eternamente em "Reconectando". */
+        const sessaoAtual=lerJson(CHAVE_SESSAO,null);
+        if(texto(sessaoAtual?.roomId)===texto(roomId)) limparSessaoLocal();
+      }
+      emitir("erro",{mensagem:erroAmigavel(erro),erro});
+    });
     estadoOnline.unsubscribePresenca=api.onValue(api.ref(estadoOnline.db,`presence/${roomId}`),snap=>{
       estadoOnline.presencas=snap.val()||{};
       emitir("presenca",snapshot());
@@ -1866,6 +1919,7 @@
 
   function limparSessaoLocal(){
     estadoOnline.presenceGeneration+=1;
+    estadoOnline.sessionGeneration+=1;
     localStorage.removeItem(CHAVE_SESSAO);
     estadoOnline.unsubscribeSala?.();estadoOnline.unsubscribeSala=null;
     estadoOnline.unsubscribePresenca?.();estadoOnline.unsubscribePresenca=null;
@@ -1875,10 +1929,12 @@
     emitir("sala",snapshot());
   }
 
-  async function sairDaSala({silencioso=false}={}){
-    /* Invalida imediatamente qualquer callback de .info/connected ainda em voo
-       antes de remover a presença deste aparelho. */
+  async function sairDaSala({silencioso=false,preservarParticipante=false}={}){
+    /* Invalida imediatamente callbacks de presença e qualquer reconciliação de
+       ficha/sala que ainda esteja em voo. Nenhum trabalho iniciado antes do
+       clique em Sair pode recriar CHAVE_SESSAO depois da limpeza. */
     estadoOnline.presenceGeneration+=1;
+    estadoOnline.sessionGeneration+=1;
     const sessao=lerJson(CHAVE_SESSAO,null);
     if(!sessao?.roomId||!estadoOnline.user){limparSessaoLocal();return;}
     const api=estadoOnline.api;
@@ -1897,7 +1953,7 @@
       const outroMesmoParticipante=ativos.some(device=>texto(device?.participantId)===participantId);
       const outroDispositivoAtivo=ativos.length>0;
 
-      if(sessao.role==="player"){
+      if(sessao.role==="player"&&!preservarParticipante){
         /* Um aparelho não expulsa o mesmo personagem que continua aberto em
            outro dispositivo. Isso preserva celular + tablet como uma única
            personagem, embora cada aparelho mantenha sua própria presença. */
@@ -1925,6 +1981,14 @@
     updates[`roomPublic/${room.id}/status`]="closed";
     updates[`campaigns/${room.campaignId}/rooms/${room.id}/status`]="closed";
     await api.update(api.ref(estadoOnline.db),updates);
+    /* Encerrar a sala também encerra a sessão local do mestre. A limpeza fica
+       no core (e não só na UI), evitando que outro fluxo deixe CHAVE_SESSAO ou
+       presença residual e faça a sala reaparecer após recarregar o aplicativo. */
+    const sessao=lerJson(CHAVE_SESSAO,null);
+    if(texto(sessao?.roomId)===texto(room.id)){
+      await sairDaSala({silencioso:true,preservarParticipante:true});
+    }
+    return {ok:true,roomId:room.id};
   }
 
   function numeroNpc(valor,padrao=0){
@@ -2117,9 +2181,15 @@
     if(reconciliacaoFichaSalaEmCurso) return reconciliacaoFichaSalaEmCurso;
     reconciliacaoFichaSalaEmCurso=(async()=>{
       if(!estadoOnline.user) return {skipped:true,reason:"no-user"};
+      const geracaoSessao=estadoOnline.sessionGeneration;
       const sessao=lerJson(CHAVE_SESSAO,null);
       if(!sessao?.roomId||sessao.role!=="player") return {skipped:true,reason:"no-player-session"};
       if(estadoOnline.salaId!==sessao.roomId||!estadoOnline.sala) return {skipped:true,reason:"room-not-ready"};
+      const sessaoAindaAtual=()=>{
+        if(geracaoSessao!==estadoOnline.sessionGeneration) return false;
+        const atual=lerJson(CHAVE_SESSAO,null);
+        return Boolean(atual&&texto(atual.roomId)===texto(sessao.roomId)&&atual.role==="player"&&texto(atual.participantId)===texto(sessao.participantId));
+      };
 
       let ativa=fichaAtualLocal();
       if(!ativa) return {skipped:true,reason:"active-sheet-not-found"};
@@ -2148,6 +2218,7 @@
         ficha:ativa,resumo,membershipMode:sessao.membershipMode||"session"
       });
       ativa=vinculo.ficha||ativa;
+      if(!sessaoAindaAtual()) return {skipped:true,reason:"session-ended-during-reconcile"};
       const characterId=texto(vinculo.characterId)||characterIdInicial;
       const novoId=participantIdDaFicha(estadoOnline.user.uid,ativa.sheetId,estadoOnline.sala?.masterUid,characterId);
       const identidadeMudou=atualId!==novoId||texto(sessao.sheetId)!==texto(ativa.sheetId)||texto(sessao.localSheetName)!==texto(ativa.name);
@@ -2159,6 +2230,7 @@
         campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId),membershipType:vinculo.membershipType
       });
       if(resultado?.ok!==true) return resultado;
+      if(!sessaoAindaAtual()) return {skipped:true,reason:"session-ended-during-reconcile"};
       /* roomMemberships é autorização por UID, não estado da ficha. Não altere
          esse nó quando a personagem ativa muda/reconcilia. */
       salvarJson(CHAVE_SESSAO,{...sessao,participantId:novoId,sheetId:ativa.sheetId,localSheetName:ativa.name,characterId,membershipMode:vinculo.membershipType,campaignId:texto(sessao.campaignId)||texto(estadoOnline.sala?.campaignId)});

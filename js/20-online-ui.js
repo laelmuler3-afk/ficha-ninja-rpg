@@ -1734,7 +1734,7 @@
     if(acao==="remove-participant")return executar(async()=>{const p=obterEstado().sala?.participants?.[el.dataset.participantId];if(await confirmar("Remover participante",`Remover ${p?.displayName||"este participante"} da sala?`))await window.ShinobiOnline.removerParticipante(el.dataset.participantId);});
     if(acao==="edit-npc")return editarNpc(el.dataset.participantId);
     if(acao==="leave-room")return executar(async()=>{if(await confirmar("Sair da sala","A ficha continuará salva neste aparelho e na nuvem."))await window.ShinobiOnline.sairDaSala();});
-    if(acao==="close-room")return executar(async()=>{if(await confirmar("Encerrar sala","Jogadores não poderão entrar novamente com este código.")){await window.ShinobiOnline.encerrarSala();await window.ShinobiOnline.sairDaSala({silencioso:true});}});
+    if(acao==="close-room")return executar(async()=>{if(await confirmar("Encerrar sala","Jogadores não poderão entrar novamente com este código."))await window.ShinobiOnline.encerrarSala();});
   }
 
   async function tratarSubmit(evento){
