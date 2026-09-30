@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.142",
-  "name": "Correção de encerramento de sala",
-  "notes": "Impede sessão local residual de reabrir uma sala encerrada, limpa presença/sessão no core e bloqueia reconciliações atrasadas de recriar o vínculo após sair.",
-  "date": "2026-09-29"
+  "version": "2.5.8.143",
+  "name": "Correção da entrega de XP da campanha",
+  "notes": "Corrige XP permanente preso no inbox quando uma campanha antiga referencia o characterId anterior de uma ficha cuja identidade foi reparada; usa o sheetId estável como ponte segura e adiciona retry após o boot.",
+  "date": "2026-09-30"
 }
