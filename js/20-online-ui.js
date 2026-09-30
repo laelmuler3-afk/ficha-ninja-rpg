@@ -669,7 +669,9 @@
       window.ShinobiOnline?.observarXpCampanha?.(campanha.id).catch(()=>{});
     }
     const membrosCarregados=st.membrosCampanhaId===campanha.id;
-    const membros=(membrosCarregados?st.membrosCampanha:[]).filter(m=>m?.status!=="inactive");
+    const todosMembros=membrosCarregados?st.membrosCampanha:[];
+    const membros=todosMembros.filter(m=>m?.status!=="inactive");
+    const membrosInativos=todosMembros.filter(m=>m?.status==="inactive");
     const npcsCarregados=st.npcsCampanhaId===campanha.id;
     const npcs=(npcsCarregados?st.npcsCampanha:[]).filter(npc=>npc?.status!=="inactive");
     const xpCarregado=st.xpLedgerCampanhaId===campanha.id;
@@ -705,12 +707,28 @@
               : diag.status==="stale"?"Vínculo antigo neste aparelho"
               : diag.status==="ambiguous"?"Vínculo local ambíguo"
               : "Vínculo permanente";
+            const botaoReassociar=proprio&&(diag.status==="stale"||diag.status==="ambiguous")
+              ? `<button type="button" class="onlineBtn texto compacto" data-action="rebind-campaign-member" data-campaign-id="${esc(campanha.id)}" data-user-id="${esc(membro.userId)}" data-character-id="${esc(membro.characterId)}" data-display-name="${esc(membro.displayName||"Personagem")}">Reassociar à ficha aberta</button>`:"";
             return `<article class="onlineCampanhaMembro">
               <div class="onlineCampanhaMembroIcone">忍</div>
-              <div><small>PERSONAGEM DA CAMPANHA</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>${vinculo}${membro.joinedAt?` • desde ${esc(formatarDataSessao(membro.joinedAt))}`:""}</span>${proprio&&(diag.status==="stale"||diag.status==="ambiguous")?`<button type="button" class="onlineBtn texto compacto" data-action="rebind-campaign-member" data-campaign-id="${esc(campanha.id)}" data-user-id="${esc(membro.userId)}" data-character-id="${esc(membro.characterId)}" data-display-name="${esc(membro.displayName||"Personagem")}">Reassociar à ficha aberta</button>`:""}</div>
+              <div><small>PERSONAGEM DA CAMPANHA</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>${vinculo}${membro.joinedAt?` • desde ${esc(formatarDataSessao(membro.joinedAt))}`:""}</span><div class="onlineAcoesLinha">${botaoReassociar}<button type="button" class="onlineBtn texto perigo compacto" data-action="remove-campaign-member" data-campaign-id="${esc(campanha.id)}" data-user-id="${esc(membro.userId)}" data-character-id="${esc(membro.characterId)}" data-display-name="${esc(membro.displayName||"Personagem")}">Remover da campanha</button></div></div>
             </article>`;
           }).join("")}</div>`
         : `<p class="onlineVazio">Nenhum personagem permanente ainda. O primeiro vínculo será criado quando um jogador entrar em uma sala escolhendo “Adicionar à campanha”.</p>`;
+    const listaMembrosInativos=membrosInativos.length?`<details class="onlineSubDetails">
+      <summary>Removidos e vínculos antigos (${membrosInativos.length})</summary>
+      <div class="onlineCampanhaMembros">${membrosInativos.map(membro=>{
+        const substituido=Boolean(membro.replacedByCharacterId);
+        const descricao=substituido
+          ? "Vínculo antigo substituído por uma identidade mais nova. Mantido apenas para histórico."
+          : "Removido da campanha. Não recebe XP novo nem é reconhecido como membro permanente.";
+        const acao=substituido?"":`<div class="onlineAcoesLinha"><button type="button" class="onlineBtn texto compacto" data-action="restore-campaign-member" data-campaign-id="${esc(campanha.id)}" data-user-id="${esc(membro.userId)}" data-character-id="${esc(membro.characterId)}" data-display-name="${esc(membro.displayName||"Personagem")}">Reativar</button></div>`;
+        return `<article class="onlineCampanhaMembro">
+          <div class="onlineCampanhaMembroIcone">忍</div>
+          <div><small>${substituido?"VÍNCULO ANTIGO":"REMOVIDO DA CAMPANHA"}</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>${descricao}</span>${acao}</div>
+        </article>`;
+      }).join("")}</div>
+    </details>`:"";
     const listaNpcs=!npcsCarregados
       ? `<p class="onlineVazio">Carregando biblioteca de NPCs...</p>`
       : npcs.length
@@ -748,6 +766,7 @@
         </div>
         <div class="onlineCampanhaMembrosTitulo"><strong>Jogadores da campanha</strong><small>Reconhecidos por conta + personagem</small></div>
         ${listaMembros}
+        ${listaMembrosInativos}
         <div class="onlineCampanhaMembrosTitulo onlineCampanhaNpcTitulo"><strong>NPCs e inimigos</strong><small>${npcs.length} permanente(s) na biblioteca</small></div>
         ${listaNpcs}
         <details class="onlineSubDetails onlineNpcBibliotecaCriar">
@@ -1625,6 +1644,33 @@
         await avisar("Campanha excluída",`A campanha foi removida.${complemento}`);
       });
     }
+    if(acao==="remove-campaign-member")return executar(async()=>{
+      const st=obterEstado();
+      const membro=(st.membrosCampanha||[]).find(item=>String(item.userId)===String(el.dataset.userId)&&String(item.characterId)===String(el.dataset.characterId));
+      if(!membro)return;
+      const nome=String(membro.displayName||el.dataset.displayName||"Personagem");
+      const ok=await confirmar(
+        "Remover jogador da campanha",
+        `Remover “${nome}” da campanha?\n\nEle deixará de aparecer entre os jogadores ativos e não receberá novos XP da campanha. XP já pendente ficará pausado, e todo o histórico será preservado. Isso não apaga a ficha do jogador nem o remove de uma sala que já esteja aberta.`
+      );
+      if(!ok)return;
+      await window.ShinobiOnline.removerMembroCampanha({
+        campaignId:el.dataset.campaignId,userId:el.dataset.userId,characterId:el.dataset.characterId
+      });
+      await avisar("Jogador removido",`${nome} foi removido da campanha. Você pode reativá-lo depois na lista de removidos.`);
+    });
+    if(acao==="restore-campaign-member")return executar(async()=>{
+      const nome=String(el.dataset.displayName||"Personagem");
+      const ok=await confirmar(
+        "Reativar jogador",
+        `Reativar “${nome}” nesta campanha?\n\nO vínculo permanente volta a ficar ativo e XP pendente desse mesmo vínculo poderá ser entregue novamente.`
+      );
+      if(!ok)return;
+      await window.ShinobiOnline.reativarMembroCampanha({
+        campaignId:el.dataset.campaignId,userId:el.dataset.userId,characterId:el.dataset.characterId
+      });
+      await avisar("Jogador reativado",`${nome} voltou a fazer parte da campanha.`);
+    });
     if(acao==="rebind-campaign-member")return executar(async()=>{
       const atual=window.ShinobiOnline?.fichaAtualLocal?.();
       if(!atual)throw new Error("Abra primeiro a ficha correta que deve representar este personagem.");

@@ -1647,6 +1647,13 @@
       return {membershipType:"campaign",membershipMode:"campaign",campaignId:campanhaId,characterId,member:{...existente,...atualizacoes},created:false,ficha:identidade.ficha};
     }
 
+    /* v2.5.8.148 — remover da campanha é uma decisão do mestre. Um jogador
+       removido ainda pode participar como convidado daquela sessão, mas não
+       pode reativar sozinho o vínculo permanente apenas entrando de novo. */
+    if(existente&&existente.status==="inactive"&&solicitado==="campaign"){
+      throw new Error("Este personagem foi removido da campanha pelo mestre. Entre somente nesta sessão ou peça ao mestre para reativá-lo na Área do Mestre.");
+    }
+
     if(solicitado!=="campaign"){
       return {membershipType:"session",membershipMode:"session",campaignId:campanhaId,characterId,member:null,created:false,ficha:identidade.ficha};
     }
@@ -2809,30 +2816,84 @@
       return {status:"remote",owned:false,linked:false,member:membro||null};
     }
     const characterId=texto(membro.characterId),sheetId=texto(membro.legacySheetId||membro.sheetId||membro.sourceSheetId);
-    const locais=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)}));
-    const porCharacter=characterId?locais.filter(({aliases})=>aliases.characterIds.has(characterId)):[];
-    const porSheet=sheetId?locais.filter(({aliases})=>aliases.sheetIds.has(sheetId)):[];
-    if(porCharacter.length>1||porSheet.length>1){
+    const locais=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
+      !aliases.ownerUid||aliases.ownerUid===uid
+    );
+
+    /* v2.5.8.147 — identidade ATUAL tem precedência sobre aliases históricos.
+       Fichas que nasceram durante a colisão 136–140 podem compartilhar
+       sourceSheetId/sourceCharacterId com a ficha de origem. Esses campos são
+       úteis para recuperação, mas não provam que o vínculo permanente ainda
+       aponta para aquela ficha. */
+    const porCharacterAtual=characterId?locais.filter(({aliases})=>aliases.currentCharacterIds.has(characterId)):[];
+    const porSheetAtual=sheetId?locais.filter(({aliases})=>aliases.currentSheetIds.has(sheetId)):[];
+    if(porCharacterAtual.length>1||porSheetAtual.length>1){
       return {status:"ambiguous",owned:true,linked:false,member:membro,characterId,sheetId};
     }
-    const fichaCharacter=porCharacter.length===1?porCharacter[0].ficha:null;
-    const fichaSheet=porSheet.length===1?porSheet[0].ficha:null;
+    const fichaCharacter=porCharacterAtual.length===1?porCharacterAtual[0].ficha:null;
+    const fichaSheet=porSheetAtual.length===1?porSheetAtual[0].ficha:null;
     if(fichaCharacter&&fichaSheet&&fichaCharacter.key!==fichaSheet.key){
       return {status:"ambiguous",owned:true,linked:false,member:membro,characterId,sheetId};
     }
-    const ficha=fichaCharacter||fichaSheet||null;
-    if(ficha){
+    const fichaAtual=fichaCharacter||fichaSheet||null;
+    if(fichaAtual){
       return {
         status:"linked",owned:true,linked:true,member:membro,characterId,sheetId,
-        localSheetName:ficha.name,localSheetId:ficha.sheetId,characterName:ficha.characterName,
-        active:ficha.name===fichaAtivaNomeSeguro()
+        localSheetName:fichaAtual.name,localSheetId:fichaAtual.sheetId,characterName:fichaAtual.characterName,
+        active:fichaAtual.name===fichaAtivaNomeSeguro(),basis:fichaCharacter?"characterId":"sheetId"
       };
     }
+
+    const historicosCharacter=characterId?locais.filter(({aliases})=>aliases.historicalCharacterIds.has(characterId)):[];
+    const historicosSheet=sheetId?locais.filter(({aliases})=>aliases.historicalSheetIds.has(sheetId)):[];
+    const historicos=new Map();
+    [...historicosCharacter,...historicosSheet].forEach(item=>historicos.set(item.ficha.key,item.ficha));
     const ativa=fichaAtualLocal();
     return {
-      status:"stale",owned:true,linked:false,member:membro,characterId,sheetId,
+      status:historicos.size>1?"ambiguous":"stale",owned:true,linked:false,member:membro,characterId,sheetId,
+      historicalMatches:historicos.size,
       activeSheetName:ativa?.name||"",activeSheetId:ativa?.sheetId||"",activeCharacterName:ativa?.characterName||""
     };
+  }
+
+  async function removerMembroCampanha({campaignId,userId,characterId}={}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId),uid=texto(userId),idPersonagem=texto(characterId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!idCampanha||!campanha||texto(campanha.masterUid)!==texto(estadoOnline.user.uid)) throw new Error("Campanha não encontrada.");
+    if(!uid||!idPersonagem) throw new Error("Jogador da campanha não encontrado.");
+    const api=estadoOnline.api,refMembro=api.ref(estadoOnline.db,`campaignMembers/${idCampanha}/${uid}/${idPersonagem}`);
+    const snap=await api.get(refMembro);
+    const membro=snap.exists()?snap.val():null;
+    if(!membro) throw new Error("Este personagem não pertence mais à campanha.");
+    if(membro.status==="inactive") return {ok:true,alreadyInactive:true,displayName:texto(membro.displayName)||"Personagem"};
+    const instante=agora();
+    await api.update(refMembro,{
+      status:"inactive",updatedAt:instante,removedAt:instante,removedBy:estadoOnline.user.uid
+    });
+    /* XP já registrado continua no histórico e qualquer entrega ainda pendente
+       fica congelada enquanto o membro estiver inativo. Nada é apagado. */
+    return {ok:true,displayName:texto(membro.displayName)||"Personagem",pendingPaused:true};
+  }
+
+  async function reativarMembroCampanha({campaignId,userId,characterId}={}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId),uid=texto(userId),idPersonagem=texto(characterId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!idCampanha||!campanha||texto(campanha.masterUid)!==texto(estadoOnline.user.uid)) throw new Error("Campanha não encontrada.");
+    if(!uid||!idPersonagem) throw new Error("Jogador da campanha não encontrado.");
+    const api=estadoOnline.api,refMembro=api.ref(estadoOnline.db,`campaignMembers/${idCampanha}/${uid}/${idPersonagem}`);
+    const snap=await api.get(refMembro);
+    const membro=snap.exists()?snap.val():null;
+    if(!membro) throw new Error("O vínculo arquivado deste personagem não foi encontrado.");
+    if(membro.status!=="inactive") return {ok:true,alreadyActive:true,displayName:texto(membro.displayName)||"Personagem"};
+    if(texto(membro.replacedByCharacterId)) throw new Error("Este vínculo antigo foi substituído por outra identidade do mesmo personagem e não pode ser reativado. Use o vínculo atual da campanha.");
+    const instante=agora();
+    await api.update(refMembro,{
+      status:"active",updatedAt:instante,reactivatedAt:instante,reactivatedBy:estadoOnline.user.uid
+    });
+    setTimeout(()=>processarXpCampanhaPendente().catch(()=>{}),120);
+    return {ok:true,displayName:texto(membro.displayName)||"Personagem"};
   }
 
   async function reassociarMembroCampanhaComFichaAtual({campaignId,userId,characterId}={}){
@@ -3215,51 +3276,57 @@
   function aliasesIdentidadeFichaXp(ficha){
     const online=ficha?.data?.__online&&typeof ficha.data.__online==="object"?ficha.data.__online:{};
     const ownerUid=texto(online.ownerUid)||texto(online.characterOwnerUid)||texto(online.realtimeOwnerUid);
+    const currentCharacterIds=new Set([texto(online.characterId),texto(online.realtimeId)].filter(Boolean));
+    const currentSheetIds=new Set([texto(ficha?.sheetId),texto(online.sheetId)].filter(Boolean));
+    const historicalCharacterIds=new Set([texto(online.sourceCharacterId)].filter(Boolean));
+    const historicalSheetIds=new Set([texto(online.sourceSheetId),texto(online.originSheetId)].filter(Boolean));
     return {
-      ownerUid,
-      characterIds:new Set([
-        texto(online.characterId),texto(online.realtimeId),texto(online.sourceCharacterId)
-      ].filter(Boolean)),
-      sheetIds:new Set([
-        texto(ficha?.sheetId),texto(online.sheetId),texto(online.sourceSheetId),texto(online.originSheetId)
-      ].filter(Boolean))
+      ownerUid,currentCharacterIds,currentSheetIds,historicalCharacterIds,historicalSheetIds,
+      characterIds:new Set([...currentCharacterIds,...historicalCharacterIds]),
+      sheetIds:new Set([...currentSheetIds,...historicalSheetIds])
     };
   }
 
   function fichaLocalDoXpCampanha(item){
     const characterId=texto(item?.characterId),sheetId=texto(item?.sourceSheetId),uid=texto(estadoOnline.user?.uid);
-    const fichas=listarFichasLocais();
-    const candidatas=fichas.map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
+    const candidatas=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
       !uid||!aliases.ownerUid||aliases.ownerUid===uid
     );
 
-    /* v2.5.8.144 — os reparos de identidade das versões 136–140 preservaram
-       os identificadores anteriores em sourceCharacterId/sourceSheetId. O XP
-       permanente ainda procurava somente os IDs atuais, então um lançamento já
-       criado podia ficar eternamente no inbox mesmo apontando para a mesma ficha.
-       Agora os aliases explícitos também são aceitos, sempre por igualdade exata
-       e somente quando identificam uma única ficha. Nome e dispositivo continuam
-       proibidos como critério de identidade. */
-    const porPersonagem=characterId?candidatas.filter(({aliases})=>aliases.characterIds.has(characterId)):[];
-    const porSheet=sheetId?candidatas.filter(({aliases})=>aliases.sheetIds.has(sheetId)):[];
+    /* v2.5.8.147 — uma identidade atual inequívoca vence antes de qualquer
+       sourceSheetId/sourceCharacterId. Antes, um sourceSheetId herdado por várias
+       fichas fazia porSheet.length > 1 e anulava até um characterId atual único,
+       deixando XP novo e antigo parado no inbox. */
+    const porPersonagemAtual=characterId?candidatas.filter(({aliases})=>aliases.currentCharacterIds.has(characterId)):[];
+    if(porPersonagemAtual.length===1)return porPersonagemAtual[0].ficha;
+    if(porPersonagemAtual.length>1)return null;
 
-    if(porPersonagem.length>1||porSheet.length>1)return null;
-    const fichaPersonagem=porPersonagem.length===1?porPersonagem[0].ficha:null;
-    const fichaSheet=porSheet.length===1?porSheet[0].ficha:null;
-    if(fichaPersonagem&&fichaSheet&&fichaPersonagem.key!==fichaSheet.key)return null;
-    return fichaPersonagem||fichaSheet||null;
+    const porSheetAtual=sheetId?candidatas.filter(({aliases})=>aliases.currentSheetIds.has(sheetId)):[];
+    if(porSheetAtual.length===1)return porSheetAtual[0].ficha;
+    if(porSheetAtual.length>1)return null;
+
+    /* Aliases históricos são somente fallback de recuperação. Eles nunca podem
+       vetar uma identidade atual já resolvida e só são aceitos quando apontam
+       para uma única ficha local. */
+    const porPersonagemHistorico=characterId?candidatas.filter(({aliases})=>aliases.historicalCharacterIds.has(characterId)):[];
+    const porSheetHistorico=sheetId?candidatas.filter(({aliases})=>aliases.historicalSheetIds.has(sheetId)):[];
+    const historicas=new Map();
+    [...porPersonagemHistorico,...porSheetHistorico].forEach(item=>historicas.set(item.ficha.key,item.ficha));
+    return historicas.size===1?Array.from(historicas.values())[0]:null;
   }
 
   function fichaLocalUnicaPorSheetIds(sheetIds){
     const ids=new Set(Array.from(sheetIds||[]).map(texto).filter(Boolean));
     if(!ids.size)return null;
     const uid=texto(estadoOnline.user?.uid);
-    const achadas=listarFichasLocais().filter(ficha=>{
-      const aliases=aliasesIdentidadeFichaXp(ficha);
-      if(uid&&aliases.ownerUid&&aliases.ownerUid!==uid)return false;
-      return Array.from(aliases.sheetIds).some(id=>ids.has(id));
-    });
-    return achadas.length===1?achadas[0]:null;
+    const candidatas=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
+      !uid||!aliases.ownerUid||aliases.ownerUid===uid
+    );
+    const atuais=candidatas.filter(({aliases})=>Array.from(aliases.currentSheetIds).some(id=>ids.has(id)));
+    if(atuais.length===1)return atuais[0].ficha;
+    if(atuais.length>1)return null;
+    const historicas=candidatas.filter(({aliases})=>Array.from(aliases.historicalSheetIds).some(id=>ids.has(id)));
+    return historicas.length===1?historicas[0].ficha:null;
   }
 
   async function fichaLocalDoXpCampanhaComReparo(item){
@@ -3350,11 +3417,26 @@
     ).sort((a,b)=>Number(a.createdAt||0)-Number(b.createdAt||0));
     if(!fila.length)return;
     estadoOnline.processandoXpCampanha=true;
-    const personagensBloqueados=new Set();
+    const personagensBloqueados=new Set(),statusMembroCache=new Map();
     try{
       for(const item of fila){
         const ledgerId=texto(item.id),characterId=texto(item.characterId),amount=Math.trunc(Number(item.amount||0));
         if(personagensBloqueados.has(characterId))continue;
+
+        /* v2.5.8.148 — arquivar um membro pausa também XP ainda não entregue.
+           O ledger permanece intacto; reativar o mesmo vínculo libera a fila. */
+        const campaignId=texto(item.campaignId),chaveMembro=`${campaignId}::${characterId}`;
+        if(campaignId&&!statusMembroCache.has(chaveMembro)){
+          try{
+            const statusSnap=await api.get(api.ref(estadoOnline.db,`campaignMembers/${campaignId}/${uid}/${characterId}/status`));
+            statusMembroCache.set(chaveMembro,texto(statusSnap.val()));
+          }catch(_erro){statusMembroCache.set(chaveMembro,"");}
+        }
+        if(statusMembroCache.get(chaveMembro)==="inactive"){
+          personagensBloqueados.add(characterId);
+          continue;
+        }
+
         let ficha=await fichaLocalDoXpCampanhaComReparo(item);
         if(!ficha){personagensBloqueados.add(characterId);continue;}
 
@@ -4772,7 +4854,7 @@
     entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,observarMembrosCampanha,pararObservacaoMembrosCampanha,observarNpcsCampanha,pararObservacaoNpcsCampanha,observarXpCampanha,pararObservacaoXpCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,fichaPodeParticiparNuvem:ficha=>!fichaBloqueadaNuvem(ficha),resumoBatalhaDaFicha,
     salvarFichaComoNpcCampanha,criarNpcCampanha,atualizarNpcCampanha,arquivarNpcCampanha,adicionarNpcCampanhaNaSala,
-    diagnosticarMembroCampanhaLocal,reassociarMembroCampanhaComFichaAtual,
+    diagnosticarMembroCampanhaLocal,removerMembroCampanha,reativarMembroCampanha,reassociarMembroCampanhaComFichaAtual,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,alterarXpCampanha,processarXpCampanhaPendente,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,
