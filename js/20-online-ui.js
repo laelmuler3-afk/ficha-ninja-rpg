@@ -519,16 +519,19 @@
       : `${st.user.email||"Conta Google"} • nuvem ativa`;
     const sync=st.syncAtual||{};
     const fase=String(sync.phase||"");
-    const classeSync=st.user.anonymous?"local":sync.syncStatus===1?"ok":fase==="syncing"?"syncing":"pending";
+    const temPendencia=fase==="pending"||fase==="conflict"||fase==="syncing";
+    const classeSync=st.user.anonymous?"local":sync.syncStatus===1?"ok":fase==="syncing"?"syncing":temPendencia?"pending":"ok";
     const textoSync=st.user.anonymous
       ?"Somente local"
       :sync.syncStatus===1
         ?"✓ Sincronizado"
         :fase==="syncing"
           ?"↻ Sincronizando..."
-          :sync.pendingMode==="turno"
-            ?"⚠ Pendente do turno"
-            :"⚠ Pendente";
+          :fase==="conflict"
+            ?"⚠ Conflito"
+            :fase==="pending"
+              ?(sync.pendingMode==="turno"?"⚠ Pendente do turno":"⚠ Pendente")
+              :"✓ Pronto";
     return `<div class="onlineConta">
       <div class="onlineAvatar">${st.user.photoURL?`<img src="${esc(st.user.photoURL)}" alt="">`:st.user.anonymous?"🥷":"👤"}</div>
       <div class="onlineContaIdentidade"><strong>${esc(st.user.displayName||"Jogador")}</strong><small>${esc(subtitulo)}</small><span class="onlineSyncEstado ${classeSync}">${esc(textoSync)}</span></div>

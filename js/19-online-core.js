@@ -3135,6 +3135,75 @@
     return fichaPersonagem||fichaSheet||null;
   }
 
+  function fichaLocalUnicaPorSheetIds(sheetIds){
+    const ids=new Set(Array.from(sheetIds||[]).map(texto).filter(Boolean));
+    if(!ids.size)return null;
+    const uid=texto(estadoOnline.user?.uid);
+    const achadas=listarFichasLocais().filter(ficha=>{
+      const aliases=aliasesIdentidadeFichaXp(ficha);
+      if(uid&&aliases.ownerUid&&aliases.ownerUid!==uid)return false;
+      return Array.from(aliases.sheetIds).some(id=>ids.has(id));
+    });
+    return achadas.length===1?achadas[0]:null;
+  }
+
+  async function fichaLocalDoXpCampanhaComReparo(item){
+    const direta=fichaLocalDoXpCampanha(item);
+    if(direta)return direta;
+    const uid=texto(estadoOnline.user?.uid),campaignId=texto(item?.campaignId),characterId=texto(item?.characterId);
+    if(!uid||!campaignId||!estadoOnline.api)return null;
+
+    /* v2.5.8.145 — campaignMembers pode ter sido criado antes de um reparo de
+       characterId. O vínculo permanente também conserva o sheetId da ficha e
+       ele é a âncora estável para esse tipo de migração. Consultamos o membro
+       atual em vez de depender somente do snapshot gravado dentro do xpInbox. */
+    const sheetIds=new Set([texto(item?.sourceSheetId)].filter(Boolean));
+    try{
+      const snap=await estadoOnline.api.get(estadoOnline.api.ref(estadoOnline.db,`campaignMembers/${campaignId}/${uid}`));
+      const membros=snap?.val?.()||{};
+      const antigo=membros&&typeof membros==='object'?membros[characterId]:null;
+      if(antigo&&typeof antigo==='object'){
+        const id=texto(antigo.legacySheetId||antigo.sheetId||antigo.sourceSheetId);
+        if(id)sheetIds.add(id);
+      }
+      /* Se o mesmo sheetId já foi reassociado a um characterId novo, o membro
+         novo também será encontrado por igualdade exata de sheetId. Nenhum nome,
+         e-mail ou deviceId participa desta decisão. */
+      Object.values(membros&&typeof membros==='object'?membros:{}).forEach(membro=>{
+        if(!membro||typeof membro!=='object')return;
+        const id=texto(membro.legacySheetId||membro.sheetId||membro.sourceSheetId);
+        if(id&&sheetIds.has(id))sheetIds.add(id);
+      });
+    }catch(_erro){}
+
+    let ficha=fichaLocalUnicaPorSheetIds(sheetIds);
+    if(ficha)return ficha;
+
+    /* Último reparo seguro: o backup userSheets é indexado pelo próprio sheetId.
+       Ele pode conservar aliases antigos de characterId mesmo depois de a ficha
+       local ter sido saneada. Usamos apenas igualdade exata desses IDs para
+       descobrir o sheetId; nunca inferimos pelo nome do personagem. */
+    try{
+      const snap=await estadoOnline.api.get(estadoOnline.api.ref(estadoOnline.db,`userSheets/${uid}`));
+      const remotas=snap?.val?.()||{};
+      const idsRemotos=new Set();
+      Object.entries(remotas&&typeof remotas==='object'?remotas:{}).forEach(([sheetId,registro])=>{
+        if(!registro||registro.deleted===true||!registro.data)return;
+        const online=registro.data.__online&&typeof registro.data.__online==='object'?registro.data.__online:{};
+        const chars=[online.characterId,online.realtimeId,online.sourceCharacterId].map(texto).filter(Boolean);
+        if((characterId&&chars.includes(characterId))||sheetIds.has(texto(sheetId))||sheetIds.has(texto(online.sheetId))){
+          idsRemotos.add(texto(sheetId));
+          if(texto(online.sheetId))idsRemotos.add(texto(online.sheetId));
+        }
+      });
+      if(idsRemotos.size){
+        ficha=fichaLocalUnicaPorSheetIds(idsRemotos);
+        if(ficha)return ficha;
+      }
+    }catch(_erro){}
+    return null;
+  }
+
   function mapaXpCampanhaAplicado(dados){
     dados.__online=dados.__online&&typeof dados.__online==="object"?dados.__online:{};
     const atual=dados.__online.appliedCampaignXpLedger;
@@ -3171,7 +3240,7 @@
       for(const item of fila){
         const ledgerId=texto(item.id),characterId=texto(item.characterId),amount=Math.trunc(Number(item.amount||0));
         if(personagensBloqueados.has(characterId))continue;
-        let ficha=fichaLocalDoXpCampanha(item);
+        let ficha=await fichaLocalDoXpCampanhaComReparo(item);
         if(!ficha){personagensBloqueados.add(characterId);continue;}
 
         const ackRef=api.ref(estadoOnline.db,`xpAcks/${uid}/${characterId}/${ledgerId}`);
@@ -3184,7 +3253,7 @@
         const claim=await reivindicarXpCampanha(item);
         if(!claim.claimed){personagensBloqueados.add(characterId);continue;}
         try{
-          ficha=fichaLocalDoXpCampanha(item);
+          ficha=await fichaLocalDoXpCampanhaComReparo(item);
           if(!ficha){await liberarXpCampanha(claim.refAck,claim.deviceId);personagensBloqueados.add(characterId);continue;}
 
           let dados=clonar(ficha.data||{}),aplicados=mapaXpCampanhaAplicado(dados);
