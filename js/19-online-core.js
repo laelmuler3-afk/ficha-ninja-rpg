@@ -947,6 +947,13 @@
       estadoOnline.xpInbox=normalizarXpInbox(snap.val()||{});
       emitir("xp-inbox",snapshot());
       processarXpCampanhaPendente().catch(erro=>emitir("erro-sync",{mensagem:erroAmigavel(erro),erro}));
+      /* O Firebase pode autenticar alguns milissegundos antes de a lista local de
+         fichas terminar de abrir (especialmente em PWA/iOS). Se a primeira
+         tentativa não encontrou a ficha, uma segunda passagem após o boot evita
+         deixar o lançamento parado até a próxima edição manual. */
+      if(Object.keys(estadoOnline.xpInbox||{}).length){
+        setTimeout(()=>processarXpCampanhaPendente().catch(()=>{}),900);
+      }
     },erro=>{
       estadoOnline.xpInbox={};
       emitir("erro",{mensagem:erroAmigavel(erro),erro});
@@ -3091,15 +3098,30 @@
   }
 
   function fichaLocalDoXpCampanha(item){
-    const characterId=texto(item?.characterId),sheetId=texto(item?.sourceSheetId);
+    const characterId=texto(item?.characterId),sheetId=texto(item?.sourceSheetId),uid=texto(estadoOnline.user?.uid);
     const fichas=listarFichasLocais();
     const porPersonagem=fichas.filter(f=>texto(f.data?.__online?.characterId||f.data?.__online?.realtimeId)===characterId);
     if(porPersonagem.length===1)return porPersonagem[0];
     if(porPersonagem.length>1)return null;
+
     if(sheetId){
-      const porSheet=fichas.find(f=>texto(f.sheetId)===sheetId);
-      const idLocal=texto(porSheet?.data?.__online?.characterId||porSheet?.data?.__online?.realtimeId);
-      if(porSheet&&(!idLocal||idLocal===characterId))return porSheet;
+      /* campaignMembers guarda também o sheetId que originou o vínculo. Ele é a
+         ponte segura para campanhas criadas antes dos reparos de identidade das
+         versões 2.5.8.136–140. Nesses casos o member/inbox pode conservar um
+         characterId antigo enquanto a MESMA ficha local já possui a identidade
+         reparada. Exigir igualdade de characterId aqui fazia o XP ficar preso
+         para sempre no inbox.
+
+         O fallback só é aceito quando existe exatamente uma ficha desta conta
+         com o sheetId exato. Nome, dispositivo e posição na lista nunca entram
+         na decisão. Assim recuperamos a continuidade sem permitir que o XP caia
+         em outra ficha do mesmo usuário. */
+      const porSheet=fichas.filter(f=>{
+        if(texto(f.sheetId)!==sheetId)return false;
+        const ownerUid=texto(f.data?.__online?.ownerUid);
+        return !uid||!ownerUid||ownerUid===uid;
+      });
+      if(porSheet.length===1)return porSheet[0];
     }
     return null;
   }
