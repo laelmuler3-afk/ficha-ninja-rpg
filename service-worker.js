@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.141 — XP permanente da campanha com histórico e entrega offline.
+/* Ficha Ninja RPG 2.5.8.142 — correção de encerramento e restauração de salas.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.141";
+const APP_VERSION = "2.5.8.142";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

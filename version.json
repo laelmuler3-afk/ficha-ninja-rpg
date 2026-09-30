@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.141",
-  "name": "XP permanente da campanha",
-  "notes": "Adiciona histórico permanente de XP por campanha, operações de adicionar/remover/corrigir, entrega para personagens offline via inbox e integração da sala com o ledger para membros permanentes.",
+  "version": "2.5.8.142",
+  "name": "Correção de encerramento de sala",
+  "notes": "Impede sessão local residual de reabrir uma sala encerrada, limpa presença/sessão no core e bloqueia reconciliações atrasadas de recriar o vínculo após sair.",
   "date": "2026-09-29"
 }
