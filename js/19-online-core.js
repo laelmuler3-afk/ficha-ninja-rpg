@@ -2803,9 +2803,124 @@
     return {updates,lancamentos,amount:valor,type:tipo};
   }
 
+  function diagnosticarMembroCampanhaLocal(membro){
+    const uid=texto(estadoOnline.user?.uid);
+    if(!uid||!membro||texto(membro.userId)!==uid){
+      return {status:"remote",owned:false,linked:false,member:membro||null};
+    }
+    const characterId=texto(membro.characterId),sheetId=texto(membro.legacySheetId||membro.sheetId||membro.sourceSheetId);
+    const locais=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)}));
+    const porCharacter=characterId?locais.filter(({aliases})=>aliases.characterIds.has(characterId)):[];
+    const porSheet=sheetId?locais.filter(({aliases})=>aliases.sheetIds.has(sheetId)):[];
+    if(porCharacter.length>1||porSheet.length>1){
+      return {status:"ambiguous",owned:true,linked:false,member:membro,characterId,sheetId};
+    }
+    const fichaCharacter=porCharacter.length===1?porCharacter[0].ficha:null;
+    const fichaSheet=porSheet.length===1?porSheet[0].ficha:null;
+    if(fichaCharacter&&fichaSheet&&fichaCharacter.key!==fichaSheet.key){
+      return {status:"ambiguous",owned:true,linked:false,member:membro,characterId,sheetId};
+    }
+    const ficha=fichaCharacter||fichaSheet||null;
+    if(ficha){
+      return {
+        status:"linked",owned:true,linked:true,member:membro,characterId,sheetId,
+        localSheetName:ficha.name,localSheetId:ficha.sheetId,characterName:ficha.characterName,
+        active:ficha.name===fichaAtivaNomeSeguro()
+      };
+    }
+    const ativa=fichaAtualLocal();
+    return {
+      status:"stale",owned:true,linked:false,member:membro,characterId,sheetId,
+      activeSheetName:ativa?.name||"",activeSheetId:ativa?.sheetId||"",activeCharacterName:ativa?.characterName||""
+    };
+  }
+
+  async function reassociarMembroCampanhaComFichaAtual({campaignId,userId,characterId}={}){
+    exigirContaGoogle();
+    const idCampanha=texto(campaignId),uid=texto(userId),antigoCharacterId=texto(characterId);
+    const campanha=estadoOnline.campanhas.find(item=>item.id===idCampanha);
+    if(!idCampanha||!campanha||texto(campanha.masterUid)!==texto(estadoOnline.user.uid)) throw new Error("Campanha não encontrada.");
+    if(!uid||uid!==texto(estadoOnline.user.uid)) throw new Error("A reassociação automática só pode usar uma ficha pertencente à Conta Google atualmente conectada.");
+    if(!antigoCharacterId) throw new Error("O vínculo antigo do personagem não foi encontrado.");
+
+    let ficha=fichaAtualLocal();
+    if(!ficha) throw new Error("Abra primeiro a ficha correta que deve receber o XP.");
+    ficha=garantirIdentidadeFichaRealtime(ficha.name)||ficha;
+    const novoCharacterId=texto(ficha.characterId)||texto(ficha.data?.__online?.characterId)||texto(ficha.data?.__online?.realtimeId);
+    const novoSheetId=texto(ficha.sheetId)||texto(ficha.data?.__online?.sheetId);
+    if(!novoCharacterId||!novoSheetId) throw new Error("Não foi possível estabelecer a identidade da ficha aberta.");
+
+    const api=estadoOnline.api;
+    const refAntigo=api.ref(estadoOnline.db,`campaignMembers/${idCampanha}/${uid}/${antigoCharacterId}`);
+    const snapAntigo=await api.get(refAntigo);
+    const antigo=snapAntigo.exists()?snapAntigo.val():null;
+    if(!antigo||antigo.status==="inactive") throw new Error("O vínculo antigo não está mais ativo nesta campanha.");
+
+    const resumo=resumoBatalhaDaFicha(ficha);
+    const instante=agora();
+    const novoMembro={
+      ...antigo,campaignId:idCampanha,userId:uid,characterId:novoCharacterId,
+      displayName:texto(resumo?.displayName)||texto(ficha.characterName)||texto(antigo.displayName)||"Personagem",
+      legacySheetId:novoSheetId,status:"active",lastSeenAt:instante,updatedAt:instante,
+      reboundFromCharacterId:antigoCharacterId,reboundAt:instante
+    };
+    const refNovo=api.ref(estadoOnline.db,`campaignMembers/${idCampanha}/${uid}/${novoCharacterId}`);
+    await api.set(refNovo,novoMembro);
+    if(novoCharacterId!==antigoCharacterId){
+      await api.update(refAntigo,{status:"inactive",updatedAt:instante,replacedByCharacterId:novoCharacterId,reboundAt:instante});
+    }else if(texto(antigo.legacySheetId)!==novoSheetId){
+      await api.update(refAntigo,{legacySheetId:novoSheetId,displayName:novoMembro.displayName,lastSeenAt:instante,updatedAt:instante,reboundAt:instante});
+    }
+
+    /* Reendereça apenas a FILA de entrega. O xpLedger permanece imutável como
+       histórico do lançamento original. Nenhuma associação por nome é feita. */
+    const inboxSnap=await api.get(api.ref(estadoOnline.db,`xpInbox/${uid}/${antigoCharacterId}`)).catch(()=>null);
+    const pendentes=inboxSnap?.exists?.()?inboxSnap.val()||{}:{};
+    let migrados=0,concluidos=0;
+    for(const [ledgerId,item] of Object.entries(pendentes)){
+      if(!item||typeof item!=="object")continue;
+      const ackAntigo=api.ref(estadoOnline.db,`xpAcks/${uid}/${antigoCharacterId}/${ledgerId}`);
+      const ackSnap=await api.get(ackAntigo).catch(()=>null);
+      if(ackSnap?.val?.()?.status==="done"){
+        await api.remove(api.ref(estadoOnline.db,`xpInbox/${uid}/${antigoCharacterId}/${ledgerId}`)).catch(()=>{});
+        concluidos+=1;
+        continue;
+      }
+      const redirecionado={
+        ...item,characterId:novoCharacterId,sourceCharacterId:texto(item.characterId)||antigoCharacterId,
+        sourceSheetId:novoSheetId,redirectedAt:instante,redirectedBy:estadoOnline.user.uid
+      };
+      if(novoCharacterId===antigoCharacterId){
+        await api.remove(api.ref(estadoOnline.db,`xpInbox/${uid}/${antigoCharacterId}/${ledgerId}`));
+      }
+      await api.set(api.ref(estadoOnline.db,`xpInbox/${uid}/${novoCharacterId}/${ledgerId}`),redirecionado);
+      if(novoCharacterId!==antigoCharacterId){
+        await api.remove(api.ref(estadoOnline.db,`xpInbox/${uid}/${antigoCharacterId}/${ledgerId}`)).catch(()=>{});
+      }
+      if(ackSnap?.exists?.()) await api.remove(ackAntigo).catch(()=>{});
+      migrados+=1;
+    }
+    setTimeout(()=>processarXpCampanhaPendente().catch(()=>{}),120);
+    return {ok:true,campaignId:idCampanha,userId:uid,oldCharacterId:antigoCharacterId,characterId:novoCharacterId,sheetId:novoSheetId,displayName:novoMembro.displayName,migratedPending:migrados,alreadyDone:concluidos};
+  }
+
   async function alterarXpCampanha({campaignId,memberKeys,targets,amount,reason="",type="grant",sessionId=""}={}){
     exigirContaGoogle();
-    const pacote=await montarLancamentosXpPermanentes({campaignId,targets:targets||memberKeys||[],amount,reason,type,sessionId});
+    const alvos=targets||memberKeys||[];
+    const idCampanha=texto(campaignId);
+    const membros=await membrosAtivosDaCampanha(idCampanha);
+    const mapa=new Map(membros.map(m=>[`${texto(m.userId)}::${texto(m.characterId)}`,m]));
+    for(const alvo of alvos){
+      const chave=alvo&&typeof alvo==="object"?`${texto(alvo.userId)}::${texto(alvo.characterId)}`:texto(alvo);
+      const membro=mapa.get(chave);
+      if(membro&&texto(membro.userId)===texto(estadoOnline.user?.uid)){
+        const diagnostico=diagnosticarMembroCampanhaLocal(membro);
+        if(diagnostico.status==="stale"||diagnostico.status==="ambiguous"){
+          throw new Error(`O vínculo de ${texto(membro.displayName)||"personagem"} aponta para uma identidade antiga. Reassocie esse personagem à ficha correta antes de registrar novo XP.`);
+        }
+      }
+    }
+    const pacote=await montarLancamentosXpPermanentes({campaignId:idCampanha,targets:alvos,amount,reason,type,sessionId});
     await estadoOnline.api.update(estadoOnline.api.ref(estadoOnline.db),pacote.updates);
     return {ok:true,count:pacote.lancamentos.length,amount:pacote.amount,type:pacote.type,entries:pacote.lancamentos};
   }
@@ -4657,6 +4772,7 @@
     entrarAnonimo,entrarGoogle,trocarContaGoogle,sair,criarCampanha,prepararCampanhaPermanente,editarCampanha,excluirCampanha,observarMembrosCampanha,pararObservacaoMembrosCampanha,observarNpcsCampanha,pararObservacaoNpcsCampanha,observarXpCampanha,pararObservacaoXpCampanha,criarSala,abrirSalaComoMestre,buscarSalaPorCodigo,entrarSala,observarSala,
     sairDaSala,encerrarSala,listarFichasLocais,listarFichasSincronizaveis,listarCopiasLegadasLocaisSeguras,fichaAtualLocal,fichaPodeParticiparNuvem:ficha=>!fichaBloqueadaNuvem(ficha),resumoBatalhaDaFicha,
     salvarFichaComoNpcCampanha,criarNpcCampanha,atualizarNpcCampanha,arquivarNpcCampanha,adicionarNpcCampanhaNaSala,
+    diagnosticarMembroCampanhaLocal,reassociarMembroCampanhaComFichaAtual,
     importarFichaComoNpc,criarNpcRapido,atualizarMeuParticipante,atualizarMeuParticipanteAoVivo,atualizarParticipante,removerParticipante,definirIniciativa,
     ordenarIniciativa,iniciarCombate,avancarTurno,voltarTurno,normalizarOrdem,analisarDuracaoRodadas,
     adicionarEfeito,encerrarEfeito,deduplicarEfeitosDaSala,concederXp,alterarXpCampanha,processarXpCampanhaPendente,definirNivelJogador,registrarEvento,sincronizarFicha,sincronizarTodasFichas,

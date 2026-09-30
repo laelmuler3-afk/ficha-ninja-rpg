@@ -690,13 +690,26 @@
         ${aberta?`<button type="button" class="onlineBtn ${atual?"primario":"secundario"} compacto" data-action="open-campaign-room" data-campaign-id="${esc(campanha.id)}" data-room-id="${esc(sessao.id)}">${atual?"Abrir sala atual":"Entrar como mestre"}</button>`:""}
       </article>`;
     };
+    const diagnosticoMembro=membro=>{
+      try{return window.ShinobiOnline?.diagnosticarMembroCampanhaLocal?.(membro)||{status:"remote",owned:false};}
+      catch(_erro){return {status:"remote",owned:false};}
+    };
     const listaMembros=!membrosCarregados
       ? `<p class="onlineVazio">Carregando jogadores da campanha...</p>`
       : membros.length
-        ? `<div class="onlineCampanhaMembros">${membros.map(membro=>`<article class="onlineCampanhaMembro">
-            <div class="onlineCampanhaMembroIcone">忍</div>
-            <div><small>PERSONAGEM DA CAMPANHA</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>Vínculo permanente${membro.joinedAt?` • desde ${esc(formatarDataSessao(membro.joinedAt))}`:""}</span></div>
-          </article>`).join("")}</div>`
+        ? `<div class="onlineCampanhaMembros">${membros.map(membro=>{
+            const diag=diagnosticoMembro(membro);
+            const proprio=diag.owned===true;
+            const vinculo=diag.status==="linked"
+              ? `Vínculo local confirmado${diag.localSheetName?` • ${esc(diag.localSheetName)}`:""}`
+              : diag.status==="stale"?"Vínculo antigo neste aparelho"
+              : diag.status==="ambiguous"?"Vínculo local ambíguo"
+              : "Vínculo permanente";
+            return `<article class="onlineCampanhaMembro">
+              <div class="onlineCampanhaMembroIcone">忍</div>
+              <div><small>PERSONAGEM DA CAMPANHA</small><strong>${esc(membro.displayName||"Personagem")}</strong><span>${vinculo}${membro.joinedAt?` • desde ${esc(formatarDataSessao(membro.joinedAt))}`:""}</span>${proprio&&(diag.status==="stale"||diag.status==="ambiguous")?`<button type="button" class="onlineBtn texto compacto" data-action="rebind-campaign-member" data-campaign-id="${esc(campanha.id)}" data-user-id="${esc(membro.userId)}" data-character-id="${esc(membro.characterId)}" data-display-name="${esc(membro.displayName||"Personagem")}">Reassociar à ficha aberta</button>`:""}</div>
+            </article>`;
+          }).join("")}</div>`
         : `<p class="onlineVazio">Nenhum personagem permanente ainda. O primeiro vínculo será criado quando um jogador entrar em uma sala escolhendo “Adicionar à campanha”.</p>`;
     const listaNpcs=!npcsCarregados
       ? `<p class="onlineVazio">Carregando biblioteca de NPCs...</p>`
@@ -764,12 +777,17 @@
         <div class="onlineCampanhaXpGrid">
           <form data-form="campaign-xp" class="onlineForm onlineCampanhaXpForm">
             <input type="hidden" name="campaignId" value="${esc(campanha.id)}">
-            <div class="onlineXpJogadores onlineCampanhaXpJogadores">${membros.length?membros.map(membro=>`<label><input type="checkbox" name="memberKeys" value="${esc(`${membro.userId}::${membro.characterId}`)}" checked><span>${esc(membro.displayName||"Personagem")}</span></label>`).join(""):`<p class="onlineVazio">Adicione jogadores permanentes à campanha para distribuir XP.</p>`}</div>
+            <div class="onlineXpJogadores onlineCampanhaXpJogadores">${membros.length?membros.map(membro=>{
+              const diag=diagnosticoMembro(membro);
+              const bloqueado=diag.owned===true&&(diag.status==="stale"||diag.status==="ambiguous");
+              const detalhe=bloqueado?" • vínculo antigo":diag.status==="linked"&&diag.localSheetName?` • ${esc(diag.localSheetName)}`:"";
+              return `<label><input type="checkbox" name="memberKeys" value="${esc(`${membro.userId}::${membro.characterId}`)}" ${bloqueado?"disabled":"checked"}><span>${esc(membro.displayName||"Personagem")}${detalhe}</span></label>`;
+            }).join(""):`<p class="onlineVazio">Adicione jogadores permanentes à campanha para distribuir XP.</p>`}</div>
             <div class="onlineFormGrid">
               <label>Operação<select name="type"><option value="grant">Adicionar XP</option><option value="remove">Remover XP</option><option value="correction">Correção (+/-)</option></select></label>
               <label>Quantidade<input name="amount" type="number" value="500" step="1" required></label>
             </div>
-            <label>Motivo<input name="reason" maxlength="160" placeholder="Missão Rank B"></label>
+            <label>Motivo (opcional)<input name="reason" maxlength="160" placeholder="Missão Rank B"></label>
             <button class="onlineBtn primario" type="submit" ${membros.length?"":"disabled"}>Registrar XP</button>
             <p class="onlineAjudaCompacta">O lançamento fica no histórico e será entregue quando a ficha do jogador voltar a sincronizar. Level Up continua usando o fluxo normal da ficha.</p>
           </form>
@@ -1607,6 +1625,24 @@
         await avisar("Campanha excluída",`A campanha foi removida.${complemento}`);
       });
     }
+    if(acao==="rebind-campaign-member")return executar(async()=>{
+      const atual=window.ShinobiOnline?.fichaAtualLocal?.();
+      if(!atual)throw new Error("Abra primeiro a ficha correta que deve representar este personagem.");
+      const nomeMembro=String(el.dataset.displayName||"Personagem");
+      const nomeFicha=String(atual.characterName||atual.name||"ficha atual");
+      const ok=await confirmar(
+        "Reassociar personagem",
+        `O vínculo “${nomeMembro}” será transferido para a ficha que está aberta agora: “${nomeFicha}”.\n\nXP pendente desse vínculo também será redirecionado para esta ficha. Nenhuma associação será feita apenas pelo nome.\n\nContinuar?`
+      );
+      if(!ok)return;
+      const resultado=await window.ShinobiOnline.reassociarMembroCampanhaComFichaAtual({
+        campaignId:el.dataset.campaignId,userId:el.dataset.userId,characterId:el.dataset.characterId
+      });
+      await avisar(
+        "Vínculo atualizado",
+        `${resultado.displayName||nomeFicha} agora aponta para a ficha correta.${Number(resultado.migratedPending||0)>0?` ${resultado.migratedPending} lançamento(s) de XP pendente(s) foram redirecionados.`:""}`
+      );
+    });
     if(acao==="edit-campaign-npc")return editarNpcCampanha(el.dataset.campaignId,el.dataset.npcId);
     if(acao==="archive-campaign-npc")return executar(async()=>{
       const st=obterEstado(),npc=(st.npcsCampanha||[]).find(item=>String(item.id)===String(el.dataset.npcId));
