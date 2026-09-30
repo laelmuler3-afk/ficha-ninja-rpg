@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.145",
-  "name": "Correção definitiva da entrega de XP pendente",
-  "notes": "Resolve lançamentos de XP presos após reparos de identidade consultando campaignMembers e userSheets por IDs exatos, mantendo sheetId como âncora segura. Corrige também o selo falso de pendência no cabeçalho da sincronização.",
+  "version": "2.5.8.148",
+  "name": "Gestão de jogadores da campanha e correção de XP",
+  "notes": "Inclui a correção v147 de identidade na entrega de XP e adiciona remoção/reativação segura de campaignMembers. Membros removidos deixam de receber XP novo, XP pendente fica pausado e histórico/fichas/sessões permanecem preservados.",
   "date": "2026-09-30"
 }
