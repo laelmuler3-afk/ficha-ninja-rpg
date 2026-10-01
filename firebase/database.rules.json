@@ -219,6 +219,15 @@
         ".write": "auth != null && data.exists() && !newData.exists() && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid"
       }
     },
+    "xpReceipts": {
+      "$campaignId": {
+        ".read": "auth != null && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid",
+        "$ledgerId": {
+          ".write": "auth != null && ((!newData.exists() && root.child('campaigns').child($campaignId).child('masterUid').val() === auth.uid) || (newData.exists() && newData.child('userId').val() === auth.uid && root.child('xpLedger').child($campaignId).child($ledgerId).child('userId').val() === auth.uid && root.child('xpLedger').child($campaignId).child($ledgerId).child('characterId').val() === newData.child('characterId').val()))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['campaignId','ledgerId','userId','characterId','sheetId','amount','receivedAt','deviceId','xpAfter','status','syncStatus']) && newData.child('campaignId').val() === $campaignId && newData.child('ledgerId').val() === $ledgerId && newData.child('userId').isString() && newData.child('userId').val() === auth.uid && newData.child('characterId').isString() && newData.child('characterId').val().length > 0 && newData.child('characterId').val().length <= 100 && newData.child('sheetId').isString() && newData.child('sheetId').val().length > 0 && newData.child('sheetId').val().length <= 120 && newData.child('amount').isNumber() && newData.child('amount').val() === root.child('xpLedger').child($campaignId).child($ledgerId).child('amount').val() && newData.child('receivedAt').isNumber() && newData.child('receivedAt').val() > 0 && newData.child('deviceId').isString() && newData.child('deviceId').val().length > 0 && newData.child('deviceId').val().length <= 100 && newData.child('xpAfter').isNumber() && newData.child('xpAfter').val() >= 0 && newData.child('status').val() === 'received' && (newData.child('syncStatus').val() === 'queued' || newData.child('syncStatus').val() === 'synced'))"
+        }
+      }
+    },
     "xpInbox": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
