@@ -245,11 +245,30 @@
     botao.classList.toggle("aberto",abrir);
     botao.setAttribute("aria-expanded",abrir?"true":"false");
     if(abrir){
+      alternarContaDrawer(false);
       alternarConfiguracoesDrawer(false);
       requestAnimationFrame(()=>conteudo.scrollIntoView({behavior:"smooth",block:"nearest"}));
     }
   }
   window.abrirGerenciadorFichas=()=>alternarFichasDrawer(true);
+
+  function alternarContaDrawer(forcar){
+    const drawer=document.getElementById("shinobiNavDrawer");
+    if(!drawer)return;
+    const botao=drawer.querySelector('[data-drawer-action="account"]');
+    const conteudo=drawer.querySelector("[data-drawer-account]");
+    if(!botao||!conteudo)return;
+    const abrir=typeof forcar==="boolean"?forcar:conteudo.hidden;
+    conteudo.hidden=!abrir;
+    botao.classList.toggle("aberto",abrir);
+    botao.setAttribute("aria-expanded",abrir?"true":"false");
+    if(abrir){
+      alternarFichasDrawer(false);
+      alternarConfiguracoesDrawer(false);
+      requestAnimationFrame(()=>botao.scrollIntoView({behavior:"smooth",block:"nearest"}));
+    }
+  }
+  window.abrirMinhaContaShinobi=()=>alternarContaDrawer(true);
 
   function alternarConfiguracoesDrawer(forcar){
     const drawer=document.getElementById("shinobiNavDrawer");
@@ -268,6 +287,7 @@
       if(fichas)fichas.hidden=true;
       botaoFichas?.classList.remove("aberto");
       botaoFichas?.setAttribute("aria-expanded","false");
+      alternarContaDrawer(false);
       requestAnimationFrame(()=>{
         botao.scrollIntoView({behavior:"smooth",block:"nearest"});
       });
@@ -319,24 +339,30 @@
           <div class="shinobiDrawerFichasLegado" data-drawer-sheets-legacy></div>
         </div>
 
-        <button type="button" class="shinobiDrawerSyncCard" data-drawer-action="sync" data-drawer-sync>
-          <span class="shinobiDrawerItemIcon">${iconHTML("cloud")}</span>
-          <span class="shinobiDrawerItemTexto"><b>Sincronização</b><small><i class="shinobiDrawerStatusDot"></i><span data-drawer-sync-text>Somente neste aparelho</span></small></span>
-          <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-        </button>
-
-        <div class="shinobiDrawerGrupo">
+        <div class="shinobiDrawerGrupo shinobiDrawerConta">
           <h3>CONTA</h3>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="account">
+          <button type="button" class="shinobiDrawerItem shinobiDrawerItemExpansivel" data-drawer-action="account" aria-expanded="false">
             <span class="shinobiDrawerItemIcon">${iconHTML("profile")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Minha conta</b><small>Login e autenticação</small></span>
+            <span class="shinobiDrawerItemTexto"><b>Minha conta</b><small>Login, conta e sincronização</small></span>
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="login">
-            <span class="shinobiDrawerItemIcon">${iconHTML("sync")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Conta conectada</b><small data-drawer-connected-account-meta>Nenhuma conta conectada</small></span>
-            <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-          </button>
+          <div class="shinobiDrawerConfigConteudo shinobiDrawerContaConteudo" data-drawer-account hidden>
+            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="account-login">
+              <span class="shinobiDrawerItemIcon">${iconHTML("profile")}</span>
+              <span class="shinobiDrawerItemTexto"><b>Login e autenticação</b><small>Entrar, sair ou usar sessão temporária</small></span>
+              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="login">
+              <span class="shinobiDrawerItemIcon">${iconHTML("sync")}</span>
+              <span class="shinobiDrawerItemTexto"><b>Conta conectada</b><small data-drawer-connected-account-meta>Nenhuma conta conectada</small></span>
+              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="shinobiDrawerSubitem shinobiDrawerSyncSubitem" data-drawer-action="sync" data-drawer-sync>
+              <span class="shinobiDrawerItemIcon">${iconHTML("cloud")}</span>
+              <span class="shinobiDrawerItemTexto"><b>Sincronização</b><small><i class="shinobiDrawerStatusDot"></i><span data-drawer-sync-text>Somente neste aparelho</span></small></span>
+              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+            </button>
+          </div>
         </div>
 
         <div class="shinobiDrawerGrupo">
@@ -378,26 +404,23 @@
               <span class="shinobiDrawerItemTexto"><b>Aparência</b><small>Preferências visuais · em breve</small></span>
               <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
             </button>
+            <p class="shinobiDrawerSubtitulo shinobiDrawerSobreTitulo">SOBRE</p>
+            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="about">
+              <span class="shinobiDrawerItemIcon">${iconHTML("notes")}</span>
+              <span class="shinobiDrawerItemTexto"><b>Sobre o app</b><small>Versão e informações</small></span>
+              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="help">
+              <span class="shinobiDrawerItemIcon">${iconHTML("book")}</span>
+              <span class="shinobiDrawerItemTexto"><b>Ajuda</b><small>Guias e suporte</small></span>
+              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="feedback">
+              <span class="shinobiDrawerItemIcon">${iconHTML("edit")}</span>
+              <span class="shinobiDrawerItemTexto"><b>Feedback</b><small>Envie uma sugestão</small></span>
+              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+            </button>
           </div>
-        </div>
-
-        <div class="shinobiDrawerGrupo">
-          <h3>SOBRE</h3>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="about">
-            <span class="shinobiDrawerItemIcon">${iconHTML("notes")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Sobre o app</b><small>Versão e informações</small></span>
-            <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-          </button>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="help">
-            <span class="shinobiDrawerItemIcon">${iconHTML("book")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Ajuda</b><small>Guias e suporte</small></span>
-            <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-          </button>
-          <button type="button" class="shinobiDrawerItem" data-drawer-action="feedback">
-            <span class="shinobiDrawerItemIcon">${iconHTML("edit")}</span>
-            <span class="shinobiDrawerItemTexto"><b>Feedback</b><small>Envie uma sugestão</small></span>
-            <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-          </button>
         </div>
 
         <footer class="shinobiDrawerRodape">
@@ -437,9 +460,10 @@
 
       const acao=botao.dataset.drawerAction;
       if(acao==="sheets"){alternarFichasDrawer();return;}
-      if(acao==="sync"){void abrirPainelOnline("sincronizacao",botao);return;}
-      if(acao==="account"){void abrirPainelOnline("login",botao);return;}
+      if(acao==="account"){alternarContaDrawer();return;}
+      if(acao==="account-login"){void abrirPainelOnline("login",botao);return;}
       if(acao==="login"){void abrirPainelOnline("conta-conectada",botao);return;}
+      if(acao==="sync"){void abrirPainelOnline("sincronizacao",botao);return;}
       if(acao==="create-room"){void abrirPainelOnline("area-mestre",botao);return;}
       if(acao==="join-room"){void abrirPainelOnline("entrar-sala",botao);return;}
       if(acao==="current-room"){void abrirPainelOnline("sala-atual",botao);return;}
