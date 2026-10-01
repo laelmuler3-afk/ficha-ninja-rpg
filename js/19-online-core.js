@@ -36,6 +36,8 @@
     npcsCampanhaId:null,
     xpLedgerCampanha:[],
     xpLedgerCampanhaId:null,
+    xpReceiptsCampanha:{},
+    xpReceiptsCampanhaId:null,
     xpInbox:{},
     fichasNuvem:[],
     unsubscribeSala:null,
@@ -44,6 +46,7 @@
     unsubscribeMembrosCampanha:null,
     unsubscribeNpcsCampanha:null,
     unsubscribeXpLedgerCampanha:null,
+    unsubscribeXpReceiptsCampanha:null,
     unsubscribeXpInbox:null,
     unsubscribeFichas:null,
     unsubscribeEventos:null,
@@ -457,11 +460,16 @@
         setTimeout(()=>processarXpCampanhaPendente().catch(()=>{}),250);
       }
     },{passive:true});
-    window.addEventListener("shinobi:ficha-persistida",()=>{
+    const tentarXp=()=>{
       if(estadoOnline.user&&!estadoOnline.user.anonymous&&Object.keys(estadoOnline.xpInbox||{}).length){
         setTimeout(()=>processarXpCampanhaPendente().catch(()=>{}),180);
       }
-    });
+    };
+    window.addEventListener("shinobi:ficha-persistida",tentarXp);
+    window.addEventListener("shinobi:app-pronto",tentarXp);
+    window.addEventListener("pageshow",tentarXp);
+    window.addEventListener("focus",tentarXp);
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")tentarXp();});
   }
 
   function normalizarUsuarioFirebase(user){
@@ -568,6 +576,8 @@
       npcsCampanhaId:estadoOnline.npcsCampanhaId,
       xpLedgerCampanha:clonar(estadoOnline.xpLedgerCampanha),
       xpLedgerCampanhaId:estadoOnline.xpLedgerCampanhaId,
+      xpReceiptsCampanha:clonar(estadoOnline.xpReceiptsCampanha),
+      xpReceiptsCampanhaId:estadoOnline.xpReceiptsCampanhaId,
       xpInbox:clonar(estadoOnline.xpInbox),
       fichasNuvem:clonar(estadoOnline.fichasNuvem),
       syncAtual:clonar(statusSincronizacaoAtual()),
@@ -896,11 +906,25 @@
       .sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
   }
 
+  function normalizarXpReceiptsCampanha(valor){
+    const saida={};
+    Object.entries(valor&&typeof valor==="object"?valor:{}).forEach(([ledgerId,item])=>{
+      if(!item||typeof item!=="object"||Array.isArray(item))return;
+      const id=texto(item.ledgerId)||texto(ledgerId);
+      if(id)saida[id]={...item,ledgerId:id};
+    });
+    return saida;
+  }
+
   function pararObservacaoXpCampanha(){
     estadoOnline.unsubscribeXpLedgerCampanha?.();
+    estadoOnline.unsubscribeXpReceiptsCampanha?.();
     estadoOnline.unsubscribeXpLedgerCampanha=null;
+    estadoOnline.unsubscribeXpReceiptsCampanha=null;
     estadoOnline.xpLedgerCampanha=[];
     estadoOnline.xpLedgerCampanhaId=null;
+    estadoOnline.xpReceiptsCampanha={};
+    estadoOnline.xpReceiptsCampanhaId=null;
     emitir("xp-campanha",snapshot());
   }
 
@@ -909,10 +933,13 @@
     const id=texto(campaignId);
     const campanha=estadoOnline.campanhas.find(item=>item.id===id);
     if(!campanha||campanha.masterUid!==estadoOnline.user.uid) throw new Error("Campanha não encontrada.");
-    if(estadoOnline.xpLedgerCampanhaId===id&&estadoOnline.unsubscribeXpLedgerCampanha) return snapshot();
+    if(estadoOnline.xpLedgerCampanhaId===id&&estadoOnline.unsubscribeXpLedgerCampanha&&estadoOnline.unsubscribeXpReceiptsCampanha) return snapshot();
     estadoOnline.unsubscribeXpLedgerCampanha?.();
+    estadoOnline.unsubscribeXpReceiptsCampanha?.();
     estadoOnline.xpLedgerCampanhaId=id;
+    estadoOnline.xpReceiptsCampanhaId=id;
     estadoOnline.xpLedgerCampanha=[];
+    estadoOnline.xpReceiptsCampanha={};
     const api=estadoOnline.api;
     const consulta=api.query(api.ref(estadoOnline.db,`xpLedger/${id}`),api.orderByChild("createdAt"),api.limitToLast(100));
     estadoOnline.unsubscribeXpLedgerCampanha=api.onValue(consulta,snap=>{
@@ -920,6 +947,14 @@
       emitir("xp-campanha",snapshot());
     },erro=>{
       estadoOnline.xpLedgerCampanha=[];
+      emitir("erro",{mensagem:erroAmigavel(erro),erro});
+      emitir("xp-campanha",snapshot());
+    });
+    estadoOnline.unsubscribeXpReceiptsCampanha=api.onValue(api.ref(estadoOnline.db,`xpReceipts/${id}`),snap=>{
+      estadoOnline.xpReceiptsCampanha=normalizarXpReceiptsCampanha(snap.val()||{});
+      emitir("xp-campanha",snapshot());
+    },erro=>{
+      estadoOnline.xpReceiptsCampanha={};
       emitir("erro",{mensagem:erroAmigavel(erro),erro});
       emitir("xp-campanha",snapshot());
     });
@@ -1053,6 +1088,7 @@
       if(uid&&characterId)updates[`xpInbox/${uid}/${characterId}/${ledgerId}`]=null;
     });
     updates[`xpLedger/${id}`]=null;
+    updates[`xpReceipts/${id}`]=null;
     updates[`campaignMembers/${id}`]=null;
     updates[`campaignNpcs/${id}`]=null;
     updates[`campaigns/${id}`]=null;
@@ -3275,13 +3311,19 @@
 
   function aliasesIdentidadeFichaXp(ficha){
     const online=ficha?.data?.__online&&typeof ficha.data.__online==="object"?ficha.data.__online:{};
-    const ownerUid=texto(online.ownerUid)||texto(online.characterOwnerUid)||texto(online.realtimeOwnerUid);
+    /* ownerUid pertence ao backup estrutural e pode continuar apontando para uma
+       conta anterior após testes/troca de login. Para XP, a identidade atual do
+       personagem é characterOwnerUid/realtimeOwnerUid; misturar os dois donos
+       fazia uma ficha correta ser descartada antes mesmo de comparar IDs. */
+    const backupOwnerUid=texto(online.ownerUid);
+    const characterOwnerUid=texto(online.characterOwnerUid)||texto(online.realtimeOwnerUid);
+    const ownerUid=characterOwnerUid||backupOwnerUid;
     const currentCharacterIds=new Set([texto(online.characterId),texto(online.realtimeId)].filter(Boolean));
     const currentSheetIds=new Set([texto(ficha?.sheetId),texto(online.sheetId)].filter(Boolean));
     const historicalCharacterIds=new Set([texto(online.sourceCharacterId)].filter(Boolean));
     const historicalSheetIds=new Set([texto(online.sourceSheetId),texto(online.originSheetId)].filter(Boolean));
     return {
-      ownerUid,currentCharacterIds,currentSheetIds,historicalCharacterIds,historicalSheetIds,
+      ownerUid,backupOwnerUid,characterOwnerUid,currentCharacterIds,currentSheetIds,historicalCharacterIds,historicalSheetIds,
       characterIds:new Set([...currentCharacterIds,...historicalCharacterIds]),
       sheetIds:new Set([...currentSheetIds,...historicalSheetIds])
     };
@@ -3289,27 +3331,27 @@
 
   function fichaLocalDoXpCampanha(item){
     const characterId=texto(item?.characterId),sheetId=texto(item?.sourceSheetId),uid=texto(estadoOnline.user?.uid);
-    const candidatas=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
-      !uid||!aliases.ownerUid||aliases.ownerUid===uid
-    );
+    const todas=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)}));
+    const porConta=todas.filter(({aliases})=>!uid||!aliases.characterOwnerUid||aliases.characterOwnerUid===uid);
 
-    /* v2.5.8.147 — uma identidade atual inequívoca vence antes de qualquer
-       sourceSheetId/sourceCharacterId. Antes, um sourceSheetId herdado por várias
-       fichas fazia porSheet.length > 1 e anulava até um characterId atual único,
-       deixando XP novo e antigo parado no inbox. */
-    const porPersonagemAtual=characterId?candidatas.filter(({aliases})=>aliases.currentCharacterIds.has(characterId)):[];
+    /* A identidade atual do personagem continua sendo a primeira escolha. */
+    const porPersonagemAtual=characterId?porConta.filter(({aliases})=>aliases.currentCharacterIds.has(characterId)):[];
     if(porPersonagemAtual.length===1)return porPersonagemAtual[0].ficha;
     if(porPersonagemAtual.length>1)return null;
 
-    const porSheetAtual=sheetId?candidatas.filter(({aliases})=>aliases.currentSheetIds.has(sheetId)):[];
+    /* sourceSheetId é um UUID persistente da ficha. O inbox já está protegido
+       por userId no Firebase; portanto uma correspondência EXATA e única de
+       sheetId é segura mesmo quando ownerUid de backup ficou obsoleto após uma
+       troca de conta. Isso fecha o caso em que o ledger existia, mas o cliente
+       descartava a própria ficha antes de tentar aplicar o XP. */
+    const porSheetAtual=sheetId?todas.filter(({aliases})=>aliases.currentSheetIds.has(sheetId)):[];
     if(porSheetAtual.length===1)return porSheetAtual[0].ficha;
     if(porSheetAtual.length>1)return null;
 
-    /* Aliases históricos são somente fallback de recuperação. Eles nunca podem
-       vetar uma identidade atual já resolvida e só são aceitos quando apontam
-       para uma única ficha local. */
-    const porPersonagemHistorico=characterId?candidatas.filter(({aliases})=>aliases.historicalCharacterIds.has(characterId)):[];
-    const porSheetHistorico=sheetId?candidatas.filter(({aliases})=>aliases.historicalSheetIds.has(sheetId)):[];
+    /* Aliases históricos são somente fallback e exigem compatibilidade com a
+       identidade da conta atual para não religar cópias antigas. */
+    const porPersonagemHistorico=characterId?porConta.filter(({aliases})=>aliases.historicalCharacterIds.has(characterId)):[];
+    const porSheetHistorico=sheetId?porConta.filter(({aliases})=>aliases.historicalSheetIds.has(sheetId)):[];
     const historicas=new Map();
     [...porPersonagemHistorico,...porSheetHistorico].forEach(item=>historicas.set(item.ficha.key,item.ficha));
     return historicas.size===1?Array.from(historicas.values())[0]:null;
@@ -3319,13 +3361,12 @@
     const ids=new Set(Array.from(sheetIds||[]).map(texto).filter(Boolean));
     if(!ids.size)return null;
     const uid=texto(estadoOnline.user?.uid);
-    const candidatas=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)})).filter(({aliases})=>
-      !uid||!aliases.ownerUid||aliases.ownerUid===uid
-    );
-    const atuais=candidatas.filter(({aliases})=>Array.from(aliases.currentSheetIds).some(id=>ids.has(id)));
+    const todas=listarFichasLocais().map(ficha=>({ficha,aliases:aliasesIdentidadeFichaXp(ficha)}));
+    const atuais=todas.filter(({aliases})=>Array.from(aliases.currentSheetIds).some(id=>ids.has(id)));
     if(atuais.length===1)return atuais[0].ficha;
     if(atuais.length>1)return null;
-    const historicas=candidatas.filter(({aliases})=>Array.from(aliases.historicalSheetIds).some(id=>ids.has(id)));
+    const porConta=todas.filter(({aliases})=>!uid||!aliases.characterOwnerUid||aliases.characterOwnerUid===uid);
+    const historicas=porConta.filter(({aliases})=>Array.from(aliases.historicalSheetIds).some(id=>ids.has(id)));
     return historicas.length===1?historicas[0].ficha:null;
   }
 
@@ -3408,6 +3449,28 @@
     return null;
   }
 
+  async function registrarRecebimentoXpCampanha(item,ficha,{xpAfter=0,syncStatus="queued"}={}){
+    const api=estadoOnline.api,uid=texto(estadoOnline.user?.uid);
+    const campaignId=texto(item?.campaignId),ledgerId=texto(item?.id),characterId=texto(item?.characterId);
+    if(!api||!uid||!campaignId||!ledgerId||!characterId||!ficha?.sheetId)return {ok:false,skipped:true};
+    const recibo={
+      campaignId,ledgerId,userId:uid,characterId,sheetId:texto(ficha.sheetId),
+      amount:Math.trunc(Number(item?.amount||0)),receivedAt:agora(),deviceId:obterDeviceId(),
+      xpAfter:Math.max(0,Math.trunc(Number(xpAfter||0))),status:"received",
+      syncStatus:syncStatus==="synced"?"synced":"queued"
+    };
+    try{
+      await api.set(api.ref(estadoOnline.db,`xpReceipts/${campaignId}/${ledgerId}`),recibo);
+      return {ok:true,receipt:recibo};
+    }catch(erro){
+      /* O recibo serve para o mestre acompanhar a entrega, mas jamais pode
+         impedir o XP de entrar na ficha. Se as rules ainda não foram publicadas
+         ou houver uma falha transitória, o ACK principal continua funcionando. */
+      emitir("erro-sync",{mensagem:"O XP foi aplicado, mas a confirmação para o mestre ficou pendente.",erro});
+      return {ok:false,error:erro};
+    }
+  }
+
   async function processarXpCampanhaPendente(){
     if(estadoOnline.processandoXpCampanha||!estadoOnline.user||estadoOnline.user.anonymous||!estadoOnline.api)return;
     if(window.navigator?.onLine===false)return;
@@ -3438,7 +3501,14 @@
         }
 
         let ficha=await fichaLocalDoXpCampanhaComReparo(item);
-        if(!ficha){personagensBloqueados.add(characterId);continue;}
+        if(!ficha){
+          personagensBloqueados.add(characterId);
+          emitir("xp-pendente",{
+            reason:"target-sheet-not-found",campaignId,ledgerId,characterId,
+            sourceSheetId:texto(item?.sourceSheetId),displayName:texto(item?.displayName)
+          });
+          continue;
+        }
 
         const ackRef=api.ref(estadoOnline.db,`xpAcks/${uid}/${characterId}/${ledgerId}`);
         const ackSnap=await api.get(ackRef).catch(()=>null);
@@ -3488,9 +3558,14 @@
              mas um conflito de backup não bloqueia uma recompensa já confirmada
              no canal granular. */
           const rt=typeof window.ShinobiOnline?.sincronizarCampoConfirmado==="function"
-            ?await window.ShinobiOnline.sincronizarCampoConfirmado(ficha.name,"xp",dados.xp,{origem:"mestre",motivo:"xp-campanha"}).catch(erro=>({ok:false,erro}))
-            :{ok:false,reason:"realtime-indisponivel"};
-          if(rt?.queued||rt?.ok===false||rt?.skipped){
+            ?await window.ShinobiOnline.sincronizarCampoConfirmado(ficha.name,"xp",dados.xp,{origem:"mestre",motivo:"xp-campanha"}).catch(erro=>({accepted:false,ok:false,erro}))
+            :{accepted:false,ok:false,reason:"realtime-indisponivel"};
+          /* Para concluir a entrega não exigimos que TODA a fila realtime da
+             conta esteja limpa. Basta a operação específica de XP ter entrado
+             no outbox persistente. Erros em jutsu, imagem ou outro campo não
+             podem bloquear a recompensa. */
+          const xpAceito=rt?.accepted===true||rt?.delivered===true;
+          if(!xpAceito){
             await liberarXpCampanha(claim.refAck,claim.deviceId);
             personagensBloqueados.add(characterId);
             continue;
@@ -3498,12 +3573,15 @@
 
           const estrutural=await sincronizarFicha(ficha.name,{motivo:"xp-campanha-ledger"}).catch(erro=>({ok:false,erro}));
           if(estrutural?.conflict||estrutural?.queued||estrutural?.ok===false){
-            /* O XP já está no realtime; o snapshot/marker ficará pendente para o
-               sincronizador normal. Não repetimos o delta porque targetXp está no ACK. */
+            /* O campo XP já está no outbox/realtime. O snapshot estrutural e o
+               marker de idempotência podem convergir depois sem repetir o delta. */
             marcarFichaPendente(ficha.name,{motivo:"xp-campanha-ledger",modo:"imediato"});
           }
 
           const depois=parseXpAtual(dados.xp).current;
+          await registrarRecebimentoXpCampanha(item,ficha,{
+            xpAfter:depois,syncStatus:rt?.delivered===true?"synced":"queued"
+          });
           await api.set(claim.refAck,{
             status:"done",deviceId:claim.deviceId,completedAt:agora(),
             baseXp:alvo.baseXp,targetXp:alvo.targetXp,xpMax:alvo.xpMax
@@ -4827,6 +4905,7 @@
     estadoOnline.unsubscribeMembrosCampanha?.();estadoOnline.unsubscribeMembrosCampanha=null;
     estadoOnline.unsubscribeNpcsCampanha?.();estadoOnline.unsubscribeNpcsCampanha=null;
     estadoOnline.unsubscribeXpLedgerCampanha?.();estadoOnline.unsubscribeXpLedgerCampanha=null;
+    estadoOnline.unsubscribeXpReceiptsCampanha?.();estadoOnline.unsubscribeXpReceiptsCampanha=null;
     estadoOnline.unsubscribeXpInbox?.();estadoOnline.unsubscribeXpInbox=null;
     estadoOnline.unsubscribeFichas?.();estadoOnline.unsubscribeFichas=null;
     estadoOnline.syncTimers.forEach(timer=>clearTimeout(timer));
@@ -4835,7 +4914,7 @@
     estadoOnline.dirtySheets.clear();
     estadoOnline.cloudQueue=Promise.resolve();
     limparSessaoLocal();
-    estadoOnline.campanhas=[];estadoOnline.membrosCampanha=[];estadoOnline.membrosCampanhaId=null;estadoOnline.npcsCampanha=[];estadoOnline.npcsCampanhaId=null;estadoOnline.xpLedgerCampanha=[];estadoOnline.xpLedgerCampanhaId=null;estadoOnline.xpInbox={};estadoOnline.fichasNuvem=[];
+    estadoOnline.campanhas=[];estadoOnline.membrosCampanha=[];estadoOnline.membrosCampanhaId=null;estadoOnline.npcsCampanha=[];estadoOnline.npcsCampanhaId=null;estadoOnline.xpLedgerCampanha=[];estadoOnline.xpLedgerCampanhaId=null;estadoOnline.xpReceiptsCampanha={};estadoOnline.xpReceiptsCampanhaId=null;estadoOnline.xpInbox={};estadoOnline.fichasNuvem=[];
   }
 
   function linkDaSala(code){

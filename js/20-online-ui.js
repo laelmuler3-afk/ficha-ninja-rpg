@@ -676,6 +676,8 @@
     const npcs=(npcsCarregados?st.npcsCampanha:[]).filter(npc=>npc?.status!=="inactive");
     const xpCarregado=st.xpLedgerCampanhaId===campanha.id;
     const historicoXp=xpCarregado?(st.xpLedgerCampanha||[]):[];
+    const recibosXp=st.xpReceiptsCampanhaId===campanha.id?(st.xpReceiptsCampanha||{}):{};
+    const xpConfirmados=historicoXp.filter(item=>recibosXp?.[item.id]?.status==="received").length;
     const sessoes=Object.entries(campanha.rooms||{}).map(([id,sala])=>({id,...(sala||{})})).sort((a,b)=>num(b.createdAt)-num(a.createdAt));
     const abertas=sessoes.filter(s=>s.status==="open");
     const encerradas=sessoes.filter(s=>s.status!=="open");
@@ -811,10 +813,14 @@
             <p class="onlineAjudaCompacta">O lançamento fica no histórico e será entregue quando a ficha do jogador voltar a sincronizar. Level Up continua usando o fluxo normal da ficha.</p>
           </form>
           <div class="onlineCampanhaXpHistorico">
-            <div class="onlineCampanhaXpHistoricoTopo"><strong>Histórico</strong><small>${xpCarregado?`${historicoXp.length} lançamento(s) recente(s)`:"Carregando..."}</small></div>
+            <div class="onlineCampanhaXpHistoricoTopo"><strong>Histórico</strong><small>${xpCarregado?`${historicoXp.length} lançamento(s) • ${xpConfirmados} recebido(s)`:"Carregando..."}</small></div>
             ${!xpCarregado?`<p class="onlineVazio">Carregando histórico de XP...</p>`:historicoXp.length?`<div class="onlineCampanhaXpLista">${historicoXp.slice(0,30).map(item=>{
               const valor=num(item.amount),tipo=item.type==="remove"?"Remoção":item.type==="correction"?"Correção":"Recompensa";
-              return `<article class="onlineCampanhaXpItem"><div><strong>${esc(item.displayName||"Personagem")}</strong><span>${esc(tipo)}${item.reason?` • ${esc(item.reason)}`:""}</span><small>${esc(formatarDataSessao(item.createdAt))}${item.sessionId?" • sessão":""}</small></div><b class="${valor<0?"negativo":"positivo"}">${valor>0?"+":""}${valor} XP</b></article>`;
+              const recibo=recibosXp?.[item.id];
+              const entrega=recibo?.status==="received"
+                ? `✓ Recebido${recibo.receivedAt?` • ${esc(formatarDataSessao(recibo.receivedAt))}`:""}`
+                : "⏳ Aguardando confirmação";
+              return `<article class="onlineCampanhaXpItem"><div><strong>${esc(item.displayName||"Personagem")}</strong><span>${esc(tipo)}${item.reason?` • ${esc(item.reason)}`:""}</span><small>${esc(formatarDataSessao(item.createdAt))}${item.sessionId?" • sessão":""} • ${entrega}</small></div><b class="${valor<0?"negativo":"positivo"}">${valor>0?"+":""}${valor} XP</b></article>`;
             }).join("")}</div>`:`<p class="onlineVazio">Nenhum XP registrado nesta campanha.</p>`}
           </div>
         </div>

@@ -1607,8 +1607,10 @@
         const pendentes=[...pendentesCampos,...pendentesColecoes];
         pendentes.sort((a,b)=>compararRegistros(a,b));
         for(const op of pendentes){
-          try{resultados.push(op?.kind==="collection"?await enviarOperacaoColecao(op):await enviarOperacao(op));}
-          catch(erro){resultados.push({ok:false,error:erro,op});}
+          try{
+            const resposta=op?.kind==="collection"?await enviarOperacaoColecao(op):await enviarOperacao(op);
+            resultados.push({...resposta,op});
+          }catch(erro){resultados.push({ok:false,error:erro,op});}
         }
       }finally{
         estadoRT.processando=false;
@@ -1639,10 +1641,21 @@
         editAt,deviceId:deviceId(),opId:idAleatorio("field")
       });
       adicionarOutbox(op,uid);
-      if(root.navigator?.onLine===false)return {queued:true,op};
+      /* A operação passa a ser considerada aceita assim que entra no outbox
+         persistente. Isso é diferente de "toda a fila da conta sincronizou".
+         Antes, um erro em qualquer outro campo fazia consumidores como o XP
+         concluírem que a operação de XP havia falhado, mesmo quando ela já
+         estava gravada/na fila corretamente. */
+      if(root.navigator?.onLine===false)return {accepted:true,queued:true,op};
       if(estadoRT.bootLiberado)await ativarFichaAtual().catch(()=>{});
       const resultado=await processarOutbox();
-      return {...resultado,op};
+      const proprio=(resultado?.resultados||[]).find(item=>texto(item?.op?.opId)===texto(op.opId))||null;
+      const entregue=Boolean(proprio?.ok===true);
+      const aindaNaFila=Boolean(lerOutbox(uid)?.[chaveOperacao(op.sheetId,op.name)]);
+      return {
+        ...resultado,op,ownResult:proprio,accepted:true,delivered:entregue,
+        queued:!entregue&&aindaNaFila
+      };
     }
 
     async function sincronizarItemColecaoConfirmado(localSheetName,colecao,itemId,valor,meta={}){

@@ -119,11 +119,33 @@
     }
   }
 
-  function fecharShinobiDrawer(){
+  let drawerHistoryToken="";
+  let drawerHistorySeq=0;
+
+  function empilharHistoricoDrawer(){
+    if(!window.history?.pushState)return;
+    if(drawerHistoryToken&&history.state?.shinobiDrawerToken===drawerHistoryToken)return;
+    const token=`drawer_${Date.now().toString(36)}_${(++drawerHistorySeq).toString(36)}`;
+    try{
+      history.pushState({...((history.state&&typeof history.state==="object")?history.state:{}),shinobiDrawerToken:token},"",location.href);
+      drawerHistoryToken=token;
+    }catch(_erro){drawerHistoryToken="";}
+  }
+
+  function consumirHistoricoDrawer(){
+    const token=drawerHistoryToken;
+    drawerHistoryToken="";
+    if(!token||history.state?.shinobiDrawerToken!==token)return false;
+    try{history.back();return true;}catch(_erro){return false;}
+  }
+
+  function fecharShinobiDrawer(opcoes={}){
     const drawer=document.getElementById("shinobiNavDrawer");
     document.body.classList.remove("shinobiDrawerAberto");
     drawer?.setAttribute("aria-hidden","true");
     document.querySelector(".topoMenuBtn")?.setAttribute("aria-expanded","false");
+    if(opcoes?.viaHistorico===true)drawerHistoryToken="";
+    else consumirHistoricoDrawer();
   }
   window.fecharShinobiDrawer=fecharShinobiDrawer;
 
@@ -432,6 +454,13 @@
     if(!window.__shinobiDrawerTeclado){
       window.__shinobiDrawerTeclado=true;
       document.addEventListener("keydown",event=>{if(event.key==="Escape")fecharShinobiDrawer();});
+      /* Android/PWA transforma o gesto/botão Voltar em navegação do histórico.
+         Ao abrir o drawer criamos uma entrada efêmera; voltar consome essa
+         entrada e fecha o menu, em vez de exigir o X ou sair do aplicativo. */
+      window.addEventListener("popstate",()=>{
+        if(document.body.classList.contains("shinobiDrawerAberto"))fecharShinobiDrawer({viaHistorico:true});
+        else drawerHistoryToken="";
+      });
     }
     if(window.ShinobiOnline?.on&&!drawer.dataset.onlineBound){
       drawer.dataset.onlineBound="1";
@@ -444,11 +473,13 @@
 
   window.toggleShinobiDrawer=function(){
     instalarDrawer();
-    const aberto=!document.body.classList.contains("shinobiDrawerAberto");
-    document.body.classList.toggle("shinobiDrawerAberto",aberto);
-    document.getElementById("shinobiNavDrawer")?.setAttribute("aria-hidden",aberto?"false":"true");
-    document.querySelector(".topoMenuBtn")?.setAttribute("aria-expanded",aberto?"true":"false");
-    if(aberto)atualizarDrawerContexto();
+    const deveAbrir=!document.body.classList.contains("shinobiDrawerAberto");
+    if(!deveAbrir){fecharShinobiDrawer();return;}
+    document.body.classList.add("shinobiDrawerAberto");
+    document.getElementById("shinobiNavDrawer")?.setAttribute("aria-hidden","false");
+    document.querySelector(".topoMenuBtn")?.setAttribute("aria-expanded","true");
+    atualizarDrawerContexto();
+    empilharHistoricoDrawer();
   };
 
   function instalarMelhorias(){
