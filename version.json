@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.150",
-  "name": "Entrega confiável de XP e gesto Voltar",
-  "notes": "Corrige a entrega de XP permanente por identidade/sheetId exatos, separa o sucesso da operação de XP de erros em outros campos da fila realtime, adiciona confirmação de recebimento visível ao mestre e permite fechar o menu lateral com o gesto/botão Voltar do celular.",
+  "version": "2.5.8.151",
+  "name": "Menu de conta e configurações organizado",
+  "notes": "Reorganiza o menu lateral: Minha conta passa a concentrar login, conta conectada e sincronização; Sobre o app, Ajuda e Feedback passam para dentro de Configurações. Mantém a gestão de fichas pela foto de perfil e o gesto Voltar do celular.",
   "date": "2026-10-01"
 }
