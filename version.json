@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.148",
-  "name": "Gestão de jogadores da campanha e correção de XP",
-  "notes": "Inclui a correção v147 de identidade na entrega de XP e adiciona remoção/reativação segura de campaignMembers. Membros removidos deixam de receber XP novo, XP pendente fica pausado e histórico/fichas/sessões permanecem preservados.",
+  "version": "2.5.8.149",
+  "name": "Gerenciamento de fichas pela foto do perfil",
+  "notes": "A foto de perfil no menu lateral passa a abrir o gerenciamento completo de fichas: troca de personagem, nova ficha, duplicação, renomeação, exclusão, limpeza de cópias e dados/backup. Configurações do aplicativo permanecem separadas.",
   "date": "2026-09-30"
 }

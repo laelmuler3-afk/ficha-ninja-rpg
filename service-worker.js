@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.148 — gestão de membros da campanha + correção v147 de XP.
+/* Ficha Ninja RPG 2.5.8.149 — atalho de fichas pela foto do perfil.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.148";
+const APP_VERSION = "2.5.8.149";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
