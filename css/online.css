@@ -514,3 +514,32 @@ body.onlineAberto{overflow:hidden}
 .onlineCampanhaXpItem>div{min-width:0;display:grid;gap:2px}.onlineCampanhaXpItem strong{color:#eee1ce;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.onlineCampanhaXpItem span{color:#928675;font-size:8.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.onlineCampanhaXpItem small{color:#665f57;font-size:8px}
 .onlineCampanhaXpItem>b{flex:0 0 auto;font-size:11px}.onlineCampanhaXpItem>b.positivo{color:#72d394}.onlineCampanhaXpItem>b.negativo{color:#dd857e}
 @media(max-width:760px){.onlineCampanhaXpGrid{grid-template-columns:1fr}.onlineCampanhaXpLista{max-height:260px}}
+
+/* ---------- v2.5.8.152 · NAVEGAÇÃO DE VOLTA DOS PAINÉIS ---------- */
+.shinobiOnlineHeaderNavegacao{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.shinobiOnlineHeaderNavegacao>div{min-width:0}
+.shinobiOnlineVoltar{
+  flex:0 0 auto;
+  min-height:38px;
+  padding:7px 10px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid rgba(24,92,108,.42);
+  border-radius:10px;
+  background:#020608;
+  color:#9ed1dd;
+  cursor:pointer;
+  font:800 11px/1 system-ui;
+}
+.shinobiOnlineVoltar span{font-size:18px;line-height:1;color:#e6a36b}
+.shinobiOnlineVoltar:hover,
+.shinobiOnlineVoltar:focus-visible{outline:none;border-color:rgba(121,189,208,.68);background:#061014;color:#e8f5f8}
+.shinobiOnlineVoltar:active{transform:translateY(1px)}
+@media(max-width:430px){
+  .shinobiOnlineHeader{padding-inline:12px;gap:8px}
+  .shinobiOnlineHeaderNavegacao{gap:8px}
+  .shinobiOnlineVoltar{padding:7px 8px}
+  .shinobiOnlineVoltar b{display:none}
+  .shinobiOnlineHeader h2{font-size:20px}
+}

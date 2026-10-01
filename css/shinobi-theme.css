@@ -1636,7 +1636,7 @@ body.onlineAberto .shinobiNavDrawer{
   .shinobiDrawerFichasConteudo{padding:11px 10px 9px}
 }
 
-/* ---------- v2.5.8.151 · MENU LATERAL MAIS ORGANIZADO ---------- */
+/* ---------- v2.5.8.152 · MENU LATERAL MAIS ORGANIZADO ---------- */
 .shinobiDrawerContaConteudo .shinobiDrawerSyncSubitem .shinobiDrawerItemIcon{color:#73d6e9}
 .shinobiDrawerSyncSubitem .shinobiDrawerItemTexto small{display:flex;align-items:center;gap:7px}
 .shinobiDrawerSyncSubitem[data-sync-state="ok"] .shinobiDrawerStatusDot{background:#2ee283;box-shadow:0 0 10px rgba(46,226,131,.55)}
@@ -1645,3 +1645,27 @@ body.onlineAberto .shinobiNavDrawer{
 .shinobiDrawerSyncSubitem[data-sync-state="local"] .shinobiDrawerStatusDot{background:#5b7379;box-shadow:0 0 8px rgba(91,115,121,.34)}
 .shinobiDrawerSobreTitulo{margin-top:17px!important}
 .shinobiDrawerSyncSubitem.onlineErro .shinobiDrawerStatusDot{background:#ef6666!important;box-shadow:0 0 10px rgba(239,102,102,.45)!important}
+
+/* ---------- v2.5.8.152 · VOLTAR NAS CAIXAS DO MENU ---------- */
+.shinobiDrawerSubvoltar{
+  width:100%;
+  min-height:40px;
+  margin:0 0 9px;
+  padding:7px 4px 9px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:0;
+  border-bottom:1px solid rgba(43,125,145,.28);
+  background:transparent;
+  color:#8fc7d5;
+  text-align:left;
+  cursor:pointer;
+  font:700 11px/1.2 system-ui;
+  letter-spacing:.35px;
+}
+.shinobiDrawerSubvoltar span{font-size:19px;line-height:1;color:#e6a36b}
+.shinobiDrawerSubvoltar:hover,
+.shinobiDrawerSubvoltar:focus-visible{background:rgba(19,83,98,.12);outline:none;color:#dceff3}
+.shinobiDrawerSubvoltar:active{transform:translateY(1px)}
+.shinobiDrawerFichasConteudo>.shinobiDrawerSubvoltar{margin-bottom:10px}
