@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.151 — menu de conta e configurações organizado.
+/* Ficha Ninja RPG 2.5.8.152 — navegação de volta consistente no menu e painéis.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.151";
+const APP_VERSION = "2.5.8.152";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;

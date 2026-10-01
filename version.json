@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.151",
-  "name": "Menu de conta e configurações organizado",
-  "notes": "Reorganiza o menu lateral: Minha conta passa a concentrar login, conta conectada e sincronização; Sobre o app, Ajuda e Feedback passam para dentro de Configurações. Mantém a gestão de fichas pela foto de perfil e o gesto Voltar do celular.",
+  "version": "2.5.8.152",
+  "name": "Voltar consistente no menu e painéis",
+  "notes": "Adiciona botão Voltar às caixas retráteis do menu lateral e integra o gesto/botão Voltar do Android/PWA: primeiro fecha a caixa atual, depois o menu. Painéis abertos a partir do menu agora voltam para o menu em vez de saltar direto para a ficha.",
   "date": "2026-10-01"
 }
