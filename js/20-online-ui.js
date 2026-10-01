@@ -13,6 +13,9 @@
   let ignorarCliquePainel=false;
   let campanhaMenuAberto=null;
   let destinoAtual=null;
+  let onlineHistoryToken="";
+  let onlineHistorySeq=0;
+  let origemOnline="";
   let ultimaVerificacaoSync=0;
   let backupsHistoricos=[];
   let backupsCarregando=false;
@@ -366,7 +369,10 @@
     root.innerHTML=`
       <div class="shinobiOnlineShell" role="dialog" aria-modal="true" aria-label="Mesa online">
         <header class="shinobiOnlineHeader">
-          <div><span class="shinobiOnlineEyebrow">FICHA NINJA</span><h2>Mesa online</h2></div>
+          <div class="shinobiOnlineHeaderNavegacao">
+            <button type="button" class="shinobiOnlineVoltar" data-action="back-panel" aria-label="Voltar para a tela anterior"><span aria-hidden="true">←</span><b>Voltar</b></button>
+            <div><span class="shinobiOnlineEyebrow">FICHA NINJA</span><h2>Mesa online</h2></div>
+          </div>
           <button type="button" class="shinobiOnlineFechar" data-action="close" aria-label="Fechar">×</button>
         </header>
         <div id="shinobiOnlineConteudo" class="shinobiOnlineConteudo"></div>
@@ -384,6 +390,15 @@
     root.addEventListener("click",tratarClique);
     root.addEventListener("submit",tratarSubmit);
     root.addEventListener("change",tratarChange);
+    if(!window.__shinobiOnlineHistorico){
+      window.__shinobiOnlineHistorico=true;
+      window.addEventListener("popstate",()=>{
+        if(!aberto)return;
+        if(onlineHistoryToken&&history.state?.shinobiOnlineToken===onlineHistoryToken)return;
+        const voltarDrawer=origemOnline==="drawer"&&Boolean(history.state?.shinobiDrawerToken);
+        fecharDireto({viaHistorico:true,reabrirDrawer:voltarDrawer});
+      });
+    }
     return root;
   }
 
@@ -448,8 +463,43 @@
     },80);
   }
 
-  function abrir(destino){
+  function empilharHistoricoOnline(){
+    if(!window.history?.pushState)return;
+    const token=`online_${Date.now().toString(36)}_${(++onlineHistorySeq).toString(36)}`;
+    try{
+      const estado={...((history.state&&typeof history.state==="object")?history.state:{})};
+      delete estado.shinobiDrawerToken;
+      history.pushState({...estado,shinobiOnlineToken:token,shinobiOnlineDestino:destinoAtual||""},"",location.href);
+      onlineHistoryToken=token;
+    }catch(_erro){onlineHistoryToken="";}
+  }
+
+  function fecharDireto({viaHistorico=false,reabrirDrawer=false}={}){
+    aberto=false;
+    destinoAtual=null;
+    pararScanner();
+    if(root){root.hidden=true;root.setAttribute("aria-hidden","true");}
+    document.body.classList.remove("onlineAberto");
+    if(viaHistorico)onlineHistoryToken="";
+    if(reabrirDrawer&&origemOnline==="drawer"){
+      requestAnimationFrame(()=>window.reabrirShinobiDrawerDoHistorico?.());
+    }
+    if(!reabrirDrawer)origemOnline="";
+  }
+
+  function voltarPainelOnline(){
+    if(!aberto)return false;
+    if(onlineHistoryToken&&history.state?.shinobiOnlineToken===onlineHistoryToken){
+      try{history.back();return true;}catch(_erro){}
+    }
+    const voltarDrawer=origemOnline==="drawer";
+    fecharDireto({viaHistorico:true,reabrirDrawer:voltarDrawer});
+    return true;
+  }
+
+  function abrir(destino,opcoes={}){
     destinoAtual=normalizarDestino(destino);
+    origemOnline=opcoes?.origem==="drawer"?"drawer":"app";
     try{
       criarRoot();
       aberto=true;
@@ -469,6 +519,7 @@
       }
 
       verificarSincronizacaoAoAbrir();
+      empilharHistoricoOnline();
 
       // Reafirma a visibilidade no frame seguinte. Isso protege PWAs/WebViews
       // que recalculam a camada ao mesmo tempo em que o drawer lateral fecha.
@@ -488,7 +539,7 @@
       return false;
     }
   }
-  function fechar(){aberto=false;destinoAtual=null;pararScanner();if(root){root.hidden=true;root.setAttribute("aria-hidden","true");}document.body.classList.remove("onlineAberto");}
+  function fechar(){return voltarPainelOnline();}
 
   function atualizarIndicadores(){
     const st=obterEstado();
@@ -1503,7 +1554,8 @@
       return;
     }
     const acao=el.dataset.action;
-    if(acao==="close")return fechar();
+    if(acao==="back-panel")return voltarPainelOnline();
+    if(acao==="close")return voltarPainelOnline();
     if(acao==="stop-scan")return pararScanner();
     if(acao==="retry-online")return executar(()=>window.ShinobiOnline.iniciar());
     if(acao==="login-google")return executar(()=>window.ShinobiOnline.entrarGoogle());
@@ -2015,7 +2067,7 @@
 
   // Expõe a API ANTES da inicialização. Assim o menu lateral sempre possui
   // um destino válido mesmo se algum recurso secundário do Online falhar.
-  window.ShinobiOnlineUI={abrir,fechar,renderizar,renderPainelFlutuante,iniciar};
+  window.ShinobiOnlineUI={abrir,fechar,voltar:voltarPainelOnline,renderizar,renderPainelFlutuante,iniciar};
   window.dispatchEvent(new CustomEvent("shinobi:online-ui-ready"));
 
   function iniciarDepoisDaRenderizacao(){

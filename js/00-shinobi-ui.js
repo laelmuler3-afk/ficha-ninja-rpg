@@ -139,15 +139,40 @@
     try{history.back();return true;}catch(_erro){return false;}
   }
 
+  function fecharSubpainelDrawer(){
+    const drawer=document.getElementById("shinobiNavDrawer");
+    if(!drawer)return false;
+    const fichas=drawer.querySelector("[data-drawer-sheets]");
+    const conta=drawer.querySelector("[data-drawer-account]");
+    const config=drawer.querySelector("[data-drawer-config]");
+    if(fichas&&!fichas.hidden){alternarFichasDrawer(false);return true;}
+    if(conta&&!conta.hidden){alternarContaDrawer(false);return true;}
+    if(config&&!config.hidden){alternarConfiguracoesDrawer(false);return true;}
+    return false;
+  }
+
+  function mostrarShinobiDrawer({empilhar=true}={}){
+    instalarDrawer();
+    document.body.classList.add("shinobiDrawerAberto");
+    document.getElementById("shinobiNavDrawer")?.setAttribute("aria-hidden","false");
+    document.querySelector(".topoMenuBtn")?.setAttribute("aria-expanded","true");
+    atualizarDrawerContexto();
+    if(empilhar)empilharHistoricoDrawer();
+    else if(history.state?.shinobiDrawerToken)drawerHistoryToken=String(history.state.shinobiDrawerToken);
+  }
+
   function fecharShinobiDrawer(opcoes={}){
     const drawer=document.getElementById("shinobiNavDrawer");
     document.body.classList.remove("shinobiDrawerAberto");
     drawer?.setAttribute("aria-hidden","true");
     document.querySelector(".topoMenuBtn")?.setAttribute("aria-expanded","false");
+    if(opcoes?.preservarHistorico===true)return;
     if(opcoes?.viaHistorico===true)drawerHistoryToken="";
     else consumirHistoricoDrawer();
   }
   window.fecharShinobiDrawer=fecharShinobiDrawer;
+  window.reabrirShinobiDrawerDoHistorico=()=>mostrarShinobiDrawer({empilhar:false});
+  window.voltarShinobiDrawer=()=>{if(!fecharSubpainelDrawer())fecharShinobiDrawer();};
 
   function onlineUIDisponivel(){
     return typeof window.ShinobiOnlineUI?.abrir==="function";
@@ -193,12 +218,13 @@
         return false;
       }
 
-      const aberto=ui.abrir(destino);
+      const aberto=ui.abrir(destino,{origem:"drawer"});
       if(aberto===false)throw new Error("O painel online recusou a abertura.");
 
-      // O overlay Online possui z-index próprio e já está visível neste ponto.
-      // Fechar no frame seguinte evita o efeito visual de "voltar para a Home".
-      requestAnimationFrame(()=>fecharShinobiDrawer());
+      // O overlay Online cria sua própria entrada no histórico. Mantemos a
+      // entrada do drawer logo abaixo para que Voltar retorne ao menu, em vez
+      // de saltar direto para a ficha.
+      requestAnimationFrame(()=>fecharShinobiDrawer({preservarHistorico:true}));
       return true;
     }catch(erro){
       console.error("Falha ao abrir destino do menu lateral:",destino,erro);
@@ -332,6 +358,9 @@
         </section>
 
         <div class="shinobiDrawerFichasConteudo" data-drawer-sheets hidden>
+          <button type="button" class="shinobiDrawerSubvoltar" data-drawer-action="back-menu" aria-label="Voltar ao menu principal">
+            <span aria-hidden="true">←</span><b>Voltar</b>
+          </button>
           <div class="shinobiDrawerFichasCabecalho">
             <strong>FICHAS</strong>
             <small>Troque, crie e gerencie seus personagens</small>
@@ -347,6 +376,9 @@
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
           <div class="shinobiDrawerConfigConteudo shinobiDrawerContaConteudo" data-drawer-account hidden>
+            <button type="button" class="shinobiDrawerSubvoltar" data-drawer-action="back-menu" aria-label="Voltar ao menu principal">
+              <span aria-hidden="true">←</span><b>Voltar</b>
+            </button>
             <button type="button" class="shinobiDrawerSubitem" data-drawer-action="account-login">
               <span class="shinobiDrawerItemIcon">${iconHTML("profile")}</span>
               <span class="shinobiDrawerItemTexto"><b>Login e autenticação</b><small>Entrar, sair ou usar sessão temporária</small></span>
@@ -392,6 +424,9 @@
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
           <div class="shinobiDrawerConfigConteudo" data-drawer-config hidden>
+            <button type="button" class="shinobiDrawerSubvoltar" data-drawer-action="back-menu" aria-label="Voltar ao menu principal">
+              <span aria-hidden="true">←</span><b>Voltar</b>
+            </button>
             <div class="shinobiDrawerConfigLegado" data-drawer-config-legacy></div>
             <p class="shinobiDrawerSubtitulo shinobiPersonalizacaoTitulo">PERSONALIZAÇÃO</p>
             <button type="button" class="shinobiDrawerSubitem" data-drawer-action="themes">
@@ -459,6 +494,7 @@
       event.stopPropagation();
 
       const acao=botao.dataset.drawerAction;
+      if(acao==="back-menu"){fecharSubpainelDrawer();return;}
       if(acao==="sheets"){alternarFichasDrawer();return;}
       if(acao==="account"){alternarContaDrawer();return;}
       if(acao==="account-login"){void abrirPainelOnline("login",botao);return;}
@@ -482,8 +518,24 @@
          Ao abrir o drawer criamos uma entrada efêmera; voltar consome essa
          entrada e fecha o menu, em vez de exigir o X ou sair do aplicativo. */
       window.addEventListener("popstate",()=>{
-        if(document.body.classList.contains("shinobiDrawerAberto"))fecharShinobiDrawer({viaHistorico:true});
-        else drawerHistoryToken="";
+        if(document.body.classList.contains("shinobiDrawerAberto")){
+          // Se uma caixa retrátil está aberta, o primeiro Voltar fecha apenas
+          // essa caixa e mantém o menu. O próximo Voltar fecha o drawer.
+          if(fecharSubpainelDrawer()){
+            empilharHistoricoDrawer();
+            return;
+          }
+          fecharShinobiDrawer({viaHistorico:true});
+          return;
+        }
+        // Quando um painel Online foi aberto pelo drawer, a entrada do menu
+        // continua logo abaixo no histórico. Não a descarte: o painel Online
+        // irá reabrir o drawer ao voltar.
+        if(history.state?.shinobiDrawerToken){
+          drawerHistoryToken=String(history.state.shinobiDrawerToken);
+          return;
+        }
+        drawerHistoryToken="";
       });
     }
     if(window.ShinobiOnline?.on&&!drawer.dataset.onlineBound){
@@ -499,11 +551,7 @@
     instalarDrawer();
     const deveAbrir=!document.body.classList.contains("shinobiDrawerAberto");
     if(!deveAbrir){fecharShinobiDrawer();return;}
-    document.body.classList.add("shinobiDrawerAberto");
-    document.getElementById("shinobiNavDrawer")?.setAttribute("aria-hidden","false");
-    document.querySelector(".topoMenuBtn")?.setAttribute("aria-expanded","true");
-    atualizarDrawerContexto();
-    empilharHistoricoDrawer();
+    mostrarShinobiDrawer({empilhar:true});
   };
 
   function instalarMelhorias(){
