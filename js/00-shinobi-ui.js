@@ -191,6 +191,15 @@
   }
 
 
+  function migrarGerenciamentoFichas(drawer=document.getElementById("shinobiNavDrawer")){
+    const destino=drawer?.querySelector("[data-drawer-sheets-legacy]");
+    const acoes=document.getElementById("shinobiSheetActions");
+    if(!destino||!acoes)return;
+    if(acoes.parentElement!==destino)destino.appendChild(acoes);
+    acoes.classList.add("shinobiFichasMigrado");
+    acoes.removeAttribute("hidden");
+  }
+
   function migrarConfiguracoesLegadas(drawer=document.getElementById("shinobiNavDrawer")){
     const destino=drawer?.querySelector("[data-drawer-config-legacy]");
     const menu=document.getElementById("configMenu");
@@ -201,6 +210,24 @@
     const host=document.getElementById("shinobiLegacyConfigHost");
     if(host)host.remove();
   }
+
+  function alternarFichasDrawer(forcar){
+    const drawer=document.getElementById("shinobiNavDrawer");
+    if(!drawer)return;
+    migrarGerenciamentoFichas(drawer);
+    const botao=drawer.querySelector('[data-drawer-action="sheets"]');
+    const conteudo=drawer.querySelector("[data-drawer-sheets]");
+    if(!botao||!conteudo)return;
+    const abrir=typeof forcar==="boolean"?forcar:conteudo.hidden;
+    conteudo.hidden=!abrir;
+    botao.classList.toggle("aberto",abrir);
+    botao.setAttribute("aria-expanded",abrir?"true":"false");
+    if(abrir){
+      alternarConfiguracoesDrawer(false);
+      requestAnimationFrame(()=>conteudo.scrollIntoView({behavior:"smooth",block:"nearest"}));
+    }
+  }
+  window.abrirGerenciadorFichas=()=>alternarFichasDrawer(true);
 
   function alternarConfiguracoesDrawer(forcar){
     const drawer=document.getElementById("shinobiNavDrawer");
@@ -214,6 +241,11 @@
     botao.classList.toggle("aberto",abrir);
     botao.setAttribute("aria-expanded",abrir?"true":"false");
     if(abrir){
+      const fichas=drawer.querySelector("[data-drawer-sheets]");
+      const botaoFichas=drawer.querySelector('[data-drawer-action="sheets"]');
+      if(fichas)fichas.hidden=true;
+      botaoFichas?.classList.remove("aberto");
+      botaoFichas?.setAttribute("aria-expanded","false");
       requestAnimationFrame(()=>{
         botao.scrollIntoView({behavior:"smooth",block:"nearest"});
       });
@@ -227,7 +259,7 @@
 
   function instalarDrawer(){
     const existente=document.getElementById("shinobiNavDrawer");
-    if(existente){migrarConfiguracoesLegadas(existente);return existente;}
+    if(existente){migrarGerenciamentoFichas(existente);migrarConfiguracoesLegadas(existente);return existente;}
     const drawer=document.createElement("aside");
     drawer.id="shinobiNavDrawer";
     drawer.className="shinobiNavDrawer";
@@ -245,16 +277,25 @@
         </div>
 
         <section class="shinobiDrawerPerfil" aria-label="Personagem atual">
-          <div class="shinobiDrawerAvatar">
+          <button type="button" class="shinobiDrawerAvatar shinobiDrawerAvatarBtn" data-drawer-action="sheets" aria-label="Abrir gerenciamento de fichas" aria-expanded="false" title="Gerenciar fichas">
             <img data-drawer-profile-image alt="Avatar do personagem" hidden>
             <span data-drawer-profile-fallback>${iconHTML("profile")}</span>
-          </div>
+          </button>
           <div class="shinobiDrawerPerfilTexto">
             <strong data-drawer-profile-name>Ninja</strong>
             <span data-drawer-profile-meta>Nível 1 · Shinobi</span>
             <small><span class="shinobiIcon icon-profile" aria-hidden="true"></span><b data-drawer-profile-role>Jogador</b></small>
+            <em class="shinobiDrawerPerfilDica">Toque na foto para gerenciar fichas</em>
           </div>
         </section>
+
+        <div class="shinobiDrawerFichasConteudo" data-drawer-sheets hidden>
+          <div class="shinobiDrawerFichasCabecalho">
+            <strong>FICHAS</strong>
+            <small>Troque, crie e gerencie seus personagens</small>
+          </div>
+          <div class="shinobiDrawerFichasLegado" data-drawer-sheets-legacy></div>
+        </div>
 
         <button type="button" class="shinobiDrawerSyncCard" data-drawer-action="sync" data-drawer-sync>
           <span class="shinobiDrawerItemIcon">${iconHTML("cloud")}</span>
@@ -343,6 +384,7 @@
         </footer>
       </nav>`;
     document.body.appendChild(drawer);
+    migrarGerenciamentoFichas(drawer);
     migrarConfiguracoesLegadas(drawer);
     drawer.querySelector('[data-drawer-action="settings"]')?.classList.toggle("temAtualizacao",document.documentElement.classList.contains("shinobiTemAtualizacao"));
 
@@ -372,6 +414,7 @@
       event.stopPropagation();
 
       const acao=botao.dataset.drawerAction;
+      if(acao==="sheets"){alternarFichasDrawer();return;}
       if(acao==="sync"){void abrirPainelOnline("sincronizacao",botao);return;}
       if(acao==="account"){void abrirPainelOnline("login",botao);return;}
       if(acao==="login"){void abrirPainelOnline("conta-conectada",botao);return;}
