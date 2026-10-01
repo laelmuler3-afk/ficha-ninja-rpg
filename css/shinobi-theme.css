@@ -1635,3 +1635,13 @@ body.onlineAberto .shinobiNavDrawer{
   .shinobiDrawerPerfilDica{font-size:9px}
   .shinobiDrawerFichasConteudo{padding:11px 10px 9px}
 }
+
+/* ---------- v2.5.8.151 · MENU LATERAL MAIS ORGANIZADO ---------- */
+.shinobiDrawerContaConteudo .shinobiDrawerSyncSubitem .shinobiDrawerItemIcon{color:#73d6e9}
+.shinobiDrawerSyncSubitem .shinobiDrawerItemTexto small{display:flex;align-items:center;gap:7px}
+.shinobiDrawerSyncSubitem[data-sync-state="ok"] .shinobiDrawerStatusDot{background:#2ee283;box-shadow:0 0 10px rgba(46,226,131,.55)}
+.shinobiDrawerSyncSubitem[data-sync-state="pending"] .shinobiDrawerStatusDot{background:#f0a34c;box-shadow:0 0 10px rgba(240,163,76,.40)}
+.shinobiDrawerSyncSubitem[data-sync-state="offline"] .shinobiDrawerStatusDot{background:#ef6666;box-shadow:none}
+.shinobiDrawerSyncSubitem[data-sync-state="local"] .shinobiDrawerStatusDot{background:#5b7379;box-shadow:0 0 8px rgba(91,115,121,.34)}
+.shinobiDrawerSobreTitulo{margin-top:17px!important}
+.shinobiDrawerSyncSubitem.onlineErro .shinobiDrawerStatusDot{background:#ef6666!important;box-shadow:0 0 10px rgba(239,102,102,.45)!important}
