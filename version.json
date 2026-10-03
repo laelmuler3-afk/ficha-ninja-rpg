@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.152",
-  "name": "Voltar consistente no menu e painéis",
-  "notes": "Adiciona botão Voltar às caixas retráteis do menu lateral e integra o gesto/botão Voltar do Android/PWA: primeiro fecha a caixa atual, depois o menu. Painéis abertos a partir do menu agora voltam para o menu em vez de saltar direto para a ficha.",
-  "date": "2026-10-01"
+  "version": "2.5.8.153",
+  "name": "Atualizações dentro de Sobre o app",
+  "notes": "Move a seção de atualização e verificação de versão para dentro de Sobre o app, deixando Configurações focada nos ajustes gerais e personalização. Mantém o botão e o gesto Voltar entre Sobre o app e Configurações.",
+  "date": "2026-10-03"
 }
