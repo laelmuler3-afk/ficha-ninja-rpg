@@ -82,6 +82,17 @@ def verificar_referencias() -> None:
 
     sw = (ROOT / "service-worker.js").read_text(encoding="utf-8")
     for relativo in re.findall(r"`\./([^`?]+)\?v=\$\{APP_VERSION\}`", sw):
+        if relativo.startswith("${JS_ROOT}/"):
+            nome = relativo.split("/", 1)[1]
+            for pasta in ("js", "js-legacy"):
+                if not (ROOT / pasta / nome).exists():
+                    falhar(f"Recurso do APP_SHELL não existe: {pasta}/{nome}")
+            continue
+        if relativo == "${QR_LOCAL_PATH}":
+            for nome in ("vendor/qrcode-local.js", "vendor/qrcode-local-legacy.js"):
+                if not (ROOT / nome).exists():
+                    falhar(f"Recurso do APP_SHELL não existe: {nome}")
+            continue
         if not (ROOT / relativo).exists():
             falhar(f"Recurso do APP_SHELL não existe: {relativo}")
 
@@ -92,14 +103,84 @@ def verificar_versoes() -> None:
     versao_json = json.loads((ROOT / "version.json").read_text(encoding="utf-8"))["version"]
     html_match = re.search(r'data-app-version="([^"]+)"', html)
     sw_match = re.search(r'const APP_VERSION\s*=\s*"([^"]+)"', sw)
+    sw_legacy_path = ROOT / "service-worker-legacy.js"
+    sw_legacy = sw_legacy_path.read_text(encoding="utf-8") if sw_legacy_path.exists() else ""
+    sw_legacy_match = re.search(r'(?:const|var) APP_VERSION\s*=\s*"([^"]+)"', sw_legacy)
     versoes = {
         "index.html": html_match.group(1) if html_match else "",
         "service-worker.js": sw_match.group(1) if sw_match else "",
+        "service-worker-legacy.js": sw_legacy_match.group(1) if sw_legacy_match else "",
         "version.json": str(versao_json),
     }
     if len(set(versoes.values())) != 1 or not all(versoes.values()):
         falhar(f"Versões desalinhadas: {versoes}")
 
+
+
+def verificar_build_legado() -> None:
+    manifest_path = ROOT / "js-legacy" / "manifest.json"
+    if not manifest_path.exists():
+        falhar("Build legado ausente: js-legacy/manifest.json")
+        return
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as erro:  # noqa: BLE001
+        falhar(f"Manifesto do build legado inválido — {erro}")
+        return
+
+    versao = str(json.loads((ROOT / "version.json").read_text(encoding="utf-8")).get("version", ""))
+    if str(manifest.get("version", "")) != versao:
+        falhar(f"Build legado está em versão diferente: {manifest.get('version')} != {versao}")
+
+    fontes = manifest.get("sources", {}) if isinstance(manifest.get("sources"), dict) else {}
+    esperadas = {f"js/{arquivo.name}" for arquivo in (ROOT / "js").glob("*.js")}
+    esperadas.update({"vendor/qrcode-local.js", "service-worker.js"})
+    faltantes = sorted(esperadas - set(fontes))
+    extras = sorted(set(fontes) - esperadas)
+    if faltantes:
+        falhar("Build legado não cobre: " + ", ".join(faltantes))
+    if extras:
+        falhar("Manifesto legado contém fontes inesperadas: " + ", ".join(extras))
+
+    for relativo, registro in fontes.items():
+        src = ROOT / relativo
+        if relativo.startswith("js/"):
+            out = ROOT / "js-legacy" / Path(relativo).name
+        elif relativo == "vendor/qrcode-local.js":
+            out = ROOT / "vendor/qrcode-local-legacy.js"
+        elif relativo == "service-worker.js":
+            out = ROOT / "service-worker-legacy.js"
+        else:
+            continue
+        if not src.exists() or not out.exists():
+            falhar(f"Par fonte/build legado ausente: {relativo}")
+            continue
+        src_hash = hashlib.sha256(src.read_bytes()).hexdigest()
+        out_hash = hashlib.sha256(out.read_bytes()).hexdigest()
+        if src_hash != str(registro.get("sourceSha256", "")):
+            falhar(f"Build legado desatualizado para {relativo}; rode npm run build:legacy")
+        if out_hash != str(registro.get("outputSha256", "")):
+            falhar(f"Saída legado alterada sem rebuild: {out.relative_to(ROOT)}")
+
+        texto = out.read_text(encoding="utf-8", errors="ignore")
+        if "?." in texto or "??" in texto:
+            falhar(f"Sintaxe moderna residual no build legado: {out.relative_to(ROOT)}")
+
+    polyfills = ROOT / "js-legacy" / "00-polyfills.js"
+    if not polyfills.exists():
+        falhar("Polyfills do modo legado ausentes: js-legacy/00-polyfills.js")
+
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    if "SHINOBI_LEGACY_MODE" not in html or "js-legacy/00-polyfills.js" not in html:
+        falhar("index.html não contém o seletor automático do build legado.")
+    if "css/legacy-compat.css" not in html:
+        falhar("index.html não carrega os fallbacks visuais legados.")
+
+    sw_legacy = ROOT / "service-worker-legacy.js"
+    if sw_legacy.exists():
+        match = re.search(r'APP_VERSION\s*=\s*["\']([^"\']+)["\']', sw_legacy.read_text(encoding="utf-8", errors="ignore"))
+        if not match or match.group(1) != versao:
+            falhar("service-worker-legacy.js está com versão desalinhada.")
 
 def verificar_dados() -> None:
     catalogo = json.loads((ROOT / "data/catalogo-jutsus.json").read_text(encoding="utf-8"))
@@ -150,6 +231,7 @@ def main() -> int:
     verificar_json()
     verificar_referencias()
     verificar_versoes()
+    verificar_build_legado()
     verificar_dados()
     verificar_padroes_de_risco()
     verificar_duplicatas_exatas()
