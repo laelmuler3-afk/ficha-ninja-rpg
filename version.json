@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.155",
-  "name": "Compatibilidade progressiva para aparelhos antigos",
-  "notes": "Compatibilidade: corrige abertura do menu lateral em navegadores Android/WebView antigos com fallbacks CSS para inset/min/max.",
+  "version": "2.5.8.156",
+  "name": "Compatibilidade legacy online e desempenho",
+  "notes": "Modo legado usa Firebase 10.14.1, carrega online sob demanda/ocioso e reduz efeitos pesados em aparelhos antigos.",
   "date": "2026-10-03"
 }

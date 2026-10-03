@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.155 — build progressivo para navegadores antigos.
+/* Ficha Ninja RPG 2.5.8.156 — build progressivo para navegadores antigos.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.155";
+const APP_VERSION = "2.5.8.156";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -9,10 +9,10 @@ const FIREBASE_CACHE = `${CACHE_PREFIX}-firebase-${APP_VERSION}`;
 const LIMITE_DOWNLOADS_SIMULTANEOS = 1;
 const CACHE_VERSOES_RETIDAS = 6;
 
-const FIREBASE_VERSION = "12.16.0";
+const LEGACY_WORKER = String(self.location&&self.location.pathname||"").includes("service-worker-legacy.js");
+const FIREBASE_VERSION = LEGACY_WORKER ? "10.14.1" : "12.16.0";
 const FIREBASE_GSTATIC_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 const FIREBASE_JSDELIVR_BASE = `https://cdn.jsdelivr.net/npm/firebase@${FIREBASE_VERSION}`;
-const LEGACY_WORKER = String(self.location&&self.location.pathname||"").includes("service-worker-legacy.js");
 const JS_ROOT = LEGACY_WORKER ? "js-legacy" : "js";
 const QR_LOCAL_PATH = LEGACY_WORKER ? "vendor/qrcode-local-legacy.js" : "vendor/qrcode-local.js";
 const APP_SHELL = [

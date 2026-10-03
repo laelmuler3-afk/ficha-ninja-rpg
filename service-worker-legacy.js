@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.155. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.156. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,20 +71,20 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.155 — build progressivo para navegadores antigos.
+/* Ficha Ninja RPG 2.5.8.156 — build progressivo para navegadores antigos.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.155";
+var APP_VERSION = "2.5.8.156";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);
 var FIREBASE_CACHE = "".concat(CACHE_PREFIX, "-firebase-").concat(APP_VERSION);
 var LIMITE_DOWNLOADS_SIMULTANEOS = 1;
 var CACHE_VERSOES_RETIDAS = 6;
-var FIREBASE_VERSION = "12.16.0";
+var LEGACY_WORKER = String(self.location && self.location.pathname || "").includes("service-worker-legacy.js");
+var FIREBASE_VERSION = LEGACY_WORKER ? "10.14.1" : "12.16.0";
 var FIREBASE_GSTATIC_BASE = "https://www.gstatic.com/firebasejs/".concat(FIREBASE_VERSION);
 var FIREBASE_JSDELIVR_BASE = "https://cdn.jsdelivr.net/npm/firebase@".concat(FIREBASE_VERSION);
-var LEGACY_WORKER = String(self.location && self.location.pathname || "").includes("service-worker-legacy.js");
 var JS_ROOT = LEGACY_WORKER ? "js-legacy" : "js";
 var QR_LOCAL_PATH = LEGACY_WORKER ? "vendor/qrcode-local-legacy.js" : "vendor/qrcode-local.js";
 var APP_SHELL = [
