@@ -145,6 +145,8 @@
     const fichas=drawer.querySelector("[data-drawer-sheets]");
     const conta=drawer.querySelector("[data-drawer-account]");
     const config=drawer.querySelector("[data-drawer-config]");
+    const sobre=drawer.querySelector("[data-drawer-about]");
+    if(sobre&&!sobre.hidden){alternarSobreDrawer(false);return true;}
     if(fichas&&!fichas.hidden){alternarFichasDrawer(false);return true;}
     if(conta&&!conta.hidden){alternarContaDrawer(false);return true;}
     if(config&&!config.hidden){alternarConfiguracoesDrawer(false);return true;}
@@ -249,7 +251,9 @@
   }
 
   function migrarConfiguracoesLegadas(drawer=document.getElementById("shinobiNavDrawer")){
-    const destino=drawer?.querySelector("[data-drawer-config-legacy]");
+    // Os controles legados de atualização continuam com os mesmos IDs para
+    // preservar js/08-update.js, mas agora moram em Sobre o app.
+    const destino=drawer?.querySelector("[data-drawer-about-legacy]");
     const menu=document.getElementById("configMenu");
     if(!destino||!menu)return;
     if(menu.parentElement!==destino)destino.appendChild(menu);
@@ -314,12 +318,30 @@
       botaoFichas?.classList.remove("aberto");
       botaoFichas?.setAttribute("aria-expanded","false");
       alternarContaDrawer(false);
+      alternarSobreDrawer(false);
       requestAnimationFrame(()=>{
         botao.scrollIntoView({behavior:"smooth",block:"nearest"});
       });
+    }else{
+      alternarSobreDrawer(false);
     }
   }
   window.abrirConfiguracoesShinobi=()=>alternarConfiguracoesDrawer(true);
+
+  function alternarSobreDrawer(forcar){
+    const drawer=document.getElementById("shinobiNavDrawer");
+    if(!drawer)return;
+    migrarConfiguracoesLegadas(drawer);
+    const principal=drawer.querySelector("[data-drawer-config-main]");
+    const sobre=drawer.querySelector("[data-drawer-about]");
+    if(!principal||!sobre)return;
+    const abrir=typeof forcar==="boolean"?forcar:sobre.hidden;
+    sobre.hidden=!abrir;
+    principal.hidden=abrir;
+    if(abrir){
+      requestAnimationFrame(()=>sobre.scrollIntoView({behavior:"smooth",block:"nearest"}));
+    }
+  }
 
   function avisoEmBreve(titulo){
     if(typeof window.avisoShinobi==="function")window.avisoShinobi(titulo,"Esta opção já está reservada na nova estrutura e será ativada em uma próxima etapa.");
@@ -424,37 +446,48 @@
             <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
           </button>
           <div class="shinobiDrawerConfigConteudo" data-drawer-config hidden>
-            <button type="button" class="shinobiDrawerSubvoltar" data-drawer-action="back-menu" aria-label="Voltar ao menu principal">
-              <span aria-hidden="true">←</span><b>Voltar</b>
-            </button>
-            <div class="shinobiDrawerConfigLegado" data-drawer-config-legacy></div>
-            <p class="shinobiDrawerSubtitulo shinobiPersonalizacaoTitulo">PERSONALIZAÇÃO</p>
-            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="themes">
-              <span class="shinobiDrawerItemIcon">${iconHTML("store")}</span>
-              <span class="shinobiDrawerItemTexto"><b>Loja de temas</b><small>Em breve</small></span>
-              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-            </button>
-            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="personalization">
-              <span class="shinobiDrawerItemIcon">${iconHTML("image")}</span>
-              <span class="shinobiDrawerItemTexto"><b>Aparência</b><small>Preferências visuais · em breve</small></span>
-              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-            </button>
-            <p class="shinobiDrawerSubtitulo shinobiDrawerSobreTitulo">SOBRE</p>
-            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="about">
-              <span class="shinobiDrawerItemIcon">${iconHTML("notes")}</span>
-              <span class="shinobiDrawerItemTexto"><b>Sobre o app</b><small>Versão e informações</small></span>
-              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-            </button>
-            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="help">
-              <span class="shinobiDrawerItemIcon">${iconHTML("book")}</span>
-              <span class="shinobiDrawerItemTexto"><b>Ajuda</b><small>Guias e suporte</small></span>
-              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-            </button>
-            <button type="button" class="shinobiDrawerSubitem" data-drawer-action="feedback">
-              <span class="shinobiDrawerItemIcon">${iconHTML("edit")}</span>
-              <span class="shinobiDrawerItemTexto"><b>Feedback</b><small>Envie uma sugestão</small></span>
-              <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
-            </button>
+            <div data-drawer-config-main>
+              <button type="button" class="shinobiDrawerSubvoltar" data-drawer-action="back-menu" aria-label="Voltar ao menu principal">
+                <span aria-hidden="true">←</span><b>Voltar</b>
+              </button>
+              <p class="shinobiDrawerSubtitulo shinobiPersonalizacaoTitulo">PERSONALIZAÇÃO</p>
+              <button type="button" class="shinobiDrawerSubitem" data-drawer-action="themes">
+                <span class="shinobiDrawerItemIcon">${iconHTML("store")}</span>
+                <span class="shinobiDrawerItemTexto"><b>Loja de temas</b><small>Em breve</small></span>
+                <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+              </button>
+              <button type="button" class="shinobiDrawerSubitem" data-drawer-action="personalization">
+                <span class="shinobiDrawerItemIcon">${iconHTML("image")}</span>
+                <span class="shinobiDrawerItemTexto"><b>Aparência</b><small>Preferências visuais · em breve</small></span>
+                <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+              </button>
+              <p class="shinobiDrawerSubtitulo shinobiDrawerSobreTitulo">SOBRE</p>
+              <button type="button" class="shinobiDrawerSubitem" data-drawer-action="about">
+                <span class="shinobiDrawerItemIcon">${iconHTML("notes")}</span>
+                <span class="shinobiDrawerItemTexto"><b>Sobre o app</b><small>Versão, atualizações e informações</small></span>
+                <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+              </button>
+              <button type="button" class="shinobiDrawerSubitem" data-drawer-action="help">
+                <span class="shinobiDrawerItemIcon">${iconHTML("book")}</span>
+                <span class="shinobiDrawerItemTexto"><b>Ajuda</b><small>Guias e suporte</small></span>
+                <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+              </button>
+              <button type="button" class="shinobiDrawerSubitem" data-drawer-action="feedback">
+                <span class="shinobiDrawerItemIcon">${iconHTML("edit")}</span>
+                <span class="shinobiDrawerItemTexto"><b>Feedback</b><small>Envie uma sugestão</small></span>
+                <span class="shinobiDrawerChevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+            <div data-drawer-about hidden>
+              <button type="button" class="shinobiDrawerSubvoltar" data-drawer-action="back-settings" aria-label="Voltar às configurações">
+                <span aria-hidden="true">←</span><b>Voltar</b>
+              </button>
+              <div class="shinobiDrawerFichasCabecalho">
+                <strong>SOBRE O APP</strong>
+                <small>Versão, atualizações e informações do aplicativo</small>
+              </div>
+              <div class="shinobiDrawerConfigLegado" data-drawer-about-legacy></div>
+            </div>
           </div>
         </div>
 
@@ -495,6 +528,7 @@
 
       const acao=botao.dataset.drawerAction;
       if(acao==="back-menu"){fecharSubpainelDrawer();return;}
+      if(acao==="back-settings"){alternarSobreDrawer(false);return;}
       if(acao==="sheets"){alternarFichasDrawer();return;}
       if(acao==="account"){alternarContaDrawer();return;}
       if(acao==="account-login"){void abrirPainelOnline("login",botao);return;}
@@ -506,7 +540,7 @@
       if(acao==="settings"){alternarConfiguracoesDrawer();return;}
       if(acao==="themes"){avisoEmBreve("Loja de temas");return;}
       if(acao==="personalization"){avisoEmBreve("Personalização");return;}
-      if(acao==="about"){avisoEmBreve("Sobre o app");return;}
+      if(acao==="about"){alternarSobreDrawer(true);return;}
       if(acao==="help"){avisoEmBreve("Ajuda");return;}
       if(acao==="feedback"){avisoEmBreve("Feedback");return;}
     });
