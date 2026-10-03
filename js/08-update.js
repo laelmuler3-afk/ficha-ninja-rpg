@@ -20,7 +20,7 @@
   document.documentElement.dataset.appVersion=APP_VERSION;
   window.APP_VERSION=APP_VERSION;
 
-  const SW_URL_BASE="./service-worker.js";
+  const SW_URL_BASE=window.SHINOBI_LEGACY_MODE===true?"./service-worker-legacy.js":"./service-worker.js";
   const swUrl=(versao=APP_VERSION)=>`${SW_URL_BASE}?v=${encodeURIComponent(String(versao||APP_VERSION))}`;
   const VERSION_URL="./version.json";
   const INTERVALO_PERIODICO=15*60*1000;

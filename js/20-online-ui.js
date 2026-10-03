@@ -36,6 +36,22 @@
   const listaDeObjeto=valor=>Object.values(valor||{});
   const participantesComId=valor=>Object.entries(valor||{}).map(([participantId,p])=>({...(p&&typeof p==="object"?p:{}),id:String(participantId)}));
 
+  function formDataParaObjeto(dados,form){
+    const out={};
+    if(dados&&typeof dados.forEach==="function"){
+      dados.forEach((valor,chave)=>{out[chave]=valor;});
+      return out;
+    }
+    const elementos=Array.from(form?.elements||[]);
+    elementos.forEach(el=>{
+      const nome=String(el?.name||"");
+      if(!nome||el.disabled)return;
+      if((el.type==="checkbox"||el.type==="radio")&&!el.checked)return;
+      out[nome]=el.value;
+    });
+    return out;
+  }
+
   function obterEstado(){return window.ShinobiOnline?.snapshot?.()||{};}
   function sessaoLocal(){try{return JSON.parse(localStorage.getItem("shinobi_online_session_v1")||"null");}catch(_erro){return null;}}
   function nomeFichaAtiva(){try{return String(localStorage.getItem("ficha_ninja_ativa_v1")||"Principal");}catch(_erro){return "Principal";}}
@@ -1917,7 +1933,7 @@
       await avisar("NPC salvo","A ficha foi adicionada à biblioteca permanente da campanha.");
     });
     if(tipo==="create-campaign-npc")return executar(async()=>{
-      await window.ShinobiOnline.criarNpcCampanha(dados.get("campaignId"),Object.fromEntries(dados.entries()));
+      await window.ShinobiOnline.criarNpcCampanha(dados.get("campaignId"),formDataParaObjeto(dados,form));
       form.reset();
       await avisar("NPC criado","O NPC agora pertence à campanha e pode ser usado em qualquer sessão.");
     });
@@ -1926,7 +1942,7 @@
       form.reset();
     });
     if(tipo==="import-npc")return executar(async()=>{await window.ShinobiOnline.importarFichaComoNpc(dados.get("localSheetName"),{displayName:dados.get("displayName")});form.reset();});
-    if(tipo==="quick-npc")return executar(async()=>{await window.ShinobiOnline.criarNpcRapido(Object.fromEntries(dados.entries()));form.reset();});
+    if(tipo==="quick-npc")return executar(async()=>{await window.ShinobiOnline.criarNpcRapido(formDataParaObjeto(dados,form));form.reset();});
     if(tipo==="add-effect")return executar(async()=>{await window.ShinobiOnline.adicionarEfeito({participantId:dados.get("participantId"),name:dados.get("name"),duration:num(dados.get("duration"),1)});form.reset();});
     if(tipo==="campaign-xp")return executar(async()=>{
       const chaves=dados.getAll("memberKeys"),tipoXp=String(dados.get("type")||"grant"),quantidade=dados.get("amount");

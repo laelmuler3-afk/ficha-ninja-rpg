@@ -5,12 +5,22 @@
   window.__shinobiPostRenderLoaderV25875=true;
 
   var versao=String(document.documentElement.getAttribute("data-app-version")||window.APP_VERSION||"2.5.8.75");
+  var modoLegado=window.SHINOBI_LEGACY_MODE===true;
+
+  function caminhoCompativel(caminho){
+    var valor=String(caminho||"");
+    if(!modoLegado) return valor;
+    if(valor.indexOf("js/")===0) return "js-legacy/"+valor.slice(3);
+    if(valor==="vendor/qrcode-local.js") return "vendor/qrcode-local-legacy.js";
+    return valor;
+  }
 
   function url(caminho){
     return caminho+"?v="+encodeURIComponent(versao);
   }
 
   function carregarScript(caminho,aoCarregar,aoFalhar){
+    var caminhoReal=caminhoCompativel(caminho);
     var seletor='script[data-shinobi-lazy="'+caminho.replace(/"/g,'')+'"]';
     var existente=document.querySelector(seletor);
     if(existente){
@@ -22,7 +32,7 @@
       return;
     }
     var script=document.createElement("script");
-    script.src=url(caminho);
+    script.src=url(caminhoReal);
     script.async=false;
     script.setAttribute("data-shinobi-lazy",caminho);
     script.onload=function(){
