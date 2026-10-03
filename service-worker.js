@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.153 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.154 — build progressivo para navegadores antigos.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.153";
+const APP_VERSION = "2.5.8.154";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -12,6 +12,9 @@ const CACHE_VERSOES_RETIDAS = 6;
 const FIREBASE_VERSION = "12.16.0";
 const FIREBASE_GSTATIC_BASE = `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}`;
 const FIREBASE_JSDELIVR_BASE = `https://cdn.jsdelivr.net/npm/firebase@${FIREBASE_VERSION}`;
+const LEGACY_WORKER = String(self.location&&self.location.pathname||"").includes("service-worker-legacy.js");
+const JS_ROOT = LEGACY_WORKER ? "js-legacy" : "js";
+const QR_LOCAL_PATH = LEGACY_WORKER ? "vendor/qrcode-local-legacy.js" : "vendor/qrcode-local.js";
 const APP_SHELL = [
   `./index.html?v=${APP_VERSION}`,
   `./manifest.json?v=${APP_VERSION}`,
@@ -34,46 +37,50 @@ const APP_SHELL = [
   `./css/jutsus.css?v=${APP_VERSION}`,
   `./css/loja-v25843.css?v=${APP_VERSION}`,
   `./css/notas.css?v=${APP_VERSION}`,
-  `./js/00-shinobi-ui.js?v=${APP_VERSION}`,
-  `./js/00-item-identity.js?v=${APP_VERSION}`,
-  `./js/01-core.js?v=${APP_VERSION}`,
-  `./js/01-sheet-manager.js?v=${APP_VERSION}`,
-  `./js/02-runtime.js?v=${APP_VERSION}`,
-  `./js/03-images.js?v=${APP_VERSION}`,
-  `./js/04-jutsus.js?v=${APP_VERSION}`,
-  `./js/05-armados-item-level.js?v=${APP_VERSION}`,
-  `./js/05-kekkei-item-level.js?v=${APP_VERSION}`,
-  `./js/09-catalogo.js?v=${APP_VERSION}`,
-  `./js/05-battle.js?v=${APP_VERSION}`,
-  `./js/06-inventory.js?v=${APP_VERSION}`,
-  `./js/06-wallet-item-level.js?v=${APP_VERSION}`,
-  `./js/07-profile.js?v=${APP_VERSION}`,
-  `./js/08-update.js?v=${APP_VERSION}`,
-  `./js/08-post-render-loader.js?v=${APP_VERSION}`,
-  `./js/10-regras-natureza.js?v=${APP_VERSION}`,
-  `./js/11-batalha-ui.js?v=${APP_VERSION}`,
-  `./js/12-efeitos-jutsus.js?v=${APP_VERSION}`,
-  `./js/13-motor-universal.js?v=${APP_VERSION}`,
-  `./js/14-level-up.js?v=${APP_VERSION}`,
-  `./js/15-testes-resistencia.js?v=${APP_VERSION}`,
-  `./js/16-pericias.js?v=${APP_VERSION}`,
-  `./js/17-dano-inteligente.js?v=${APP_VERSION}`,
-  `./js/18-online-config.js?v=${APP_VERSION}`,
-  `./js/19-character-identity.js?v=${APP_VERSION}`,
-  `./js/19-backup-manager-utils.js?v=${APP_VERSION}`,
-  `./js/19-online-core.js?v=${APP_VERSION}`,
-  `./js/19-realtime-fields-utils.js?v=${APP_VERSION}`,
-  `./js/19-realtime-sync-engine.js?v=${APP_VERSION}`,
-  `./vendor/qrcode-local.js?v=${APP_VERSION}`,
-  `./js/20-online-ui.js?v=${APP_VERSION}`,
-  `./js/21-online-hooks.js?v=${APP_VERSION}`,
-  `./js/22-organizacao-retratil.js?v=${APP_VERSION}`,
-  `./js/23-security-hardening.js?v=${APP_VERSION}`,
-  `./js/24-terminologia-eko.js?v=${APP_VERSION}`,
+  `./css/legacy-compat.css?v=${APP_VERSION}`,
+  `./${JS_ROOT}/00-shinobi-ui.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/00-item-identity.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/01-core.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/01-sheet-manager.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/02-runtime.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/03-images.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/04-jutsus.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/05-armados-item-level.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/05-kekkei-item-level.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/09-catalogo.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/05-battle.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/06-inventory.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/06-wallet-item-level.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/07-profile.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/08-update.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/08-post-render-loader.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/10-regras-natureza.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/11-batalha-ui.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/12-efeitos-jutsus.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/13-motor-universal.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/14-level-up.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/15-testes-resistencia.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/16-pericias.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/17-dano-inteligente.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/18-online-config.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/19-character-identity.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/19-backup-manager-utils.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/19-online-core.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/19-realtime-fields-utils.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/19-realtime-sync-engine.js?v=${APP_VERSION}`,
+  `./${QR_LOCAL_PATH}?v=${APP_VERSION}`,
+  `./${JS_ROOT}/20-online-ui.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/21-online-hooks.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/22-organizacao-retratil.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/23-security-hardening.js?v=${APP_VERSION}`,
+  `./${JS_ROOT}/24-terminologia-eko.js?v=${APP_VERSION}`,
   `./data/catalogo-jutsus.json?v=${APP_VERSION}`,
   `./data/efeitos-jutsus.json?v=${APP_VERSION}`,
   `./data/progressao-ninja.json?v=${APP_VERSION}`,
 ];
+if(LEGACY_WORKER){
+  APP_SHELL.push(`./js-legacy/00-polyfills.js?v=${APP_VERSION}`);
+}
 
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
 const SHELL_URLS = APP_SHELL.map(path => new URL(path, self.registration.scope).href);
@@ -99,14 +106,15 @@ async function fetchComTentativas(url,maxTentativas=3){
   let ultimoErro=null;
 
   for(let tentativa=1;tentativa<=maxTentativas;tentativa+=1){
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),20000);
+    const controller=typeof AbortController==="function"?new AbortController():null;
+    const timer=setTimeout(()=>{if(controller) controller.abort();},20000);
     try{
-      const response=await fetch(new Request(url,{
+      const requestOptions={
         cache:"reload",
-        credentials:"same-origin",
-        signal:controller.signal
-      }));
+        credentials:"same-origin"
+      };
+      if(controller) requestOptions.signal=controller.signal;
+      const response=await fetch(new Request(url,requestOptions));
       clearTimeout(timer);
       if(!respostaPodeSerSalva(response)){
         throw new Error(`HTTP ${response.status} em ${url}`);

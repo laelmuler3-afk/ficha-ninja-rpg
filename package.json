@@ -1,0 +1,12 @@
+{
+  "name": "ficha-ninja-rpg",
+  "private": true,
+  "version": "2.5.8-154",
+  "scripts": {
+    "build:legacy": "node tools/build-legacy.js",
+    "verify": "python3 tools/verificar-projeto.py"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}

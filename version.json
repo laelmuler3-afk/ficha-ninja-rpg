@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.153",
-  "name": "Atualizações dentro de Sobre o app",
-  "notes": "Move a seção de atualização e verificação de versão para dentro de Sobre o app, deixando Configurações focada nos ajustes gerais e personalização. Mantém o botão e o gesto Voltar entre Sobre o app e Configurações.",
+  "version": "2.5.8.154",
+  "name": "Compatibilidade progressiva para aparelhos antigos",
+  "notes": "Adiciona build JavaScript legado ES5 com polyfills e seleção automática por capacidade do navegador, mantendo o código moderno como fonte de verdade. Inclui Service Worker legado e fallbacks visuais isolados para aparelhos antigos, sem alterar a experiência em navegadores modernos.",
   "date": "2026-10-03"
 }
