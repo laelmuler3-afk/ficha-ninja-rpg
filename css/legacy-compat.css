@@ -58,3 +58,29 @@ html.shinobiLegacy #anotacoes .notaPapel{width:100%;max-width:760px;}
   html.shinobiLegacy .shinobiTurnoWidgetCorpo{max-height:270px;}
   html.shinobiLegacy .onlineQrCode{width:190px;height:190px;}
 }
+
+/* v2.5.8.156 — modo de desempenho para Android/WebView antigo.
+   Apenas o modo legado recebe estas simplificações; navegadores modernos
+   mantêm animações e efeitos completos. */
+html.shinobiLegacy *,
+html.shinobiLegacy *::before,
+html.shinobiLegacy *::after{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  scroll-behavior:auto!important;
+}
+html.shinobiLegacy .pagina.ativa,
+html.shinobiLegacy .shinobiDrawerBackdrop,
+html.shinobiLegacy .shinobiDrawerPainel,
+html.shinobiLegacy .shinobiDrawerChevron,
+html.shinobiLegacy .onlineDestinoDestaque,
+html.shinobiLegacy .onlineLoading span,
+html.shinobiLegacy .shinobiTurnoWidgetDot,
+html.shinobiLegacy .miniBarra span,
+html.shinobiLegacy .recursoBatalhaBarra span{
+  animation:none!important;
+  transition:none!important;
+}
+html.shinobiLegacy .shinobiDrawerPainel{
+  will-change:auto!important;
+}
