@@ -22,11 +22,16 @@ window.SHINOBI_FIREBASE_CONFIG = {
 window.SHINOBI_FIREBASE_OPTIONS = {
   enabled: true,
   sdkVersion: "12.16.0",
+  legacySdkVersion: "10.14.1",
   backupsToKeep: 3,
   sdkMode: "compat",
   sdkTimeoutMs: 18000,
   sdkSources: [
     "https://www.gstatic.com/firebasejs/12.16.0",
     "https://cdn.jsdelivr.net/npm/firebase@12.16.0"
+  ],
+  legacySdkSources: [
+    "https://www.gstatic.com/firebasejs/10.14.1",
+    "https://cdn.jsdelivr.net/npm/firebase@10.14.1"
   ]
 };

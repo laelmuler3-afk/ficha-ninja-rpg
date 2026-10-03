@@ -125,8 +125,10 @@
     if(root.firebase?.storage)return root.firebase.app().storage();
     if(storagePromise)return storagePromise;
     storagePromise=(async()=>{
-      const opcoes=root.SHINOBI_FIREBASE_OPTIONS||{},versao=opcoes.sdkVersion||"12.16.0";
-      const fontes=Array.isArray(opcoes.sdkSources)&&opcoes.sdkSources.length?opcoes.sdkSources:[`https://www.gstatic.com/firebasejs/${versao}`,`https://cdn.jsdelivr.net/npm/firebase@${versao}`];
+      const opcoes=root.SHINOBI_FIREBASE_OPTIONS||{},modoLegado=root.SHINOBI_LEGACY_MODE===true;
+      const versao=modoLegado?(opcoes.legacySdkVersion||"10.14.1"):(opcoes.sdkVersion||"12.16.0");
+      const fontesConfiguradas=modoLegado?opcoes.legacySdkSources:opcoes.sdkSources;
+      const fontes=Array.isArray(fontesConfiguradas)&&fontesConfiguradas.length?fontesConfiguradas:[`https://www.gstatic.com/firebasejs/${versao}`,`https://cdn.jsdelivr.net/npm/firebase@${versao}`];
       let ultimoErro=null;
       for(const baseBruta of fontes){
         const base=String(baseBruta||"").replace(/\/$/,"");

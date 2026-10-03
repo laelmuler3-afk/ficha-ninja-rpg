@@ -374,9 +374,11 @@
   async function carregarFirebaseCompat(){
     if(firebaseCompatCompleto()) return window.firebase;
     const opcoes=window.SHINOBI_FIREBASE_OPTIONS||{};
-    const versao=opcoes.sdkVersion||"12.16.0";
-    const fontes=Array.isArray(opcoes.sdkSources)&&opcoes.sdkSources.length
-      ? opcoes.sdkSources
+    const modoLegado=window.SHINOBI_LEGACY_MODE===true;
+    const versao=modoLegado?(opcoes.legacySdkVersion||"10.14.1"):(opcoes.sdkVersion||"12.16.0");
+    const fontesConfiguradas=modoLegado?opcoes.legacySdkSources:opcoes.sdkSources;
+    const fontes=Array.isArray(fontesConfiguradas)&&fontesConfiguradas.length
+      ? fontesConfiguradas
       : [`https://www.gstatic.com/firebasejs/${versao}`,`https://cdn.jsdelivr.net/npm/firebase@${versao}`];
     const timeout=opcoes.sdkTimeoutMs||18000;
     let ultimoErro=null;

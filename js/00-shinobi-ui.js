@@ -180,23 +180,33 @@
     return typeof window.ShinobiOnlineUI?.abrir==="function";
   }
 
-  function aguardarOnlineUI(timeout=1800){
+  function aguardarOnlineUI(timeout){
     if(onlineUIDisponivel()) return Promise.resolve(window.ShinobiOnlineUI);
+    const modoLegado=window.SHINOBI_LEGACY_MODE===true;
+    const limite=Number(timeout)||(modoLegado?22000:5000);
+    try{
+      const loader=window.ShinobiOnlineLoader;
+      if(loader&&typeof loader.ensureReady==="function") loader.ensureReady().catch(()=>{});
+    }catch(_erro){}
     return new Promise(resolve=>{
       let finalizado=false;
       const concluir=()=>{
         if(finalizado)return;
         finalizado=true;
         window.removeEventListener("shinobi:online-ui-ready",aoPronto);
+        window.removeEventListener("shinobi:online-stack-error",aoErro);
         resolve(onlineUIDisponivel()?window.ShinobiOnlineUI:null);
       };
       const aoPronto=()=>concluir();
+      const aoErro=()=>concluir();
       window.addEventListener("shinobi:online-ui-ready",aoPronto,{once:true});
-      const inicio=performance.now();
+      window.addEventListener("shinobi:online-stack-error",aoErro,{once:true});
+      const agora=()=>window.performance&&typeof window.performance.now==="function"?window.performance.now():Date.now();
+      const inicio=agora();
       const verificar=()=>{
         if(onlineUIDisponivel())return concluir();
-        if(performance.now()-inicio>=timeout)return concluir();
-        setTimeout(verificar,60);
+        if(agora()-inicio>=limite)return concluir();
+        setTimeout(verificar,modoLegado?120:60);
       };
       verificar();
     });
