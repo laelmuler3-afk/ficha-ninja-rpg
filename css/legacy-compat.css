@@ -1,0 +1,44 @@
+/* Compatibilidade visual para engines antigas.
+ * Regras isoladas pela classe .shinobiLegacy: navegadores modernos não mudam.
+ */
+html.shinobiLegacy,
+html.shinobiLegacy body{min-height:100%;}
+
+html.shinobiLegacy .shinobiDrawerPainel{
+  height:100vh;
+  max-height:100vh;
+  width:94vw;
+  max-width:368px;
+}
+
+html.shinobiLegacy .shinobiOnlineOverlay{height:100vh;}
+html.shinobiLegacy .shinobiOnlineShell{width:100%;max-width:980px;}
+html.shinobiLegacy .shinobiTurnoFlutuante{width:338px;max-width:calc(100vw - 16px);}
+html.shinobiLegacy .shinobiTurnoFlutuante.minimizado{width:258px;max-width:calc(100vw - 16px);}
+html.shinobiLegacy .shinobiTurnoWidgetCorpo{max-height:300px;}
+html.shinobiLegacy .onlineQrCode{width:220px;height:220px;}
+html.shinobiLegacy .shinobiScanner video{height:auto;min-height:260px;}
+html.shinobiLegacy .scannerMoldura{height:64vw;max-height:330px;}
+
+html.shinobiLegacy .levelUpOverlay{height:100vh;}
+html.shinobiLegacy .levelUpModal{width:100%;max-width:680px;max-height:88vh;}
+
+html.shinobiLegacy #jutsus .jutsuGrupo,
+html.shinobiLegacy #jutsus .jutsuElementoBloco,
+html.shinobiLegacy #jutsus .jutsuCard{
+  border-color:rgba(86,145,156,.42)!important;
+}
+html.shinobiLegacy #jutsus .jutsuElementoAtalho,
+html.shinobiLegacy #jutsus .jutsuGrupoCabecalho{
+  background:#071014!important;
+}
+
+html.shinobiLegacy #anotacoes .notasHeroTitulo{font-size:36px!important;}
+html.shinobiLegacy #anotacoes .notaPapel{width:100%;max-width:760px;}
+
+@media(max-width:560px){
+  html.shinobiLegacy .shinobiTurnoFlutuante{width:320px;max-width:calc(100vw - 16px);}
+  html.shinobiLegacy .shinobiTurnoFlutuante.minimizado{width:236px;max-width:calc(100vw - 16px);}
+  html.shinobiLegacy .shinobiTurnoWidgetCorpo{max-height:270px;}
+  html.shinobiLegacy .onlineQrCode{width:190px;height:190px;}
+}
