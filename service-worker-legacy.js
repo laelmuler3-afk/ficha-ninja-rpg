@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.154. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.155. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,10 +71,10 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.154 — build progressivo para navegadores antigos.
+/* Ficha Ninja RPG 2.5.8.155 — build progressivo para navegadores antigos.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.154";
+var APP_VERSION = "2.5.8.155";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);

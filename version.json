@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.154",
+  "version": "2.5.8.155",
   "name": "Compatibilidade progressiva para aparelhos antigos",
-  "notes": "Adiciona build JavaScript legado ES5 com polyfills e seleção automática por capacidade do navegador, mantendo o código moderno como fonte de verdade. Inclui Service Worker legado e fallbacks visuais isolados para aparelhos antigos, sem alterar a experiência em navegadores modernos.",
+  "notes": "Compatibilidade: corrige abertura do menu lateral em navegadores Android/WebView antigos com fallbacks CSS para inset/min/max.",
   "date": "2026-10-03"
 }
