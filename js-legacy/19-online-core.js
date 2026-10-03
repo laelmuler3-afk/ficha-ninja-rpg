@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/19-online-core.js — app 2.5.8.154. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/19-online-core.js — app 2.5.8.156. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -523,7 +523,7 @@ var __values = (this && this.__values) || function(o) {
     }
     function carregarFirebaseCompat() {
         return __awaiter(this, void 0, void 0, function () {
-            var opcoes, versao, fontes, timeout, ultimoErro, fontes_1, fontes_1_1, baseBruta, base, erro_1, e_1_1;
+            var opcoes, modoLegado, versao, fontesConfiguradas, fontes, timeout, ultimoErro, fontes_1, fontes_1_1, baseBruta, base, erro_1, e_1_1;
             var e_1, _a;
             var _b, _c, _d;
             return __generator(this, function (_e) {
@@ -532,9 +532,11 @@ var __values = (this && this.__values) || function(o) {
                         if (firebaseCompatCompleto())
                             return [2 /*return*/, window.firebase];
                         opcoes = window.SHINOBI_FIREBASE_OPTIONS || {};
-                        versao = opcoes.sdkVersion || "12.16.0";
-                        fontes = Array.isArray(opcoes.sdkSources) && opcoes.sdkSources.length
-                            ? opcoes.sdkSources
+                        modoLegado = window.SHINOBI_LEGACY_MODE === true;
+                        versao = modoLegado ? (opcoes.legacySdkVersion || "10.14.1") : (opcoes.sdkVersion || "12.16.0");
+                        fontesConfiguradas = modoLegado ? opcoes.legacySdkSources : opcoes.sdkSources;
+                        fontes = Array.isArray(fontesConfiguradas) && fontesConfiguradas.length
+                            ? fontesConfiguradas
                             : ["https://www.gstatic.com/firebasejs/".concat(versao), "https://cdn.jsdelivr.net/npm/firebase@".concat(versao)];
                         timeout = opcoes.sdkTimeoutMs || 18000;
                         ultimoErro = null;

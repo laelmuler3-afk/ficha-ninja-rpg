@@ -1,12 +1,17 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/08-post-render-loader.js — app 2.5.8.154. Não editar. */
-/* EKO 2.5.8.75 — carrega atualização e online somente após a ficha estar utilizável. */
+/* GERADO AUTOMATICAMENTE — fonte: js/08-post-render-loader.js — app 2.5.8.156. Não editar. */
+/* EKO 2.5.8.156 — carregamento progressivo do online e atualizador.
+ * Em aparelhos antigos, a ficha fica responsiva primeiro e o stack online
+ * entra sob demanda ou quando o navegador estiver ocioso.
+ */
 (function () {
     "use strict";
-    if (window.__shinobiPostRenderLoaderV25875)
+    if (window.__shinobiPostRenderLoaderV258156)
         return;
-    window.__shinobiPostRenderLoaderV25875 = true;
-    var versao = String(document.documentElement.getAttribute("data-app-version") || window.APP_VERSION || "2.5.8.75");
+    window.__shinobiPostRenderLoaderV258156 = true;
+    var versao = String(document.documentElement.getAttribute("data-app-version") || window.APP_VERSION || "2.5.8.156");
     var modoLegado = window.SHINOBI_LEGACY_MODE === true;
+    var onlinePromise = null;
+    var onlinePronto = false;
     function caminhoCompativel(caminho) {
         var valor = String(caminho || "");
         if (!modoLegado)
@@ -65,6 +70,10 @@
         });
     }
     function iniciarOnline() {
+        if (onlinePronto && window.ShinobiOnlineUI)
+            return Promise.resolve(window.ShinobiOnlineUI);
+        if (onlinePromise)
+            return onlinePromise;
         window.__shinobiOnlineStackLoading = true;
         var arquivos = [
             "js/18-online-config.js",
@@ -77,31 +86,62 @@
             "js/20-online-ui.js",
             "js/21-online-hooks.js"
         ];
-        carregarSequencia(arquivos, 0, function () {
-            window.__shinobiOnlineStackLoading = false;
-            try {
-                window.dispatchEvent(new CustomEvent("shinobi:online-stack-ready"));
-            }
-            catch (_erro) { }
-        }, function (caminho, erro) {
-            window.__shinobiOnlineStackLoading = false;
-            console.warn("Online ficou desativado sem afetar a ficha. Falha em:", caminho, erro);
-            try {
-                window.dispatchEvent(new CustomEvent("shinobi:online-stack-error", { detail: { arquivo: caminho } }));
-            }
-            catch (_erro) { }
+        onlinePromise = new Promise(function (resolve, reject) {
+            carregarSequencia(arquivos, 0, function () {
+                onlinePronto = true;
+                window.__shinobiOnlineStackLoading = false;
+                try {
+                    window.dispatchEvent(new CustomEvent("shinobi:online-stack-ready"));
+                }
+                catch (_erro) { }
+                resolve(window.ShinobiOnlineUI || true);
+            }, function (caminho, erro) {
+                window.__shinobiOnlineStackLoading = false;
+                onlinePromise = null;
+                console.warn("Online ficou desativado sem afetar a ficha. Falha em:", caminho, erro);
+                try {
+                    window.dispatchEvent(new CustomEvent("shinobi:online-stack-error", { detail: { arquivo: caminho } }));
+                }
+                catch (_erro) { }
+                reject(erro || new Error("Falha ao carregar recursos online."));
+            });
         });
+        return onlinePromise;
     }
+    window.ShinobiOnlineLoader = {
+        ensureReady: iniciarOnline,
+        isReady: function () { return onlinePronto === true || Boolean(window.ShinobiOnlineUI); },
+        isLoading: function () { return window.__shinobiOnlineStackLoading === true; }
+    };
     function iniciarAtualizador() {
         carregarScript("js/08-update.js", null, function (erro) {
             console.warn("Atualizador indisponível. A ficha continua funcionando.", erro);
         });
     }
+    function agendarOnlineLegado() {
+        /* No J7/engines antigas, parsear o stack online inteiro durante a entrada
+           deixa o menu e as páginas pesados. Damos prioridade à interação e ainda
+           ativamos a sincronização automaticamente após um período ocioso. */
+        var disparar = function () { iniciarOnline().catch(function () { }); };
+        setTimeout(function () {
+            if (onlinePronto || onlinePromise)
+                return;
+            if (typeof window.requestIdleCallback === "function") {
+                window.requestIdleCallback(disparar, { timeout: 5000 });
+            }
+            else
+                setTimeout(disparar, 1200);
+        }, 6500);
+    }
     function depoisDaRenderizacao() {
-        /* Realtime recebe prioridade após a renderização; o update espera mais para
-           não disputar rede/CPU com login e sincronização em aparelhos lentos. */
-        setTimeout(iniciarOnline, 150);
-        setTimeout(iniciarAtualizador, 3500);
+        if (modoLegado) {
+            agendarOnlineLegado();
+            setTimeout(iniciarAtualizador, 13000);
+        }
+        else {
+            setTimeout(function () { iniciarOnline().catch(function () { }); }, 150);
+            setTimeout(iniciarAtualizador, 3500);
+        }
     }
     if (window.ShinobiAppReady && typeof window.ShinobiAppReady.executar === "function") {
         window.ShinobiAppReady.executar(depoisDaRenderizacao);

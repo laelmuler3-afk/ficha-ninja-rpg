@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/19-image-storage-sync.js — app 2.5.8.154. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/19-image-storage-sync.js — app 2.5.8.156. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -273,14 +273,16 @@ var __values = (this && this.__values) || function(o) {
                 if (storagePromise)
                     return [2 /*return*/, storagePromise];
                 storagePromise = (function () { return __awaiter(_this, void 0, void 0, function () {
-                    var opcoes, versao, fontes, ultimoErro, fontes_1, fontes_1_1, baseBruta, base, erro_1, e_1_1;
+                    var opcoes, modoLegado, versao, fontesConfiguradas, fontes, ultimoErro, fontes_1, fontes_1_1, baseBruta, base, erro_1, e_1_1;
                     var e_1, _a;
                     var _b;
                     return __generator(this, function (_c) {
                         switch (_c.label) {
                             case 0:
-                                opcoes = root.SHINOBI_FIREBASE_OPTIONS || {}, versao = opcoes.sdkVersion || "12.16.0";
-                                fontes = Array.isArray(opcoes.sdkSources) && opcoes.sdkSources.length ? opcoes.sdkSources : ["https://www.gstatic.com/firebasejs/".concat(versao), "https://cdn.jsdelivr.net/npm/firebase@".concat(versao)];
+                                opcoes = root.SHINOBI_FIREBASE_OPTIONS || {}, modoLegado = root.SHINOBI_LEGACY_MODE === true;
+                                versao = modoLegado ? (opcoes.legacySdkVersion || "10.14.1") : (opcoes.sdkVersion || "12.16.0");
+                                fontesConfiguradas = modoLegado ? opcoes.legacySdkSources : opcoes.sdkSources;
+                                fontes = Array.isArray(fontesConfiguradas) && fontesConfiguradas.length ? fontesConfiguradas : ["https://www.gstatic.com/firebasejs/".concat(versao), "https://cdn.jsdelivr.net/npm/firebase@".concat(versao)];
                                 ultimoErro = null;
                                 _c.label = 1;
                             case 1:

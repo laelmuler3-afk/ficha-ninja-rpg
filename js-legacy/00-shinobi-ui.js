@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/00-shinobi-ui.js — app 2.5.8.154. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/00-shinobi-ui.js — app 2.5.8.156. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -346,9 +346,16 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         return typeof ((_a = window.ShinobiOnlineUI) === null || _a === void 0 ? void 0 : _a.abrir) === "function";
     }
     function aguardarOnlineUI(timeout) {
-        if (timeout === void 0) { timeout = 1800; }
         if (onlineUIDisponivel())
             return Promise.resolve(window.ShinobiOnlineUI);
+        var modoLegado = window.SHINOBI_LEGACY_MODE === true;
+        var limite = Number(timeout) || (modoLegado ? 22000 : 5000);
+        try {
+            var loader = window.ShinobiOnlineLoader;
+            if (loader && typeof loader.ensureReady === "function")
+                loader.ensureReady().catch(function () { });
+        }
+        catch (_erro) { }
         return new Promise(function (resolve) {
             var finalizado = false;
             var concluir = function () {
@@ -356,17 +363,21 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
                     return;
                 finalizado = true;
                 window.removeEventListener("shinobi:online-ui-ready", aoPronto);
+                window.removeEventListener("shinobi:online-stack-error", aoErro);
                 resolve(onlineUIDisponivel() ? window.ShinobiOnlineUI : null);
             };
             var aoPronto = function () { return concluir(); };
+            var aoErro = function () { return concluir(); };
             window.addEventListener("shinobi:online-ui-ready", aoPronto, { once: true });
-            var inicio = performance.now();
+            window.addEventListener("shinobi:online-stack-error", aoErro, { once: true });
+            var agora = function () { return window.performance && typeof window.performance.now === "function" ? window.performance.now() : Date.now(); };
+            var inicio = agora();
             var verificar = function () {
                 if (onlineUIDisponivel())
                     return concluir();
-                if (performance.now() - inicio >= timeout)
+                if (agora() - inicio >= limite)
                     return concluir();
-                setTimeout(verificar, 60);
+                setTimeout(verificar, modoLegado ? 120 : 60);
             };
             verificar();
         });

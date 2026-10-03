@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.154",
+  "version": "2.5.8.156",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -8,8 +8,8 @@
       "outputSha256": "7a0b4760faff09548d2d221a4aabf263d781b6c81e7bef71a665a2405ca956bf"
     },
     "js/00-shinobi-ui.js": {
-      "sourceSha256": "fd1c904d7eaf6d54b48157c16064223a6fc251dec13e0a89fcef65ef8c83ac7f",
-      "outputSha256": "26228525a44f6006b62b0c5a821b4bd192318e16714dd5bb1a53816c8fa8bdc4"
+      "sourceSha256": "258290f6449bde9a5ff5a4abaf68418b49d5b05bcfc88b78b7a3e860281d3fdc",
+      "outputSha256": "b5fbfe63502f00f255f80fd15bef947e706d1afc86f872982fb614c907b34361"
     },
     "js/01-core.js": {
       "sourceSha256": "d781c508d6c8ad990a46fb0eb962c0de42eb0ba40e8388cda4fff791c5ae2704",
@@ -56,8 +56,8 @@
       "outputSha256": "ff9da8bdf0a78f4095e4592ab94dbfcefe653f49ef2759596bf0ecc95e6ec5ab"
     },
     "js/08-post-render-loader.js": {
-      "sourceSha256": "adcbc169377c9d88d3936cd0fa71bc97c33cc5ffdd10e24a57af06f318199807",
-      "outputSha256": "177cea1253787a02c250c94c7d71fc3afd593cb9ce84a8cca0851a61118ffce8"
+      "sourceSha256": "c76b7d54a0afbe6fd3f6f19c9c55789cf5d700b0067a97cbdcd5fff100e6e371",
+      "outputSha256": "c1f21d84ffb2e42a3d1fc06fc7c3e7e5d2c4e0adf38cf0ca14cc673054b469de"
     },
     "js/08-update.js": {
       "sourceSha256": "f6060454f2788207a8d5d7c544b41e771b08d6ae5403fcd60d1bab10049e2840",
@@ -100,8 +100,8 @@
       "outputSha256": "d03e52919b2b28ae6fe940863f00bc214b4ee4cdc57fe20c70ca5c946c930077"
     },
     "js/18-online-config.js": {
-      "sourceSha256": "fa9cff795a69cfc41ccf70c3bda6263f3e2d5fbead7fb5a69d25f0fb39c98e63",
-      "outputSha256": "72cabfa1e24a635451703d8592b2e9adb640818ce3009341f25e7fe149eb1869"
+      "sourceSha256": "5a2be6ad7206ec1e5300812d73b3c7442cd2b3977e77a9c77bb649eff583ebab",
+      "outputSha256": "0ca83b1bf53155a26b3a52791e56e28574c68cada92ea620ada6bf36dfcc8874"
     },
     "js/19-backup-manager-utils.js": {
       "sourceSha256": "f7bb2da5db0a2a50f05c06be4cf0f25bfa6243195facef10148c52c436074e0e",
@@ -112,12 +112,12 @@
       "outputSha256": "019f24970154a8a3ac8ecc3dff76c9d86dcac71d3517ad71a220ea2955c50276"
     },
     "js/19-image-storage-sync.js": {
-      "sourceSha256": "e63b072c30ad2b0c8774081da1431d6a61cb6246699cb3ac7e4531da68b77f41",
-      "outputSha256": "51743ff235dc6b399e98ed36705d18ca301b8500a1fce6ff7bfed46340f54d9f"
+      "sourceSha256": "61485b273fdcaadac6cae02e20d249d59eea287985f98fb6820e0da6f1893a87",
+      "outputSha256": "8fc15fa574cd700841e75a8b6f42f6fc79044c4fc5a0f10ca6a4be4570c39ac4"
     },
     "js/19-online-core.js": {
-      "sourceSha256": "7e9b1c1039562bce5bddd27739bcbeb39673910b18edc1172d08dfbc2651dfc5",
-      "outputSha256": "ca3b961e94359e6ab8ebf0958a03ebe778f5d9c25a80e81969f98ff3ab1a9d84"
+      "sourceSha256": "844c8cdc2c1fc99e6c4d94f4fe7c6fed62ddcc1abb20e2210a6e639bc0bc1586",
+      "outputSha256": "7733fc834fd5718771464782c2b7aa357b798621fa3ef50fae14f8c32742f530"
     },
     "js/19-realtime-fields-utils.js": {
       "sourceSha256": "9cb9b6d05d71cd0d6cde83c7ff9727c785381a6fd4fa352c478f0ac425dd97ba",
@@ -152,8 +152,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "963a517d5eda0d012263e76b16c52a7a37b4112b1f00c40465f038d9f7956d42",
-      "outputSha256": "30ba10693b62a947f6726f03f4234914bc0e1dda73ffd4161725119f8ff0e0f2"
+      "sourceSha256": "2157a98a71ceb0f7628cede8c116302be60dbb28c96ad99761ec2b20e6325ed8",
+      "outputSha256": "871d1d9c275b5bdfe3b4906ecf4f06126ccd2804ce57cd6a5f3c24f197823d74"
     }
   }
 }
