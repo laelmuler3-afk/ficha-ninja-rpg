@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/20-online-ui.js — app 2.5.8.154. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -117,23 +116,6 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         var _b = __read(_a, 2), participantId = _b[0], p = _b[1];
         return (__assign(__assign({}, (p && typeof p === "object" ? p : {})), { id: String(participantId) }));
     }); };
-    function formDataParaObjeto(dados, form) {
-        var out = {};
-        if (dados && typeof dados.forEach === "function") {
-            dados.forEach(function (valor, chave) { out[chave] = valor; });
-            return out;
-        }
-        var elementos = Array.from((form === null || form === void 0 ? void 0 : form.elements) || []);
-        elementos.forEach(function (el) {
-            var nome = String((el === null || el === void 0 ? void 0 : el.name) || "");
-            if (!nome || el.disabled)
-                return;
-            if ((el.type === "checkbox" || el.type === "radio") && !el.checked)
-                return;
-            out[nome] = el.value;
-        });
-        return out;
-    }
     function obterEstado() { var _a, _b; return ((_b = (_a = window.ShinobiOnline) === null || _a === void 0 ? void 0 : _a.snapshot) === null || _b === void 0 ? void 0 : _b.call(_a)) || {}; }
     function sessaoLocal() { try {
         return JSON.parse(localStorage.getItem("shinobi_online_session_v1") || "null");
@@ -2182,7 +2164,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
                     return [2 /*return*/, executar(function () { return __awaiter(_this, void 0, void 0, function () {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, window.ShinobiOnline.criarNpcCampanha(dados.get("campaignId"), formDataParaObjeto(dados, form))];
+                                    case 0: return [4 /*yield*/, window.ShinobiOnline.criarNpcCampanha(dados.get("campaignId"), Object.fromEntries(dados.entries()))];
                                     case 1:
                                         _a.sent();
                                         form.reset();
@@ -2218,7 +2200,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
                 if (tipo === "quick-npc")
                     return [2 /*return*/, executar(function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, window.ShinobiOnline.criarNpcRapido(formDataParaObjeto(dados, form))];
+                                case 0: return [4 /*yield*/, window.ShinobiOnline.criarNpcRapido(Object.fromEntries(dados.entries()))];
                                 case 1:
                                     _a.sent();
                                     form.reset();

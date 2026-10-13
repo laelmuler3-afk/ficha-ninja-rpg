@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.154. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;

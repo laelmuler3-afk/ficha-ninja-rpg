@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/01-core.js — app 2.5.8.154. Não editar. */
 /* Shinobi 1.3.0 — arquivo modular gerado preservando a ordem do app original. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {

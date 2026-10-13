@@ -1,32 +1,14 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/08-post-render-loader.js — app 2.5.8.156. Não editar. */
-/* EKO 2.5.8.156 — carregamento progressivo do online e atualizador.
- * Em aparelhos antigos, a ficha fica responsiva primeiro e o stack online
- * entra sob demanda ou quando o navegador estiver ocioso.
- */
+/* EKO 2.5.8.157 — carregamento pós-render com compatibilidade legada. */
 (function () {
     "use strict";
-    if (window.__shinobiPostRenderLoaderV258156)
+    if (window.__shinobiPostRenderLoaderV25875)
         return;
-    window.__shinobiPostRenderLoaderV258156 = true;
-    var versao = String(document.documentElement.getAttribute("data-app-version") || window.APP_VERSION || "2.5.8.156");
-    var modoLegado = window.SHINOBI_LEGACY_MODE === true;
-    var onlinePromise = null;
-    var onlinePronto = false;
-    function caminhoCompativel(caminho) {
-        var valor = String(caminho || "");
-        if (!modoLegado)
-            return valor;
-        if (valor.indexOf("js/") === 0)
-            return "js-legacy/" + valor.slice(3);
-        if (valor === "vendor/qrcode-local.js")
-            return "vendor/qrcode-local-legacy.js";
-        return valor;
-    }
+    window.__shinobiPostRenderLoaderV25875 = true;
+    var versao = String(document.documentElement.getAttribute("data-app-version") || window.APP_VERSION || "2.5.8.75");
     function url(caminho) {
         return caminho + "?v=" + encodeURIComponent(versao);
     }
     function carregarScript(caminho, aoCarregar, aoFalhar) {
-        var caminhoReal = caminhoCompativel(caminho);
         var seletor = 'script[data-shinobi-lazy="' + caminho.replace(/"/g, '') + '"]';
         var existente = document.querySelector(seletor);
         if (existente) {
@@ -40,7 +22,10 @@
             return;
         }
         var script = document.createElement("script");
-        script.src = url(caminhoReal);
+        var alvo = caminho;
+        if (window.SHINOBI_LEGACY_MODE && alvo.indexOf("js/") === 0)
+            alvo = "js-legacy/" + alvo.slice(3);
+        script.src = url(alvo);
         script.async = false;
         script.setAttribute("data-shinobi-lazy", caminho);
         script.onload = function () {
@@ -70,10 +55,8 @@
         });
     }
     function iniciarOnline() {
-        if (onlinePronto && window.ShinobiOnlineUI)
-            return Promise.resolve(window.ShinobiOnlineUI);
-        if (onlinePromise)
-            return onlinePromise;
+        if (window.__shinobiOnlineStackReady || window.__shinobiOnlineStackLoading)
+            return;
         window.__shinobiOnlineStackLoading = true;
         var arquivos = [
             "js/18-online-config.js",
@@ -86,60 +69,35 @@
             "js/20-online-ui.js",
             "js/21-online-hooks.js"
         ];
-        onlinePromise = new Promise(function (resolve, reject) {
-            carregarSequencia(arquivos, 0, function () {
-                onlinePronto = true;
-                window.__shinobiOnlineStackLoading = false;
-                try {
-                    window.dispatchEvent(new CustomEvent("shinobi:online-stack-ready"));
-                }
-                catch (_erro) { }
-                resolve(window.ShinobiOnlineUI || true);
-            }, function (caminho, erro) {
-                window.__shinobiOnlineStackLoading = false;
-                onlinePromise = null;
-                console.warn("Online ficou desativado sem afetar a ficha. Falha em:", caminho, erro);
-                try {
-                    window.dispatchEvent(new CustomEvent("shinobi:online-stack-error", { detail: { arquivo: caminho } }));
-                }
-                catch (_erro) { }
-                reject(erro || new Error("Falha ao carregar recursos online."));
-            });
+        carregarSequencia(arquivos, 0, function () {
+            window.__shinobiOnlineStackLoading = false;
+            window.__shinobiOnlineStackReady = true;
+            try {
+                window.dispatchEvent(new CustomEvent("shinobi:online-stack-ready"));
+            }
+            catch (_erro) { }
+        }, function (caminho, erro) {
+            window.__shinobiOnlineStackLoading = false;
+            console.warn("Online ficou desativado sem afetar a ficha. Falha em:", caminho, erro);
+            try {
+                window.dispatchEvent(new CustomEvent("shinobi:online-stack-error", { detail: { arquivo: caminho } }));
+            }
+            catch (_erro) { }
         });
-        return onlinePromise;
     }
-    window.ShinobiOnlineLoader = {
-        ensureReady: iniciarOnline,
-        isReady: function () { return onlinePronto === true || Boolean(window.ShinobiOnlineUI); },
-        isLoading: function () { return window.__shinobiOnlineStackLoading === true; }
-    };
     function iniciarAtualizador() {
         carregarScript("js/08-update.js", null, function (erro) {
             console.warn("Atualizador indisponível. A ficha continua funcionando.", erro);
         });
     }
-    function agendarOnlineLegado() {
-        /* No J7/engines antigas, parsear o stack online inteiro durante a entrada
-           deixa o menu e as páginas pesados. Damos prioridade à interação e ainda
-           ativamos a sincronização automaticamente após um período ocioso. */
-        var disparar = function () { iniciarOnline().catch(function () { }); };
-        setTimeout(function () {
-            if (onlinePronto || onlinePromise)
-                return;
-            if (typeof window.requestIdleCallback === "function") {
-                window.requestIdleCallback(disparar, { timeout: 5000 });
-            }
-            else
-                setTimeout(disparar, 1200);
-        }, 6500);
-    }
+    window.ShinobiEnsureOnline = function () { iniciarOnline(); };
     function depoisDaRenderizacao() {
-        if (modoLegado) {
-            agendarOnlineLegado();
-            setTimeout(iniciarAtualizador, 13000);
+        if (window.SHINOBI_LEGACY_MODE) {
+            setTimeout(iniciarOnline, 7000);
+            setTimeout(iniciarAtualizador, 11000);
         }
         else {
-            setTimeout(function () { iniciarOnline().catch(function () { }); }, 150);
+            setTimeout(iniciarOnline, 150);
             setTimeout(iniciarAtualizador, 3500);
         }
     }

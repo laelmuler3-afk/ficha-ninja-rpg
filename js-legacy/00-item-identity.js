@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/00-item-identity.js — app 2.5.8.154. Não editar. */
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;

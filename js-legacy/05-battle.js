@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/05-battle.js — app 2.5.8.154. Não editar. */
 /* Shinobi 1.8.5 — painel de combate com modificadores e efeitos acumulados. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {

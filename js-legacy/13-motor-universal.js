@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/13-motor-universal.js — app 2.5.8.154. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {

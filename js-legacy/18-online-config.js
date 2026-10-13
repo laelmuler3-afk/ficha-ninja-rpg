@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/18-online-config.js — app 2.5.8.156. Não editar. */
 /*
  * Ficha Ninja RPG — configuração do Firebase.
  *
@@ -19,19 +18,18 @@ window.SHINOBI_FIREBASE_CONFIG = {
     messagingSenderId: "683919396463",
     appId: "1:683919396463:web:d033f7ef8d8261c18e879a"
 };
-window.SHINOBI_FIREBASE_OPTIONS = {
-    enabled: true,
-    sdkVersion: "12.16.0",
-    legacySdkVersion: "10.14.1",
-    backupsToKeep: 3,
-    sdkMode: "compat",
-    sdkTimeoutMs: 18000,
-    sdkSources: [
-        "https://www.gstatic.com/firebasejs/12.16.0",
-        "https://cdn.jsdelivr.net/npm/firebase@12.16.0"
-    ],
-    legacySdkSources: [
-        "https://www.gstatic.com/firebasejs/10.14.1",
-        "https://cdn.jsdelivr.net/npm/firebase@10.14.1"
-    ]
-};
+(function () {
+    var legacy = Boolean(window.SHINOBI_LEGACY_MODE);
+    var version = legacy ? "10.14.1" : "12.16.0";
+    window.SHINOBI_FIREBASE_OPTIONS = {
+        enabled: true,
+        sdkVersion: version,
+        backupsToKeep: 3,
+        sdkMode: "compat",
+        sdkTimeoutMs: legacy ? 35000 : 18000,
+        sdkSources: [
+            "https://www.gstatic.com/firebasejs/" + version,
+            "https://cdn.jsdelivr.net/npm/firebase@" + version
+        ]
+    };
+})();

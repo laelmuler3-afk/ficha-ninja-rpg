@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/08-update.js — app 2.5.8.154. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -73,7 +72,7 @@ var __read = (this && this.__read) || function (o, n) {
     var APP_VERSION = String(versaoDocumento || versaoScript || "2.5.0");
     document.documentElement.dataset.appVersion = APP_VERSION;
     window.APP_VERSION = APP_VERSION;
-    var SW_URL_BASE = window.SHINOBI_LEGACY_MODE === true ? "./service-worker-legacy.js" : "./service-worker.js";
+    var SW_URL_BASE = window.SHINOBI_LEGACY_MODE ? "./service-worker-legacy.js" : "./service-worker.js";
     var swUrl = function (versao) {
         if (versao === void 0) { versao = APP_VERSION; }
         return "".concat(SW_URL_BASE, "?v=").concat(encodeURIComponent(String(versao || APP_VERSION)));

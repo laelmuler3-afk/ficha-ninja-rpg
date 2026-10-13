@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/19-character-identity.js — app 2.5.8.154. Não editar. */
 /* EKO 2.5.8.80 — identidade permanente da personagem, independente do nome local. */
 (function (root, factory) {
     var api = factory();

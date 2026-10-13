@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/19-online-core.js — app 2.5.8.156. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -95,7 +94,21 @@ var __values = (this && this.__values) || function(o) {
     var CHAVE_RESTORE_RESERVA_PREFIX = "shinobi_restore_reserve_v1__";
     var LIMITE_RESERVA_RESTORE_MS = 30 * 60 * 1000;
     var CAMPAIGN_SCHEMA_VERSION = 5;
-    var EVENTO = new EventTarget();
+    var EVENTO = (function () {
+        var listeners = new Map();
+        return {
+            addEventListener: function (tipo, fn) { if (typeof fn !== "function")
+                return; var lista = listeners.get(tipo) || []; if (!lista.includes(fn))
+                lista.push(fn); listeners.set(tipo, lista); },
+            removeEventListener: function (tipo, fn) { var lista = listeners.get(tipo) || []; listeners.set(tipo, lista.filter(function (item) { return item !== fn; })); },
+            dispatchEvent: function (evt) { var lista = (listeners.get(evt === null || evt === void 0 ? void 0 : evt.type) || []).slice(); lista.forEach(function (fn) { try {
+                fn.call(null, evt);
+            }
+            catch (erro) {
+                setTimeout(function () { throw erro; }, 0);
+            } }); return true; }
+        };
+    })();
     var CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     var CACHE_BACKUPS_HISTORICOS = new Map();
     var LIMITE_CACHE_BACKUP_MS = 5 * 60 * 1000;
@@ -523,7 +536,7 @@ var __values = (this && this.__values) || function(o) {
     }
     function carregarFirebaseCompat() {
         return __awaiter(this, void 0, void 0, function () {
-            var opcoes, modoLegado, versao, fontesConfiguradas, fontes, timeout, ultimoErro, fontes_1, fontes_1_1, baseBruta, base, erro_1, e_1_1;
+            var opcoes, versao, fontes, timeout, ultimoErro, fontes_1, fontes_1_1, baseBruta, base, erro_1, e_1_1;
             var e_1, _a;
             var _b, _c, _d;
             return __generator(this, function (_e) {
@@ -532,11 +545,9 @@ var __values = (this && this.__values) || function(o) {
                         if (firebaseCompatCompleto())
                             return [2 /*return*/, window.firebase];
                         opcoes = window.SHINOBI_FIREBASE_OPTIONS || {};
-                        modoLegado = window.SHINOBI_LEGACY_MODE === true;
-                        versao = modoLegado ? (opcoes.legacySdkVersion || "10.14.1") : (opcoes.sdkVersion || "12.16.0");
-                        fontesConfiguradas = modoLegado ? opcoes.legacySdkSources : opcoes.sdkSources;
-                        fontes = Array.isArray(fontesConfiguradas) && fontesConfiguradas.length
-                            ? fontesConfiguradas
+                        versao = opcoes.sdkVersion || "12.16.0";
+                        fontes = Array.isArray(opcoes.sdkSources) && opcoes.sdkSources.length
+                            ? opcoes.sdkSources
                             : ["https://www.gstatic.com/firebasejs/".concat(versao), "https://cdn.jsdelivr.net/npm/firebase@".concat(versao)];
                         timeout = opcoes.sdkTimeoutMs || 18000;
                         ultimoErro = null;
@@ -612,6 +623,7 @@ var __values = (this && this.__values) || function(o) {
             signInAnonymously: function (auth) { return auth.signInAnonymously(); },
             signInWithPopup: function (auth, provider) { return auth.signInWithPopup(provider); },
             signInWithRedirect: function (auth, provider) { return auth.signInWithRedirect(provider); },
+            getRedirectResult: function (auth) { return auth.getRedirectResult ? auth.getRedirectResult() : Promise.resolve(null); },
             signInWithCredential: function (auth, credential) { return auth.signInWithCredential(credential); },
             linkWithPopup: function (user, provider) { return user.linkWithPopup(provider); },
             linkWithRedirect: function (user, provider) { return user.linkWithRedirect(provider); },
@@ -941,7 +953,7 @@ var __values = (this && this.__values) || function(o) {
     }
     function autenticarGooglePopup() {
         return __awaiter(this, arguments, void 0, function (_a) {
-            var ultimoErro, tentativa, erro_4;
+            var ultimoErro, tentativa, erro_4, legado, codigo, popupInviavel;
             var _b = _a === void 0 ? {} : _a, _c = _b.tentativas, tentativas = _c === void 0 ? 2 : _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
@@ -950,31 +962,40 @@ var __values = (this && this.__values) || function(o) {
                         tentativa = 1;
                         _d.label = 1;
                     case 1:
-                        if (!(tentativa <= Math.max(1, tentativas))) return [3 /*break*/, 7];
+                        if (!(tentativa <= Math.max(1, tentativas))) return [3 /*break*/, 9];
                         _d.label = 2;
                     case 2:
-                        _d.trys.push([2, 4, , 6]);
+                        _d.trys.push([2, 4, , 8]);
                         return [4 /*yield*/, estadoOnline.api.signInWithPopup(estadoOnline.auth, criarProviderGoogle())];
                     case 3: return [2 /*return*/, _d.sent()];
                     case 4:
                         erro_4 = _d.sent();
                         ultimoErro = erro_4;
+                        legado = Boolean(window.SHINOBI_LEGACY_MODE);
+                        codigo = texto(erro_4 === null || erro_4 === void 0 ? void 0 : erro_4.code);
+                        popupInviavel = ["auth/popup-blocked", "auth/operation-not-supported-in-this-environment", "auth/web-storage-unsupported", "auth/internal-error"].includes(codigo);
+                        if (!(legado && popupInviavel)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, estadoOnline.api.signInWithRedirect(estadoOnline.auth, criarProviderGoogle())];
+                    case 5:
+                        _d.sent();
+                        return [2 /*return*/, { user: estadoOnline.auth.currentUser, redirect: true }];
+                    case 6:
                         if (!erroInternoAuth(erro_4) || tentativa >= tentativas)
                             throw erro_4;
                         /* auth/internal-error também pode aparecer quando o estado interno do
                            iframe/popup ficou preso após suspensão do PWA. Uma nova tentativa
                            com provider novo costuma recuperar sem apagar a ficha local. */
                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 220); })];
-                    case 5:
+                    case 7:
                         /* auth/internal-error também pode aparecer quando o estado interno do
                            iframe/popup ficou preso após suspensão do PWA. Uma nova tentativa
                            com provider novo costuma recuperar sem apagar a ficha local. */
                         _d.sent();
-                        return [3 /*break*/, 6];
-                    case 6:
+                        return [3 /*break*/, 8];
+                    case 8:
                         tentativa += 1;
                         return [3 /*break*/, 1];
-                    case 7: throw ultimoErro || new Error("Não foi possível entrar com Google.");
+                    case 9: throw ultimoErro || new Error("Não foi possível entrar com Google.");
                 }
             });
         });

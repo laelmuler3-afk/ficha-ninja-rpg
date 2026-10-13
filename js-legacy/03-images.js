@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/03-images.js — app 2.5.8.154. Não editar. */
 /* Shinobi 1.3.3 — armazenamento de imagens revisado e otimizado. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }

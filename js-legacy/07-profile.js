@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/07-profile.js — app 2.5.8.154. Não editar. */
 /* Shinobi 1.3.7 — perfil, Kekkei Genkai e fundo revisados. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {

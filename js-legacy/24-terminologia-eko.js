@@ -1,4 +1,3 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/24-terminologia-eko.js — app 2.5.8.154. Não editar. */
 var __values = (this && this.__values) || function(o) {
     var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
     if (m) return m.call(o);
