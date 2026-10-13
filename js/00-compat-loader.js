@@ -2,7 +2,7 @@
   "use strict";
   if(window.__shinobiCompatLoader) return;
   window.__shinobiCompatLoader=true;
-  var version=String(window.APP_VERSION||document.documentElement.getAttribute("data-app-version")||"2.5.8.157");
+  var version=String(window.APP_VERSION||document.documentElement.getAttribute("data-app-version")||"2.5.8.158");
   function modernSyntax(){
     try{ new Function("var a={x:1}; return a?.x ?? 0;"); return true; }catch(_e){ return false; }
   }

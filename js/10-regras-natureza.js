@@ -1,11 +1,11 @@
-/* Shinobi 1.8.3 — Naturezas + integração com efeitos automáticos de batalha. */
+/* Shinobi 1.8.4 — Naturezas + integração com efeitos automáticos de batalha. */
 (function(){
   "use strict";
 
-  if(window.__regrasNaturezaChakraV183) return;
-  window.__regrasNaturezaChakraV183 = true;
+  if(window.__regrasNaturezaChakraV184) return;
+  window.__regrasNaturezaChakraV184 = true;
 
-  const VERSAO = "1.8.3";
+  const VERSAO = "1.8.4";
 
   const NATUREZAS = [
     {id:"katon", nome:"KATON", icone:"🔥", classe:"katon", resistenciaId:"katon", resistenciaNome:"Katon / Fogo"},
@@ -223,102 +223,99 @@
     delete jutsu.naturezaDadoNivel5Versao;
     delete jutsu.naturezaDadoEntradaNivel5;
     delete jutsu.naturezaDadoSaidaNivel5;
+    delete jutsu.naturezaDadoAntesNivel5;
   }
 
-  function migrarMarcadorAntigo(jutsu, naturezaId){
-    if(!jutsu?.naturezaDadoNivel5Aplicado) return false;
+  /*
+   * Até a 1.8.3 o benefício N5 alterava jutsu.dano de forma persistente.
+   * Isso deixava o dado promovido gravado na ficha e fazia um jutsu continuar
+   * com d8/d10/etc. mesmo quando a Natureza atual já não tinha N5.
+   *
+   * A partir da 1.8.4 jutsu.dano volta a ser SEMPRE o dano-base informado pelo
+   * jogador/catálogo. A promoção de dado é somente uma projeção calculada na
+   * hora, a partir do nível ATUAL da Natureza daquele elemento.
+   *
+   * Esta rotina só desfaz alterações antigas quando os marcadores existentes
+   * comprovam, sem ambiguidade, qual era a entrada e qual foi a saída gerada.
+   * Edições manuais posteriores nunca são sobrescritas.
+   */
+  function restaurarDanoBaseNivel5Antigo(jutsu){
+    if(!jutsu || typeof jutsu !== "object") return false;
 
-    const antes = String(jutsu.naturezaDadoAntesNivel5 ?? "").trim();
+    let alterou = false;
     const atual = String(jutsu.dano ?? "").trim();
-    const esperado = antes && possuiDadoAprimoravel(antes)
-      ? elevarDadosDano(antes)
-      : "";
+    const meta = jutsu[META_NIVEL5];
 
-    if(antes && esperado && atual === esperado){
-      jutsu[META_NIVEL5] = {
-        natureza:naturezaId,
-        entrada:antes,
-        saida:atual,
-        assinaturaEntrada:assinaturaDados(antes),
-        assinaturaSaida:assinaturaDados(atual),
-        versao:VERSAO
-      };
-      limparMarcadoresAntigos(jutsu);
-      delete jutsu.naturezaDadoAntesNivel5;
-      return true;
+    if(meta && typeof meta === "object"){
+      const entrada = String(meta.entrada ?? "").trim();
+      const saida = String(meta.saida ?? "").trim();
+
+      if(entrada && saida && atual === saida){
+        jutsu.dano = entrada;
+        alterou = true;
+      }
+
+      /* O marcador antigo não participa mais do cálculo, mesmo quando o valor
+       * foi editado manualmente depois da promoção. */
+      delete jutsu[META_NIVEL5];
+      alterou = true;
     }
 
-    /* O marcador antigo dizia que aplicou, mas o dano permaneceu igual à entrada. */
-    if(antes && atual === antes){
+    if(jutsu.naturezaDadoNivel5Aplicado){
+      const antes = String(jutsu.naturezaDadoAntesNivel5 ?? "").trim();
+      const agora = String(jutsu.dano ?? "").trim();
+      const esperado = antes && possuiDadoAprimoravel(antes)
+        ? elevarDadosDano(antes)
+        : "";
+
+      if(antes && esperado && agora === esperado){
+        jutsu.dano = antes;
+        alterou = true;
+      }
+
       limparMarcadoresAntigos(jutsu);
-      delete jutsu.naturezaDadoAntesNivel5;
-      return false;
+      alterou = true;
+    }else{
+      const tinhaMarcadorSolto = [
+        "naturezaDadoNivel5Natureza",
+        "naturezaDadoNivel5Versao",
+        "naturezaDadoEntradaNivel5",
+        "naturezaDadoSaidaNivel5",
+        "naturezaDadoAntesNivel5"
+      ].some(chave => Object.prototype.hasOwnProperty.call(jutsu, chave));
+      if(tinhaMarcadorSolto){
+        limparMarcadoresAntigos(jutsu);
+        alterou = true;
+      }
     }
 
-    /* Marcador incompleto ou incompatível: não pode bloquear o valor atual do card. */
-    limparMarcadoresAntigos(jutsu);
-    delete jutsu.naturezaDadoAntesNivel5;
-    return false;
+    return alterou;
   }
 
-  function nivel5JaAplicado(jutsu, naturezaId){
-    const meta = jutsu?.[META_NIVEL5];
-    if(!meta || typeof meta !== "object") return false;
-    if(normalizarElemento(meta.natureza) !== naturezaId) return false;
-
-    const atual = String(jutsu.dano ?? "").trim();
-    return atual === String(meta.saida ?? "").trim();
-  }
-
-  function aplicarNivel5AoJutsu(jutsu, naturezaId){
-    if(!jutsu || !NATUREZA_POR_ID.has(naturezaId)) return false;
-    if(normalizarElemento(jutsu.elemento) !== naturezaId) return false;
-    if(nivelNatureza(naturezaId) < 5) return false;
-
-    if(migrarMarcadorAntigo(jutsu, naturezaId)) return true;
-    if(nivel5JaAplicado(jutsu, naturezaId)) return false;
-
-    const danoAtual = String(jutsu.dano ?? "").trim();
-    if(!possuiDadoAprimoravel(danoAtual)) return false;
-
-    const danoElevado = elevarDadosDano(danoAtual);
-
-    jutsu.dano = danoElevado;
-    jutsu[META_NIVEL5] = {
-      natureza:naturezaId,
-      entrada:danoAtual,
-      saida:danoElevado,
-      assinaturaEntrada:assinaturaDados(danoAtual),
-      assinaturaSaida:assinaturaDados(danoElevado),
-      versao:VERSAO
-    };
-
-    limparMarcadoresAntigos(jutsu);
-    delete jutsu.naturezaDadoAntesNivel5;
-    return true;
-  }
-
-  function aplicarNivel5NaNatureza(naturezaId, {persistir=true}={}){
-    if(!NATUREZA_POR_ID.has(naturezaId) || nivelNatureza(naturezaId) < 5) return 0;
+  function normalizarDanosNivel5Persistidos({persistir=true}={}){
     let alterados = 0;
-
     (Array.isArray(estado?.jutsus) ? estado.jutsus : []).forEach(jutsu => {
-      if(aplicarNivel5AoJutsu(jutsu, naturezaId)) alterados += 1;
+      if(restaurarDanoBaseNivel5Antigo(jutsu)) alterados += 1;
     });
 
-    if(alterados && persistir) persistirEstadoSeguro();
+    if(alterados && persistir) persistirEstadoSeguro({
+      confirmada:true,
+      origem:"natureza",
+      campo:"jutsus",
+      motivo:"reparo-nivel-natureza"
+    });
     return alterados;
+  }
+
+  /* Mantidos com os mesmos nomes públicos para compatibilidade com o restante
+   * do app. Eles agora normalizam dados persistidos antigos; a promoção N5 não
+   * é mais gravada no jutsu. */
+  function aplicarNivel5NaNatureza(_naturezaId, {persistir=true}={}){
+    return normalizarDanosNivel5Persistidos({persistir});
   }
 
   function aplicarNiveis5Pendentes({persistir=true}={}){
-    let alterados = 0;
-    NATUREZAS.forEach(natureza => {
-      if(nivelNatureza(natureza.id) >= 5){
-        alterados += aplicarNivel5NaNatureza(natureza.id, {persistir:false});
-      }
-    });
-    if(alterados && persistir) persistirEstadoSeguro();
-    return alterados;
+    return normalizarDanosNivel5Persistidos({persistir});
   }
 
   function calcularJutsuComNatureza(jutsu){
@@ -326,9 +323,15 @@
     const natureza = NATUREZA_POR_ID.get(elemento) || null;
     const nivel = natureza ? nivelNatureza(elemento) : 0;
     const conjuracao = dadosConjuracao();
-    const danoEfetivo = String(jutsu?.dano ?? "").trim();
+    const danoBase = String(jutsu?.dano ?? "").trim();
+    const nivel5Ativo = Boolean(
+      natureza &&
+      nivel >= 5 &&
+      possuiDadoAprimoravel(danoBase)
+    );
+    const danoEfetivo = nivel5Ativo ? elevarDadosDano(danoBase) : danoBase;
     const quantidadeDados = contarDados(danoEfetivo);
-    const temDano = possuiDano(jutsu);
+    const temDano = Boolean(danoBase && danoBase !== "—");
 
     let bonusNivel2 = 0;
     let bonusNivel6 = 0;
@@ -356,8 +359,14 @@
 
     const custoBaseTexto = String(jutsu?.custo ?? "").trim();
     const kaiSemCusto = Boolean(natureza && nivel >= 4 && ehTecnicaKai(jutsu));
-    const metaNivel5 = jutsu?.[META_NIVEL5] && typeof jutsu[META_NIVEL5] === "object"
-      ? jutsu[META_NIVEL5]
+    const metaNivel5 = nivel5Ativo
+      ? {
+          natureza:elemento,
+          entrada:danoBase,
+          saida:danoEfetivo,
+          versao:VERSAO,
+          dinamico:true
+        }
       : null;
 
     return {
@@ -567,7 +576,7 @@
       }
 
       const detalheDano = regra.metaNivel5
-        ? `N5 aplicado: ${regra.metaNivel5.entrada} → ${regra.metaNivel5.saida}`
+        ? `N5 ativo: ${regra.metaNivel5.entrada} → ${regra.metaNivel5.saida}`
         : regra.natureza && regra.nivel >= 5
           ? "N5 aguardando uma fórmula de dado no campo Dano"
           : "";
@@ -714,7 +723,7 @@
     if(!confirmado) return;
 
     estado[id] = nivelFinal;
-    if(nivelFinal >= 5) aplicarNivel5NaNatureza(id, {persistir:false});
+    normalizarDanosNivel5Persistidos({persistir:false});
     persistirEstadoSeguro({confirmada:true,origem:"natureza",campos:[id,"jutsus"],motivo:"alteracao-confirmada"});
     agendarAtualizacaoCompleta();
   }
@@ -886,6 +895,7 @@
     formatarDanoTotal,
     aplicarNivel5NaNatureza,
     aplicarNiveis5Pendentes,
+    normalizarDanosNivel5Persistidos,
     idsResistenciasAutomaticas
   };
 
