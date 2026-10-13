@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.156",
-  "name": "Compatibilidade legacy online e desempenho",
-  "notes": "Modo legado usa Firebase 10.14.1, carrega online sob demanda/ocioso e reduz efeitos pesados em aparelhos antigos.",
+  "version": "2.5.8.157",
+  "name": "Compatibilidade Android legado — online e autenticação",
+  "notes": "Adiciona build JavaScript legado, fallbacks visuais para WebViews antigos, Firebase 10.14.1 no modo legado, carregamento online sob demanda, emissor de eventos compatível e fallback de autenticação Google por redirecionamento.",
   "date": "2026-10-03"
 }
