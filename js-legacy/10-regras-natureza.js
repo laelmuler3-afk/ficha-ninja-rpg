@@ -38,29 +38,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __read = (this && this.__read) || function (o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-};
-/* Shinobi 1.8.3 — Naturezas + integração com efeitos automáticos de batalha. */
+/* Shinobi 1.8.4 — Naturezas + integração com efeitos automáticos de batalha. */
 (function () {
     "use strict";
-    if (window.__regrasNaturezaChakraV183)
+    if (window.__regrasNaturezaChakraV184)
         return;
-    window.__regrasNaturezaChakraV183 = true;
-    var VERSAO = "1.8.3";
+    window.__regrasNaturezaChakraV184 = true;
+    var VERSAO = "1.8.4";
     var NATUREZAS = [
         { id: "katon", nome: "KATON", icone: "🔥", classe: "katon", resistenciaId: "katon", resistenciaNome: "Katon / Fogo" },
         { id: "raiton", nome: "RAITON", icone: "⚡", classe: "raiton", resistenciaId: "raiton", resistenciaNome: "Raiton / Elétrico" },
@@ -259,103 +243,94 @@ var __read = (this && this.__read) || function (o, n) {
         delete jutsu.naturezaDadoNivel5Versao;
         delete jutsu.naturezaDadoEntradaNivel5;
         delete jutsu.naturezaDadoSaidaNivel5;
-    }
-    function migrarMarcadorAntigo(jutsu, naturezaId) {
-        var _a, _b;
-        if (!(jutsu === null || jutsu === void 0 ? void 0 : jutsu.naturezaDadoNivel5Aplicado))
-            return false;
-        var antes = String((_a = jutsu.naturezaDadoAntesNivel5) !== null && _a !== void 0 ? _a : "").trim();
-        var atual = String((_b = jutsu.dano) !== null && _b !== void 0 ? _b : "").trim();
-        var esperado = antes && possuiDadoAprimoravel(antes)
-            ? elevarDadosDano(antes)
-            : "";
-        if (antes && esperado && atual === esperado) {
-            jutsu[META_NIVEL5] = {
-                natureza: naturezaId,
-                entrada: antes,
-                saida: atual,
-                assinaturaEntrada: assinaturaDados(antes),
-                assinaturaSaida: assinaturaDados(atual),
-                versao: VERSAO
-            };
-            limparMarcadoresAntigos(jutsu);
-            delete jutsu.naturezaDadoAntesNivel5;
-            return true;
-        }
-        /* O marcador antigo dizia que aplicou, mas o dano permaneceu igual à entrada. */
-        if (antes && atual === antes) {
-            limparMarcadoresAntigos(jutsu);
-            delete jutsu.naturezaDadoAntesNivel5;
-            return false;
-        }
-        /* Marcador incompleto ou incompatível: não pode bloquear o valor atual do card. */
-        limparMarcadoresAntigos(jutsu);
         delete jutsu.naturezaDadoAntesNivel5;
-        return false;
     }
-    function nivel5JaAplicado(jutsu, naturezaId) {
-        var _a, _b;
-        var meta = jutsu === null || jutsu === void 0 ? void 0 : jutsu[META_NIVEL5];
-        if (!meta || typeof meta !== "object")
+    /*
+     * Até a 1.8.3 o benefício N5 alterava jutsu.dano de forma persistente.
+     * Isso deixava o dado promovido gravado na ficha e fazia um jutsu continuar
+     * com d8/d10/etc. mesmo quando a Natureza atual já não tinha N5.
+     *
+     * A partir da 1.8.4 jutsu.dano volta a ser SEMPRE o dano-base informado pelo
+     * jogador/catálogo. A promoção de dado é somente uma projeção calculada na
+     * hora, a partir do nível ATUAL da Natureza daquele elemento.
+     *
+     * Esta rotina só desfaz alterações antigas quando os marcadores existentes
+     * comprovam, sem ambiguidade, qual era a entrada e qual foi a saída gerada.
+     * Edições manuais posteriores nunca são sobrescritas.
+     */
+    function restaurarDanoBaseNivel5Antigo(jutsu) {
+        var _a, _b, _c, _d, _e;
+        if (!jutsu || typeof jutsu !== "object")
             return false;
-        if (normalizarElemento(meta.natureza) !== naturezaId)
-            return false;
+        var alterou = false;
         var atual = String((_a = jutsu.dano) !== null && _a !== void 0 ? _a : "").trim();
-        return atual === String((_b = meta.saida) !== null && _b !== void 0 ? _b : "").trim();
+        var meta = jutsu[META_NIVEL5];
+        if (meta && typeof meta === "object") {
+            var entrada = String((_b = meta.entrada) !== null && _b !== void 0 ? _b : "").trim();
+            var saida = String((_c = meta.saida) !== null && _c !== void 0 ? _c : "").trim();
+            if (entrada && saida && atual === saida) {
+                jutsu.dano = entrada;
+                alterou = true;
+            }
+            /* O marcador antigo não participa mais do cálculo, mesmo quando o valor
+             * foi editado manualmente depois da promoção. */
+            delete jutsu[META_NIVEL5];
+            alterou = true;
+        }
+        if (jutsu.naturezaDadoNivel5Aplicado) {
+            var antes = String((_d = jutsu.naturezaDadoAntesNivel5) !== null && _d !== void 0 ? _d : "").trim();
+            var agora = String((_e = jutsu.dano) !== null && _e !== void 0 ? _e : "").trim();
+            var esperado = antes && possuiDadoAprimoravel(antes)
+                ? elevarDadosDano(antes)
+                : "";
+            if (antes && esperado && agora === esperado) {
+                jutsu.dano = antes;
+                alterou = true;
+            }
+            limparMarcadoresAntigos(jutsu);
+            alterou = true;
+        }
+        else {
+            var tinhaMarcadorSolto = [
+                "naturezaDadoNivel5Natureza",
+                "naturezaDadoNivel5Versao",
+                "naturezaDadoEntradaNivel5",
+                "naturezaDadoSaidaNivel5",
+                "naturezaDadoAntesNivel5"
+            ].some(function (chave) { return Object.prototype.hasOwnProperty.call(jutsu, chave); });
+            if (tinhaMarcadorSolto) {
+                limparMarcadoresAntigos(jutsu);
+                alterou = true;
+            }
+        }
+        return alterou;
     }
-    function aplicarNivel5AoJutsu(jutsu, naturezaId) {
-        var _a;
-        if (!jutsu || !NATUREZA_POR_ID.has(naturezaId))
-            return false;
-        if (normalizarElemento(jutsu.elemento) !== naturezaId)
-            return false;
-        if (nivelNatureza(naturezaId) < 5)
-            return false;
-        if (migrarMarcadorAntigo(jutsu, naturezaId))
-            return true;
-        if (nivel5JaAplicado(jutsu, naturezaId))
-            return false;
-        var danoAtual = String((_a = jutsu.dano) !== null && _a !== void 0 ? _a : "").trim();
-        if (!possuiDadoAprimoravel(danoAtual))
-            return false;
-        var danoElevado = elevarDadosDano(danoAtual);
-        jutsu.dano = danoElevado;
-        jutsu[META_NIVEL5] = {
-            natureza: naturezaId,
-            entrada: danoAtual,
-            saida: danoElevado,
-            assinaturaEntrada: assinaturaDados(danoAtual),
-            assinaturaSaida: assinaturaDados(danoElevado),
-            versao: VERSAO
-        };
-        limparMarcadoresAntigos(jutsu);
-        delete jutsu.naturezaDadoAntesNivel5;
-        return true;
-    }
-    function aplicarNivel5NaNatureza(naturezaId, _a) {
+    function normalizarDanosNivel5Persistidos(_a) {
         var _b = _a === void 0 ? {} : _a, _c = _b.persistir, persistir = _c === void 0 ? true : _c;
-        if (!NATUREZA_POR_ID.has(naturezaId) || nivelNatureza(naturezaId) < 5)
-            return 0;
         var alterados = 0;
         (Array.isArray(estado === null || estado === void 0 ? void 0 : estado.jutsus) ? estado.jutsus : []).forEach(function (jutsu) {
-            if (aplicarNivel5AoJutsu(jutsu, naturezaId))
+            if (restaurarDanoBaseNivel5Antigo(jutsu))
                 alterados += 1;
         });
         if (alterados && persistir)
-            persistirEstadoSeguro();
+            persistirEstadoSeguro({
+                confirmada: true,
+                origem: "natureza",
+                campo: "jutsus",
+                motivo: "reparo-nivel-natureza"
+            });
         return alterados;
+    }
+    /* Mantidos com os mesmos nomes públicos para compatibilidade com o restante
+     * do app. Eles agora normalizam dados persistidos antigos; a promoção N5 não
+     * é mais gravada no jutsu. */
+    function aplicarNivel5NaNatureza(_naturezaId, _a) {
+        var _b = _a === void 0 ? {} : _a, _c = _b.persistir, persistir = _c === void 0 ? true : _c;
+        return normalizarDanosNivel5Persistidos({ persistir: persistir });
     }
     function aplicarNiveis5Pendentes(_a) {
         var _b = _a === void 0 ? {} : _a, _c = _b.persistir, persistir = _c === void 0 ? true : _c;
-        var alterados = 0;
-        NATUREZAS.forEach(function (natureza) {
-            if (nivelNatureza(natureza.id) >= 5) {
-                alterados += aplicarNivel5NaNatureza(natureza.id, { persistir: false });
-            }
-        });
-        if (alterados && persistir)
-            persistirEstadoSeguro();
-        return alterados;
+        return normalizarDanosNivel5Persistidos({ persistir: persistir });
     }
     function calcularJutsuComNatureza(jutsu) {
         var _a, _b, _c;
@@ -363,9 +338,13 @@ var __read = (this && this.__read) || function (o, n) {
         var natureza = NATUREZA_POR_ID.get(elemento) || null;
         var nivel = natureza ? nivelNatureza(elemento) : 0;
         var conjuracao = dadosConjuracao();
-        var danoEfetivo = String((_a = jutsu === null || jutsu === void 0 ? void 0 : jutsu.dano) !== null && _a !== void 0 ? _a : "").trim();
+        var danoBase = String((_a = jutsu === null || jutsu === void 0 ? void 0 : jutsu.dano) !== null && _a !== void 0 ? _a : "").trim();
+        var nivel5Ativo = Boolean(natureza &&
+            nivel >= 5 &&
+            possuiDadoAprimoravel(danoBase));
+        var danoEfetivo = nivel5Ativo ? elevarDadosDano(danoBase) : danoBase;
         var quantidadeDados = contarDados(danoEfetivo);
-        var temDano = possuiDano(jutsu);
+        var temDano = Boolean(danoBase && danoBase !== "—");
         var bonusNivel2 = 0;
         var bonusNivel6 = 0;
         var motivos = [];
@@ -388,8 +367,14 @@ var __read = (this && this.__read) || function (o, n) {
             : bonusManualNumero + bonusNatureza;
         var custoBaseTexto = String((_c = jutsu === null || jutsu === void 0 ? void 0 : jutsu.custo) !== null && _c !== void 0 ? _c : "").trim();
         var kaiSemCusto = Boolean(natureza && nivel >= 4 && ehTecnicaKai(jutsu));
-        var metaNivel5 = (jutsu === null || jutsu === void 0 ? void 0 : jutsu[META_NIVEL5]) && typeof jutsu[META_NIVEL5] === "object"
-            ? jutsu[META_NIVEL5]
+        var metaNivel5 = nivel5Ativo
+            ? {
+                natureza: elemento,
+                entrada: danoBase,
+                saida: danoEfetivo,
+                versao: VERSAO,
+                dinamico: true
+            }
             : null;
         return {
             natureza: natureza,
@@ -466,7 +451,7 @@ var __read = (this && this.__read) || function (o, n) {
         var conjuracao = dadosConjuracao();
         var opcoes = ATRIBUTOS.map(function (atributo) { return "\n      <option value=\"".concat(atributo.id, "\" ").concat(atributo.id === conjuracao.atributoId ? "selected" : "", ">\n        ").concat(atributo.nome, "\n      </option>\n    "); }).join("");
         painel.innerHTML = "\n      <label for=\"atributoConjuracaoNatureza\">Atributo de Conjura\u00E7\u00E3o</label>\n      <select id=\"atributoConjuracaoNatureza\">".concat(opcoes, "</select>\n      <button type=\"button\" class=\"conjuracaoBeneficiosToggle ").concat(beneficiosNaturezaAberto ? "aberto" : "", "\" aria-expanded=\"").concat(beneficiosNaturezaAberto ? "true" : "false", "\" aria-controls=\"naturezaBeneficiosPainel\" aria-label=\"Mostrar benef\u00EDcios cumulativos dos n\u00EDveis\" title=\"Benef\u00EDcios cumulativos dos n\u00EDveis\">\n        <span class=\"conjuracaoBeneficiosSeta\" aria-hidden=\"true\"></span>\n      </button>\n      <div id=\"naturezaBeneficiosPainel\" class=\"naturezaBeneficiosPainel ").concat(beneficiosNaturezaAberto ? "aberto" : "", "\" ").concat(beneficiosNaturezaAberto ? "" : "hidden", ">\n        <div class=\"naturezaBeneficiosCabecalho\">\n          <strong>Benef\u00EDcios cumulativos dos n\u00EDveis</strong>\n        </div>\n        <ol>\n          ").concat(Object.entries(BENEFICIOS).map(function (_a) {
-            var _b = __read(_a, 2), nivel = _b[0], texto = _b[1];
+            var nivel = _a[0], texto = _a[1];
             return "<li><b>N\u00EDvel ".concat(nivel, ":</b> ").concat(texto, ".</li>");
         }).join(""), "\n        </ol>\n      </div>\n    ");
         (_a = painel.querySelector("#atributoConjuracaoNatureza")) === null || _a === void 0 ? void 0 : _a.addEventListener("change", function (evento) {
@@ -559,7 +544,7 @@ var __read = (this && this.__read) || function (o, n) {
                     : "Editar custo de Chakra";
             }
             var detalheDano = regra.metaNivel5
-                ? "N5 aplicado: ".concat(regra.metaNivel5.entrada, " \u2192 ").concat(regra.metaNivel5.saida)
+                ? "N5 ativo: ".concat(regra.metaNivel5.entrada, " \u2192 ").concat(regra.metaNivel5.saida)
                 : regra.natureza && regra.nivel >= 5
                     ? "N5 aguardando uma fórmula de dado no campo Dano"
                     : "";
@@ -713,8 +698,7 @@ var __read = (this && this.__read) || function (o, n) {
                         if (!confirmado)
                             return [2 /*return*/];
                         estado[id] = nivelFinal;
-                        if (nivelFinal >= 5)
-                            aplicarNivel5NaNatureza(id, { persistir: false });
+                        normalizarDanosNivel5Persistidos({ persistir: false });
                         persistirEstadoSeguro({ confirmada: true, origem: "natureza", campos: [id, "jutsus"], motivo: "alteracao-confirmada" });
                         agendarAtualizacaoCompleta();
                         return [2 /*return*/];
@@ -931,6 +915,7 @@ var __read = (this && this.__read) || function (o, n) {
         formatarDanoTotal: formatarDanoTotal,
         aplicarNivel5NaNatureza: aplicarNivel5NaNatureza,
         aplicarNiveis5Pendentes: aplicarNiveis5Pendentes,
+        normalizarDanosNivel5Persistidos: normalizarDanosNivel5Persistidos,
         idsResistenciasAutomaticas: idsResistenciasAutomaticas
     };
     document.addEventListener("input", function (evento) {
