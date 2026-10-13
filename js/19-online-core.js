@@ -12,7 +12,14 @@
   const CHAVE_RESTORE_RESERVA_PREFIX = "shinobi_restore_reserve_v1__";
   const LIMITE_RESERVA_RESTORE_MS = 30*60*1000;
   const CAMPAIGN_SCHEMA_VERSION = 5;
-  const EVENTO = new EventTarget();
+  const EVENTO = (()=>{
+    const listeners=new Map();
+    return {
+      addEventListener(tipo,fn){if(typeof fn!=="function")return;const lista=listeners.get(tipo)||[];if(!lista.includes(fn))lista.push(fn);listeners.set(tipo,lista);},
+      removeEventListener(tipo,fn){const lista=listeners.get(tipo)||[];listeners.set(tipo,lista.filter(item=>item!==fn));},
+      dispatchEvent(evt){const lista=(listeners.get(evt?.type)||[]).slice();lista.forEach(fn=>{try{fn.call(null,evt);}catch(erro){setTimeout(()=>{throw erro;},0);}});return true;}
+    };
+  })();
   const CARACTERES_CODIGO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const CACHE_BACKUPS_HISTORICOS = new Map();
   const LIMITE_CACHE_BACKUP_MS = 5*60*1000;
@@ -374,11 +381,9 @@
   async function carregarFirebaseCompat(){
     if(firebaseCompatCompleto()) return window.firebase;
     const opcoes=window.SHINOBI_FIREBASE_OPTIONS||{};
-    const modoLegado=window.SHINOBI_LEGACY_MODE===true;
-    const versao=modoLegado?(opcoes.legacySdkVersion||"10.14.1"):(opcoes.sdkVersion||"12.16.0");
-    const fontesConfiguradas=modoLegado?opcoes.legacySdkSources:opcoes.sdkSources;
-    const fontes=Array.isArray(fontesConfiguradas)&&fontesConfiguradas.length
-      ? fontesConfiguradas
+    const versao=opcoes.sdkVersion||"12.16.0";
+    const fontes=Array.isArray(opcoes.sdkSources)&&opcoes.sdkSources.length
+      ? opcoes.sdkSources
       : [`https://www.gstatic.com/firebasejs/${versao}`,`https://cdn.jsdelivr.net/npm/firebase@${versao}`];
     const timeout=opcoes.sdkTimeoutMs||18000;
     let ultimoErro=null;
@@ -413,6 +418,7 @@
       signInAnonymously(auth){return auth.signInAnonymously();},
       signInWithPopup(auth,provider){return auth.signInWithPopup(provider);},
       signInWithRedirect(auth,provider){return auth.signInWithRedirect(provider);},
+      getRedirectResult(auth){return auth.getRedirectResult?auth.getRedirectResult():Promise.resolve(null);},
       signInWithCredential(auth,credential){return auth.signInWithCredential(credential);},
       linkWithPopup(user,provider){return user.linkWithPopup(provider);},
       linkWithRedirect(user,provider){return user.linkWithRedirect(provider);},
@@ -661,6 +667,13 @@
         return await estadoOnline.api.signInWithPopup(estadoOnline.auth,criarProviderGoogle());
       }catch(erro){
         ultimoErro=erro;
+        const legado=Boolean(window.SHINOBI_LEGACY_MODE);
+        const codigo=texto(erro?.code);
+        const popupInviavel=["auth/popup-blocked","auth/operation-not-supported-in-this-environment","auth/web-storage-unsupported","auth/internal-error"].includes(codigo);
+        if(legado&&popupInviavel){
+          await estadoOnline.api.signInWithRedirect(estadoOnline.auth,criarProviderGoogle());
+          return {user:estadoOnline.auth.currentUser,redirect:true};
+        }
         if(!erroInternoAuth(erro)||tentativa>=tentativas) throw erro;
         /* auth/internal-error também pode aparecer quando o estado interno do
            iframe/popup ficou preso após suspensão do PWA. Uma nova tentativa
