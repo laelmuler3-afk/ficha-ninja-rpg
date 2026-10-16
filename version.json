@@ -1,6 +1,6 @@
 {
   "version": "2.5.8.159",
-  "name": "Correção de navegação e estabilidade de scroll",
-  "notes": "Corrige o direcionamento da barra inferior e estabiliza a posição ao abrir ou fechar cartas de jutsu e ataques. Remove o redirecionamento indevido ao topo de Jutsus e evita medidas aproximadas de cartas que deslocavam os destinos das seções.",
+  "name": "Informação rápida de ação nas cartas de jutsu",
+  "notes": "Exibe diretamente na capa de cada carta o tipo de ação já salvo no jutsu (Ação, Ação Bônus, Reação, Variável ou equivalente), sem duplicar campos nem alterar as regras do jutsu. O selo foi integrado ao layout atual e adapta o tamanho em telas pequenas.",
   "date": "2026-10-16"
 }
