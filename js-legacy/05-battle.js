@@ -446,9 +446,9 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 })();
 /* ===== NAVEGAÇÃO VERTICAL CONTÍNUA ===== */
 (function () {
-    if (window.__navegacaoVerticalUnicaV4)
+    if (window.__navegacaoVerticalUnicaV5)
         return;
-    window.__navegacaoVerticalUnicaV4 = true;
+    window.__navegacaoVerticalUnicaV5 = true;
     var IDS = ["identidade", "atributos", "jutsus", "batalha", "inventario", "anotacoes"];
     var paginas = new Map();
     var botoes = new Map();
@@ -459,6 +459,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     var cliqueEmAndamento = false;
     var paginaAtiva = "";
     var iniciada = false;
+    var sequenciaNavegacao = 0;
     function atualizarReferencias() {
         paginas.clear();
         botoes.clear();
@@ -483,11 +484,36 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         var _a;
         return (((_a = document.querySelector(".menu.bottomNav")) === null || _a === void 0 ? void 0 : _a.offsetHeight) || 0) + 28;
     }
+    function scrollAtual() {
+        var _a;
+        return window.scrollY || window.pageYOffset || ((_a = document.documentElement) === null || _a === void 0 ? void 0 : _a.scrollTop) || 0;
+    }
     function offsetPagina(id) {
         var pagina = paginas.get(id);
         return pagina
-            ? Math.max(0, pagina.getBoundingClientRect().top + window.scrollY - alturaTopo())
+            ? Math.max(0, pagina.getBoundingClientRect().top + scrollAtual() - alturaTopo())
             : 0;
+    }
+    function scrollImediato(destino) {
+        var _a;
+        var topo = Math.max(0, Number(destino) || 0);
+        var raiz = document.documentElement;
+        var anterior = ((_a = raiz === null || raiz === void 0 ? void 0 : raiz.style) === null || _a === void 0 ? void 0 : _a.scrollBehavior) || "";
+        try {
+            if (raiz === null || raiz === void 0 ? void 0 : raiz.style)
+                raiz.style.scrollBehavior = "auto";
+            window.scrollTo(0, topo);
+        }
+        catch (_erro) {
+            try {
+                window.scrollTo({ top: topo, behavior: "auto" });
+            }
+            catch (_erro2) { }
+        }
+        finally {
+            if (raiz === null || raiz === void 0 ? void 0 : raiz.style)
+                raiz.style.scrollBehavior = anterior;
+        }
     }
     function atualizarIndice(id) {
         var indice = IDS.indexOf(id);
@@ -511,12 +537,52 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     function rolar(id, suave) {
         if (!paginas.has(id))
+            return 0;
+        var destino = offsetPagina(id);
+        var reduzir = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var legado = window.SHINOBI_LEGACY_MODE === true;
+        var usarSuave = suave !== false && !reduzir && !legado;
+        if (!usarSuave) {
+            scrollImediato(destino);
+            return destino;
+        }
+        try {
+            window.scrollTo({ top: destino, behavior: "smooth" });
+        }
+        catch (_erro) {
+            scrollImediato(destino);
+        }
+        return destino;
+    }
+    function finalizarNavegacao(id, token) {
+        if (token !== sequenciaNavegacao || !paginas.has(id))
             return;
-        var reduzir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        window.scrollTo({
-            top: offsetPagina(id),
-            behavior: suave === false || reduzir ? "auto" : "smooth"
-        });
+        if (timerClique !== null) {
+            clearTimeout(timerClique);
+            timerClique = null;
+        }
+        /* O destino pode mudar alguns pixels enquanto imagens/cards terminam o
+           layout. A correção final é imediata para que o botão sempre termine
+           exatamente na seção solicitada, sem herdar o scroll intermediário. */
+        var destino = offsetPagina(id);
+        if (Math.abs(scrollAtual() - destino) > 2)
+            scrollImediato(destino);
+        marcarAtiva(id, true);
+        cliqueEmAndamento = false;
+        agendarDeteccao();
+    }
+    function acompanharNavegacao(id, token, inicio, quadrosEstaveis) {
+        if (quadrosEstaveis === void 0) { quadrosEstaveis = 0; }
+        if (token !== sequenciaNavegacao || !cliqueEmAndamento || !paginas.has(id))
+            return;
+        var erro = Math.abs(scrollAtual() - offsetPagina(id));
+        var estaveis = erro <= 2 ? quadrosEstaveis + 1 : 0;
+        var decorrido = Date.now() - inicio;
+        if (estaveis >= 2 || decorrido >= 1150) {
+            finalizarNavegacao(id, token);
+            return;
+        }
+        requestAnimationFrame(function () { return acompanharNavegacao(id, token, inicio, estaveis); });
     }
     function detectarVisivel() {
         if (cliqueEmAndamento)
@@ -554,9 +620,12 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
                 ? abrirAnterior.apply(this, arguments)
                 : undefined;
         }
+        var token = ++sequenciaNavegacao;
         cliqueEmAndamento = true;
-        if (timerClique !== null)
+        if (timerClique !== null) {
             clearTimeout(timerClique);
+            timerClique = null;
+        }
         var resultado;
         if (typeof abrirAnterior === "function") {
             resultado = abrirAnterior.apply(this, arguments);
@@ -566,19 +635,38 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         else {
             marcarAtiva(id, true);
         }
-        requestAnimationFrame(function () {
+        /* Dois frames garantem que tamanhos responsivos e conteúdo retrátil já
+           estejam medidos antes de calcular o destino da barra inferior. */
+        requestAnimationFrame(function () { return requestAnimationFrame(function () {
+            if (token !== sequenciaNavegacao)
+                return;
+            marcarAtiva(id, true);
             rolar(id, true);
-            timerClique = setTimeout(function () {
-                timerClique = null;
-                cliqueEmAndamento = false;
-                detectarVisivel();
-            }, 520);
-        });
+            var inicio = Date.now();
+            acompanharNavegacao(id, token, inicio, 0);
+            timerClique = setTimeout(function () { return finalizarNavegacao(id, token); }, 1250);
+        }); });
         return resultado;
     };
+    function cancelarNavegacaoPorInteracao(evento) {
+        var _a;
+        if (!cliqueEmAndamento)
+            return;
+        var alvo = evento === null || evento === void 0 ? void 0 : evento.target;
+        if ((_a = alvo === null || alvo === void 0 ? void 0 : alvo.closest) === null || _a === void 0 ? void 0 : _a.call(alvo, ".menu.bottomNav"))
+            return;
+        sequenciaNavegacao += 1;
+        cliqueEmAndamento = false;
+        if (timerClique !== null) {
+            clearTimeout(timerClique);
+            timerClique = null;
+        }
+        agendarDeteccao();
+    }
     function iniciar() {
         var _a;
         if (iniciada) {
+            atualizarReferencias();
             agendarDeteccao();
             return;
         }
@@ -597,11 +685,15 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     window.addEventListener("scroll", agendarDeteccao, { passive: true });
     window.addEventListener("resize", agendarDeteccao, { passive: true });
+    ["touchstart", "pointerdown", "wheel"].forEach(function (tipo) {
+        window.addEventListener(tipo, cancelarNavegacaoPorInteracao, { passive: true });
+    });
     window.addEventListener("orientationchange", function () {
         if (timerOrientacao !== null)
             clearTimeout(timerOrientacao);
         timerOrientacao = setTimeout(function () {
             timerOrientacao = null;
+            atualizarReferencias();
             agendarDeteccao();
         }, 180);
     }, { passive: true });
@@ -611,7 +703,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     else {
         iniciar();
     }
-    window.addEventListener("pageshow", agendarDeteccao);
+    window.addEventListener("pageshow", function () {
+        atualizarReferencias();
+        agendarDeteccao();
+    });
 })();
 /* ===== NOTAS: ABRIR TÓPICO SEM DESLOCAR A SEÇÃO ===== */
 (function () {
