@@ -801,73 +801,7 @@ function escolherElementoJutsuPrompt(i) { var j = (estado.jutsus || [])[i]; if (
     return; var atual = j.elemento || "katon", escolha = prompt("Escolha o elemento:\n1 - Katon\n2 - Raiton\n3 - Fuuton\n4 - Suiton\n5 - Doton\n6 - Yinton\n7 - Youton\n8 - Neutro\n\nAtual: ".concat(atual), ""); if (null === escolha)
     return; var novo = { 1: "katon", 2: "raiton", 3: "fuuton", 4: "suiton", 5: "doton", 6: "yin", 7: "yang", 8: "neutro" }[String(escolha).trim()] || String(escolha).trim().toLowerCase(); ["katon", "raiton", "fuuton", "suiton", "doton", "yin", "yang", "neutro"].includes(novo) ? (j.elemento = novo, persistirSemRender({ confirmada: true, origem: "jutsus", campo: "jutsus", motivo: "alteracao-confirmada" }), renderizarJutsus()) : alert("Elemento inválido."); }
 function jutsuAberto(i) { return estado.jutsusAbertos = estado.jutsusAbertos || {}, !!estado.jutsusAbertos[i]; }
-function capturarAncoraVisualJutsu(i) {
-    var _a, _b;
-    var indice = Number(i);
-    if (!Number.isInteger(indice) || indice < 0)
-        return null;
-    var jutsu = (estado.jutsus || [])[indice];
-    var card = localizarCardJutsuFoco({ jutsuId: String((jutsu === null || jutsu === void 0 ? void 0 : jutsu.jutsuId) || "") }, indice);
-    if (!card)
-        return null;
-    var alvo = card.querySelector(".jutsuLinhaResumo") || card;
-    var rect = (_a = alvo.getBoundingClientRect) === null || _a === void 0 ? void 0 : _a.call(alvo);
-    if (!rect || !Number.isFinite(rect.top) || ((_b = alvo.getClientRects) === null || _b === void 0 ? void 0 : _b.call(alvo).length) === 0)
-        return null;
-    return { top: rect.top, jutsuId: String((jutsu === null || jutsu === void 0 ? void 0 : jutsu.jutsuId) || ""), indice: indice };
-}
-function scrollVerticalImediato(destino) {
-    var _a;
-    var topo = Math.max(0, Number(destino) || 0);
-    var raiz = document.documentElement;
-    var anterior = ((_a = raiz === null || raiz === void 0 ? void 0 : raiz.style) === null || _a === void 0 ? void 0 : _a.scrollBehavior) || "";
-    try {
-        if (raiz === null || raiz === void 0 ? void 0 : raiz.style)
-            raiz.style.scrollBehavior = "auto";
-        window.scrollTo(0, topo);
-    }
-    catch (_erro) {
-        try {
-            window.scrollTo({ top: topo, behavior: "auto" });
-        }
-        catch (_erro2) { }
-    }
-    finally {
-        if (raiz === null || raiz === void 0 ? void 0 : raiz.style)
-            raiz.style.scrollBehavior = anterior;
-    }
-}
-function restaurarAncoraVisualJutsu(ancora) {
-    var _a, _b, _c;
-    if (!ancora)
-        return false;
-    var card = localizarCardJutsuFoco(ancora, ancora.indice);
-    if (!card)
-        return false;
-    var alvo = card.querySelector(".jutsuLinhaResumo") || card;
-    var rect = (_a = alvo.getBoundingClientRect) === null || _a === void 0 ? void 0 : _a.call(alvo);
-    if (!rect || !Number.isFinite(rect.top) || ((_b = alvo.getClientRects) === null || _b === void 0 ? void 0 : _b.call(alvo).length) === 0)
-        return false;
-    var delta = rect.top - ancora.top;
-    if (Math.abs(delta) <= 1)
-        return true;
-    var atual = window.scrollY || window.pageYOffset || ((_c = document.documentElement) === null || _c === void 0 ? void 0 : _c.scrollTop) || 0;
-    scrollVerticalImediato(atual + delta);
-    return true;
-}
-function agendarRestauracaoAncoraJutsu(ancora) {
-    if (!ancora)
-        return;
-    restaurarAncoraVisualJutsu(ancora);
-    var repetir = function () { return restaurarAncoraVisualJutsu(ancora); };
-    if (typeof requestAnimationFrame === "function") {
-        requestAnimationFrame(function () { return requestAnimationFrame(repetir); });
-    }
-    else
-        setTimeout(repetir, 0);
-}
 function alternarJutsuAberto(i) {
-    var ancora = capturarAncoraVisualJutsu(i);
     estado.jutsusAbertos = estado.jutsusAbertos || {};
     var estavaAberto = !!estado.jutsusAbertos[i];
     estado.jutsusAbertos[i] = !estavaAberto;
@@ -875,13 +809,16 @@ function alternarJutsuAberto(i) {
         cancelarFocoJutsuPendente(i);
     persistirEstadoLocal({ emitir: false, confirmada: true, origem: "ui", motivo: "jutsu-aberto" });
     renderizarJutsus();
-    /* Abrir/fechar uma carta não é navegação de página. Mantemos o cabeçalho
-       da mesma carta na mesma posição visual em vez de chamar abrirPagina(),
-       que anteriormente podia mandar o usuário para o topo de Jutsus. */
-    agendarRestauracaoAncoraJutsu(ancora);
+    if (estavaAberto) {
+        var voltarParaJutsus = function () { return fixarAbaJutsus(); };
+        if (typeof requestAnimationFrame === "function")
+            requestAnimationFrame(voltarParaJutsus);
+        else
+            setTimeout(voltarParaJutsus, 0);
+    }
 }
 function renderizarJutsus() { var box = document.getElementById("listaJutsus"); if (!box)
-    return; var html = []; (estado.jutsus || []).forEach(function (j, i) { var aberto = jutsuAberto(i), dados = dadosElementoJutsu(j.elemento || "katon"), nome = escaparHtmlShinobi(valorJutsu(j, "nome", "Novo jutsu")), custo = escaparHtmlShinobi(valorJutsu(j, "custo", "0")), rank = escaparHtmlShinobi(valorJutsu(j, "rank", "Rank")), dano = escaparHtmlShinobi(valorJutsu(j, "dano", "—")), totalDano = escaparHtmlShinobi(formatarDanoTotal(j.dano, j.bonusDano)), alcance = escaparHtmlShinobi(valorJutsu(j, "alcance", "—")), raio = escaparHtmlShinobi(valorJutsu(j, "raio", "—")), duracao = escaparHtmlShinobi(valorJutsu(j, "duracao", "—")), bonusAcerto = escaparHtmlShinobi(valorJutsu(j, "bonusAcerto", "—")), bonusDano = escaparHtmlShinobi(valorJutsu(j, "bonusDano", "—")), acao = escaparHtmlShinobi(valorJutsu(j, "acao", "—")), resistencia = escaparHtmlShinobi(valorJutsu(j, "resistencia", "—")), alvo = escaparHtmlShinobi(valorJutsu(j, "alvo", "—")), descricao = escaparHtmlShinobi(valorJutsu(j, "descricao", "Toque para editar efeitos")), imagem = normalizarImagemJutsuSegura(j.imagem), estiloImagem = imagem ? "style=\"background-image:url('".concat(imagem, "')\"") : ""; var jutsuIdAttr = escaparHtmlShinobi(String((j === null || j === void 0 ? void 0 : j.jutsuId) || "")); html.push("\n      <div class=\"jutsuCard jutsuCardCompacto jutsuListaCard ".concat(aberto ? "jutsuAberto" : "", " ").concat(imagem ? "comImagem" : "semImagem", " ").concat(dados.classe, "\" data-jutsu-id=\"").concat(jutsuIdAttr, "\" data-jutsu-index=\"").concat(i, "\">\n        <div class=\"jutsuCartaFundo\" ").concat(estiloImagem, "></div>\n        <button class=\"jutsuLinhaResumo\" onclick=\"alternarJutsuAberto(").concat(i, ")\">\n          <span class=\"jutsuLinhaIcone\">").concat(dados.icone, "</span>\n\n          <span class=\"jutsuLinhaTexto\">\n            <strong>").concat(nome, "</strong>\n            <small>").concat(dados.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " CH</small>\n          </span>\n\n          <span class=\"jutsuLinhaSeta\">").concat(aberto ? "▲" : "▼", "</span>\n        </button>\n\n        <div class=\"jutsuDetalhesCompactos\">\n          <div class=\"jutsuTopo jutsuTopoEditavel\">\n            <button class=\"jutsuIcone jutsuEditavel\" onclick=\"escolherElementoJutsuPrompt(").concat(i, ")\" title=\"Editar elemento\">").concat(dados.icone, "</button>\n\n            <div class=\"jutsuTitulo jutsuNomeEditavel\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'nome','Nome do jutsu')\">\n              <h3>").concat(nome, "</h3>\n              <span class=\"jutsuElementoLabel\">").concat(dados.nome, "</span>\n            </div>\n\n            <button class=\"jutsuRankPill jutsuEditavel\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'rank','Rank do jutsu')\">").concat(rank, "</button>\n            <button class=\"jutsuCustoPill jutsuEditavel\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'custo','Custo de Chakra')\">").concat(custo, " CH</button>\n          </div>\n\n          <div class=\"jutsuCartaImagemAcoes\">\n            <button type=\"button\" onclick=\"abrirUploadImagemJutsu(").concat(i, ")\">\uD83D\uDDBC Fundo da carta</button>\n            <button type=\"button\" onclick=\"removerImagemJutsu(").concat(i, ")\">Remover fundo</button>\n          </div>\n\n          <div class=\"jutsuResumo jutsuResumoEditavel\">\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'dano','Dano')\"><b>Dano</b>").concat(dano, "</button>\n            <button class=\"danoTotalBox\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>Dano total</b>").concat(totalDano, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'alcance','Alcance')\"><b>Alcance</b>").concat(alcance, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'raio','Raio / \u00C1rea')\"><b>Raio</b>").concat(raio, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'duracao','Dura\u00E7\u00E3o')\"><b>Dura\u00E7\u00E3o</b>").concat(duracao, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'bonusAcerto','B\u00F4nus de acerto')\"><b>Acerto</b>").concat(bonusAcerto, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>B\u00F4nus dano</b>").concat(bonusDano, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'acao','Tipo de a\u00E7\u00E3o')\"><b>A\u00E7\u00E3o</b>").concat(acao, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'resistencia','Teste / Resist\u00EAncia')\"><b>Teste</b>").concat(resistencia, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'alvo','Alvo')\"><b>Alvo</b>").concat(alvo, "</button>\n            <button class=\"jutsuResumoFull\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'descricao','Outros b\u00F4nus / efeitos')\"><b>Efeitos</b>").concat(descricao, "</button>\n          </div>\n\n          <div class=\"jutsuAcoes jutsuAcoesCompactas\">\n            <button class=\"btn btnUsarJutsu\" onclick=\"usarJutsu(").concat(i, ")\">USAR JUTSU</button>\n            <button class=\"btn perigo btnRemoverJutsu\" onclick=\"removerJutsu(").concat(i, ")\">Remover</button>\n          </div>\n        </div>\n      </div>\n    ")); }), box.innerHTML = html.join(""); }
+    return; var html = []; (estado.jutsus || []).forEach(function (j, i) { var aberto = jutsuAberto(i), dados = dadosElementoJutsu(j.elemento || "katon"), nome = escaparHtmlShinobi(valorJutsu(j, "nome", "Novo jutsu")), custo = escaparHtmlShinobi(valorJutsu(j, "custo", "0")), rank = escaparHtmlShinobi(valorJutsu(j, "rank", "Rank")), dano = escaparHtmlShinobi(valorJutsu(j, "dano", "—")), totalDano = escaparHtmlShinobi(formatarDanoTotal(j.dano, j.bonusDano)), alcance = escaparHtmlShinobi(valorJutsu(j, "alcance", "—")), raio = escaparHtmlShinobi(valorJutsu(j, "raio", "—")), duracao = escaparHtmlShinobi(valorJutsu(j, "duracao", "—")), bonusAcerto = escaparHtmlShinobi(valorJutsu(j, "bonusAcerto", "—")), bonusDano = escaparHtmlShinobi(valorJutsu(j, "bonusDano", "—")), acao = escaparHtmlShinobi(valorJutsu(j, "acao", "—")), resistencia = escaparHtmlShinobi(valorJutsu(j, "resistencia", "—")), alvo = escaparHtmlShinobi(valorJutsu(j, "alvo", "—")), descricao = escaparHtmlShinobi(valorJutsu(j, "descricao", "Toque para editar efeitos")), imagem = normalizarImagemJutsuSegura(j.imagem), estiloImagem = imagem ? "style=\"background-image:url('".concat(imagem, "')\"") : ""; var jutsuIdAttr = escaparHtmlShinobi(String((j === null || j === void 0 ? void 0 : j.jutsuId) || "")); html.push("\n      <div class=\"jutsuCard jutsuCardCompacto jutsuListaCard ".concat(aberto ? "jutsuAberto" : "", " ").concat(imagem ? "comImagem" : "semImagem", " ").concat(dados.classe, "\" data-jutsu-id=\"").concat(jutsuIdAttr, "\" data-jutsu-index=\"").concat(i, "\">\n        <div class=\"jutsuCartaFundo\" ").concat(estiloImagem, "></div>\n        <button class=\"jutsuLinhaResumo\" onclick=\"alternarJutsuAberto(").concat(i, ")\">\n          <span class=\"jutsuLinhaIcone\">").concat(dados.icone, "</span>\n          <span class=\"jutsuAcaoRapida\" data-acao=\"").concat(acao, "\" title=\"Tipo de ação: ").concat(acao, "\">").concat(acao, "</span>\n\n          <span class=\"jutsuLinhaTexto\">\n            <strong>").concat(nome, "</strong>\n            <small>").concat(dados.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " CH</small>\n          </span>\n\n          <span class=\"jutsuLinhaSeta\">").concat(aberto ? "▲" : "▼", "</span>\n        </button>\n\n        <div class=\"jutsuDetalhesCompactos\">\n          <div class=\"jutsuTopo jutsuTopoEditavel\">\n            <button class=\"jutsuIcone jutsuEditavel\" onclick=\"escolherElementoJutsuPrompt(").concat(i, ")\" title=\"Editar elemento\">").concat(dados.icone, "</button>\n\n            <div class=\"jutsuTitulo jutsuNomeEditavel\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'nome','Nome do jutsu')\">\n              <h3>").concat(nome, "</h3>\n              <span class=\"jutsuElementoLabel\">").concat(dados.nome, "</span>\n            </div>\n\n            <button class=\"jutsuRankPill jutsuEditavel\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'rank','Rank do jutsu')\">").concat(rank, "</button>\n            <button class=\"jutsuCustoPill jutsuEditavel\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'custo','Custo de Chakra')\">").concat(custo, " CH</button>\n          </div>\n\n          <div class=\"jutsuCartaImagemAcoes\">\n            <button type=\"button\" onclick=\"abrirUploadImagemJutsu(").concat(i, ")\">\uD83D\uDDBC Fundo da carta</button>\n            <button type=\"button\" onclick=\"removerImagemJutsu(").concat(i, ")\">Remover fundo</button>\n          </div>\n\n          <div class=\"jutsuResumo jutsuResumoEditavel\">\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'dano','Dano')\"><b>Dano</b>").concat(dano, "</button>\n            <button class=\"danoTotalBox\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>Dano total</b>").concat(totalDano, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'alcance','Alcance')\"><b>Alcance</b>").concat(alcance, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'raio','Raio / \u00C1rea')\"><b>Raio</b>").concat(raio, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'duracao','Dura\u00E7\u00E3o')\"><b>Dura\u00E7\u00E3o</b>").concat(duracao, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'bonusAcerto','B\u00F4nus de acerto')\"><b>Acerto</b>").concat(bonusAcerto, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>B\u00F4nus dano</b>").concat(bonusDano, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'acao','Tipo de a\u00E7\u00E3o')\"><b>A\u00E7\u00E3o</b>").concat(acao, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'resistencia','Teste / Resist\u00EAncia')\"><b>Teste</b>").concat(resistencia, "</button>\n            <button onclick=\"editarCampoJutsuPrompt(").concat(i, ",'alvo','Alvo')\"><b>Alvo</b>").concat(alvo, "</button>\n            <button class=\"jutsuResumoFull\" onclick=\"editarCampoJutsuPrompt(").concat(i, ",'descricao','Outros b\u00F4nus / efeitos')\"><b>Efeitos</b>").concat(descricao, "</button>\n          </div>\n\n          <div class=\"jutsuAcoes jutsuAcoesCompactas\">\n            <button class=\"btn btnUsarJutsu\" onclick=\"usarJutsu(").concat(i, ")\">USAR JUTSU</button>\n            <button class=\"btn perigo btnRemoverJutsu\" onclick=\"removerJutsu(").concat(i, ")\">Remover</button>\n          </div>\n        </div>\n      </div>\n    ")); }), box.innerHTML = html.join(""); }
 function usarJutsu(i) {
     return __awaiter(this, void 0, void 0, function () {
         var j, custo, chakra, chakraAtual, dados, classe, nome, dano, detalhe, ok, danoTxt, custoTxt;
@@ -959,48 +896,7 @@ function valorArmado(a, campo, padrao) {
     return (a && void 0 !== a[campo] ? String(a[campo]).trim() : "") || padrao;
 }
 function ataqueAberto(i) { return estado.ataquesAbertos = estado.ataquesAbertos || {}, !!estado.ataquesAbertos[i]; }
-function capturarAncoraVisualAtaque(i) {
-    var _a, _b, _c;
-    var indice = Number(i);
-    if (!Number.isInteger(indice) || indice < 0)
-        return null;
-    var card = ((_a = document.querySelectorAll("#listaArmados .ataqueListaCard")) === null || _a === void 0 ? void 0 : _a[indice]) || null;
-    if (!card)
-        return null;
-    var alvo = card.querySelector(".ataqueLinhaResumo") || card;
-    var rect = (_b = alvo.getBoundingClientRect) === null || _b === void 0 ? void 0 : _b.call(alvo);
-    if (!rect || !Number.isFinite(rect.top) || ((_c = alvo.getClientRects) === null || _c === void 0 ? void 0 : _c.call(alvo).length) === 0)
-        return null;
-    return { top: rect.top, indice: indice };
-}
-function restaurarAncoraVisualAtaque(ancora) {
-    var _a, _b, _c, _d;
-    if (!ancora)
-        return false;
-    var card = ((_a = document.querySelectorAll("#listaArmados .ataqueListaCard")) === null || _a === void 0 ? void 0 : _a[ancora.indice]) || null;
-    if (!card)
-        return false;
-    var alvo = card.querySelector(".ataqueLinhaResumo") || card;
-    var rect = (_b = alvo.getBoundingClientRect) === null || _b === void 0 ? void 0 : _b.call(alvo);
-    if (!rect || !Number.isFinite(rect.top) || ((_c = alvo.getClientRects) === null || _c === void 0 ? void 0 : _c.call(alvo).length) === 0)
-        return false;
-    var delta = rect.top - ancora.top;
-    if (Math.abs(delta) <= 1)
-        return true;
-    var atual = window.scrollY || window.pageYOffset || ((_d = document.documentElement) === null || _d === void 0 ? void 0 : _d.scrollTop) || 0;
-    scrollVerticalImediato(atual + delta);
-    return true;
-}
-function alternarAtaqueAberto(i) {
-    var ancora = capturarAncoraVisualAtaque(i);
-    estado.ataquesAbertos = estado.ataquesAbertos || {};
-    estado.ataquesAbertos[i] = !estado.ataquesAbertos[i];
-    persistirEstadoLocal({ emitir: false, confirmada: true, origem: "ui", motivo: "ataque-aberto" });
-    renderizarArmados();
-    restaurarAncoraVisualAtaque(ancora);
-    if (typeof requestAnimationFrame === "function")
-        requestAnimationFrame(function () { return requestAnimationFrame(function () { return restaurarAncoraVisualAtaque(ancora); }); });
-}
+function alternarAtaqueAberto(i) { estado.ataquesAbertos = estado.ataquesAbertos || {}, estado.ataquesAbertos[i] = !estado.ataquesAbertos[i], persistirEstadoLocal({ emitir: false, confirmada: true, origem: "ui", motivo: "ataque-aberto" }), renderizarArmados(); }
 function renderizarArmados() {
     var box = document.getElementById("listaArmados");
     if (!box)
