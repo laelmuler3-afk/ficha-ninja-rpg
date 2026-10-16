@@ -412,8 +412,8 @@
 
 /* ===== NAVEGAÇÃO VERTICAL CONTÍNUA ===== */
 (function(){
-  if(window.__navegacaoVerticalUnicaV4) return;
-  window.__navegacaoVerticalUnicaV4=true;
+  if(window.__navegacaoVerticalUnicaV5) return;
+  window.__navegacaoVerticalUnicaV5=true;
 
   const IDS=["identidade","atributos","jutsus","batalha","inventario","anotacoes"];
   const paginas=new Map();
@@ -426,6 +426,7 @@
   let cliqueEmAndamento=false;
   let paginaAtiva="";
   let iniciada=false;
+  let sequenciaNavegacao=0;
 
   function atualizarReferencias(){
     paginas.clear();
@@ -452,11 +453,29 @@
     return (document.querySelector(".menu.bottomNav")?.offsetHeight||0)+28;
   }
 
+  function scrollAtual(){
+    return window.scrollY||window.pageYOffset||document.documentElement?.scrollTop||0;
+  }
+
   function offsetPagina(id){
     const pagina=paginas.get(id);
     return pagina
-      ? Math.max(0,pagina.getBoundingClientRect().top+window.scrollY-alturaTopo())
+      ? Math.max(0,pagina.getBoundingClientRect().top+scrollAtual()-alturaTopo())
       : 0;
+  }
+
+  function scrollImediato(destino){
+    const topo=Math.max(0,Number(destino)||0);
+    const raiz=document.documentElement;
+    const anterior=raiz?.style?.scrollBehavior||"";
+    try{
+      if(raiz?.style) raiz.style.scrollBehavior="auto";
+      window.scrollTo(0,topo);
+    }catch(_erro){
+      try{window.scrollTo({top:topo,behavior:"auto"});}catch(_erro2){}
+    }finally{
+      if(raiz?.style) raiz.style.scrollBehavior=anterior;
+    }
   }
 
   function atualizarIndice(id){
@@ -480,12 +499,49 @@
   }
 
   function rolar(id,suave){
-    if(!paginas.has(id)) return;
-    const reduzir=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({
-      top:offsetPagina(id),
-      behavior:suave===false||reduzir?"auto":"smooth"
-    });
+    if(!paginas.has(id)) return 0;
+    const destino=offsetPagina(id);
+    const reduzir=typeof window.matchMedia==="function"&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const legado=window.SHINOBI_LEGACY_MODE===true;
+    const usarSuave=suave!==false&&!reduzir&&!legado;
+
+    if(!usarSuave){
+      scrollImediato(destino);
+      return destino;
+    }
+
+    try{window.scrollTo({top:destino,behavior:"smooth"});}
+    catch(_erro){scrollImediato(destino);}
+    return destino;
+  }
+
+  function finalizarNavegacao(id,token){
+    if(token!==sequenciaNavegacao||!paginas.has(id)) return;
+    if(timerClique!==null){clearTimeout(timerClique);timerClique=null;}
+
+    /* O destino pode mudar alguns pixels enquanto imagens/cards terminam o
+       layout. A correção final é imediata para que o botão sempre termine
+       exatamente na seção solicitada, sem herdar o scroll intermediário. */
+    const destino=offsetPagina(id);
+    if(Math.abs(scrollAtual()-destino)>2) scrollImediato(destino);
+
+    marcarAtiva(id,true);
+    cliqueEmAndamento=false;
+    agendarDeteccao();
+  }
+
+  function acompanharNavegacao(id,token,inicio,quadrosEstaveis=0){
+    if(token!==sequenciaNavegacao||!cliqueEmAndamento||!paginas.has(id)) return;
+    const erro=Math.abs(scrollAtual()-offsetPagina(id));
+    const estaveis=erro<=2?quadrosEstaveis+1:0;
+    const decorrido=Date.now()-inicio;
+
+    if(estaveis>=2||decorrido>=1150){
+      finalizarNavegacao(id,token);
+      return;
+    }
+
+    requestAnimationFrame(()=>acompanharNavegacao(id,token,inicio,estaveis));
   }
 
   function detectarVisivel(){
@@ -528,8 +584,9 @@
         : undefined;
     }
 
+    const token=++sequenciaNavegacao;
     cliqueEmAndamento=true;
-    if(timerClique!==null) clearTimeout(timerClique);
+    if(timerClique!==null){clearTimeout(timerClique);timerClique=null;}
 
     let resultado;
     if(typeof abrirAnterior==="function"){
@@ -540,20 +597,33 @@
       marcarAtiva(id,true);
     }
 
-    requestAnimationFrame(()=>{
+    /* Dois frames garantem que tamanhos responsivos e conteúdo retrátil já
+       estejam medidos antes de calcular o destino da barra inferior. */
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(token!==sequenciaNavegacao) return;
+      marcarAtiva(id,true);
       rolar(id,true);
-      timerClique=setTimeout(()=>{
-        timerClique=null;
-        cliqueEmAndamento=false;
-        detectarVisivel();
-      },520);
-    });
+      const inicio=Date.now();
+      acompanharNavegacao(id,token,inicio,0);
+      timerClique=setTimeout(()=>finalizarNavegacao(id,token),1250);
+    }));
 
     return resultado;
   };
 
+  function cancelarNavegacaoPorInteracao(evento){
+    if(!cliqueEmAndamento) return;
+    const alvo=evento?.target;
+    if(alvo?.closest?.(".menu.bottomNav")) return;
+    sequenciaNavegacao+=1;
+    cliqueEmAndamento=false;
+    if(timerClique!==null){clearTimeout(timerClique);timerClique=null;}
+    agendarDeteccao();
+  }
+
   function iniciar(){
     if(iniciada){
+      atualizarReferencias();
       agendarDeteccao();
       return;
     }
@@ -577,10 +647,14 @@
 
   window.addEventListener("scroll",agendarDeteccao,{passive:true});
   window.addEventListener("resize",agendarDeteccao,{passive:true});
+  ["touchstart","pointerdown","wheel"].forEach(tipo=>{
+    window.addEventListener(tipo,cancelarNavegacaoPorInteracao,{passive:true});
+  });
   window.addEventListener("orientationchange",()=>{
     if(timerOrientacao!==null) clearTimeout(timerOrientacao);
     timerOrientacao=setTimeout(()=>{
       timerOrientacao=null;
+      atualizarReferencias();
       agendarDeteccao();
     },180);
   },{passive:true});
@@ -590,7 +664,10 @@
   }else{
     iniciar();
   }
-  window.addEventListener("pageshow",agendarDeteccao);
+  window.addEventListener("pageshow",()=>{
+    atualizarReferencias();
+    agendarDeteccao();
+  });
 })();
 
 /* ===== NOTAS: ABRIR TÓPICO SEM DESLOCAR A SEÇÃO ===== */
