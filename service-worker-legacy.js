@@ -1,4 +1,4 @@
-var APP_VERSION="2.5.8.158";
+var APP_VERSION="2.5.8.159";
 var CACHE="shinobi-legacy-"+APP_VERSION;
 var CORE=["./","./index.html?v="+APP_VERSION,"./manifest.json?v="+APP_VERSION,"./css/app.css?v="+APP_VERSION,"./css/shinobi-theme.css?v="+APP_VERSION,"./css/legacy-compat.css?v="+APP_VERSION,"./js/00-compat-loader.js?v="+APP_VERSION,"./js-legacy/00-polyfills.js?v="+APP_VERSION];
 self.addEventListener("install",function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(CORE);}).catch(function(){}).then(function(){return self.skipWaiting();}));});

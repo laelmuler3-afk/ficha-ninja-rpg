@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.158",
-  "name": "Correção da progressão por nível de Natureza",
-  "notes": "Corrige a progressão dos jutsus elementais para depender exclusivamente do nível atual da Natureza correspondente. O benefício N5 de dado superior deixa de alterar permanentemente o dano-base do jutsu e passa a ser calculado dinamicamente; dados antigos promovidos pelo N5 são restaurados quando há marcador seguro.",
-  "date": "2026-10-13"
+  "version": "2.5.8.159",
+  "name": "Correção de navegação e estabilidade de scroll",
+  "notes": "Corrige o direcionamento da barra inferior e estabiliza a posição ao abrir ou fechar cartas de jutsu e ataques. Remove o redirecionamento indevido ao topo de Jutsus e evita medidas aproximadas de cartas que deslocavam os destinos das seções.",
+  "date": "2026-10-16"
 }
