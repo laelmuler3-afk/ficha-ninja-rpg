@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.171",
-  "name": "Harmonia visual das cartas TCG fechadas",
-  "notes": "Ajusta apenas o tema visual das cartas fechadas: proporções mais equilibradas, remoção de Katon duplicado no topo, painéis inferiores menores e cores de rank, custo EKO e ação alinhadas à referência. Mantém intactos o JS, as imagens e a lógica de abertura/scroll.",
+  "version": "2.5.8.172",
+  "name": "Placa ornamental dos nomes TCG",
+  "notes": "Corrige exclusivamente a placa dos nomes nas cartas fechadas: centraliza os títulos dentro da moldura, remove a largura que ultrapassava as bordas e aplica uma placa ornamental dourada semelhante à referência. Cartas abertas, dados, imagens, efeitos, sincronização e scroll permanecem intactos.",
   "date": "2026-10-17"
 }
