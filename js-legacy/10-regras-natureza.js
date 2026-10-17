@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.160. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -37,6 +38,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
+};
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
 };
 /* Shinobi 1.8.4 — Naturezas + integração com efeitos automáticos de batalha. */
 (function () {
@@ -451,7 +468,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         var conjuracao = dadosConjuracao();
         var opcoes = ATRIBUTOS.map(function (atributo) { return "\n      <option value=\"".concat(atributo.id, "\" ").concat(atributo.id === conjuracao.atributoId ? "selected" : "", ">\n        ").concat(atributo.nome, "\n      </option>\n    "); }).join("");
         painel.innerHTML = "\n      <label for=\"atributoConjuracaoNatureza\">Atributo de Conjura\u00E7\u00E3o</label>\n      <select id=\"atributoConjuracaoNatureza\">".concat(opcoes, "</select>\n      <button type=\"button\" class=\"conjuracaoBeneficiosToggle ").concat(beneficiosNaturezaAberto ? "aberto" : "", "\" aria-expanded=\"").concat(beneficiosNaturezaAberto ? "true" : "false", "\" aria-controls=\"naturezaBeneficiosPainel\" aria-label=\"Mostrar benef\u00EDcios cumulativos dos n\u00EDveis\" title=\"Benef\u00EDcios cumulativos dos n\u00EDveis\">\n        <span class=\"conjuracaoBeneficiosSeta\" aria-hidden=\"true\"></span>\n      </button>\n      <div id=\"naturezaBeneficiosPainel\" class=\"naturezaBeneficiosPainel ").concat(beneficiosNaturezaAberto ? "aberto" : "", "\" ").concat(beneficiosNaturezaAberto ? "" : "hidden", ">\n        <div class=\"naturezaBeneficiosCabecalho\">\n          <strong>Benef\u00EDcios cumulativos dos n\u00EDveis</strong>\n        </div>\n        <ol>\n          ").concat(Object.entries(BENEFICIOS).map(function (_a) {
-            var nivel = _a[0], texto = _a[1];
+            var _b = __read(_a, 2), nivel = _b[0], texto = _b[1];
             return "<li><b>N\u00EDvel ".concat(nivel, ":</b> ").concat(texto, ".</li>");
         }).join(""), "\n        </ol>\n      </div>\n    ");
         (_a = painel.querySelector("#atributoConjuracaoNatureza")) === null || _a === void 0 ? void 0 : _a.addEventListener("change", function (evento) {
@@ -533,7 +550,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
                 ? dadosElementoJutsu(jutsu.elemento || "neutro")
                 : { nome: String(jutsu.elemento || "NEUTRO").toUpperCase() };
             var resumoLinha = card.querySelector(".jutsuLinhaTexto small");
-            if (resumoLinha)
+            /* Atualiza custo/rank efetivos sem apagar o selo de ação da capa. */
+            var resumoMetadados = resumoLinha === null || resumoLinha === void 0 ? void 0 : resumoLinha.querySelector(".jutsuMetadadosTexto");
+            if (resumoMetadados)
+                resumoMetadados.textContent = "".concat(dadosElemento.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " CH");
+            else if (resumoLinha)
                 resumoLinha.textContent = "".concat(dadosElemento.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " CH");
             var custoPill = card.querySelector(".jutsuCustoPill");
             if (custoPill) {
