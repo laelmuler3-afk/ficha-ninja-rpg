@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.164",
-  "name": "Cartas de jutsu com arquitetura visual TCG e EKO",
-  "notes": "Aplica a arquitetura visual inspirada em cartas TCG para as cartas abertas de jutsu em todas as naturezas, mantendo as funcionalidades existentes. O custo passa a usar o símbolo visual do EKO em vez de moeda, com cores dinâmicas por elemento, hierarquia mais forte na arte e faixa rápida para elemento, rank, custo e tipo de ação.",
+  "version": "2.5.8.165",
+  "name": "Carta fechada estilo TCG + modo aberto restaurado",
+  "notes": "Restaura o visual do jutsu aberto ao layout compacto anterior da 2.5.8.163 e aplica a arquitetura visual inspirada em TCG somente nas cartas fechadas. Mantém cores por elemento, faixa rápida com elemento, rank, custo em EKO e tipo de ação, além de preservar edição, uso, imagem, efeitos automáticos e a correção de scroll.",
   "date": "2026-10-17"
 }
