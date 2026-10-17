@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.166",
-  "name": "Refino premium da carta fechada TCG",
-  "notes": "Refina o visual da carta fechada de jutsu para ficar mais próximo do mockup TCG: placa do nome mais forte, painel unificado de informações, caixas internas mais elegantes e melhor acabamento visual. Mantém o modo aberto restaurado, as cores por elemento, o símbolo de EKO, o scroll corrigido e todas as funções existentes.",
+  "version": "2.5.8.169",
+  "name": "Restauração da versão estável 2.5.8.166",
+  "notes": "Restaura exatamente a lógica e o visual da versão 2.5.8.166. A numeração 2.5.8.169 serve apenas para que o atualizador reconheça a restauração após a 2.5.8.167. Não altera fichas, regras, sincronização ou dados.",
   "date": "2026-10-17"
 }
