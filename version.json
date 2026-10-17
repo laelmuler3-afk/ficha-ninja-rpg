@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.170",
-  "name": "Identidade visual TCG das cartas fechadas",
-  "notes": "Tema visual isolado em css/tcg-jutsus.css aplicado apenas às cartas fechadas de jutsu. Mantém intactos os módulos de renderização, fichas, imagens, scroll, regras, efeitos e sincronização. Identidade dinâmica por elemento e símbolo de EKO oficial.",
+  "version": "2.5.8.171",
+  "name": "Harmonia visual das cartas TCG fechadas",
+  "notes": "Ajusta apenas o tema visual das cartas fechadas: proporções mais equilibradas, remoção de Katon duplicado no topo, painéis inferiores menores e cores de rank, custo EKO e ação alinhadas à referência. Mantém intactos o JS, as imagens e a lógica de abertura/scroll.",
   "date": "2026-10-17"
 }
