@@ -564,7 +564,10 @@
         : {nome:String(jutsu.elemento || "NEUTRO").toUpperCase()};
 
       const resumoLinha = card.querySelector(".jutsuLinhaTexto small");
-      if(resumoLinha) resumoLinha.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
+      /* Atualiza custo/rank efetivos sem apagar o selo de ação da capa. */
+      const resumoMetadados = resumoLinha?.querySelector(".jutsuMetadadosTexto");
+      if(resumoMetadados) resumoMetadados.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
+      else if(resumoLinha) resumoLinha.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
 
       const custoPill = card.querySelector(".jutsuCustoPill");
       if(custoPill){
