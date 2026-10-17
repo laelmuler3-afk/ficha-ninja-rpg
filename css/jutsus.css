@@ -1040,3 +1040,51 @@ main.scrollPages #jutsus > .painel::after,
     border-radius:10px!important;
   }
 }
+
+/* Capa do jutsu — tipo de ação logo após elemento, rank e custo (EKO).
+   O valor integral continua salvo no jutsu e disponível no título do selo. */
+#jutsus .jutsuLinhaTexto small{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  column-gap:6px!important;
+  row-gap:4px!important;
+}
+#jutsus .jutsuLinhaTexto small .jutsuMetadadosTexto{
+  min-width:0;
+  flex:0 1 auto;
+}
+#jutsus .jutsuLinhaTexto small .jutsuAcaoRapida{
+  position:static!important;
+  inset:auto!important;
+  top:auto!important;
+  right:auto!important;
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  vertical-align:middle!important;
+  z-index:auto!important;
+  min-width:23px!important;
+  max-width:100%!important;
+  min-height:22px!important;
+  padding:3px 7px!important;
+  margin:0!important;
+  border-radius:5px!important;
+  background:rgba(0,5,10,.85)!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.82)!important;
+  color:#fff8e8!important;
+  font-size:10px!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+  letter-spacing:.2px!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+}
+@media (max-width:430px){
+  #jutsus .jutsuLinhaTexto small .jutsuAcaoRapida{
+    min-width:21px!important;
+    min-height:20px!important;
+    padding:3px 6px!important;
+    font-size:10px!important;
+  }
+}
