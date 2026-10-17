@@ -1,0 +1,220 @@
+/* Ficha Ninja RPG • Tema TCG fechado • v2.5.8.170
+   Estritamente visual: não altera dados, listeners, DOM ou comportamento.
+   Reversão: retire esta folha do index.html. */
+
+/* Todas as cores são derivadas da própria classe do elemento no cartão. */
+#jutsus .jutsuListaCard:not(.jutsuAberto){
+  --tcg-accent:var(--jutsu-cor,#ffb15a);
+  --tcg-rgb:var(--jutsu-rgb,255,177,90);
+  --tcg-elemento:"NEUTRO";--tcg-simbolo:"✨";
+  border:2px solid rgba(var(--tcg-rgb),.86)!important;
+  border-radius:14px!important;
+  box-shadow:0 0 0 1px rgba(255,222,164,.65), 0 0 20px rgba(var(--tcg-rgb),.16),0 15px 26px #0009!important;
+  isolation:isolate!important;
+}
+#jutsus .jutsuListaCard.jutsu-katon:not(.jutsuAberto){--tcg-elemento:"KATON";--tcg-simbolo:"🔥";}
+#jutsus .jutsuListaCard.jutsu-suiton:not(.jutsuAberto){--tcg-elemento:"SUITON";--tcg-simbolo:"💧";}
+#jutsus .jutsuListaCard.jutsu-raiton:not(.jutsuAberto){--tcg-elemento:"RAITON";--tcg-simbolo:"⚡";}
+#jutsus .jutsuListaCard.jutsu-fuuton:not(.jutsuAberto){--tcg-elemento:"FUUTON";--tcg-simbolo:"🌪️";}
+#jutsus .jutsuListaCard.jutsu-doton:not(.jutsuAberto){--tcg-elemento:"DOTON";--tcg-simbolo:"🪨";}
+#jutsus .jutsuListaCard.jutsu-yin:not(.jutsuAberto){--tcg-elemento:"YINTON";--tcg-simbolo:"🌑";}
+#jutsus .jutsuListaCard.jutsu-yang:not(.jutsuAberto){--tcg-elemento:"YOUTON";--tcg-simbolo:"☀️";}
+#jutsus .jutsuListaCard.jutsu-neutro:not(.jutsuAberto){--tcg-elemento:"NEUTRO";--tcg-simbolo:"✨";}
+
+/* Mantém a capa guardada no IndexedDB como camada artística integral. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuCartaFundo{
+  opacity:1!important;
+  filter:saturate(1.07) contrast(1.035)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaResumo{
+  display:block!important;
+  position:absolute!important;inset:0!important;
+  overflow:hidden!important;
+  width:100%!important;height:100%!important;
+  padding:0!important;
+  border:0!important;background:transparent!important;
+  -webkit-tap-highlight-color:transparent;
+}
+/* Moldura filigranada, sempre por cima da imagem sem capturar toques. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaResumo::before{
+  content:""!important;position:absolute!important;inset:0!important;
+  z-index:3!important;pointer-events:none!important;
+  background-image:url("../assets/tcg/filigrana.svg")!important;
+  background-position:center!important;background-size:100% 100%!important;
+  background-repeat:no-repeat!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaResumo::after{
+  content:""!important;position:absolute!important;inset:0!important;
+  z-index:2!important;pointer-events:none!important;
+  background:linear-gradient(180deg,rgba(0,0,0,.12) 0%,transparent 22%,transparent 65%,rgba(7,3,4,.12) 73%,rgba(3,3,4,.76) 88%,rgba(3,3,4,.95) 100%)!important;
+}
+/* Emblema da natureza com tarja embutida, como numa carta colecionável. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaIcone{
+  position:absolute!important;top:4.8%!important;left:4.7%!important;right:auto!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:clamp(43px,13.7%,72px)!important;height:auto!important;min-width:0!important;
+  aspect-ratio:1!important;border-radius:50%!important;z-index:5!important;
+  border:2px solid #f9cc76!important;background:radial-gradient(circle at 30% 20%,rgba(var(--tcg-rgb),.42),rgba(6,6,8,.95) 65%)!important;
+  box-shadow:0 0 0 4px rgba(0,0,0,.68),0 0 0 6px rgba(var(--tcg-rgb),.86),0 5px 14px #000b!important;
+  font-size:clamp(26px,6.5vw,41px)!important;line-height:1!important;overflow:visible!important;
+  text-shadow:0 2px 5px #000!important;backdrop-filter:none!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaIcone::after{
+  content:var(--tcg-elemento)!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  position:absolute!important;left:calc(100% + 8px)!important;top:16%!important;
+  width:auto!important;max-width:none!important;min-height:44%!important;
+  padding:6px 19px 7px 13px!important;
+  border:1px solid rgba(255,207,125,.85)!important;border-radius:0 18px 18px 0!important;
+  background:linear-gradient(95deg,rgba(var(--tcg-rgb),.82),rgba(25,9,8,.95) 75%)!important;
+  box-shadow:0 3px 10px #0009,inset 0 1px 0 #fff3!important;
+  font:900 clamp(11px,3.2vw,17px)/1 Georgia,"Times New Roman",serif!important;
+  color:#fff5d9!important;letter-spacing:.07em!important;white-space:nowrap!important;
+  text-shadow:0 1px 3px #000!important;
+}
+
+/* Desativa apenas a linha repetida: os mesmos dados passam à barra TCG. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto small,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaSeta{
+  display:none!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto{
+  display:flex!important;flex-direction:column!important;gap:0!important;
+  position:absolute!important;left:3.5%!important;right:3.5%!important;bottom:3.8%!important;
+  z-index:5!important;min-width:0!important;padding:0!important;margin:0!important;
+}
+/* Placa nobre do nome, sobre a arte: o título conserva o valor do jutsu. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong{
+  display:block!important;position:relative!important;
+  padding:10px 8px 13px!important;margin:0 0 9px!important;
+  background:linear-gradient(180deg,rgba(38,21,13,.96),rgba(4,5,8,.96))!important;
+  border:1px solid #ffc779!important;border-radius:12px 12px 7px 7px!important;
+  box-shadow:inset 0 1px 0 #ffdb9555,0 3px 0 rgba(var(--tcg-rgb),.32),0 8px 14px #000b!important;
+  font:900 clamp(15px,4.5vw,29px)/1.12 Georgia,"Times New Roman",serif!important;
+  color:#fff6de!important;text-align:center!important;
+  text-shadow:0 2px 2px #000,0 0 12px rgba(var(--tcg-rgb),.34)!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong::before,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong::after{
+  content:"◆"!important;position:absolute!important;top:50%!important;transform:translateY(-50%)!important;
+  font:900 11px/1 Georgia,serif!important;color:#f9c16f!important;
+  text-shadow:0 0 4px rgba(var(--tcg-rgb),.8)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong::before{left:4px!important;}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong::after{right:4px!important;}
+
+/* QUATRO colunas compactas como no mockup, nunca dois andares. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgBar{
+  display:grid!important;grid-template-columns:minmax(0,1.32fr) minmax(0,.72fr) minmax(0,1.2fr) minmax(0,.88fr)!important;
+  gap:0!important;width:100%!important;margin:0!important;padding:7px 2px!important;
+  align-items:stretch!important;overflow:hidden!important;
+  background:linear-gradient(180deg,rgba(26,13,11,.96),rgba(3,5,9,.98))!important;
+  border:1px solid rgba(246,195,110,.75)!important;border-radius:9px!important;
+  box-shadow:inset 0 1px 0 #ffffff18,0 5px 14px #000b!important;
+  pointer-events:none!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip{
+  display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;
+  gap:4px!important;min-width:0!important;width:auto!important;min-height:48px!important;height:auto!important;
+  padding:2px 3px!important;margin:0!important;border:0!important;border-radius:0!important;
+  background:none!important;background-image:none!important;box-shadow:none!important;
+  text-align:center!important;overflow:visible!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip + .jutsuTcgChip{border-left:1px solid rgba(243,199,130,.28)!important;}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip:nth-child(n+3){border-top:0!important;}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip::before{display:none!important;}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip > strong{
+  order:0!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;min-width:0!important;min-height:27px!important;height:auto!important;
+  margin:0!important;padding:4px 6px!important;
+  color:#fff4e0!important;background:rgba(6,7,11,.82)!important;
+  border:1px solid rgba(255,208,132,.75)!important;border-radius:6px!important;
+  box-shadow:inset 0 1px 0 #ffffff12!important;
+  font:900 clamp(10px,2.8vw,17px)/1.04 Georgia,"Times New Roman",serif!important;
+  white-space:nowrap!important;word-break:normal!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo{
+  order:1!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  gap:2px!important;min-width:0!important;
+  padding:0!important;margin:0!important;
+  font:700 clamp(6px,1.75vw,10px)/1.05 Arial,sans-serif!important;
+  color:#dcc8a8!important;letter-spacing:.055em!important;text-transform:uppercase!important;
+  white-space:normal!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo .jutsuTcgChipIcone{
+  display:none!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipElemento > strong::before{
+  content:var(--tcg-simbolo);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;margin-right:2px;
+  font:normal clamp(12px,3.2vw,18px)/1 sans-serif;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto > strong{
+  color:#eee1ff!important;border-color:#d1b0ff!important;
+}
+/* Gota/símbolo de EKO existente na app, não moeda. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto .jutsuEkoSimbolo{
+  display:inline-flex!important;--icon-size:10px!important;color:#cbaaff!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto .jutsuTcgChipRotulo{
+  color:#e8d9ff!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRank > strong,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipAcao > strong{
+  font-size:clamp(12px,3.3vw,20px)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipAcao .jutsuTcgChipRotulo::after{content:"";}
+
+/* Em telas estreitas, encolhe a ornamentação mantendo quatro colunas. */
+@media(max-width:390px){
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto{left:3%!important;right:3%!important;bottom:3%!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong{padding:8px 6px 10px!important;margin-bottom:7px!important;font-size:clamp(13px,4.5vw,19px)!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgBar{padding:6px 1px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip{min-height:43px!important;padding:2px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip > strong{padding:3px 4px!important;min-height:25px!important;font-size:clamp(11px,2.9vw,13px)!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo{font-size:clamp(6px,1.5vw,8px)!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaIcone{font-size:28px!important;}
+}
+
+/* Jutsu aberto recebe EXATAMENTE o CSS e o conteúdo anteriores. */
+
+/* EKO: coloca a gota oficial também dentro do valor, sem substituir a quantidade. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto > strong::before{
+  content:""!important;display:inline-block!important;flex:0 0 auto!important;
+  width:11px!important;height:13px!important;margin-right:3px!important;
+  background:#d7b6ff!important;
+  -webkit-mask:url("../assets/icons/chakra.svg") center / contain no-repeat;
+  mask:url("../assets/icons/chakra.svg") center / contain no-repeat;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto .jutsuEkoSimbolo{display:none!important;}
+/* Cabeçalho do grupo acompanha as cartas, sem alterar o recolhimento. */
+#jutsus #listaJutsus .jutsuGrupoRetratil .jutsuGrupoCabecalho{
+  border:1px solid rgba(255,209,135,.22)!important;
+  border-radius:12px!important;
+  min-height:80px!important;
+  padding:12px 15px!important;
+  background:
+    url("../assets/tcg/header-scroll.svg") right center/auto 100% no-repeat,
+    linear-gradient(95deg,color-mix(in srgb,var(--grupo-cor,#ff7a18) 16%,#09090c),rgba(8,8,11,.97) 65%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,232,185,.09)!important;
+}
+#jutsus #listaJutsus .jutsuGrupoRetratil .jutsuGrupoIcone{
+  border-radius:50%!important;
+  border:2px solid color-mix(in srgb,var(--grupo-cor,#ff7a18) 70%,#eaba7a)!important;
+  background:radial-gradient(circle,rgba(22,12,11,.7),#070809)!important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--grupo-cor,#ff7a18) 14%,transparent),inset 0 0 8px #000a!important;
+}
+#jutsus #listaJutsus .jutsuGrupoRetratil .jutsuGrupoTitulo{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(17px,3.5vw,22px)!important;
+  line-height:1.1!important;
+  color:#f8eacb!important;
+  letter-spacing:.04em!important;
+  text-shadow:0 2px 4px #000b!important;
+}
+#jutsus #listaJutsus .jutsuGrupoRetratil .jutsuGrupoContador{
+  border:1px solid var(--grupo-cor,#ff7a18)!important;
+  border-radius:50%!important;
+  min-width:39px!important;width:39px!important;height:39px!important;padding:0!important;
+  background:rgba(4,5,8,.75)!important;color:var(--grupo-cor,#ff7a18)!important;
+}
