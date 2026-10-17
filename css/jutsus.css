@@ -1317,3 +1317,150 @@ main.scrollPages #jutsus > .painel::after,
   #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo{font-size:7.5px!important;}
   #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip strong{font-size:12px!important;}
 }
+
+
+/* === CARTA FECHADA TCG REFINADA v2.5.8.166 === */
+
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaResumo{min-height:100%!important;}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto{
+  left:14px!important;right:14px!important;bottom:14px!important;z-index:4!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto strong{
+  display:block!important;
+  margin:0!important;
+  padding:12px 16px 13px!important;
+  border-radius:18px!important;
+  border:1px solid rgba(255,223,168,.78)!important;
+  background:
+    linear-gradient(180deg,rgba(31,18,13,.90),rgba(8,8,10,.94))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,248,230,.12),
+    0 10px 18px rgba(0,0,0,.28),
+    0 0 0 1px rgba(var(--jutsu-rgb,255,177,90),.10)!important;
+  color:#fff5df!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:18px!important;
+  line-height:1.06!important;
+  font-weight:1000!important;
+  text-shadow:0 2px 4px rgba(0,0,0,.85)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgBar{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:0!important;
+  margin-top:12px!important;
+  border-radius:22px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(255,224,170,.62)!important;
+  background:
+    linear-gradient(180deg,rgba(15,8,7,.88),rgba(6,6,8,.90))!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,248,230,.08),
+    0 12px 22px rgba(0,0,0,.26),
+    0 0 0 1px rgba(var(--jutsu-rgb,255,177,90),.08)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip{
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  align-items:stretch!important;
+  gap:10px!important;
+  min-height:102px!important;
+  padding:12px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:
+    linear-gradient(180deg,rgba(var(--jutsu-rgb,255,177,90),.08),rgba(0,0,0,0) 36%),
+    linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0))!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip:nth-child(2n){
+  border-left:1px solid rgba(255,224,170,.24)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip:nth-child(n+3){
+  border-top:1px solid rgba(255,224,170,.24)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip::before{
+  content:""!important;position:absolute!important;inset:0!important;pointer-events:none!important;
+  background:radial-gradient(circle at top left,rgba(var(--jutsu-rgb,255,177,90),.10),transparent 45%)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo{
+  position:relative!important;z-index:1!important;
+  display:flex!important;align-items:center!important;gap:6px!important;
+  color:rgba(255,231,194,.86)!important;
+  font-size:10px!important;line-height:1.05!important;font-weight:1000!important;letter-spacing:.75px!important;text-transform:uppercase!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipIcone{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  font-size:16px!important;line-height:1!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip strong{
+  position:relative!important;z-index:1!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  min-height:46px!important;
+  margin-top:auto!important;
+  padding:10px 12px!important;
+  border-radius:16px!important;
+  border:1px solid rgba(255,220,160,.72)!important;
+  background:
+    linear-gradient(180deg,rgba(11,7,8,.95),rgba(6,6,8,.96))!important;
+  box-shadow:inset 0 1px 0 rgba(255,248,230,.08)!important;
+  color:#fff4db!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:19px!important;line-height:1!important;font-weight:1000!important;
+  word-break:break-word!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipElemento strong,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto strong{
+  font-size:17px!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto .jutsuTcgChipRotulo,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto strong{
+  color:#e6d8ff!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto strong{
+  border-color:rgba(187,156,255,.72)!important;
+  box-shadow:inset 0 1px 0 rgba(245,239,255,.10),0 0 0 1px rgba(187,156,255,.08)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto .jutsuEkoSimbolo{
+  --icon-size:13px!important;color:#bb9cff!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipAcao strong,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRank strong{
+  font-size:22px!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaIcone{
+  top:14px!important;left:14px!important;width:38px!important;height:38px!important;min-width:38px!important;
+  border-radius:12px!important;background:rgba(11,8,9,.58)!important;border:1px solid rgba(255,222,168,.84)!important;
+  box-shadow:0 8px 14px rgba(0,0,0,.22)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaResumo::after{
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(4,4,6,.10) 16%,rgba(7,4,4,.66) 48%,rgba(4,3,3,.96) 100%)!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto)::after{
+  box-shadow:inset 0 0 0 1px rgba(255,220,160,.28),0 0 20px rgba(var(--jutsu-rgb,255,177,90),.18)!important;
+}
+@media (max-width:430px){
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto{left:11px!important;right:11px!important;bottom:11px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto strong{padding:11px 13px 12px!important;font-size:17px!important;border-radius:16px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgBar{margin-top:10px!important;border-radius:18px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip{min-height:88px!important;padding:10px!important;gap:8px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo{font-size:9px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip strong{min-height:40px!important;padding:8px 10px!important;font-size:17px!important;border-radius:14px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipElemento strong,
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto strong{font-size:15px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRank strong,
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipAcao strong{font-size:19px!important;}
+}
+@media (max-width:360px){
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto{left:9px!important;right:9px!important;bottom:9px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto strong{font-size:15px!important;padding:10px 12px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip{min-height:78px!important;padding:8px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRotulo{font-size:8px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChip strong{font-size:15px!important;min-height:36px!important;padding:7px 9px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipElemento strong,
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipCusto strong{font-size:13px!important;}
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipRank strong,
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuTcgChipAcao strong{font-size:17px!important;}
+}
