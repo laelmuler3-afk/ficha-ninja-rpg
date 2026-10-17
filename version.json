@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.166",
-  "name": "Refino premium da carta fechada TCG",
-  "notes": "Refina o visual da carta fechada de jutsu para ficar mais próximo do mockup TCG: placa do nome mais forte, painel unificado de informações, caixas internas mais elegantes e melhor acabamento visual. Mantém o modo aberto restaurado, as cores por elemento, o símbolo de EKO, o scroll corrigido e todas as funções existentes.",
+  "version": "2.5.8.167",
+  "name": "Carta fechada ajustada para bater com o mockup TCG",
+  "notes": "Ajusta a carta fechada para se aproximar do mockup TCG: faixa superior do elemento, ícone circular maior, placa central do nome e barra inferior horizontal com elemento, rank, custo em EKO e tipo de ação. O jutsu aberto permanece no layout anterior, sem regressão de scroll nem perda de funcionalidades.",
   "date": "2026-10-17"
 }
