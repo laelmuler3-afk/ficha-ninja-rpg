@@ -1088,3 +1088,189 @@ main.scrollPages #jutsus > .painel::after,
     font-size:10px!important;
   }
 }
+ 
+/* === Cartas abertas — UI compacta temática v2.5.8.163 ===
+   Herda --jutsu-cor e --jutsu-rgb da classe do elemento. Não altera
+   a disposição da grade fechada nem a lógica que preserva o scroll. */
+#jutsus .jutsuListaCard.jutsuAberto{
+  border-color:rgba(var(--jutsu-rgb,255,177,90),.65)!important;
+  box-shadow:0 0 0 1px rgba(var(--jutsu-rgb,255,177,90),.13),0 14px 24px rgba(0,0,0,.33)!important;
+  border-radius:15px!important;
+}
+/* A arte aparece como o hero da carta, sem ocupar o equivalente a uma carta fechada inteira. */
+#jutsus .jutsuAberto .jutsuLinhaResumo{
+  height:clamp(185px,58vw,255px)!important;
+  min-height:0!important;
+  max-height:255px!important;
+  aspect-ratio:auto!important;
+  border-bottom:1px solid rgba(var(--jutsu-rgb,255,177,90),.55)!important;
+}
+#jutsus .jutsuAberto .jutsuLinhaResumo .jutsuLinhaTexto{
+  padding:11px 12px!important;
+  background:linear-gradient(180deg,rgba(1,5,10,.04),rgba(1,5,10,.88))!important;
+  border-top:0!important;
+}
+#jutsus .jutsuAberto .jutsuLinhaTexto strong{
+  font-family:Georgia,'Times New Roman',serif!important;
+  color:#fff9f2!important;
+  font-size:clamp(19px,5.5vw,27px)!important;
+  line-height:1.08!important;
+}
+#jutsus .jutsuAberto .jutsuLinhaTexto small{
+  color:var(--jutsu-cor,#ffb15a)!important;
+}
+#jutsus .jutsuAberto .jutsuDetalhesCompactos{
+  display:block!important;
+  padding:12px!important;
+  background:linear-gradient(180deg,rgba(2,8,14,.96),rgba(2,7,12,.94))!important;
+  background-image:radial-gradient(ellipse at top,rgba(var(--jutsu-rgb,255,177,90),.105),transparent 55%),linear-gradient(180deg,rgba(2,8,14,.96),rgba(2,7,12,.96))!important;
+  border-top:0!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+#jutsus .jutsuAberto .jutsuTopo.jutsuTopoEditavel{
+  display:grid!important;
+  grid-template-columns:38px minmax(0,1fr)!important;
+  align-items:center!important;
+  column-gap:10px!important;
+  row-gap:8px!important;
+  margin:0 0 12px!important;
+  padding:0!important;
+  background:none!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsuAberto .jutsuTopo .jutsuIcone{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:38px!important;height:38px!important;min-width:38px!important;
+  padding:0!important;font-size:20px!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.42)!important;
+  border-radius:10px!important;background:rgba(var(--jutsu-rgb,255,177,90),.11)!important;
+  color:var(--jutsu-cor,#ffb15a)!important;box-shadow:none!important;
+}
+#jutsus .jutsuAberto .jutsuTitulo.jutsuNomeEditavel{
+  display:block!important;min-width:0!important;
+  padding:0!important;margin:0!important;border:0!important;
+  background:none!important;cursor:pointer!important;
+}
+#jutsus .jutsuAberto .jutsuTitulo h3{
+  margin:0!important;font-size:16px!important;line-height:1.2!important;
+  color:#fff5e8!important;overflow-wrap:anywhere!important;
+}
+#jutsus .jutsuAberto .jutsuElementoLabel{
+  display:block!important;margin-top:3px!important;
+  color:var(--jutsu-cor,#ffb15a)!important;font-size:10px!important;
+  font-weight:900!important;letter-spacing:.65px!important;
+}
+#jutsus .jutsuAberto .jutsuMetaPills{
+  display:flex!important;grid-column:1/-1!important;
+  justify-content:flex-start!important;align-items:center!important;
+  gap:7px!important;flex-wrap:wrap!important;
+}
+#jutsus .jutsuAberto .jutsuMetaPill{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;min-width:0!important;min-height:31px!important;height:auto!important;
+  margin:0!important;padding:6px 10px!important;border-radius:8px!important;
+  background:rgba(4,10,15,.92)!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.4)!important;
+  box-shadow:none!important;color:#f2e9db!important;
+  font-size:11px!important;font-weight:900!important;line-height:1.15!important;
+  letter-spacing:.2px!important;text-transform:none!important;
+}
+#jutsus .jutsuAberto .jutsuMetaPill.jutsuCustoPill{color:#ddbbff!important;border-color:rgba(171,100,244,.55)!important;}
+#jutsus .jutsuAberto .jutsuMetaPill.jutsuAcaoPill{color:var(--jutsu-cor,#ffb15a)!important;min-width:36px!important;}
+#jutsus .jutsuAberto .jutsuResumoEditavel{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:8px!important;margin:0!important;padding:0!important;
+}
+#jutsus .jutsuAberto .jutsuResumoEditavel .jutsuStatCard,
+#jutsus .jutsuAberto .jutsuResumoEditavel .jutsuResumoFull{
+  display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:flex-start!important;
+  width:100%!important;min-width:0!important;min-height:66px!important;height:auto!important;
+  padding:9px 10px!important;margin:0!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.22)!important;
+  border-radius:11px!important;
+  background:linear-gradient(125deg,rgba(var(--jutsu-rgb,255,177,90),.045),rgba(5,11,17,.88) 48%)!important;
+  background-image:linear-gradient(125deg,rgba(var(--jutsu-rgb,255,177,90),.045),rgba(5,11,17,.88) 48%)!important;
+  box-shadow:none!important;backdrop-filter:none!important;text-align:left!important;
+  color:#fff7e9!important;gap:5px!important;
+  overflow-wrap:anywhere!important;white-space:normal!important;
+}
+#jutsus .jutsuAberto .jutsuResumoEditavel .jutsuResumoFull{
+  grid-column:1/-1!important;min-height:67px!important;
+}
+#jutsus .jutsuAberto .jutsuResumoEditavel button b{
+  display:flex!important;align-items:center!important;gap:7px!important;
+  margin:0!important;color:var(--jutsu-cor,#ffb15a)!important;
+  font-size:10px!important;line-height:1.15!important;font-weight:950!important;
+  letter-spacing:.65px!important;text-transform:uppercase!important;
+}
+#jutsus .jutsuAberto .jutsuResumoEditavel button b span{
+  min-width:14px;font-size:14px;line-height:1;
+  color:var(--jutsu-cor,#ffb15a);
+}
+#jutsus .jutsuAberto .jutsuResumoEditavel .jutsuCampoValor{
+  display:block!important;width:100%!important;
+  padding:0!important;margin:0!important;
+  font-size:14px!important;line-height:1.25!important;font-weight:850!important;
+  color:#fff7ee!important;overflow-wrap:anywhere!important;
+  background:transparent!important;border:0!important;border-radius:0!important;
+  box-shadow:none!important;text-align:left!important;
+}
+#jutsus .jutsuAberto .jutsuCartaImagemAcoes{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:8px!important;margin:12px 0 0!important;
+}
+#jutsus .jutsuAberto .jutsuCartaImagemAcoes button{
+  min-width:0!important;min-height:40px!important;height:auto!important;
+  margin:0!important;padding:8px!important;border-radius:9px!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.25)!important;
+  background:rgba(4,10,16,.77)!important;color:#eee2d0!important;
+  font-size:11px!important;line-height:1.3!important;font-weight:800!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsuAberto .jutsuAcoesCompactas{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:8px!important;margin:12px 0 0!important;
+}
+#jutsus .jutsuAberto .jutsuAcoesCompactas .btnUsarJutsu{
+  grid-column:1/-1!important;grid-row:1!important;
+  min-width:0!important;min-height:52px!important;height:auto!important;
+  padding:12px!important;margin:0!important;border-radius:10px!important;
+  background:linear-gradient(180deg,rgba(var(--jutsu-rgb,255,177,90),.43),rgba(var(--jutsu-rgb,255,177,90),.14))!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.78)!important;
+  box-shadow:0 4px 14px rgba(var(--jutsu-rgb,255,177,90),.14)!important;
+  color:#fff9ed!important;font-size:15px!important;letter-spacing:.65px!important;
+}
+#jutsus .jutsuAberto .jutsuAcoesCompactas .btnEfeitosEstruturados,
+#jutsus .jutsuAberto .jutsuAcoesCompactas .btnRemoverJutsu{
+  min-width:0!important;min-height:42px!important;height:auto!important;
+  padding:9px 7px!important;margin:0!important;border-radius:9px!important;
+  font-size:11px!important;line-height:1.25!important;
+  box-shadow:none!important;
+}
+#jutsus .jutsuAberto .jutsuAcoesCompactas .btnEfeitosEstruturados{
+  grid-column:1!important;grid-row:2!important;
+  border:1px solid rgba(var(--jutsu-rgb,255,177,90),.34)!important;
+  background:rgba(4,12,17,.85)!important;color:#f9eee0!important;
+}
+#jutsus .jutsuAberto .jutsuAcoesCompactas .btnRemoverJutsu{
+  grid-column:2!important;grid-row:2!important;
+  border:1px solid rgba(205,71,62,.38)!important;
+  background:rgba(71,16,16,.25)!important;color:#ffb5a8!important;
+}
+@media (min-width:540px) and (max-width:1199px){
+  #jutsus #listaJutsus > .jutsuListaCard.jutsuAberto .jutsuLinhaResumo{
+    width:min(100%,290px)!important;
+    max-width:290px!important;
+    height:210px!important;min-height:0!important;max-height:210px!important;
+    aspect-ratio:auto!important;
+  }
+}
+@media (max-width:360px){
+  #jutsus .jutsuAberto .jutsuDetalhesCompactos{padding:9px!important;}
+  #jutsus .jutsuAberto .jutsuResumoEditavel{gap:7px!important;}
+  #jutsus .jutsuAberto .jutsuResumoEditavel .jutsuStatCard,
+  #jutsus .jutsuAberto .jutsuResumoEditavel .jutsuResumoFull{padding:8px!important;min-height:62px!important;}
+  #jutsus .jutsuAberto .jutsuResumoEditavel .jutsuCampoValor{font-size:13px!important;}
+}
