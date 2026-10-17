@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.159",
-  "name": "Informação rápida de ação nas cartas de jutsu",
-  "notes": "Exibe diretamente na capa de cada carta o tipo de ação já salvo no jutsu (Ação, Ação Bônus, Reação, Variável ou equivalente), sem duplicar campos nem alterar as regras do jutsu. O selo foi integrado ao layout atual e adapta o tamanho em telas pequenas.",
+  "version": "2.5.8.160",
+  "name": "Tipo de ação abreviado ao lado de rank e EKO na capa",
+  "notes": "O jutsu fechado exibe A (Ação), AB (Ação Bônus) ou R (Reação) ao lado de elemento, rank e custo EKO; casos especiais preservam o tipo original. Mantém as regras e dados dos jutsus sem alterações.",
   "date": "2026-10-16"
 }
