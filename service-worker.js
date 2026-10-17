@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.169 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.170 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.169";
+const APP_VERSION = "2.5.8.170";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -32,6 +32,9 @@ const APP_SHELL = [
   `./css/status.css?v=${APP_VERSION}`,
   `./css/combate.css?v=${APP_VERSION}`,
   `./css/jutsus.css?v=${APP_VERSION}`,
+  `./css/tcg-jutsus.css?v=${APP_VERSION}`,
+  `./assets/tcg/filigrana.svg?v=${APP_VERSION}`,
+  `./assets/tcg/header-scroll.svg?v=${APP_VERSION}`,
   `./css/loja-v25843.css?v=${APP_VERSION}`,
   `./css/notas.css?v=${APP_VERSION}`,
   `./css/legacy-compat.css?v=${APP_VERSION}`,

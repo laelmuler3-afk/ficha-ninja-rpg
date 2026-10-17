@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.169",
-  "name": "Restauração da versão estável 2.5.8.166",
-  "notes": "Restaura exatamente a lógica e o visual da versão 2.5.8.166. A numeração 2.5.8.169 serve apenas para que o atualizador reconheça a restauração após a 2.5.8.167. Não altera fichas, regras, sincronização ou dados.",
+  "version": "2.5.8.170",
+  "name": "Identidade visual TCG das cartas fechadas",
+  "notes": "Tema visual isolado em css/tcg-jutsus.css aplicado apenas às cartas fechadas de jutsu. Mantém intactos os módulos de renderização, fichas, imagens, scroll, regras, efeitos e sincronização. Identidade dinâmica por elemento e símbolo de EKO oficial.",
   "date": "2026-10-17"
 }
