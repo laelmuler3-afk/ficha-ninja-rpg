@@ -495,17 +495,7 @@ function resumoAcaoJutsu(valor){
   if(normalizado.startsWith("especial"))return {codigo:"ESP",titulo:original};
   return {codigo:original,titulo:original};
 }
-function renderizarJutsus(){
-  const box=document.getElementById("listaJutsus");
-  if(!box)return;
-  const html=[];
-  (estado.jutsus||[]).forEach((j,i)=>{
-    const aberto=jutsuAberto(i),dados=dadosElementoJutsu(j.elemento||"katon"),nome=escaparHtmlShinobi(valorJutsu(j,"nome","Novo jutsu")),custo=escaparHtmlShinobi(valorJutsu(j,"custo","0")),rank=escaparHtmlShinobi(valorJutsu(j,"rank","Rank")),dano=escaparHtmlShinobi(valorJutsu(j,"dano","—")),totalDano=escaparHtmlShinobi(formatarDanoTotal(j.dano,j.bonusDano)),alcance=escaparHtmlShinobi(valorJutsu(j,"alcance","—")),raio=escaparHtmlShinobi(valorJutsu(j,"raio","—")),duracao=escaparHtmlShinobi(valorJutsu(j,"duracao","—")),bonusAcerto=escaparHtmlShinobi(valorJutsu(j,"bonusAcerto","—")),bonusDano=escaparHtmlShinobi(valorJutsu(j,"bonusDano","—")),acao=escaparHtmlShinobi(valorJutsu(j,"acao","—")),acaoResumo=resumoAcaoJutsu(j.acao),acaoCodigo=escaparHtmlShinobi(acaoResumo.codigo),acaoTitulo=escaparHtmlShinobi(acaoResumo.titulo),resistencia=escaparHtmlShinobi(valorJutsu(j,"resistencia","—")),alvo=escaparHtmlShinobi(valorJutsu(j,"alvo","—")),descricao=escaparHtmlShinobi(valorJutsu(j,"descricao","Toque para editar efeitos")),imagem=normalizarImagemJutsuSegura(j.imagem),estiloImagem=imagem?`style="background-image:url('${imagem}')"`:"";
-    const jutsuIdAttr=escaparHtmlShinobi(String(j?.jutsuId||""));
-    const acaoCapa=acaoCodigo||"—";
-    const acaoCapaTitulo=acaoTitulo||acao||"Tipo de ação";
-    const ekoIcone='<span class="shinobiIcon icon-chakra jutsuEkoSimbolo" aria-hidden="true"></span>';
-    html.push(`
+function renderizarJutsus(){const box=document.getElementById("listaJutsus");if(!box)return;const html=[];(estado.jutsus||[]).forEach((j,i)=>{const aberto=jutsuAberto(i),dados=dadosElementoJutsu(j.elemento||"katon"),nome=escaparHtmlShinobi(valorJutsu(j,"nome","Novo jutsu")),custo=escaparHtmlShinobi(valorJutsu(j,"custo","0")),rank=escaparHtmlShinobi(valorJutsu(j,"rank","Rank")),dano=escaparHtmlShinobi(valorJutsu(j,"dano","—")),totalDano=escaparHtmlShinobi(formatarDanoTotal(j.dano,j.bonusDano)),alcance=escaparHtmlShinobi(valorJutsu(j,"alcance","—")),raio=escaparHtmlShinobi(valorJutsu(j,"raio","—")),duracao=escaparHtmlShinobi(valorJutsu(j,"duracao","—")),bonusAcerto=escaparHtmlShinobi(valorJutsu(j,"bonusAcerto","—")),bonusDano=escaparHtmlShinobi(valorJutsu(j,"bonusDano","—")),acao=escaparHtmlShinobi(valorJutsu(j,"acao","—")),acaoResumo=resumoAcaoJutsu(j.acao),acaoCodigo=escaparHtmlShinobi(acaoResumo.codigo),acaoTitulo=escaparHtmlShinobi(acaoResumo.titulo),resistencia=escaparHtmlShinobi(valorJutsu(j,"resistencia","—")),alvo=escaparHtmlShinobi(valorJutsu(j,"alvo","—")),descricao=escaparHtmlShinobi(valorJutsu(j,"descricao","Toque para editar efeitos")),imagem=normalizarImagemJutsuSegura(j.imagem),estiloImagem=imagem?`style="background-image:url('${imagem}')"`:"";const jutsuIdAttr=escaparHtmlShinobi(String(j?.jutsuId||""));const ekoIcone='<span class="shinobiIcon icon-chakra jutsuEkoSimbolo" aria-hidden="true"></span>';html.push(`
       <div class="jutsuCard jutsuCardCompacto jutsuListaCard ${aberto?"jutsuAberto":""} ${imagem?"comImagem":"semImagem"} ${dados.classe}" data-jutsu-id="${jutsuIdAttr}" data-jutsu-index="${i}">
         <div class="jutsuCartaFundo" ${estiloImagem}></div>
         <button type="button" class="jutsuLinhaResumo" aria-expanded="${aberto}" onclick="alternarJutsuAberto(${i})">
@@ -513,25 +503,14 @@ function renderizarJutsus(){
           <span class="jutsuLinhaTexto">
             <strong>${nome}</strong>
             <small><span class="jutsuMetadadosTexto">${dados.nome} • ${rank} • ${custo} EKO</span>${acaoCodigo?` <span class="jutsuAcaoRapida" data-acao="${acaoCodigo}" title="Tipo de ação: ${acaoTitulo}" aria-label="${acaoTitulo}">${acaoCodigo}</span>`:""}</small>
-            <span class="jutsuTcgBar" aria-label="Resumo rápido do jutsu">
-              <span class="jutsuTcgChip jutsuTcgChipElemento">
-                <span class="jutsuTcgChipTopo"><span class="jutsuTcgChipIcone">${dados.icone}</span><span class="jutsuTcgChipRotulo">Elemento</span></span>
-                <strong>${dados.nome}</strong>
-              </span>
-              <span class="jutsuTcgChip jutsuTcgChipRank">
-                <span class="jutsuTcgChipTopo"><span class="jutsuTcgChipRotulo">Rank</span></span>
-                <strong>${rank}</strong>
-              </span>
-              <span class="jutsuTcgChip jutsuTcgChipCusto">
-                <span class="jutsuTcgChipTopo">${ekoIcone}<span class="jutsuTcgChipRotulo">Custo</span></span>
-                <strong>${custo} EKO</strong>
-              </span>
-              <span class="jutsuTcgChip jutsuTcgChipAcao" title="${acaoCapaTitulo}">
-                <span class="jutsuTcgChipTopo"><span class="jutsuTcgChipRotulo">Ação</span></span>
-                <strong>${acaoCapa}</strong>
-              </span>
+            <span class="jutsuTcgBar" aria-hidden="true">
+              <span class="jutsuTcgChip jutsuTcgChipElemento"><span class="jutsuTcgChipRotulo"><span class="jutsuTcgChipIcone">${dados.icone}</span>Elemento</span><strong>${dados.nome}</strong></span>
+              <span class="jutsuTcgChip jutsuTcgChipRank"><span class="jutsuTcgChipRotulo">Rank</span><strong>${rank}</strong></span>
+              <span class="jutsuTcgChip jutsuTcgChipCusto"><span class="jutsuTcgChipRotulo">${ekoIcone}Custo</span><strong>${custo} EKO</strong></span>
+              <span class="jutsuTcgChip jutsuTcgChipAcao"><span class="jutsuTcgChipRotulo">Ação</span><strong>${acaoCodigo||acao}</strong></span>
             </span>
           </span>
+
           <span class="jutsuLinhaSeta">${aberto?"▲":"▼"}</span>
         </button>
 
@@ -544,7 +523,7 @@ function renderizarJutsus(){
             </div>
             <div class="jutsuMetaPills">
               <button type="button" class="jutsuMetaPill jutsuRankPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'rank','Rank do jutsu')" aria-label="Editar rank: ${rank}">Rank ${rank}</button>
-              <button type="button" class="jutsuMetaPill jutsuCustoPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'custo','Custo de Eco')" aria-label="Editar custo: ${custo} EKO">${ekoIcone}<span>${custo} EKO</span></button>
+              <button type="button" class="jutsuMetaPill jutsuCustoPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'custo','Custo de Eco')" aria-label="Editar custo: ${custo} EKO">${custo} EKO</button>
               <button type="button" class="jutsuMetaPill jutsuAcaoPill jutsuEditavel" onclick="editarCampoJutsuPrompt(${i},'acao','Tipo de ação')" title="${acaoTitulo||acao}" aria-label="Editar ação: ${acaoTitulo||acao}">${acaoCodigo||acao}</button>
             </div>
           </div>
@@ -573,11 +552,7 @@ function renderizarJutsus(){
           </div>
         </div>
       </div>
-    `)
-  });
-  box.innerHTML=html.join("")
-}
-async function usarJutsu(i){
+    `)}),box.innerHTML=html.join("")}async function usarJutsu(i){
   const j=(estado.jutsus||[])[i];
   if(!j)return;
 
