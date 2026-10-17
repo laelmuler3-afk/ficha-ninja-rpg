@@ -1,10 +1,10 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/00-compat-loader.js — app 2.5.8.166. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/00-compat-loader.js — app 2.5.8.167. Não editar. */
 (function () {
     "use strict";
     if (window.__shinobiCompatLoader)
         return;
     window.__shinobiCompatLoader = true;
-    var version = String(window.APP_VERSION || document.documentElement.getAttribute("data-app-version") || "2.5.8.166");
+    var version = String(window.APP_VERSION || document.documentElement.getAttribute("data-app-version") || "2.5.8.167");
     function modernSyntax() {
         try {
             new Function("var a={x:1}; return a?.x ?? 0;");
