@@ -405,3 +405,67 @@
     font-size:10px!important;margin-right:1px!important;
   }
 }
+
+/* === v2.5.8.172 | Placa do nome ornamental TCG ===
+   Apenas a carta FECHADA: nome permanece texto da ficha, sem alteração de JS.
+   Contorno com extremidades em chanfro e filigranas como na referência aprovada. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong{
+  box-sizing:border-box!important;
+  width:calc(100% - 16px)!important;
+  max-width:100%!important;
+  min-width:0!important;
+  align-self:center!important;
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+  text-align:center!important;
+  min-height:49px!important;
+  padding:11px 36px 12px!important;
+  margin:0 0 6px!important;
+  color:#fff4dd!important;
+  background:url("../assets/tcg/placa-nome.svg") center center / 100% 100% no-repeat!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))!important;
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:clamp(16px,4.3vw,32px)!important;
+  line-height:1.13!important;
+  font-weight:900!important;
+  text-shadow:0 2px 3px #000,0 0 8px rgba(0,0,0,.55)!important;
+  overflow-wrap:anywhere!important;
+  overflow:visible!important;
+}
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong::before,
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong::after{
+  content:none!important;display:none!important;
+}
+@media(max-width:390px){
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong{
+    width:calc(100% - 10px)!important;
+    min-height:43px!important;
+    padding:9px 27px 10px!important;
+    margin-bottom:5px!important;
+    font-size:clamp(13px,4.1vw,18px)!important;
+  }
+}
+@media (min-width:540px) and (max-width:1199px){
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong{
+    width:calc(100% - 8px)!important;
+    min-height:36px!important;
+    padding:7px 23px 8px!important;
+    margin-bottom:4px!important;
+    font-size:14px!important;
+  }
+}
+/* Evita a largura 100% herdada somada aos recuos: placa e barra não saem da moldura. */
+#jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto{
+  box-sizing:border-box!important;
+  width:auto!important;
+  max-width:none!important;
+}
+@media(max-width:390px){
+  #jutsus .jutsuListaCard:not(.jutsuAberto) .jutsuLinhaTexto > strong{
+    font-size:clamp(15px,4.65vw,19px)!important;
+  }
+}
