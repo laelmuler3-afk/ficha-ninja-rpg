@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.163",
-  "name": "Cartas abertas compactas com cores de cada natureza",
-  "notes": "Redesign responsivo dos detalhes das cartas, com cores dinâmicas por elemento e edição por toque. Preserva a correção de scroll da 2.5.8.161, a capa, o rank, EKO, ações abreviadas, imagens e efeitos automáticos.",
+  "version": "2.5.8.164",
+  "name": "Cartas de jutsu com arquitetura visual TCG e EKO",
+  "notes": "Aplica a arquitetura visual inspirada em cartas TCG para as cartas abertas de jutsu em todas as naturezas, mantendo as funcionalidades existentes. O custo passa a usar o símbolo visual do EKO em vez de moeda, com cores dinâmicas por elemento, hierarquia mais forte na arte e faixa rápida para elemento, rank, custo e tipo de ação.",
   "date": "2026-10-17"
 }
