@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.165",
-  "name": "Carta fechada estilo TCG + modo aberto restaurado",
-  "notes": "Restaura o visual do jutsu aberto ao layout compacto anterior da 2.5.8.163 e aplica a arquitetura visual inspirada em TCG somente nas cartas fechadas. Mantém cores por elemento, faixa rápida com elemento, rank, custo em EKO e tipo de ação, além de preservar edição, uso, imagem, efeitos automáticos e a correção de scroll.",
+  "version": "2.5.8.166",
+  "name": "Refino premium da carta fechada TCG",
+  "notes": "Refina o visual da carta fechada de jutsu para ficar mais próximo do mockup TCG: placa do nome mais forte, painel unificado de informações, caixas internas mais elegantes e melhor acabamento visual. Mantém o modo aberto restaurado, as cores por elemento, o símbolo de EKO, o scroll corrigido e todas as funções existentes.",
   "date": "2026-10-17"
 }
