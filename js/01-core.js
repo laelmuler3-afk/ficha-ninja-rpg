@@ -429,43 +429,85 @@ function adicionarJutsu(){
   direcionarJutsuRecemCriado(indice,jutsuId);
 }
 function adicionarArmado(){estado.armados=estado.armados||[],estado.armados.push({nome:"",tipo:"armado",bonusAcerto:"",dano:"",bonusDano:"",obs:"",itemInventario:"",quantidadeUso:"1"}),persistirListas("armados")}async function removerJutsu(i){const j=(estado.jutsus||[])[i];if(!j)return;const nome=String(j.nome||"Jutsu");const ok=typeof modalShinobi==="function"?await modalShinobi("Remover jutsu?",`Remover “${nome}” da ficha?`):confirm(`Remover "${nome}" da ficha?`);if(!ok)return;estado.jutsus.splice(i,1),estado.jutsusAbertos={},persistirListas("jutsus")}async function removerArmado(i){const a=(estado.armados||[])[i];if(!a)return;const nome=String(a.nome||"Ataque");const ok=typeof modalShinobi==="function"?await modalShinobi("Remover ataque?",`Remover “${nome}” da ficha?`):confirm(`Remover "${nome}" da ficha?`);if(!ok)return;estado.armados.splice(i,1),estado.ataquesAbertos={},persistirListas("armados")}function persistirSemRender(contexto={}){persistirEstadoLocal(contexto)}function persistirListas(campo){persistirEstadoLocal({confirmada:true,origem:"colecao",campo:String(campo||""),motivo:"alteracao-confirmada"}),renderizarJutsus(),renderizarArmados()}function dadosElementoJutsu(elemento){const mapa={katon:{nome:"KATON",icone:"🔥",classe:"jutsu-katon"},raiton:{nome:"RAITON",icone:"⚡",classe:"jutsu-raiton"},fuuton:{nome:"FUUTON",icone:"🌪️",classe:"jutsu-fuuton"},suiton:{nome:"SUITON",icone:"💧",classe:"jutsu-suiton"},doton:{nome:"DOTON",icone:"🪨",classe:"jutsu-doton"},yin:{nome:"YINTON",icone:"🌑",classe:"jutsu-yin"},yang:{nome:"YOUTON",icone:"☀️",classe:"jutsu-yang"},neutro:{nome:"NEUTRO",icone:"✨",classe:"jutsu-neutro"}};return mapa[elemento]||mapa.neutro}function limparNumeroDano(valor){const texto=String(valor||"").trim().replace(",",".");if(!texto)return 0;const match=texto.match(/[-+]?\d+(\.\d+)?/);return match?Number(match[0]):0}function formatarDanoTotal(dano,bonus){const danoTexto=String(dano||"").trim(),bonusTexto=String(bonus||"").trim(),bonusNum=limparNumeroDano(bonusTexto);if(!danoTexto&&!bonusTexto)return"—";const danoEhNumero=/^[-+]?\d+([.,]\d+)?$/.test(danoTexto),bonusEhNumero=/^[-+]?\d+([.,]\d+)?$/.test(bonusTexto);return danoEhNumero&&bonusEhNumero?String(limparNumeroDano(danoTexto)+bonusNum):danoTexto&&bonusNum?danoTexto+" + "+bonusNum:danoTexto||(bonusTexto||"—")}function valorJutsu(j,campo,padrao="—"){return(j&&void 0!==j[campo]?String(j[campo]).trim():"")||padrao}function editarCampoJutsuPrompt(i,campo,rotulo,padrao=""){const j=(estado.jutsus||[])[i];if(!j)return;const atual=j[campo]||"",novo=prompt(rotulo,atual);null!==novo&&(j[campo]=novo.trim(),persistirSemRender({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"}),renderizarJutsus())}function escolherElementoJutsuPrompt(i){const j=(estado.jutsus||[])[i];if(!j)return;const atual=j.elemento||"katon",escolha=prompt(`Escolha o elemento:\n1 - Katon\n2 - Raiton\n3 - Fuuton\n4 - Suiton\n5 - Doton\n6 - Yinton\n7 - Youton\n8 - Neutro\n\nAtual: ${atual}`,"");if(null===escolha)return;const novo={1:"katon",2:"raiton",3:"fuuton",4:"suiton",5:"doton",6:"yin",7:"yang",8:"neutro"}[String(escolha).trim()]||String(escolha).trim().toLowerCase();["katon","raiton","fuuton","suiton","doton","yin","yang","neutro"].includes(novo)?(j.elemento=novo,persistirSemRender({confirmada:true,origem:"jutsus",campo:"jutsus",motivo:"alteracao-confirmada"}),renderizarJutsus()):alert("Elemento inválido.")}function jutsuAberto(i){return estado.jutsusAbertos=estado.jutsusAbertos||{},!!estado.jutsusAbertos[i]}function alternarJutsuAberto(i){
+  const indice=Number(i);
+  if(!Number.isInteger(indice)||indice<0||!estado.jutsus?.[indice])return;
   estado.jutsusAbertos=estado.jutsusAbertos||{};
-  const estavaAberto=!!estado.jutsusAbertos[i];
-  estado.jutsusAbertos[i]=!estavaAberto;
-  if(estavaAberto)cancelarFocoJutsuPendente(i);
-  persistirEstadoLocal({emitir:false,confirmada:true,origem:"ui",motivo:"jutsu-aberto"});
-  renderizarJutsus();
-  if(estavaAberto){
-    const voltarParaJutsus=()=>fixarAbaJutsus();
-    if(typeof requestAnimationFrame==="function")requestAnimationFrame(voltarParaJutsus);
-    else setTimeout(voltarParaJutsus,0);
+  const estavaAberto=!!estado.jutsusAbertos[indice];
+  const abrir=!estavaAberto;
+  estado.jutsusAbertos[indice]=abrir;
+  if(estavaAberto)cancelarFocoJutsuPendente(indice);
+
+  /* A carta já contém a capa e os detalhes no DOM. Alternar a classe
+     diretamente evita destruir toda a grade, perder o foco do botão e
+     disparar um novo agrupamento/scroll ao fechar um único jutsu. */
+  const card=document.querySelector(`#listaJutsus .jutsuListaCard[data-jutsu-index="${indice}"]`);
+  if(card){
+    const botao=card.querySelector(".jutsuLinhaResumo");
+    const topoAntes=botao?.getBoundingClientRect().top;
+    card.classList.toggle("jutsuAberto",abrir);
+    if(botao)botao.setAttribute("aria-expanded",String(abrir));
+    const seta=card.querySelector(".jutsuLinhaSeta");
+    if(seta)seta.textContent=abrir?"▲":"▼";
+
+    /* No tablet a carta expandida ocupa duas colunas: o grid move a
+       capa. Compensar essa diferença no mesmo frame mantém exatamente
+       a MESMA carta sob o dedo, sem salto até o começo da seção. */
+    const topoDepois=botao?.getBoundingClientRect().top;
+    const delta=topoDepois-topoAntes;
+    if(Number.isFinite(delta)&&Math.abs(delta)>1){
+      const raiz=document.documentElement;
+      const comportamentoAnterior=raiz.style.scrollBehavior;
+      try{
+        raiz.style.scrollBehavior="auto";
+        window.scrollTo(0,Math.max(0,window.scrollY+delta));
+      }finally{
+        raiz.style.scrollBehavior=comportamentoAnterior;
+      }
+    }
+  }else{
+    /* Fallback para uma lista recriada pela sincronização entre o clique
+       e a alteração local: não navegar para o topo da seção. */
+    renderizarJutsus();
   }
-}function renderizarJutsus(){const box=document.getElementById("listaJutsus");if(!box)return;const html=[];(estado.jutsus||[]).forEach((j,i)=>{const aberto=jutsuAberto(i),dados=dadosElementoJutsu(j.elemento||"katon"),nome=escaparHtmlShinobi(valorJutsu(j,"nome","Novo jutsu")),custo=escaparHtmlShinobi(valorJutsu(j,"custo","0")),rank=escaparHtmlShinobi(valorJutsu(j,"rank","Rank")),dano=escaparHtmlShinobi(valorJutsu(j,"dano","—")),totalDano=escaparHtmlShinobi(formatarDanoTotal(j.dano,j.bonusDano)),alcance=escaparHtmlShinobi(valorJutsu(j,"alcance","—")),raio=escaparHtmlShinobi(valorJutsu(j,"raio","—")),duracao=escaparHtmlShinobi(valorJutsu(j,"duracao","—")),bonusAcerto=escaparHtmlShinobi(valorJutsu(j,"bonusAcerto","—")),bonusDano=escaparHtmlShinobi(valorJutsu(j,"bonusDano","—")),acao=escaparHtmlShinobi(valorJutsu(j,"acao","—")),acaoResumo=resumoAcaoJutsu(j.acao),acaoCodigo=escaparHtmlShinobi(acaoResumo.codigo),acaoTitulo=escaparHtmlShinobi(acaoResumo.titulo),resistencia=escaparHtmlShinobi(valorJutsu(j,"resistencia","—")),alvo=escaparHtmlShinobi(valorJutsu(j,"alvo","—")),descricao=escaparHtmlShinobi(valorJutsu(j,"descricao","Toque para editar efeitos")),imagem=normalizarImagemJutsuSegura(j.imagem),estiloImagem=imagem?`style="background-image:url('${imagem}')"`:"";const jutsuIdAttr=escaparHtmlShinobi(String(j?.jutsuId||""));const ekoIcone='<span class="shinobiIcon icon-chakra jutsuEkoSimbolo" aria-hidden="true"></span>';html.push(`
+  persistirEstadoLocal({emitir:false,confirmada:true,origem:"ui",motivo:"jutsu-aberto"});
+}
+/* Resumo do tipo de ação na capa: apenas abrevia, sem modificar o valor salvo. */
+function resumoAcaoJutsu(valor){
+  const original=String(valor??"").trim();
+  if(!original||original==="—"||original==="-")return {codigo:"",titulo:""};
+  const normalizado=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+  const tipos={
+    "a":{codigo:"A",titulo:"Ação"},
+    "acao":{codigo:"A",titulo:"Ação"},
+    "1 acao":{codigo:"A",titulo:"Ação"},
+    "ab":{codigo:"AB",titulo:"Ação Bônus"},
+    "acao bonus":{codigo:"AB",titulo:"Ação Bônus"},
+    "1 acao bonus":{codigo:"AB",titulo:"Ação Bônus"},
+    "r":{codigo:"R",titulo:"Reação"},
+    "reacao":{codigo:"R",titulo:"Reação"},
+    "1 reacao":{codigo:"R",titulo:"Reação"},
+    "a/r":{codigo:"A/R",titulo:"Ação / Reação"},
+    "acao / reacao":{codigo:"A/R",titulo:"Ação / Reação"},
+    "v":{codigo:"V",titulo:"Variável"},
+    "variavel":{codigo:"V",titulo:"Variável"}
+  };
+  if(tipos[normalizado])return tipos[normalizado];
+  if(normalizado.startsWith("especial"))return {codigo:"ESP",titulo:original};
+  return {codigo:original,titulo:original};
+}
+function renderizarJutsus(){const box=document.getElementById("listaJutsus");if(!box)return;const html=[];(estado.jutsus||[]).forEach((j,i)=>{const aberto=jutsuAberto(i),dados=dadosElementoJutsu(j.elemento||"katon"),nome=escaparHtmlShinobi(valorJutsu(j,"nome","Novo jutsu")),custo=escaparHtmlShinobi(valorJutsu(j,"custo","0")),rank=escaparHtmlShinobi(valorJutsu(j,"rank","Rank")),dano=escaparHtmlShinobi(valorJutsu(j,"dano","—")),totalDano=escaparHtmlShinobi(formatarDanoTotal(j.dano,j.bonusDano)),alcance=escaparHtmlShinobi(valorJutsu(j,"alcance","—")),raio=escaparHtmlShinobi(valorJutsu(j,"raio","—")),duracao=escaparHtmlShinobi(valorJutsu(j,"duracao","—")),bonusAcerto=escaparHtmlShinobi(valorJutsu(j,"bonusAcerto","—")),bonusDano=escaparHtmlShinobi(valorJutsu(j,"bonusDano","—")),acao=escaparHtmlShinobi(valorJutsu(j,"acao","—")),acaoResumo=resumoAcaoJutsu(j.acao),acaoCodigo=escaparHtmlShinobi(acaoResumo.codigo),acaoTitulo=escaparHtmlShinobi(acaoResumo.titulo),resistencia=escaparHtmlShinobi(valorJutsu(j,"resistencia","—")),alvo=escaparHtmlShinobi(valorJutsu(j,"alvo","—")),descricao=escaparHtmlShinobi(valorJutsu(j,"descricao","Toque para editar efeitos")),imagem=normalizarImagemJutsuSegura(j.imagem),estiloImagem=imagem?`style="background-image:url('${imagem}')"`:"";const jutsuIdAttr=escaparHtmlShinobi(String(j?.jutsuId||""));const ekoIcone='<span class="shinobiIcon icon-chakra jutsuEkoSimbolo" aria-hidden="true"></span>';html.push(`
       <div class="jutsuCard jutsuCardCompacto jutsuListaCard ${aberto?"jutsuAberto":""} ${imagem?"comImagem":"semImagem"} ${dados.classe}" data-jutsu-id="${jutsuIdAttr}" data-jutsu-index="${i}">
         <div class="jutsuCartaFundo" ${estiloImagem}></div>
         <button type="button" class="jutsuLinhaResumo" aria-expanded="${aberto}" onclick="alternarJutsuAberto(${i})">
           <span class="jutsuLinhaIcone">${dados.icone}</span>
-          <span class="jutsuTcgFaixaTopo">${dados.nome}</span>
           <span class="jutsuLinhaTexto">
             <strong>${nome}</strong>
             <small><span class="jutsuMetadadosTexto">${dados.nome} • ${rank} • ${custo} EKO</span>${acaoCodigo?` <span class="jutsuAcaoRapida" data-acao="${acaoCodigo}" title="Tipo de ação: ${acaoTitulo}" aria-label="${acaoTitulo}">${acaoCodigo}</span>`:""}</small>
             <span class="jutsuTcgBar" aria-hidden="true">
-              <span class="jutsuTcgInfo jutsuTcgInfoElemento">
-                <span class="jutsuTcgInfoValor"><span class="jutsuTcgMiniIcone">${dados.icone}</span><span>${dados.nome}</span></span>
-                <span class="jutsuTcgInfoRotulo">Elemento</span>
-              </span>
-              <span class="jutsuTcgInfo jutsuTcgInfoRank">
-                <span class="jutsuTcgInfoValor">${rank}</span>
-                <span class="jutsuTcgInfoRotulo">Rank</span>
-              </span>
-              <span class="jutsuTcgInfo jutsuTcgInfoCusto">
-                <span class="jutsuTcgInfoValor">${ekoIcone}<span>${custo} EKO</span></span>
-                <span class="jutsuTcgInfoRotulo">Custo</span>
-              </span>
-              <span class="jutsuTcgInfo jutsuTcgInfoAcao">
-                <span class="jutsuTcgInfoValor">${acaoCodigo||acao}</span>
-                <span class="jutsuTcgInfoRotulo">Tipo de ação</span>
-              </span>
+              <span class="jutsuTcgChip jutsuTcgChipElemento"><span class="jutsuTcgChipRotulo"><span class="jutsuTcgChipIcone">${dados.icone}</span>Elemento</span><strong>${dados.nome}</strong></span>
+              <span class="jutsuTcgChip jutsuTcgChipRank"><span class="jutsuTcgChipRotulo">Rank</span><strong>${rank}</strong></span>
+              <span class="jutsuTcgChip jutsuTcgChipCusto"><span class="jutsuTcgChipRotulo">${ekoIcone}Custo</span><strong>${custo} EKO</strong></span>
+              <span class="jutsuTcgChip jutsuTcgChipAcao"><span class="jutsuTcgChipRotulo">Ação</span><strong>${acaoCodigo||acao}</strong></span>
             </span>
           </span>
 
