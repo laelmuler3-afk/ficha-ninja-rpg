@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.160",
-  "name": "Tipo de ação abreviado ao lado de rank e EKO na capa",
-  "notes": "O jutsu fechado exibe A (Ação), AB (Ação Bônus) ou R (Reação) ao lado de elemento, rank e custo EKO; casos especiais preservam o tipo original. Mantém as regras e dados dos jutsus sem alterações.",
-  "date": "2026-10-16"
+  "version": "2.5.8.163",
+  "name": "Cartas abertas compactas com cores de cada natureza",
+  "notes": "Redesign responsivo dos detalhes das cartas, com cores dinâmicas por elemento e edição por toque. Preserva a correção de scroll da 2.5.8.161, a capa, o rank, EKO, ações abreviadas, imagens e efeitos automáticos.",
+  "date": "2026-10-17"
 }
