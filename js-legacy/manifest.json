@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.169",
+  "version": "2.5.8.170",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -156,8 +156,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "ae14240ae132979d222f38e6088c219f5363bc802df351469c2c0a60c3ee6da9",
-      "outputSha256": "5aa3ec5cd8102ae10c827e38a38cbcbe8a63d7bcd3398af24ded2cf957e3461c"
+      "sourceSha256": "4d2548d3389d046494775c6957afdfc113a0613c6d19568b5c9ade9da5d7a543",
+      "outputSha256": "022302844a2313bf675276016259e5647765df07845f7277fdc2f546f7968d59"
     }
   }
 }
