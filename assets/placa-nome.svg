@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 134" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="oro" x1="0" x2="0.13" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff2ba"/>
+      <stop offset=".15" stop-color="#c1752c"/>
+      <stop offset=".4" stop-color="#f9d486"/>
+      <stop offset=".63" stop-color="#8e3a15"/>
+      <stop offset=".88" stop-color="#e2a34e"/>
+      <stop offset="1" stop-color="#fff1a8"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#29150e" stop-opacity=".98"/>
+      <stop offset=".5" stop-color="#08090b" stop-opacity=".96"/>
+      <stop offset="1" stop-color="#180e0c" stop-opacity=".98"/>
+    </linearGradient>
+    <pattern id="grain" width="7" height="7" patternUnits="userSpaceOnUse">
+      <path d="M0 7 7 0" fill="none" stroke="#f0c777" stroke-opacity=".065" stroke-width=".9"/>
+    </pattern>
+    <g id="curl" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 65C15 40 26 41 32 23 43 29 44 43 39 52 56 34 74 33 82 46 90 60 73 77 63 69 57 64 66 53 73 61" stroke="url(#oro)" stroke-width="5"/>
+      <path d="M0 88C30 73 40 101 67 88 77 84 81 76 77 68 87 76 85 94 73 104 51 122 34 103 15 109" stroke="#c84620" stroke-width="9"/>
+      <path d="M1 89C35 76 42 107 69 89 77 85 80 78 77 69 86 81 81 97 67 105 44 116 37 95 18 108" stroke="url(#oro)" stroke-width="2.4"/>
+      <path d="M16 102C34 91 42 112 55 102" stroke="#f59b44" stroke-width="3"/>
+      <path d="M3 54Q17 36 28 47Q40 58 22 66" stroke="#eb933b" stroke-width="2.5"/>
+    </g>
+  </defs>
+  <!-- Quinas com fendas: em vez de retângulo arredondado -->
+  <path d="M78 10H882L900 29H921L943 52V83L920 106H900L883 124H77L60 106H40L17 84V51L40 29H59Z" fill="url(#ink)" stroke="#572013" stroke-width="10"/>
+  <path d="M78 10H882L900 29H921L943 52V83L920 106H900L883 124H77L60 106H40L17 84V51L40 29H59Z" fill="none" stroke="url(#oro)" stroke-width="4.8"/>
+  <path d="M88 20H872L890 39H911L931 57V78L910 97H889L873 113H87L70 97H50L29 77V57L51 39H71Z" fill="url(#grain)" stroke="#dfa15b" stroke-opacity=".8" stroke-width="1.8"/>
+  <path d="M101 27H858M101 107H858" stroke="#f7d287" stroke-opacity=".5" stroke-width="1.8"/>
+  <!-- vermelhas nas pontas, não por trás do texto -->
+  <g transform="translate(3,0)"><use href="#curl"/></g>
+  <g transform="translate(957,0) scale(-1 1)"><use href="#curl"/></g>
+  <path d="M7 107C21 118 39 126 59 123 69 120 78 114 89 120 73 130 50 134 31 131Z" fill="#a52317" stroke="url(#oro)" stroke-width="1.8"/>
+  <path d="M953 107C939 118 921 126 901 123 891 120 882 114 871 120 887 130 910 134 929 131Z" fill="#a52317" stroke="url(#oro)" stroke-width="1.8"/>
+  <!-- losangos superior e inferior -->
+  <path d="M480 0 497 16 480 31 463 16Z" fill="#8e3012" stroke="url(#oro)" stroke-width="3"/>
+  <path d="M480 8 488 16 480 24 472 16Z" fill="#f9c87b"/>
+  <path d="M480 134 497 118 480 102 463 118Z" fill="#8e3012" stroke="url(#oro)" stroke-width="3"/>
+  <path d="M480 126 488 118 480 110 472 118Z" fill="#ffc879"/>
+</svg>
