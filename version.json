@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.173",
-  "name": "Proteção de integridade da ficha local no Safari",
-  "notes": "Detecta ficha ausente, inválida ou ilegível e impede salvamento/backup de estados provisórios. Restauração por importação confirmada e criação explícita de ficha nova continuam disponíveis; visual TCG e motor de jutsus preservados.",
+  "version": "2.5.8.174",
+  "name": "Recuperação assistida da nuvem e proficiência consistente",
+  "notes": "Restauração assistida de backup da Conta Google para ficha local indisponível, com confirmação e bloqueio de backup vazio. Revalida proficiência pelo nível usando tabela oficial de progressão, incluindo retorno do Safari e atualizações online, mantendo visual e recursos existentes.",
   "date": "2026-10-17"
 }

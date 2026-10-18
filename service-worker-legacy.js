@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.173. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.174. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,10 +71,10 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.173 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.174 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.173";
+var APP_VERSION = "2.5.8.174";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);
@@ -146,6 +146,7 @@ var APP_SHELL = [
     "./vendor/qrcode-local.js?v=".concat(APP_VERSION),
     "./js/20-online-ui.js?v=".concat(APP_VERSION),
     "./js/21-online-hooks.js?v=".concat(APP_VERSION),
+    "./js/25-recuperacao-nuvem.js?v=".concat(APP_VERSION),
     "./js/22-organizacao-retratil.js?v=".concat(APP_VERSION),
     "./js/23-security-hardening.js?v=".concat(APP_VERSION),
     "./js/24-terminologia-eko.js?v=".concat(APP_VERSION),
