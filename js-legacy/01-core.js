@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/01-core.js — app 2.5.8.165. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/01-core.js — app 2.5.8.173. Não editar. */
 /* Shinobi 1.3.0 — arquivo modular gerado preservando a ordem do app original. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -125,18 +125,141 @@ function normalizarImagemJutsuSegura(valor) {
         return "";
     return imagem.replace(/[\r\n'"()\\]/g, function (caractere) { return encodeURIComponent(caractere); });
 }
+/* Proteção de leitura local (Safari / navegadores com armazenamento volátil).
+ * Uma chave ausente, ilegível ou inválida NUNCA é uma ficha vazia confirmada.
+ * A interface continua acessível para login/importação, mas gravar e publicar
+ * o estado provisório ficam bloqueados até recuperação ou decisão explícita. */
+var ShinobiIntegridadeFicha = (function () {
+    var bloqueios = new Map();
+    var errosNotificados = new Set();
+    var chaveValidada = new Set();
+    function objetoFicha(valor) { return Boolean(valor && typeof valor === "object" && !Array.isArray(valor)); }
+    function estado(chave) { return bloqueios.get(String(chave)) || null; }
+    function bloqueadaPara(chave) { return bloqueios.has(String(chave)); }
+    function registrar(chave, motivo, bruto) {
+        chave = String(chave);
+        bloqueios.set(chave, { motivo: String(motivo), bruto: bruto == null ? null : String(bruto) });
+        if (!errosNotificados.has(chave)) {
+            errosNotificados.add(chave);
+            console.warn("Ficha local indisponível: salvamento e backup suspensos.", chave, motivo);
+        }
+        mostrarAviso();
+    }
+    function desbloquear(chave) {
+        chave = String(chave);
+        bloqueios.delete(chave);
+        chaveValidada.add(chave);
+        mostrarAviso();
+    }
+    function autorizarRestauracao(chave, novoEstado, contexto) {
+        return contexto && contexto.origem === "importacao" && contexto.confirmada === true &&
+            objetoFicha(novoEstado) && Object.keys(novoEstado).length > 0;
+    }
+    function mostrarAviso() {
+        if (typeof document === "undefined" || !document.body)
+            return;
+        var id = "shinobiAvisoIntegridadeFicha";
+        var aviso = document.getElementById(id);
+        var chave = null;
+        try {
+            chave = typeof CHAVE !== "undefined" ? CHAVE : null;
+        }
+        catch (_aindaNaoInicializado) { }
+        var bloqueio = chave ? estado(chave) : null;
+        if (!bloqueio) {
+            if (aviso)
+                aviso.remove();
+            return;
+        }
+        if (!aviso) {
+            aviso = document.createElement("section");
+            aviso.id = id;
+            aviso.setAttribute("role", "alert");
+            aviso.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:1200;max-width:540px;margin:auto;padding:14px 15px;background:#150f10;color:#fff3e5;border:2px solid #ed934a;border-radius:14px;box-shadow:0 8px 32px #000d;font:14px/1.45 system-ui,sans-serif";
+            document.body.appendChild(aviso);
+        }
+        var msg = bloqueio.motivo === "ausente"
+            ? "Não foi encontrada uma ficha local neste navegador. Isso pode ser um primeiro acesso ou dados que deixaram de estar disponíveis."
+            : "Não foi possível ler a ficha salva neste navegador. Os dados existentes NÃO serão substituídos.";
+        aviso.innerHTML = '<strong style="display:block;margin-bottom:5px">⚠️ Ficha protegida contra sobrescrita</strong>' +
+            '<span>' + msg + ' O salvamento e o envio desta ficha à nuvem estão suspensos. Entre na sua conta e recupere um backup antes de começar de novo.</span>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' +
+            '<button type="button" data-integridade="atualizar" style="background:#362217;color:#ffe4be;border:1px solid #b67e50;padding:7px 12px;border-radius:8px">Verificar recuperação</button>' +
+            (bloqueio.motivo === "ausente" ? '<button type="button" data-integridade="nova" style="background:#281419;color:#f8d0c5;border:1px solid #a56864;padding:7px 12px;border-radius:8px">Criar ficha vazia</button>' : '') +
+            '</div>';
+        aviso.querySelector('[data-integridade="atualizar"]').onclick = function () {
+            var bruto;
+            try {
+                bruto = localStorage.getItem(chave);
+            }
+            catch (_erro) {
+                bruto = null;
+            }
+            if (bruto != null) {
+                try {
+                    var ficha = JSON.parse(bruto);
+                    if (objetoFicha(ficha) && Object.keys(ficha).length) {
+                        location.reload();
+                        return;
+                    }
+                }
+                catch (_erro) { }
+            }
+            alert("A ficha local ainda não está disponível. Consulte os backups da conta ou importe uma cópia válida.");
+        };
+        var nova = aviso.querySelector('[data-integridade="nova"]');
+        if (nova)
+            nova.onclick = function () {
+                var ok = confirm("ATENÇÃO: criar uma ficha vazia pode iniciar uma nova ficha onde antes havia dados. Se você já usava este personagem, escolha Cancelar e recupere o backup da nuvem. Você tem certeza de que esta é uma ficha NOVA?");
+                if (!ok)
+                    return;
+                try {
+                    // Somente um clique explícito pode criar uma ficha vazia ausente.
+                    if (localStorage.getItem(chave) !== null) {
+                        alert("Existem dados nesta ficha. A criação foi cancelada.");
+                        return;
+                    }
+                    localStorage.setItem(chave, JSON.stringify({}));
+                    desbloquear(chave);
+                    location.reload();
+                }
+                catch (erro) {
+                    alert("Não foi possível criar a ficha neste navegador. Verifique o armazenamento disponível.");
+                }
+            };
+    }
+    if (typeof document !== "undefined") {
+        if (document.readyState === "loading")
+            document.addEventListener("DOMContentLoaded", mostrarAviso);
+        else
+            setTimeout(mostrarAviso, 0);
+    }
+    return { estado: estado, bloqueadaPara: bloqueadaPara, registrar: registrar, desbloquear: desbloquear, autorizarRestauracao: autorizarRestauracao, mostrarAviso: mostrarAviso };
+})();
+window.ShinobiIntegridadeFicha = ShinobiIntegridadeFicha;
 function lerEstadoFichaSeguro(chave) {
+    var bruto;
     try {
-        var bruto = localStorage.getItem(chave);
-        if (!bruto)
-            return {};
-        var dados = JSON.parse(bruto);
-        return dados && typeof dados === "object" && !Array.isArray(dados) ? dados : {};
+        bruto = localStorage.getItem(chave);
     }
     catch (erro) {
-        console.warn("A ficha salva contém dados inválidos e foi aberta em modo seguro.", erro);
+        ShinobiIntegridadeFicha.registrar(chave, "inacessivel", null);
         return {};
     }
+    if (bruto === null) {
+        ShinobiIntegridadeFicha.registrar(chave, "ausente", null);
+        return {};
+    }
+    try {
+        var dados = JSON.parse(bruto);
+        if (dados && typeof dados === "object" && !Array.isArray(dados)) {
+            ShinobiIntegridadeFicha.desbloquear(chave);
+            return dados;
+        }
+    }
+    catch (_erro) { }
+    ShinobiIntegridadeFicha.registrar(chave, "invalida", bruto);
+    return {};
 }
 /* ===== Versão interna do app ===== */
 var APP_VERSION = window.APP_VERSION || "2.5.8.62";
@@ -289,14 +412,25 @@ catch (e) {
         nome && !lista.includes(nome) && lista.push(nome);
     } });
 }
-catch (e) { } return lista = __spreadArray([], __read(new Set(lista.map(limparNomeFicha))), false), lista.includes("Principal") || lista.unshift("Principal"), localStorage.setItem(CHAVE_LISTA, JSON.stringify(lista)), lista; }
-var fichas = lerListaFichas(), fichaAtual = limparNomeFicha(localStorage.getItem(CHAVE_ATIVA) || "Principal");
+catch (e) { } return lista = __spreadArray([], __read(new Set(lista.map(limparNomeFicha))), false), lista.includes("Principal") || lista.unshift("Principal"), (function () { try {
+    localStorage.setItem(CHAVE_LISTA, JSON.stringify(lista));
+}
+catch (_erro) { } })(), lista; }
+var fichas = lerListaFichas(), fichaAtual = limparNomeFicha((function () { try {
+    return localStorage.getItem(CHAVE_ATIVA);
+}
+catch (_erro) {
+    return null;
+} })() || "Principal");
 function chaveFicha(nome) {
     if (nome === void 0) { nome = fichaAtual; }
     var ficha = limparNomeFicha(nome);
     return "Principal" === ficha ? CHAVE_BASE : CHAVE_BASE + "__" + ficha;
 }
-fichas.includes(fichaAtual) || (fichas.push(fichaAtual), localStorage.setItem(CHAVE_LISTA, JSON.stringify(fichas)));
+fichas.includes(fichaAtual) || (fichas.push(fichaAtual), (function () { try {
+    localStorage.setItem(CHAVE_LISTA, JSON.stringify(fichas));
+}
+catch (_erro) { } })());
 var CHAVE = chaveFicha(), estado = lerEstadoFichaSeguro(CHAVE), camposSalvaveisCache = null, timerSalvar = null, avisoArmazenamentoExibido = !1;
 /* Ponte estável entre o estado lexical do core e módulos carregados depois.
    Variáveis declaradas com `let` no escopo global não viram propriedades de
@@ -334,9 +468,16 @@ function persistirEstadoLocal(contexto) {
     if (contexto === void 0) { contexto = {}; }
     if (window.__shinobiSheetTransition === true)
         return !1;
+    var bloqueada = ShinobiIntegridadeFicha.bloqueadaPara(CHAVE);
+    if (bloqueada && !ShinobiIntegridadeFicha.autorizarRestauracao(CHAVE, estado, contexto)) {
+        ShinobiIntegridadeFicha.mostrarAviso();
+        return false;
+    }
     try {
         var estadoPersistido_1 = prepararEstadoParaPersistenciaLocal(estado);
         localStorage.setItem(CHAVE, JSON.stringify(estadoPersistido_1));
+        if (bloqueada)
+            ShinobiIntegridadeFicha.desbloquear(CHAVE);
         if (contexto.emitir !== false) {
             try {
                 var confirmada_1 = contexto.confirmada === true, lista = Array.isArray(contexto.campos) ? contexto.campos : [contexto.campo], campos = __spreadArray([], __read(new Set(lista.map(function (valor) { return String(valor || "").trim(); }).filter(Boolean))), false), eventos_1 = campos.length ? campos : [""];
@@ -360,10 +501,22 @@ function atualizarValoresConfirmadosDosCampos() { obterCamposSalvaveis().forEach
     return; c.dataset.shinobiValorConfirmado = shinobiSerializarValorCampo(shinobiValorCampo(c)); c.dataset.shinobiEdicaoPendente = "0"; }); }
 function salvar(contexto) {
     if (contexto === void 0) { contexto = {}; }
-    timerSalvar && (clearTimeout(timerSalvar), timerSalvar = null), sincronizarEstadoDosCampos(), persistirEstadoLocal(contexto), atualizarValoresConfirmadosDosCampos(), atualizarPlacar(), atualizarPerfil();
+    if (ShinobiIntegridadeFicha.bloqueadaPara(CHAVE)) {
+        ShinobiIntegridadeFicha.mostrarAviso();
+        return false;
+    }
+    timerSalvar && (clearTimeout(timerSalvar), timerSalvar = null), sincronizarEstadoDosCampos();
+    var persistiu = persistirEstadoLocal(contexto);
+    if (!persistiu)
+        return false;
+    atualizarValoresConfirmadosDosCampos(), atualizarPlacar(), atualizarPerfil();
+    return true;
 }
 function salvarAgendado() { timerSalvar && clearTimeout(timerSalvar), timerSalvar = setTimeout(function () { timerSalvar = null; shinobiAtualizarVisualSemSalvar(); }, 180); }
-function salvarManual() { salvar({ confirmada: true, origem: "manual", motivo: "salvamento-manual" }), alert("Ficha salva!"); }
+function salvarManual() { if (salvar({ confirmada: true, origem: "manual", motivo: "salvamento-manual" }))
+    alert("Ficha salva!");
+else
+    alert("A ficha não foi salva. Verifique o aviso de proteção de dados na tela."); }
 function carregar() { obterCamposSalvaveis().forEach(function (c) { void 0 !== estado[c.dataset.save] && ("checkbox" === c.type ? c.checked = estado[c.dataset.save] : c.value = estado[c.dataset.save]), c.dataset.shinobiValorConfirmado = shinobiSerializarValorCampo(shinobiValorCampo(c)), c.dataset.shinobiEdicaoPendente = "0", c.dataset.saveListener || (c.dataset.saveListener = "1", c.addEventListener("input", shinobiRegistrarEdicaoCampo), c.addEventListener("change", shinobiConfirmarEdicaoCampo)); }), renderizarJutsus(), renderizarArmados(), renderizarNaturezas(), renderizarKekkeiGenkai(), renderizarInventario(), atualizarPlacar(), atualizarPerfil(), carregarAvatarSalvo(), carregarFundoPerfilSalvo(); }
 function abrirPagina(id, botao) { var pagina = document.getElementById(id); if (!pagina)
     return; document.querySelectorAll(".pagina").forEach(function (p) { return p.classList.remove("ativa"); }), pagina.classList.add("ativa"); var botoes = Array.from(document.querySelectorAll(".menu button")); botoes.forEach(function (b) { return b.classList.remove("ativo"); }); var botaoFinal = botao || botoes.find(function (b) { var onclick = b.getAttribute("onclick") || ""; return onclick.includes("'" + id + "'") || onclick.includes('"' + id + '"'); }); if (botaoFinal && botaoFinal.classList.add("ativo"), window.abasSwipe) {
@@ -1038,13 +1191,16 @@ function atualizarModificadoresBatalha() { var _a, _b; [["forca", "modForca"], [
 function salvarListaFichas() { fichas = __spreadArray([], __read(new Set((fichas || ["Principal"]).map(limparNomeFicha))), false), fichas.includes("Principal") || fichas.unshift("Principal"), localStorage.setItem(CHAVE_LISTA, JSON.stringify(fichas)); }
 function atualizarListaFichas() { var seletor = document.getElementById("seletorFicha"); seletor && (seletor.innerHTML = "", fichas.forEach(function (nome) { var opcao = document.createElement("option"); opcao.value = nome, opcao.textContent = nome, nome === fichaAtual && (opcao.selected = !0), seletor.appendChild(opcao); })); }
 function iniciarTransicaoFicha() { window.__shinobiSheetTransition = true, timerSalvar && (clearTimeout(timerSalvar), timerSalvar = null); }
-function novaFicha() { salvar(); var nome = prompt("Nome da nova ficha:"); if (!nome)
+function novaFicha() { if (!salvar())
+    return void alert("Recupere ou crie explicitamente a ficha local antes de trocar de personagem."); var nome = prompt("Nome da nova ficha:"); if (!nome)
     return; if (nome = limparNomeFicha(nome), fichas.includes(nome))
     return void alert("Já existe uma ficha com esse nome."); var chaveNova = chaveFicha(nome); fichas.push(nome), salvarListaFichas(), localStorage.setItem(chaveNova, JSON.stringify({})), iniciarTransicaoFicha(), fichaAtual = nome, CHAVE = chaveNova, estado = {}, localStorage.setItem(CHAVE_ATIVA, fichaAtual), location.reload(); }
-function duplicarFicha() { salvar(); var nome = prompt("Nome da cópia da ficha:"); if (!nome)
+function duplicarFicha() { if (!salvar())
+    return void alert("A ficha local não foi carregada. A duplicação foi bloqueada para proteger os dados."); var nome = prompt("Nome da cópia da ficha:"); if (!nome)
     return; if (nome = limparNomeFicha(nome), fichas.includes(nome))
     return void alert("Já existe uma ficha com esse nome."); var copia = JSON.parse(JSON.stringify(estado || {})); delete copia.__online; var chaveNova = chaveFicha(nome); localStorage.setItem(chaveNova, JSON.stringify(copia)), fichas = __spreadArray([], __read(new Set(__spreadArray(__spreadArray([], __read(fichas), false), [nome], false))), false), salvarListaFichas(), iniciarTransicaoFicha(), fichaAtual = nome, CHAVE = chaveNova, localStorage.setItem(CHAVE_ATIVA, fichaAtual), estado = copia, atualizarListaFichas(), alert("Ficha duplicada com sucesso!"), setTimeout(function () { return location.reload(); }, 120); }
-function trocarFicha(nome) { salvar(); var destino = limparNomeFicha(nome), chaveDestino = chaveFicha(destino); iniciarTransicaoFicha(), fichaAtual = destino, CHAVE = chaveDestino, localStorage.setItem(CHAVE_ATIVA, fichaAtual), location.reload(); }
+function trocarFicha(nome) { if (!salvar())
+    return void alert("A ficha local está protegida. Recupere os dados antes de trocar pelo seletor."); var destino = limparNomeFicha(nome), chaveDestino = chaveFicha(destino); iniciarTransicaoFicha(), fichaAtual = destino, CHAVE = chaveDestino, localStorage.setItem(CHAVE_ATIVA, fichaAtual), location.reload(); }
 function renomearFicha() { if (salvar(), "Principal" === fichaAtual)
     return void alert("A ficha Principal não pode ser renomeada. Para mudar o nome dela, use duplicar ficha e crie uma cópia com o novo nome."); var novoNome = prompt("Novo nome da ficha:", fichaAtual); if (!novoNome)
     return; if (novoNome = limparNomeFicha(novoNome), novoNome === fichaAtual)

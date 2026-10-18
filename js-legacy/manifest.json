@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.172",
+  "version": "2.5.8.173",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -16,8 +16,8 @@
       "outputSha256": "118304408530eb3d387844577b1ffcb64dd4af11c2648c326b2affd06269058f"
     },
     "js/01-core.js": {
-      "sourceSha256": "571d7a7d519858542b4bf50245a1a76f067d174f7184be2ebc23497f11ca2cff",
-      "outputSha256": "3707ebae473e74dcc3fb134fb86018cf2f5c140885949c32be5309e495677e9f"
+      "sourceSha256": "c1d7eb160fea72d5d154b54ad033d170a7b66dfd36095043081819be97456694",
+      "outputSha256": "e564f26920447771ea166472be75ab50694ebd015d767693482be0df458ade9b"
     },
     "js/01-sheet-manager.js": {
       "sourceSha256": "e0967d2ce85e7031719eeb12ba70c7c39b1ad1ff761b1dc9bc10a5168ccdba4b",
@@ -64,8 +64,8 @@
       "outputSha256": "56ff3a43b485fe1081d0fd4aac082e2c68e4bad90c8e4ca404263f4cf3a35990"
     },
     "js/08-update.js": {
-      "sourceSha256": "ce413d61408c2a6e5db15629d0f0fa4ff470aeb1818aaa8cec46b8672c2ef09b",
-      "outputSha256": "5fc68b9d5ea9c02bffebf745228ac1f597fdac203af6db61821f86c13c520b6a"
+      "sourceSha256": "f03f285b26134edcf9a96de0f969c34e2a0c8a969d68f39d4c200607e63925cd",
+      "outputSha256": "9395a34102900601e0b00168d68b38fb2da63378906d0726dd2ec8e39dac1413"
     },
     "js/09-catalogo.js": {
       "sourceSha256": "e637329f43d8e88c529ba0b2dd75943ad6e9e0213f18e5ae3ac5a041e8537627",
@@ -120,8 +120,8 @@
       "outputSha256": "569d15ed6add2f3219b37df35496b43c5e6bf673f05db07b709fc8321bf20e13"
     },
     "js/19-online-core.js": {
-      "sourceSha256": "0ff138e60519d827ed13f1b5426a1646b4cbac307ae866fe39e61e46ec93a515",
-      "outputSha256": "4f3e42d9bb9ac489ed770d597f0c7537b97fdd5e2e16e89180173303d428fefa"
+      "sourceSha256": "6aefe04886d7b05df17c526ab0e21c8184ca067def13ee569df7fd1f5d3a47b1",
+      "outputSha256": "d209688265f44f3b1caa4fa7bc0568efa69b3b8965fd88889ec07045d6ceab40"
     },
     "js/19-realtime-fields-utils.js": {
       "sourceSha256": "9cb9b6d05d71cd0d6cde83c7ff9727c785381a6fd4fa352c478f0ac425dd97ba",
@@ -136,16 +136,16 @@
       "outputSha256": "a8f977ffc1487e32e9f7947a517ab768924957b85b97fde7f5118776f55151ac"
     },
     "js/21-online-hooks.js": {
-      "sourceSha256": "a2f89645c0bea19f5019cd65803e4cb907eef2a956ce3a135403491448dfac73",
-      "outputSha256": "ff675f4ce717b978e5d0ddbebbc250bbf720be893709799007224c1b02b5dddd"
+      "sourceSha256": "110aa6d781e7f3cf3e5de9cb5e765f14e27fb7b7277090437f6d3d96a22d8c73",
+      "outputSha256": "75e3e6bb3400a8dcbb6f4777b346fd7f7ed3d24253a4a91a502efe14b1d93a17"
     },
     "js/22-organizacao-retratil.js": {
       "sourceSha256": "451c1c01da8e1edc26fdb2a8e667095b1fd2e69b930b113b6ccb3797eb4cb60b",
       "outputSha256": "16680c34231717bc22b7c02ba69946e694a74d4d899a5ffdede1f6ab0b4e3ab5"
     },
     "js/23-security-hardening.js": {
-      "sourceSha256": "d9e5e2dbcb000812a93945c6bd88052a519653172f7a9ac0593b44a4afe92a86",
-      "outputSha256": "f7af04885400013638b35c61cbe08e39caae2657060fdbe4fb0cbcd46cb828a4"
+      "sourceSha256": "4a97372acca9acf4e79d865ec44abfb3378c832e08debc61beb767dfa9c60c6b",
+      "outputSha256": "0357bbbea688eab73aa294cdf4f27bf6709a87730c5d3c74d45d3d43aea4598f"
     },
     "js/24-terminologia-eko.js": {
       "sourceSha256": "96888f77f34af5f1f613d2b09efd6bbef20106f8bb051dd9cf77a4f405c64103",
@@ -156,8 +156,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "900e9f40f18903fb5da8d804b8ca37889f31e20b4f3e9c39abe6e4ba1b7abfc9",
-      "outputSha256": "016f18131d95df9eb691d77a80f6e774314ca0ce67f7f76e2602b29987489ac5"
+      "sourceSha256": "c00ebf8b483850eff61557d912f732b8293784820c72926cf419537b321d6dce",
+      "outputSha256": "de65c176df0bca79ec3c74a271fa620b1407c030d0eddafa1333d15a7f574325"
     }
   }
 }

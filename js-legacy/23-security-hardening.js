@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/23-security-hardening.js — app 2.5.8.173. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -172,7 +173,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
                     case 3:
                         if (!destinoAindaAtivo())
                             return [2 /*return*/];
-                        if (!persistirEstadoLocal({ emitir: false, origem: "importacao", motivo: "importacao-local" })) {
+                        if (!persistirEstadoLocal({ emitir: false, confirmada: true, origem: "importacao", motivo: "importacao-local" })) {
                             throw new Error("O armazenamento local não aceitou os dados importados.");
                         }
                         alert("Ficha importada com sucesso!");

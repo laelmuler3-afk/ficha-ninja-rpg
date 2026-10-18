@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/19-online-core.js — app 2.5.8.173. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -1861,7 +1862,12 @@ var __values = (this && this.__values) || function(o) {
         var fichasValidas = [];
         var nomesValidos = [];
         nomes.forEach(function (nomeLimpo) {
+            var _a, _b;
             var chave = nomeLimpo === "Principal" ? "ficha_ninja_app_v2" : "ficha_ninja_app_v2__".concat(nomeLimpo);
+            /* Uma ficha local indisponível não pode gerar uma nova identidade e
+               ser promovida a backup remoto como se tivesse sido criada agora. */
+            if ((_b = (_a = window.ShinobiIntegridadeFicha) === null || _a === void 0 ? void 0 : _a.bloqueadaPara) === null || _b === void 0 ? void 0 : _b.call(_a, chave))
+                return;
             var bruto = localStorage.getItem(chave);
             var dados = null;
             var veioDoEstado = false;

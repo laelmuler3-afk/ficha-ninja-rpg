@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/21-online-hooks.js — app 2.5.8.173. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -109,6 +110,13 @@ var __values = (this && this.__values) || function(o) {
     function transicaoFichaAtiva() {
         return window.__shinobiSheetTransition === true;
     }
+    function fichaLocalProtegida(nome) {
+        var _a, _b;
+        if (nome === void 0) { nome = fichaAtualNome(); }
+        var limpa = String(nome || "Principal").trim() || "Principal";
+        var chave = limpa === "Principal" ? "ficha_ninja_app_v2" : "ficha_ninja_app_v2__".concat(limpa);
+        return ((_b = (_a = window.ShinobiIntegridadeFicha) === null || _a === void 0 ? void 0 : _a.bloqueadaPara) === null || _b === void 0 ? void 0 : _b.call(_a, chave)) === true;
+    }
     var CHAVE_TURNO_PENDENTE = "shinobi_turn_pending_v1";
     function marcarTurnoLocalPendente() {
         var sessao = sessaoAtual();
@@ -174,10 +182,11 @@ var __values = (this && this.__values) || function(o) {
         window.dispatchEvent(new CustomEvent("shinobi:efeitos-batalha-atualizados"));
     }
     function salvarEstadoSemLoop() {
+        var _a, _b;
         /* Callbacks de efeitos podem terminar depois que o usuário iniciou uma
            troca de ficha. Nesse intervalo CHAVE já pode apontar ao destino e estado
            ainda representar a origem; portanto a mesma trava global vale aqui. */
-        if (transicaoFichaAtiva())
+        if (transicaoFichaAtiva() || ((_b = (_a = window.ShinobiIntegridadeFicha) === null || _a === void 0 ? void 0 : _a.bloqueadaPara) === null || _b === void 0 ? void 0 : _b.call(_a, CHAVE)))
             return false;
         try {
             localStorage.setItem(CHAVE, JSON.stringify(estado));
@@ -202,8 +211,8 @@ var __values = (this && this.__values) || function(o) {
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
-                        if (transicaoFichaAtiva())
-                            return [2 /*return*/, { skipped: true, reason: "sheet-transition" }];
+                        if (transicaoFichaAtiva() || fichaLocalProtegida())
+                            return [2 /*return*/, { skipped: true, reason: "ficha-indisponivel" }];
                         if (!((_a = window.ShinobiOnline) === null || _a === void 0 ? void 0 : _a.atualizarMeuParticipanteAoVivo))
                             return [2 /*return*/];
                         sessao = sessaoAtual();
@@ -258,8 +267,8 @@ var __values = (this && this.__values) || function(o) {
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
-                        if (transicaoFichaAtiva())
-                            return [2 /*return*/, { skipped: true, reason: "sheet-transition" }];
+                        if (transicaoFichaAtiva() || fichaLocalProtegida())
+                            return [2 /*return*/, { skipped: true, reason: "ficha-indisponivel" }];
                         if (!((_a = window.ShinobiOnline) === null || _a === void 0 ? void 0 : _a.atualizarMeuParticipante))
                             return [2 /*return*/];
                         if (resumoSincronizando) {
@@ -361,6 +370,8 @@ var __values = (this && this.__values) || function(o) {
                 return;
             nome = atual.name;
         }
+        if (fichaLocalProtegida(nome))
+            return;
         window.ShinobiOnline.atualizarBackupEstrutural(nome, {
             motivo: "backup-automatico-estrutural"
         }).catch(function () { });
@@ -423,8 +434,8 @@ var __values = (this && this.__values) || function(o) {
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        if (transicaoFichaAtiva())
-                            return [2 /*return*/, { skipped: true, reason: "sheet-transition" }];
+                        if (transicaoFichaAtiva() || fichaLocalProtegida(detalhe.sheetName || fichaAtualNome()))
+                            return [2 /*return*/, { skipped: true, reason: "ficha-indisponivel" }];
                         if (!window.ShinobiOnline)
                             return [2 /*return*/];
                         campo = texto(detalhe.campo);
@@ -485,8 +496,8 @@ var __values = (this && this.__values) || function(o) {
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        if (transicaoFichaAtiva())
-                            return [2 /*return*/, { skipped: true, reason: "sheet-transition" }];
+                        if (transicaoFichaAtiva() || fichaLocalProtegida(detalhe.sheetName || fichaAtualNome()))
+                            return [2 /*return*/, { skipped: true, reason: "ficha-indisponivel" }];
                         if (!window.ShinobiOnline || detalhe.confirmed !== true)
                             return [2 /*return*/];
                         collection = texto(detalhe.collection), itemId = texto(detalhe.itemId);
@@ -610,12 +621,12 @@ var __values = (this && this.__values) || function(o) {
         });
     }
     function executarBackupDiario() {
-        var _a;
+        var _a, _b, _c;
         clearTimeout(timerBackupDiario);
         timerBackupDiario = null;
-        if (transicaoFichaAtiva())
+        if (transicaoFichaAtiva() || ((_b = (_a = window.ShinobiIntegridadeFicha) === null || _a === void 0 ? void 0 : _a.bloqueadaPara) === null || _b === void 0 ? void 0 : _b.call(_a, CHAVE)))
             return;
-        if (!contaGoogleAtiva() || typeof ((_a = window.ShinobiOnline) === null || _a === void 0 ? void 0 : _a.garantirBackupDiarioFichaAtiva) !== "function")
+        if (!contaGoogleAtiva() || typeof ((_c = window.ShinobiOnline) === null || _c === void 0 ? void 0 : _c.garantirBackupDiarioFichaAtiva) !== "function")
             return;
         window.ShinobiOnline.garantirBackupDiarioFichaAtiva().catch(function () { });
     }
