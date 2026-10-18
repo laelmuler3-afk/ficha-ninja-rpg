@@ -122,7 +122,7 @@
         }
 
         if(!destinoAindaAtivo()) return;
-        if(!persistirEstadoLocal({emitir:false,origem:"importacao",motivo:"importacao-local"})){
+        if(!persistirEstadoLocal({emitir:false,confirmada:true,origem:"importacao",motivo:"importacao-local"})){
           throw new Error("O armazenamento local não aceitou os dados importados.");
         }
         alert("Ficha importada com sucesso!");

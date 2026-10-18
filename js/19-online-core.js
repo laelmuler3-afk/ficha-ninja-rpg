@@ -1270,6 +1270,9 @@
 
     nomes.forEach(nomeLimpo=>{
       const chave=nomeLimpo==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${nomeLimpo}`;
+      /* Uma ficha local indisponível não pode gerar uma nova identidade e
+         ser promovida a backup remoto como se tivesse sido criada agora. */
+      if(window.ShinobiIntegridadeFicha?.bloqueadaPara?.(chave))return;
       const bruto=localStorage.getItem(chave);
       let dados=null;
       let veioDoEstado=false;

@@ -32,6 +32,12 @@
     return window.__shinobiSheetTransition===true;
   }
 
+  function fichaLocalProtegida(nome=fichaAtualNome()){
+    const limpa=String(nome||"Principal").trim()||"Principal";
+    const chave=limpa==="Principal"?"ficha_ninja_app_v2":`ficha_ninja_app_v2__${limpa}`;
+    return window.ShinobiIntegridadeFicha?.bloqueadaPara?.(chave)===true;
+  }
+
   const CHAVE_TURNO_PENDENTE="shinobi_turn_pending_v1";
   function marcarTurnoLocalPendente(){
     const sessao=sessaoAtual();
@@ -82,7 +88,7 @@
     /* Callbacks de efeitos podem terminar depois que o usuário iniciou uma
        troca de ficha. Nesse intervalo CHAVE já pode apontar ao destino e estado
        ainda representar a origem; portanto a mesma trava global vale aqui. */
-    if(transicaoFichaAtiva())return false;
+    if(transicaoFichaAtiva()||window.ShinobiIntegridadeFicha?.bloqueadaPara?.(CHAVE))return false;
     try{
       localStorage.setItem(CHAVE,JSON.stringify(estado));
       return true;
@@ -100,7 +106,7 @@
   }
 
   async function sincronizarRecursosSalaAoVivo(){
-    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
+    if(transicaoFichaAtiva()||fichaLocalProtegida()) return {skipped:true,reason:"ficha-indisponivel"};
     if(!window.ShinobiOnline?.atualizarMeuParticipanteAoVivo) return;
     const sessao=sessaoAtual();
     if(sessao?.role!=="player"||!sessao.roomId) return;
@@ -136,7 +142,7 @@
   let resumoPendente=false;
 
   async function sincronizarResumoParticipante(){
-    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
+    if(transicaoFichaAtiva()||fichaLocalProtegida()) return {skipped:true,reason:"ficha-indisponivel"};
     if(!window.ShinobiOnline?.atualizarMeuParticipante) return;
     if(resumoSincronizando){
       resumoPendente=true;
@@ -215,6 +221,7 @@
       if(!atual.name)return;
       nome=atual.name;
     }
+    if(fichaLocalProtegida(nome))return;
     window.ShinobiOnline.atualizarBackupEstrutural(nome,{
       motivo:"backup-automatico-estrutural"
     }).catch(()=>{});
@@ -260,7 +267,7 @@
   }
 
   async function enviarAlteracaoConfirmada(detalhe={}){
-    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
+    if(transicaoFichaAtiva()||fichaLocalProtegida(detalhe.sheetName||fichaAtualNome()))return {skipped:true,reason:"ficha-indisponivel"};
     if(!window.ShinobiOnline) return;
     const campo=texto(detalhe.campo);
     if(!detalhe.confirmada||!campo)return;
@@ -298,7 +305,7 @@
   }
 
   async function enviarItemColecaoConfirmado(detalhe={}){
-    if(transicaoFichaAtiva()) return {skipped:true,reason:"sheet-transition"};
+    if(transicaoFichaAtiva()||fichaLocalProtegida(detalhe.sheetName||fichaAtualNome()))return {skipped:true,reason:"ficha-indisponivel"};
     if(!window.ShinobiOnline||detalhe.confirmed!==true) return;
     const collection=texto(detalhe.collection),itemId=texto(detalhe.itemId);
     if(!["notas","inventario","jutsus","armados","kekkeiGenkai","carteiraMoedas","carteiraHistorico","efeitosBatalha"].includes(collection)||!itemId) return;
@@ -397,7 +404,7 @@
   function executarBackupDiario(){
     clearTimeout(timerBackupDiario);
     timerBackupDiario=null;
-    if(transicaoFichaAtiva())return;
+    if(transicaoFichaAtiva()||window.ShinobiIntegridadeFicha?.bloqueadaPara?.(CHAVE))return;
     if(!contaGoogleAtiva()||typeof window.ShinobiOnline?.garantirBackupDiarioFichaAtiva!=="function")return;
     window.ShinobiOnline.garantirBackupDiarioFichaAtiva().catch(()=>{});
   }

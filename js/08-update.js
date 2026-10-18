@@ -75,14 +75,14 @@
   }
 
   function salvarFicha(){
+    if(window.ShinobiIntegridadeFicha?.bloqueadaPara?.(window.CHAVE))return false;
     try{
       if(typeof window.salvarImediatoV3==="function"){
         const resultado=window.salvarImediatoV3();
         if(resultado!==false) return true;
       }
       if(typeof window.salvar==="function"){
-        window.salvar();
-        return true;
+        return window.salvar()!==false;
       }
     }catch(erro){
       console.warn("Não foi possível salvar antes da atualização.",erro);
