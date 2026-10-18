@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/14-level-up.js — app 2.5.8.174. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -84,11 +85,12 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 /* Shinobi 2.1.1 — Level Up completo: revisão de migração, recursos e desempenho. */
 (function () {
     "use strict";
+    var _a;
     if (window.__shinobiLevelUpV211)
         return;
     window.__shinobiLevelUpV211 = true;
     var VERSAO = "2.1.1";
-    var URL_PROGRESSAO = "./data/progressao-ninja.json?v=".concat(VERSAO);
+    var URL_PROGRESSAO = "./data/progressao-ninja.json?v=".concat(encodeURIComponent(window.APP_VERSION || VERSAO));
     var ATRIBUTOS = {
         forca: "Força",
         destreza: "Destreza",
@@ -453,6 +455,55 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         }
         estado.nivel = String(fixos.nivel);
         estado.proficiencia = String(fixos.proficiencia);
+    }
+    /* Revalida APENAS campos derivados do nível. Não altera nível, PV, EKO,
+       escolhas nem histórico. Útil após o Safari restaurar a página ou a nuvem
+       substituir um snapshot cujo bônus estava desatualizado. */
+    function reconciliarProficienciaDerivada(origem) {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
+        if (origem === void 0) { origem = "verificacao"; }
+        if (!regras || window.__shinobiSheetTransition === true)
+            return false;
+        try {
+            if ((_b = (_a = window.ShinobiIntegridadeFicha) === null || _a === void 0 ? void 0 : _a.bloqueadaPara) === null || _b === void 0 ? void 0 : _b.call(_a, CHAVE))
+                return false;
+        }
+        catch (_erro) { }
+        var fixos = valoresFixos(nivelAtual());
+        var esperado = String(fixos.proficiencia);
+        var campo = document.getElementById("bonusProficiencia");
+        var precisaCorrigir = String((_c = estado === null || estado === void 0 ? void 0 : estado.proficiencia) !== null && _c !== void 0 ? _c : "") !== esperado ||
+            (campo && String(campo.value) !== esperado) ||
+            ((estado === null || estado === void 0 ? void 0 : estado.progressaoFixa) && String((_d = estado.progressaoFixa.proficiency) !== null && _d !== void 0 ? _d : "") !== esperado);
+        if (!precisaCorrigir)
+            return false;
+        var anterior = String((_e = estado === null || estado === void 0 ? void 0 : estado.proficiencia) !== null && _e !== void 0 ? _e : "");
+        estado.proficiencia = esperado;
+        if (campo)
+            campo.value = esperado;
+        if ((estado === null || estado === void 0 ? void 0 : estado.progressaoFixa) && typeof estado.progressaoFixa === "object") {
+            estado.progressaoFixa.proficiency = fixos.proficiencia;
+        }
+        // Só a correção derivada confirmada entra no backup estrutural.
+        if (typeof persistirSeguro === "function") {
+            var persistiu = persistirSeguro({ confirmada: true, origem: "progressao-automatica", campo: "proficiencia", antes: anterior, depois: esperado, motivo: "reconciliacao-proficiencia" });
+            if (!persistiu)
+                return false;
+        }
+        try {
+            (_f = window.atualizarBonusPericias) === null || _f === void 0 ? void 0 : _f.call(window);
+        }
+        catch (_erro) { }
+        try {
+            (_g = window.atualizarTestesResistenciaBatalha) === null || _g === void 0 ? void 0 : _g.call(window);
+        }
+        catch (_erro) { }
+        try {
+            (_h = window.atualizarDefesasTotaisBatalha) === null || _h === void 0 ? void 0 : _h.call(window);
+        }
+        catch (_erro) { }
+        console.info("Profici\u00EAncia sincronizada com n\u00EDvel ".concat(fixos.nivel, ": +").concat(esperado, " (").concat(origem, ")."));
+        return true;
     }
     function aplicarNivelManual(valor, _a) {
         var _b;
@@ -1325,18 +1376,43 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     function carregarRegras() {
         return __awaiter(this, void 0, void 0, function () {
-            var resposta, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, fetch(URL_PROGRESSAO, { cache: "no-store", credentials: "same-origin" })];
+            var dados, resposta, _a, erro_1, alternativa, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        dados = null;
+                        _c.label = 1;
                     case 1:
-                        resposta = _b.sent();
+                        _c.trys.push([1, 4, , 7]);
+                        return [4 /*yield*/, fetch(URL_PROGRESSAO, { cache: "no-store", credentials: "same-origin" })];
+                    case 2:
+                        resposta = _c.sent();
                         if (!resposta.ok)
                             throw new Error("Progress\u00E3o respondeu HTTP ".concat(resposta.status, "."));
                         _a = validarRegras;
                         return [4 /*yield*/, resposta.json()];
-                    case 2:
-                        regras = _a.apply(void 0, [_b.sent()]);
+                    case 3:
+                        dados = _a.apply(void 0, [_c.sent()]);
+                        return [3 /*break*/, 7];
+                    case 4:
+                        erro_1 = _c.sent();
+                        // Safari/offline: as regras fazem parte do cache do app; não usar estado
+                        // parcialmente carregado ou uma tabela arbitrária ao falhar a rede.
+                        if (typeof caches === "undefined" || typeof caches.match !== "function")
+                            throw erro_1;
+                        return [4 /*yield*/, caches.match(URL_PROGRESSAO).catch(function () { return null; })];
+                    case 5:
+                        alternativa = _c.sent();
+                        if (!alternativa || !alternativa.ok)
+                            throw erro_1;
+                        _b = validarRegras;
+                        return [4 /*yield*/, alternativa.json()];
+                    case 6:
+                        dados = _b.apply(void 0, [_c.sent()]);
+                        console.info("Regras de progressão recuperadas do cache offline.");
+                        return [3 /*break*/, 7];
+                    case 7:
+                        regras = dados;
                         mapaNiveis = new Map(regras.levels.map(function (item) { return [inteiro(item.level, -1), item]; }));
                         mapaClas = new Map(regras.clans.map(function (item) { return [String(item.id), item]; }));
                         mapaAliasesCla = new Map();
@@ -1354,10 +1430,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     function iniciar() {
         return __awaiter(this, void 0, void 0, function () {
-            var campoNivel, xpLinha, host, tinhaNivel, erro_1;
-            var _a, _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var campoNivel, xpLinha, host, tinhaNivel, proficienciaAntes, profEsperada, erro_2;
+            var _a, _b, _c, _d, _e, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         campoNivel = document.getElementById("nivelDisplayMini");
                         xpLinha = document.querySelector("#identidade .xpLinhaNova");
@@ -1366,29 +1442,42 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
                         host = document.getElementById("levelUpResumoHost");
                         if (host)
                             renderizarResumo();
-                        _c.label = 1;
+                        _g.label = 1;
                     case 1:
-                        _c.trys.push([1, 3, , 4]);
+                        _g.trys.push([1, 3, , 4]);
                         return [4 /*yield*/, carregarRegras()];
                     case 2:
-                        _c.sent();
+                        _g.sent();
                         tinhaNivel = String((_a = estado === null || estado === void 0 ? void 0 : estado.nivel) !== null && _a !== void 0 ? _a : "").trim() !== "";
                         if (!tinhaNivel) {
                             estado.nivel = "1";
                             estado.proficiencia = "2";
                         }
+                        proficienciaAntes = String((_b = estado === null || estado === void 0 ? void 0 : estado.proficiencia) !== null && _b !== void 0 ? _b : "");
+                        profEsperada = String(valoresFixos(nivelAtual()).proficiencia);
                         garantirEstruturaProgressao();
                         sincronizarCamposFixos();
                         ligarEdicaoManualNivel();
-                        persistirSeguro();
+                        if (!((_d = (_c = window.ShinobiIntegridadeFicha) === null || _c === void 0 ? void 0 : _c.bloqueadaPara) === null || _d === void 0 ? void 0 : _d.call(_c, CHAVE))) {
+                            if (proficienciaAntes !== profEsperada) {
+                                persistirSeguro({ confirmada: true, origem: "progressao-automatica", campo: "proficiencia", antes: proficienciaAntes, depois: profEsperada, motivo: "reconciliacao-proficiencia" });
+                            }
+                            else {
+                                persistirSeguro();
+                            }
+                        }
+                        try {
+                            (_e = window.atualizarBonusPericias) === null || _e === void 0 ? void 0 : _e.call(window);
+                        }
+                        catch (_erro) { }
                         observarCatalogo();
                         atualizarIntegracoes();
-                        if ((_b = estado.progressaoFixa) === null || _b === void 0 ? void 0 : _b.retroactiveReviewPending)
+                        if ((_f = estado.progressaoFixa) === null || _f === void 0 ? void 0 : _f.retroactiveReviewPending)
                             setTimeout(abrirRevisaoRetroativa, 260);
                         return [3 /*break*/, 4];
                     case 3:
-                        erro_1 = _c.sent();
-                        console.error("Falha ao iniciar Level Up", erro_1);
+                        erro_2 = _g.sent();
+                        console.error("Falha ao iniciar Level Up", erro_2);
                         if (host)
                             host.innerHTML = '<section class="levelUpResumoCard"><div class="levelUpResumoTitulo"><small>Progressão</small><strong>Não foi possível carregar as regras</strong></div><div class="levelUpResumoAcoes"><button type="button" class="levelUpBtn" onclick="location.reload()">Recarregar</button></div></section>';
                         return [3 /*break*/, 4];
@@ -1426,9 +1515,29 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         if (!regras)
             return;
         setTimeout(function () {
+            reconciliarProficienciaDerivada("pageshow");
             garantirEstruturaProgressao();
             sincronizarCamposFixos();
             atualizarIntegracoes();
         }, 180);
     });
+    // A nuvem pode atualizar nível e proficiência por eventos separados. O
+    // valor derivado só é recalculado depois que a ficha restaurada carregou.
+    function reagendarReconciliacao(origem) {
+        setTimeout(function () { return reconciliarProficienciaDerivada(origem); }, 320);
+    }
+    window.addEventListener("shinobi:app-pronto", function () { return reagendarReconciliacao("app-pronto"); });
+    if ((_a = window.ShinobiOnline) === null || _a === void 0 ? void 0 : _a.on) {
+        window.ShinobiOnline.on("ficha-atualizada-nuvem", function () { return reagendarReconciliacao("nuvem"); });
+        window.ShinobiOnline.on("nivel-recebido", function () { return reagendarReconciliacao("mestre"); });
+    }
+    else {
+        window.addEventListener("shinobi:online-stack-ready", function () {
+            var _a;
+            if (!((_a = window.ShinobiOnline) === null || _a === void 0 ? void 0 : _a.on))
+                return;
+            window.ShinobiOnline.on("ficha-atualizada-nuvem", function () { return reagendarReconciliacao("nuvem"); });
+            window.ShinobiOnline.on("nivel-recebido", function () { return reagendarReconciliacao("mestre"); });
+        });
+    }
 })();

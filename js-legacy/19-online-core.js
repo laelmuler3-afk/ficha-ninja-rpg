@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/19-online-core.js — app 2.5.8.173. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/19-online-core.js — app 2.5.8.174. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -6991,7 +6991,11 @@ var __values = (this && this.__values) || function(o) {
                         cloud = snap.val();
                         if ((cloud === null || cloud === void 0 ? void 0 : cloud.deleted) === true)
                             throw new Error("Esta ficha foi excluída em outro aparelho e não pode ser restaurada como versão ativa.");
-                        data = clonar(cloud.data || {});
+                        // Nunca restaurar um snapshot vazio/corrompido por cima de uma ficha.
+                        if (!(cloud === null || cloud === void 0 ? void 0 : cloud.data) || typeof cloud.data !== "object" || Array.isArray(cloud.data) || pontuacaoConteudoFicha(cloud.data) < 5) {
+                            throw new Error("O backup não contém uma ficha válida. Nada foi alterado neste aparelho.");
+                        }
+                        data = clonar(cloud.data);
                         locais = prepararCopiasLocaisLegadas();
                         uid = uidContaAtiva();
                         identidadeApi = window.EkoCharacterIdentity;

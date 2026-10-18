@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/08-post-render-loader.js — app 2.5.8.174. Não editar. */
 /* EKO 2.5.8.159 — carregamento pós-render com compatibilidade legada. */
 (function () {
     "use strict";
@@ -67,7 +68,8 @@
             "js/19-realtime-sync-engine.js",
             "vendor/qrcode-local.js",
             "js/20-online-ui.js",
-            "js/21-online-hooks.js"
+            "js/21-online-hooks.js",
+            "js/25-recuperacao-nuvem.js"
         ];
         carregarSequencia(arquivos, 0, function () {
             window.__shinobiOnlineStackLoading = false;
