@@ -6,7 +6,7 @@
   window.__shinobiLevelUpV211=true;
 
   const VERSAO="2.1.1";
-  const URL_PROGRESSAO=`./data/progressao-ninja.json?v=${VERSAO}`;
+  const URL_PROGRESSAO=`./data/progressao-ninja.json?v=${encodeURIComponent(window.APP_VERSION||VERSAO)}`;
   const ATRIBUTOS={
     forca:"Força",
     destreza:"Destreza",
@@ -373,6 +373,37 @@
     }
     estado.nivel=String(fixos.nivel);
     estado.proficiencia=String(fixos.proficiencia);
+  }
+
+  /* Revalida APENAS campos derivados do nível. Não altera nível, PV, EKO,
+     escolhas nem histórico. Útil após o Safari restaurar a página ou a nuvem
+     substituir um snapshot cujo bônus estava desatualizado. */
+  function reconciliarProficienciaDerivada(origem="verificacao"){
+    if(!regras||window.__shinobiSheetTransition===true)return false;
+    try{if(window.ShinobiIntegridadeFicha?.bloqueadaPara?.(CHAVE))return false;}catch(_erro){}
+    const fixos=valoresFixos(nivelAtual());
+    const esperado=String(fixos.proficiencia);
+    const campo=document.getElementById("bonusProficiencia");
+    const precisaCorrigir=String(estado?.proficiencia??"")!==esperado ||
+      (campo&&String(campo.value)!==esperado) ||
+      (estado?.progressaoFixa&&String(estado.progressaoFixa.proficiency??"")!==esperado);
+    if(!precisaCorrigir)return false;
+    const anterior=String(estado?.proficiencia??"");
+    estado.proficiencia=esperado;
+    if(campo)campo.value=esperado;
+    if(estado?.progressaoFixa&&typeof estado.progressaoFixa==="object"){
+      estado.progressaoFixa.proficiency=fixos.proficiencia;
+    }
+    // Só a correção derivada confirmada entra no backup estrutural.
+    if(typeof persistirSeguro==="function"){
+      const persistiu=persistirSeguro({confirmada:true,origem:"progressao-automatica",campo:"proficiencia",antes:anterior,depois:esperado,motivo:"reconciliacao-proficiencia"});
+      if(!persistiu)return false;
+    }
+    try{window.atualizarBonusPericias?.();}catch(_erro){}
+    try{window.atualizarTestesResistenciaBatalha?.();}catch(_erro){}
+    try{window.atualizarDefesasTotaisBatalha?.();}catch(_erro){}
+    console.info(`Proficiência sincronizada com nível ${fixos.nivel}: +${esperado} (${origem}).`);
+    return true;
   }
 
   function aplicarNivelManual(valor,{origem="manual",notificar=false}={}){
@@ -1302,9 +1333,21 @@
   }
 
   async function carregarRegras(){
-    const resposta=await fetch(URL_PROGRESSAO,{cache:"no-store",credentials:"same-origin"});
-    if(!resposta.ok) throw new Error(`Progressão respondeu HTTP ${resposta.status}.`);
-    regras=validarRegras(await resposta.json());
+    let dados=null;
+    try{
+      const resposta=await fetch(URL_PROGRESSAO,{cache:"no-store",credentials:"same-origin"});
+      if(!resposta.ok) throw new Error(`Progressão respondeu HTTP ${resposta.status}.`);
+      dados=validarRegras(await resposta.json());
+    }catch(erro){
+      // Safari/offline: as regras fazem parte do cache do app; não usar estado
+      // parcialmente carregado ou uma tabela arbitrária ao falhar a rede.
+      if(typeof caches==="undefined"||typeof caches.match!=="function") throw erro;
+      const alternativa=await caches.match(URL_PROGRESSAO).catch(()=>null);
+      if(!alternativa||!alternativa.ok) throw erro;
+      dados=validarRegras(await alternativa.json());
+      console.info("Regras de progressão recuperadas do cache offline.");
+    }
+    regras=dados;
     mapaNiveis=new Map(regras.levels.map(item=>[inteiro(item.level,-1),item]));
     mapaClas=new Map(regras.clans.map(item=>[String(item.id),item]));
     mapaAliasesCla=new Map();
@@ -1330,10 +1373,19 @@
         estado.nivel="1";
         estado.proficiencia="2";
       }
+      const proficienciaAntes=String(estado?.proficiencia??"");
+      const profEsperada=String(valoresFixos(nivelAtual()).proficiencia);
       garantirEstruturaProgressao();
       sincronizarCamposFixos();
       ligarEdicaoManualNivel();
-      persistirSeguro();
+      if(!window.ShinobiIntegridadeFicha?.bloqueadaPara?.(CHAVE)){
+        if(proficienciaAntes!==profEsperada){
+          persistirSeguro({confirmada:true,origem:"progressao-automatica",campo:"proficiencia",antes:proficienciaAntes,depois:profEsperada,motivo:"reconciliacao-proficiencia"});
+        }else{
+          persistirSeguro();
+        }
+      }
+      try{window.atualizarBonusPericias?.();}catch(_erro){}
       observarCatalogo();
       atualizarIntegracoes();
       if(estado.progressaoFixa?.retroactiveReviewPending) setTimeout(abrirRevisaoRetroativa,260);
@@ -1368,9 +1420,26 @@
   window.addEventListener("pageshow",()=>{
     if(!regras) return;
     setTimeout(()=>{
+      reconciliarProficienciaDerivada("pageshow");
       garantirEstruturaProgressao();
       sincronizarCamposFixos();
       atualizarIntegracoes();
     },180);
   });
+  // A nuvem pode atualizar nível e proficiência por eventos separados. O
+  // valor derivado só é recalculado depois que a ficha restaurada carregou.
+  function reagendarReconciliacao(origem){
+    setTimeout(()=>reconciliarProficienciaDerivada(origem),320);
+  }
+  window.addEventListener("shinobi:app-pronto",()=>reagendarReconciliacao("app-pronto"));
+  if(window.ShinobiOnline?.on){
+    window.ShinobiOnline.on("ficha-atualizada-nuvem",()=>reagendarReconciliacao("nuvem"));
+    window.ShinobiOnline.on("nivel-recebido",()=>reagendarReconciliacao("mestre"));
+  }else{
+    window.addEventListener("shinobi:online-stack-ready",()=>{
+      if(!window.ShinobiOnline?.on)return;
+      window.ShinobiOnline.on("ficha-atualizada-nuvem",()=>reagendarReconciliacao("nuvem"));
+      window.ShinobiOnline.on("nivel-recebido",()=>reagendarReconciliacao("mestre"));
+    });
+  }
 })();

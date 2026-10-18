@@ -60,7 +60,8 @@
       "js/19-realtime-sync-engine.js",
       "vendor/qrcode-local.js",
       "js/20-online-ui.js",
-      "js/21-online-hooks.js"
+      "js/21-online-hooks.js",
+      "js/25-recuperacao-nuvem.js"
     ];
     carregarSequencia(arquivos,0,function(){
       window.__shinobiOnlineStackLoading=false;

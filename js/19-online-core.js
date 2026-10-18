@@ -4739,7 +4739,11 @@
     if(!snap.exists()) throw new Error("Backup da nuvem não encontrado.");
     const cloud=snap.val();
     if(cloud?.deleted===true) throw new Error("Esta ficha foi excluída em outro aparelho e não pode ser restaurada como versão ativa.");
-    const data=clonar(cloud.data||{});
+    // Nunca restaurar um snapshot vazio/corrompido por cima de uma ficha.
+    if(!cloud?.data||typeof cloud.data!=="object"||Array.isArray(cloud.data)||pontuacaoConteudoFicha(cloud.data)<5){
+      throw new Error("O backup não contém uma ficha válida. Nada foi alterado neste aparelho.");
+    }
+    const data=clonar(cloud.data);
     const locais=prepararCopiasLocaisLegadas();
     const uid=uidContaAtiva();
     const identidadeApi=window.EkoCharacterIdentity;
