@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.176",
-  "name": "Automações de defesa e efeitos de jutsus",
-  "notes": "Recalcula testes derivados ao atualizar efeitos de batalha e aplica bônus numéricos de CD definidos em jutsus personalizados, sem modificar os valores persistidos de atributos, PV ou EKO.",
+  "version": "2.5.8.177",
+  "name": "Correções de perícias e efeitos condicionais",
+  "notes": "Impede modificador negativo por atributo não preenchido e evita aplicar efeitos condicionais antes da confirmação; sem alterar fichas, fórmulas de progressão ou layout TCG.",
   "date": "2026-10-19"
 }
