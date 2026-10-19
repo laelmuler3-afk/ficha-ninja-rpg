@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.175",
+  "version": "2.5.8.176",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -80,8 +80,8 @@
       "outputSha256": "08e57d70fcbca968c6a520eb01f3e532bd998f47690b19b9d4d899129d4ceb0b"
     },
     "js/12-efeitos-jutsus.js": {
-      "sourceSha256": "5ffa7fa9a3b0ec4fb051e36dd5b605ec7db5664fb09887142b06d361c8190058",
-      "outputSha256": "064e5d23598c0961a13cc74f5e6ebfe64993a486175c45eceb660ade5ffc0936"
+      "sourceSha256": "f70980767f49306fa98ea9e82554507e214c0bf17578b68dfeb7216ed89e2a23",
+      "outputSha256": "2f291262d2aad6d26d585ab81689f44faee35f0e57ab9327f1fc4572eb5c7e11"
     },
     "js/13-motor-universal.js": {
       "sourceSha256": "06801438625145c6c360dcc27a4800fe363ba033389af254e1ddfbb0d03b7402",
@@ -160,8 +160,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "4471595f5296a9a41def6ea1a4e88acef05456643c097b63c32f8c30782b619d",
-      "outputSha256": "3003cfd66b1f500b742c491b37fb30f101bba2f36e1df70ce842909544321a5d"
+      "sourceSha256": "687bd7559b76c423e2930e05bcc13147f53491808121468e5be434695c214974",
+      "outputSha256": "f1eec626b88681f8ac4077199fabf3f1563737ed34dca5ca3537db14c79fc87a"
     }
   }
 }

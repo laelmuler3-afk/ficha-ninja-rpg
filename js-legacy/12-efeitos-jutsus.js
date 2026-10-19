@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/12-efeitos-jutsus.js — app 2.5.8.176. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -100,7 +101,7 @@ var __values = (this && this.__values) || function(o) {
         carisma: { rotulo: "CAR", id: "modCarisma" }
     };
     var ALVOS_AUTOMATICOS = new Set(__spreadArray([
-        "ca", "furtividade", "velocidade"
+        "ca", "cd", "furtividade", "velocidade"
     ], __read(Object.keys(ATRIBUTOS).map(function (chave) { return "mod_".concat(chave); })), false));
     var CONDICOES_DE_ESCOPO = new Set([
         "contra_ataques",
@@ -112,6 +113,7 @@ var __values = (this && this.__values) || function(o) {
     ]);
     var ROTULOS_ALVO = {
         ca: "CA",
+        cd: "CD",
         furtividade: "Furtividade",
         velocidade: "Velocidade",
         mod_forca: "Mod. FOR",
@@ -778,8 +780,9 @@ var __values = (this && this.__values) || function(o) {
         var bonusCaManual = numero((_e = document.querySelector('[data-bonus-defesa-batalha="ca"]')) === null || _e === void 0 ? void 0 : _e.value, 0);
         var bonusCdManual = numero((_f = document.querySelector('[data-bonus-defesa-batalha="cd"]')) === null || _f === void 0 ? void 0 : _f.value, 0);
         var bonusCaJutsu = bonusAutomatico("ca");
+        var bonusCdJutsu = bonusAutomatico("cd");
         var caTotal = caBase + bonusCaManual + bonusCaJutsu;
-        var cdTotal = cdBase + bonusCdManual;
+        var cdTotal = cdBase + bonusCdManual + bonusCdJutsu;
         var caView = document.getElementById("batalhaCaView");
         var cdView = document.getElementById("batalhaCdView");
         if (caView) {
@@ -791,7 +794,12 @@ var __values = (this && this.__values) || function(o) {
             caView.innerHTML = "".concat(caTotal).concat(detalhes.length ? "<span class=\"bonusDefesaTexto\">".concat(detalhes.join(" · "), "</span>") : "");
         }
         if (cdView) {
-            cdView.innerHTML = "".concat(cdTotal).concat(bonusCdManual ? "<span class=\"bonusDefesaTexto\">".concat(comSinal(bonusCdManual), " manual</span>") : "");
+            var detalhes = [];
+            if (bonusCdManual)
+                detalhes.push("".concat(comSinal(bonusCdManual), " manual"));
+            if (bonusCdJutsu)
+                detalhes.push("".concat(comSinal(bonusCdJutsu), " jutsu"));
+            cdView.innerHTML = "".concat(cdTotal).concat(detalhes.length ? "<span class=\"bonusDefesaTexto\">".concat(detalhes.join(" · "), "</span>") : "");
         }
         atualizarVelocidadeComEfeitos();
         atualizarModificadoresComEfeitos();
@@ -899,6 +907,12 @@ var __values = (this && this.__values) || function(o) {
     function atualizarTudo() {
         atualizarDefesasComEfeitos();
         renderizarEfeitos();
+        // Efeitos alterados pelo jogador ou pelo Firebase não disparam eventos
+        // de digitação: sincronizar os testes derivados e o resumo de efeitos.
+        if (typeof window.atualizarTestesResistenciaBatalha === "function")
+            window.atualizarTestesResistenciaBatalha();
+        if (typeof window.atualizarMotorUniversalEfeitos === "function")
+            window.atualizarMotorUniversalEfeitos();
         if (typeof window.atualizarBonusBatalhaCompacto === "function")
             window.atualizarBonusBatalhaCompacto();
         window.dispatchEvent(new CustomEvent("shinobi:efeitos-batalha-atualizados"));
@@ -1348,7 +1362,7 @@ var __values = (this && this.__values) || function(o) {
                         if (escolha === "1") {
                             polaridade = normalizar(prompt("Polaridade: buff, debuff, custo ou neutro", "buff") || "buff");
                             aplicaEm = normalizar(prompt("Aplicação: usuario, alvo ou usuario_ou_aliado", "usuario") || "usuario").replace(/\s+/g, "_");
-                            alvo = normalizar(prompt("O que afeta? Ex.: ca, velocidade, furtividade, mod_forca, dano, paralisado", "ca") || "efeito").replace(/\s+/g, "_");
+                            alvo = normalizar(prompt("O que afeta? Ex.: ca, cd, velocidade, furtividade, mod_forca, dano, paralisado", "ca") || "efeito").replace(/\s+/g, "_");
                             operacao = normalizar(prompt("Operação: somar, multiplicar, vantagem, desvantagem, adicionar ou reduzir", "somar") || "adicionar");
                             valorTexto = prompt("Valor. Ex.: 2, 1d6, metade ou deixe vazio:", "");
                             texto = prompt("Descrição curta do efeito:", "".concat(ROTULOS_ALVO[alvo] || alvo));
