@@ -14,7 +14,18 @@
   function escapar(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
   function sinal(v){const n=numero(v);return n>0?`+${n}`:String(n);}
   function ativos(){return typeof window.obterEfeitosJutsuBatalhaAtivos==="function"?window.obterEfeitosJutsuBatalhaAtivos():[];}
-  function efeitosUsuario(){return ativos().flatMap(item=>(item.efeitos||[]).map(e=>({...e,__item:item}))).filter(e=>e.persistente!==false&&APLICACOES_USUARIO.has(String(e.aplicaEm||"usuario")));}
+  function efeitoUsuarioValido(efeito){
+    if(efeito.persistente===false || !APLICACOES_USUARIO.has(String(efeito.aplicaEm||"usuario"))) return false;
+    if(!efeito.condicao) return true;
+    // Mesma regra do motor principal: bônus condicionais não entram nos
+    // testes e indicadores antes de serem confirmados ou desbloqueados.
+    const permite=window.EfeitosJutsuShinobi?.condicaoPermiteAutomatico;
+    if(typeof permite==="function") return permite(efeito)===true;
+    return efeito.condicaoAtendida===true; // fallback conservador
+  }
+  function efeitosUsuario(){
+    return ativos().flatMap(item=>(item.efeitos||[]).filter(efeitoUsuarioValido).map(e=>({...e,__item:item})));
+  }
   function dadoValido(v){return /^\d+d\d+(?:\s*[+-]\s*\d+)?$/i.test(String(v||"").trim());}
   function somarDados(lista){return lista.map(String).filter(dadoValido).join(" + ");}
 

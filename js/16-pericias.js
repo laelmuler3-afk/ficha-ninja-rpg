@@ -40,10 +40,13 @@
 
   function modificadorAtributo(chave){
     const pontuacao = numero(campo(chave)?.value,0);
+    // Em fichas recém-criadas, atributo vazio/zero não é pontuação válida:
+    // não transformar ausência de valor em modificador -5 nas perícias.
+    if(pontuacao <= 0) return 0;
     if(typeof window.calcularModificador === "function"){
       return numero(window.calcularModificador(pontuacao),0);
     }
-    return pontuacao > 0 ? Math.floor((pontuacao - 10) / 2) : 0;
+    return Math.floor((pontuacao - 10) / 2);
   }
 
   function comSinal(valor){
