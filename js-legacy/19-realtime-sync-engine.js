@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/19-realtime-sync-engine.js — app 2.5.8.175. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -1289,6 +1290,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
             if (lista.some(function (c) { return ["forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma", "ca", "cd", "proficiencia"].includes(c) || c.startsWith("p_"); })) {
                 chamar("atualizarModificadoresBatalha");
                 chamar("atualizarBonusPericias");
+                // Uma atualização do Firebase modifica os inputs sem eventos DOM.
+                // Recalcular também os testes derivados (proficiência/atributos),
+                // preservando escolhas, PV, EKO e valores persistidos.
+                chamar("atualizarTestesResistenciaBatalha");
                 chamar("atualizarDefesasTotaisBatalha");
             }
             if (lista.some(function (c) { return ["pv", "pvMax", "chakra", "chakraMax", "xp", "nivel", "nome", "rank", "ca", "cd"].includes(c); })) {
