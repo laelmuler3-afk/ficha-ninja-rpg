@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.175",
-  "name": "Recalculo das automacoes apos level up e sincronizacao",
-  "notes": "Atualiza a exibicao das pericias e testes de resistencia quando nivel/proficiencia ou atributos mudam por codigo ou via Firebase, sem alterar formulas e dados de personagem.",
+  "version": "2.5.8.176",
+  "name": "Automações de defesa e efeitos de jutsus",
+  "notes": "Recalcula testes derivados ao atualizar efeitos de batalha e aplica bônus numéricos de CD definidos em jutsus personalizados, sem modificar os valores persistidos de atributos, PV ou EKO.",
   "date": "2026-10-19"
 }
