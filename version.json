@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.174",
-  "name": "Recuperação assistida da nuvem e proficiência consistente",
-  "notes": "Restauração assistida de backup da Conta Google para ficha local indisponível, com confirmação e bloqueio de backup vazio. Revalida proficiência pelo nível usando tabela oficial de progressão, incluindo retorno do Safari e atualizações online, mantendo visual e recursos existentes.",
-  "date": "2026-10-17"
+  "version": "2.5.8.175",
+  "name": "Recalculo das automacoes apos level up e sincronizacao",
+  "notes": "Atualiza a exibicao das pericias e testes de resistencia quando nivel/proficiencia ou atributos mudam por codigo ou via Firebase, sem alterar formulas e dados de personagem.",
+  "date": "2026-10-19"
 }
