@@ -20,7 +20,7 @@
   };
 
   const ALVOS_AUTOMATICOS = new Set([
-    "ca", "furtividade", "velocidade",
+    "ca", "cd", "furtividade", "velocidade",
     ...Object.keys(ATRIBUTOS).map(chave => `mod_${chave}`)
   ]);
 
@@ -36,6 +36,7 @@
 
   const ROTULOS_ALVO = {
     ca:"CA",
+    cd:"CD",
     furtividade:"Furtividade",
     velocidade:"Velocidade",
     mod_forca:"Mod. FOR",
@@ -716,8 +717,9 @@
     const bonusCaManual = numero(document.querySelector('[data-bonus-defesa-batalha="ca"]')?.value,0);
     const bonusCdManual = numero(document.querySelector('[data-bonus-defesa-batalha="cd"]')?.value,0);
     const bonusCaJutsu = bonusAutomatico("ca");
+    const bonusCdJutsu = bonusAutomatico("cd");
     const caTotal = caBase + bonusCaManual + bonusCaJutsu;
-    const cdTotal = cdBase + bonusCdManual;
+    const cdTotal = cdBase + bonusCdManual + bonusCdJutsu;
     const caView = document.getElementById("batalhaCaView");
     const cdView = document.getElementById("batalhaCdView");
 
@@ -728,7 +730,10 @@
       caView.innerHTML = `${caTotal}${detalhes.length?`<span class="bonusDefesaTexto">${detalhes.join(" · ")}</span>`:""}`;
     }
     if(cdView){
-      cdView.innerHTML = `${cdTotal}${bonusCdManual?`<span class="bonusDefesaTexto">${comSinal(bonusCdManual)} manual</span>`:""}`;
+      const detalhes=[];
+      if(bonusCdManual) detalhes.push(`${comSinal(bonusCdManual)} manual`);
+      if(bonusCdJutsu) detalhes.push(`${comSinal(bonusCdJutsu)} jutsu`);
+      cdView.innerHTML = `${cdTotal}${detalhes.length?`<span class="bonusDefesaTexto">${detalhes.join(" · ")}</span>`:""}`;
     }
     atualizarVelocidadeComEfeitos();
     atualizarModificadoresComEfeitos();
@@ -848,6 +853,10 @@
   function atualizarTudo(){
     atualizarDefesasComEfeitos();
     renderizarEfeitos();
+    // Efeitos alterados pelo jogador ou pelo Firebase não disparam eventos
+    // de digitação: sincronizar os testes derivados e o resumo de efeitos.
+    if(typeof window.atualizarTestesResistenciaBatalha === "function") window.atualizarTestesResistenciaBatalha();
+    if(typeof window.atualizarMotorUniversalEfeitos === "function") window.atualizarMotorUniversalEfeitos();
     if(typeof window.atualizarBonusBatalhaCompacto === "function") window.atualizarBonusBatalhaCompacto();
     window.dispatchEvent(new CustomEvent("shinobi:efeitos-batalha-atualizados"));
   }
@@ -1212,7 +1221,7 @@
     if(escolha==="1"){
       const polaridade=normalizar(prompt("Polaridade: buff, debuff, custo ou neutro","buff")||"buff");
       const aplicaEm=normalizar(prompt("Aplicação: usuario, alvo ou usuario_ou_aliado","usuario")||"usuario").replace(/\s+/g,"_");
-      const alvo=normalizar(prompt("O que afeta? Ex.: ca, velocidade, furtividade, mod_forca, dano, paralisado","ca")||"efeito").replace(/\s+/g,"_");
+      const alvo=normalizar(prompt("O que afeta? Ex.: ca, cd, velocidade, furtividade, mod_forca, dano, paralisado","ca")||"efeito").replace(/\s+/g,"_");
       const operacao=normalizar(prompt("Operação: somar, multiplicar, vantagem, desvantagem, adicionar ou reduzir","somar")||"adicionar");
       const valorTexto=prompt("Valor. Ex.: 2, 1d6, metade ou deixe vazio:","");
       const texto=prompt("Descrição curta do efeito:",`${ROTULOS_ALVO[alvo]||alvo}`);
