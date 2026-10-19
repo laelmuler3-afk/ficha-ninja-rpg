@@ -833,6 +833,10 @@
       if(lista.some(c=>["forca","destreza","constituicao","inteligencia","sabedoria","carisma","ca","cd","proficiencia"].includes(c)||c.startsWith("p_"))){
         chamar("atualizarModificadoresBatalha");
         chamar("atualizarBonusPericias");
+        // Uma atualização do Firebase modifica os inputs sem eventos DOM.
+        // Recalcular também os testes derivados (proficiência/atributos),
+        // preservando escolhas, PV, EKO e valores persistidos.
+        chamar("atualizarTestesResistenciaBatalha");
         chamar("atualizarDefesasTotaisBatalha");
       }
       if(lista.some(c=>["pv","pvMax","chakra","chakraMax","xp","nivel","nome","rank","ca","cd"].includes(c))){

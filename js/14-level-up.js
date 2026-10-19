@@ -506,6 +506,10 @@
     renderizarResumo();
     renderizarAtaquesPorAcaoBatalha();
     atualizarIndicadorCatalogo();
+    // Nível e proficiência são atribuídos por código no Level Up e no retorno
+    // do Safari. Essas mudanças não disparam eventos input/change no navegador.
+    // Atualizar somente a apresentação das perícias, sem gravar dados novamente.
+    if(typeof window.atualizarBonusPericias==="function") window.atualizarBonusPericias();
     if(typeof window.atualizarTestesResistenciaBatalha==="function") window.atualizarTestesResistenciaBatalha();
   }
 
