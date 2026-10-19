@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.176",
+  "version": "2.5.8.177",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -84,8 +84,8 @@
       "outputSha256": "2f291262d2aad6d26d585ab81689f44faee35f0e57ab9327f1fc4572eb5c7e11"
     },
     "js/13-motor-universal.js": {
-      "sourceSha256": "06801438625145c6c360dcc27a4800fe363ba033389af254e1ddfbb0d03b7402",
-      "outputSha256": "7497a994e3fdafb7680fd1c1619fa6a251953db3762b928500e7c903e4ad0db3"
+      "sourceSha256": "d28d9af05648272e390dd88c0adff4522027fa5a2bd3b816648eebaaede0cfde",
+      "outputSha256": "8b8ee1c3ad53f9c5ff4a76bb98744d1609782167fe201219665acfbdfcd9dcee"
     },
     "js/14-level-up.js": {
       "sourceSha256": "70a2c86a47a5a7f215b9d26b8409ed8c1a698dd7ad09f41920bc76c1c09b18c3",
@@ -96,8 +96,8 @@
       "outputSha256": "2fe6f707e29d096ac57c30f3f857ad419f3669a3ff351597e326deac5d85e8ca"
     },
     "js/16-pericias.js": {
-      "sourceSha256": "501a0eeb229ed492435ba8a85554d4118c1f4f56cd15c626d1330c6c0440664d",
-      "outputSha256": "a7af65ce1074c737afa76ceb01a4533d77cb1ec06ab99671f7e601e4e9a56cbc"
+      "sourceSha256": "845083e5b4ae18ca7b658ea46d43b9e5d876fd58e3019dc41ed1e87b333aed6c",
+      "outputSha256": "7dedccb29afbb6dd0e048fa20f64427ffe7c4dc2089c39016927db286dcaea47"
     },
     "js/17-dano-inteligente.js": {
       "sourceSha256": "9e3833bca2b57748159a9d5bfc2d1d0f334939b5c2d265a7365bc6b2ea5d7c60",
@@ -160,8 +160,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "687bd7559b76c423e2930e05bcc13147f53491808121468e5be434695c214974",
-      "outputSha256": "f1eec626b88681f8ac4077199fabf3f1563737ed34dca5ca3537db14c79fc87a"
+      "sourceSha256": "3f241343511dcfebd55820f9c178cd1ee1417c82283a8dfa18d8f6f190cf62f1",
+      "outputSha256": "9fe987da5301a99c6d2511ad0d320e162bcdac871dab57f1ee9c818796b1bff3"
     }
   }
 }

@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/16-pericias.js — app 2.5.8.177. Não editar. */
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -62,10 +63,14 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     function modificadorAtributo(chave) {
         var _a;
         var pontuacao = numero((_a = campo(chave)) === null || _a === void 0 ? void 0 : _a.value, 0);
+        // Em fichas recém-criadas, atributo vazio/zero não é pontuação válida:
+        // não transformar ausência de valor em modificador -5 nas perícias.
+        if (pontuacao <= 0)
+            return 0;
         if (typeof window.calcularModificador === "function") {
             return numero(window.calcularModificador(pontuacao), 0);
         }
-        return pontuacao > 0 ? Math.floor((pontuacao - 10) / 2) : 0;
+        return Math.floor((pontuacao - 10) / 2);
     }
     function comSinal(valor) {
         var n = numero(valor, 0);

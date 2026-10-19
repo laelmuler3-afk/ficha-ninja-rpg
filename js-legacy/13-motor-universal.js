@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/13-motor-universal.js — app 2.5.8.177. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -100,7 +101,22 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     function escapar(v) { return String(v !== null && v !== void 0 ? v : "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
     function sinal(v) { var n = numero(v); return n > 0 ? "+".concat(n) : String(n); }
     function ativos() { return typeof window.obterEfeitosJutsuBatalhaAtivos === "function" ? window.obterEfeitosJutsuBatalhaAtivos() : []; }
-    function efeitosUsuario() { return ativos().flatMap(function (item) { return (item.efeitos || []).map(function (e) { return (__assign(__assign({}, e), { __item: item })); }); }).filter(function (e) { return e.persistente !== false && APLICACOES_USUARIO.has(String(e.aplicaEm || "usuario")); }); }
+    function efeitoUsuarioValido(efeito) {
+        var _a;
+        if (efeito.persistente === false || !APLICACOES_USUARIO.has(String(efeito.aplicaEm || "usuario")))
+            return false;
+        if (!efeito.condicao)
+            return true;
+        // Mesma regra do motor principal: bônus condicionais não entram nos
+        // testes e indicadores antes de serem confirmados ou desbloqueados.
+        var permite = (_a = window.EfeitosJutsuShinobi) === null || _a === void 0 ? void 0 : _a.condicaoPermiteAutomatico;
+        if (typeof permite === "function")
+            return permite(efeito) === true;
+        return efeito.condicaoAtendida === true; // fallback conservador
+    }
+    function efeitosUsuario() {
+        return ativos().flatMap(function (item) { return (item.efeitos || []).filter(efeitoUsuarioValido).map(function (e) { return (__assign(__assign({}, e), { __item: item })); }); });
+    }
     function dadoValido(v) { return /^\d+d\d+(?:\s*[+-]\s*\d+)?$/i.test(String(v || "").trim()); }
     function somarDados(lista) { return lista.map(String).filter(dadoValido).join(" + "); }
     function perfil() {
