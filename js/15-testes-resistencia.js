@@ -175,7 +175,11 @@
   function dadosTeste(config,perfilEfeito,perfilProf){
     const pontuacaoBase = numero(campoSalvo(config.chave)?.value,0);
     const bonusManual = bonusManualAtributo(config.chave);
-    const modificadorBase = modificadorPontuacao(pontuacaoBase + bonusManual);
+    // Sem pontuação-base válida, um ajuste temporário não transforma
+    // um campo vazio em atributo 0 (e nem cria modificador -5).
+    const modificadorBase = pontuacaoBase > 0
+      ? modificadorPontuacao(pontuacaoBase + bonusManual)
+      : 0;
     const bonusModJutsu = bonusModificadorJutsu(config.chave);
     const modificadorFinal = modificadorBase + bonusModJutsu;
     const escolhaOrigem = escolhaQueConcede(config.chave,perfilProf);

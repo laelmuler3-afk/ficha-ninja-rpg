@@ -117,7 +117,11 @@
   }
 
   function modificadorAtributo(chave){
-    return Math.floor((pontuacaoAtributo(chave)-10)/2);
+    const pontuacao = pontuacaoAtributo(chave);
+    // Atributo ainda não preenchido não equivale a uma pontuação 0.
+    // A calculadora continua exigindo o preenchimento antes de confirmar
+    // o ganho, mas a prévia não deve exibir uma penalidade artificial de -5.
+    return pontuacao > 0 ? Math.floor((pontuacao - 10) / 2) : 0;
   }
 
   function sinal(valor){
