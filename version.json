@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.178",
-  "name": "Natureza: atributo de conjuração não preenchido",
-  "notes": "Evita penalidade artificial de -5 nos benefícios N2/N6 quando o atributo de conjuração está vazio; preserva fórmulas e dados.",
-  "date": "2026-10-19"
+  "version": "2.5.8.179",
+  "name": "Cálculos derivados sem atributos não preenchidos",
+  "notes": "Evita penalidade artificial nas prévias de Level Up e nos testes de resistência com atributo ainda vazio; preserva regras e valores válidos.",
+  "date": "2026-10-20"
 }
