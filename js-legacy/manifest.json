@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.177",
+  "version": "2.5.8.178",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -72,8 +72,8 @@
       "outputSha256": "ddb7583c4a78cf000135c1c50ab3995b0b6969ed160cb1f3700a5b6b38107077"
     },
     "js/10-regras-natureza.js": {
-      "sourceSha256": "94a673538ccb1b82b832ca99168e280dba4b38a7cfaa907db37cef33d3e48181",
-      "outputSha256": "c5e7a265f12ae6ab56829c29ebe985465ef1939424624b21b311faf01a75b547"
+      "sourceSha256": "e84bf9f8ae73bef920b2e1ce56397aadd7ecf1ef825a2980e90182532a3a197c",
+      "outputSha256": "ea23e65103218a4ad80dadc2c60d6086f8e06458fb7bb2c670aa907b1bad4780"
     },
     "js/11-batalha-ui.js": {
       "sourceSha256": "ac9cececea347b357268ab0af81ae2568a872b9330b7bcf99235d640bbb6036d",
@@ -160,8 +160,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "3f241343511dcfebd55820f9c178cd1ee1417c82283a8dfa18d8f6f190cf62f1",
-      "outputSha256": "9fe987da5301a99c6d2511ad0d320e162bcdac871dab57f1ee9c818796b1bff3"
+      "sourceSha256": "2e1d8dd7676a02b1cd7c749b2999446268378d5e77c2d3f88b50e31cee1833b9",
+      "outputSha256": "38f7d1c65e9b3e8a6673050947d5a081b189968b5a7f8b48ef4dc560a51abcf0"
     }
   }
 }

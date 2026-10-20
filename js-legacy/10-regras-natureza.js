@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.160. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.178. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -158,12 +158,18 @@ var __read = (this && this.__read) || function (o, n) {
             return null;
         var campo = document.querySelector("[data-save=\"".concat(id, "\"]"));
         var bruto = (_a = campo === null || campo === void 0 ? void 0 : campo.value) !== null && _a !== void 0 ? _a : estado === null || estado === void 0 ? void 0 : estado[id];
-        var numero = Number(bruto);
-        return Number.isFinite(numero) ? numero : null;
+        // Campo ainda vazio não equivale a atributo 0. Sem pontuação válida,
+        // o benefício de Natureza espera o preenchimento em vez de aplicar -5.
+        if (bruto == null || String(bruto).trim() === "")
+            return null;
+        var numero = Number(String(bruto).trim().replace(",", "."));
+        return Number.isFinite(numero) && numero > 0 ? numero : null;
     }
     function calcularModificadorLocal(valor) {
+        if (valor == null)
+            return null;
         var numero = Number(valor);
-        if (!Number.isFinite(numero))
+        if (!Number.isFinite(numero) || numero <= 0)
             return null;
         if (typeof calcularModificador === "function") {
             var resultado = Number(calcularModificador(numero));
