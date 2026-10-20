@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/15-testes-resistencia.js — app 2.5.8.179. Não editar. */
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -203,7 +204,11 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         var _a, _b;
         var pontuacaoBase = numero((_a = campoSalvo(config.chave)) === null || _a === void 0 ? void 0 : _a.value, 0);
         var bonusManual = bonusManualAtributo(config.chave);
-        var modificadorBase = modificadorPontuacao(pontuacaoBase + bonusManual);
+        // Sem pontuação-base válida, um ajuste temporário não transforma
+        // um campo vazio em atributo 0 (e nem cria modificador -5).
+        var modificadorBase = pontuacaoBase > 0
+            ? modificadorPontuacao(pontuacaoBase + bonusManual)
+            : 0;
         var bonusModJutsu = bonusModificadorJutsu(config.chave);
         var modificadorFinal = modificadorBase + bonusModJutsu;
         var escolhaOrigem = escolhaQueConcede(config.chave, perfilProf);

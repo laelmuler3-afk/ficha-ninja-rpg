@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/14-level-up.js — app 2.5.8.175. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/14-level-up.js — app 2.5.8.179. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -209,7 +209,11 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         return inteiro((_b = (_a = campoSalvo(chave)) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : estado === null || estado === void 0 ? void 0 : estado[chave], 0);
     }
     function modificadorAtributo(chave) {
-        return Math.floor((pontuacaoAtributo(chave) - 10) / 2);
+        var pontuacao = pontuacaoAtributo(chave);
+        // Atributo ainda não preenchido não equivale a uma pontuação 0.
+        // A calculadora continua exigindo o preenchimento antes de confirmar
+        // o ganho, mas a prévia não deve exibir uma penalidade artificial de -5.
+        return pontuacao > 0 ? Math.floor((pontuacao - 10) / 2) : 0;
     }
     function sinal(valor) {
         var n = numero(valor, 0);
