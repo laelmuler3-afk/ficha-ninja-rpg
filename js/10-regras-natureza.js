@@ -117,13 +117,17 @@
     if(!id) return null;
     const campo = document.querySelector(`[data-save="${id}"]`);
     const bruto = campo?.value ?? estado?.[id];
-    const numero = Number(bruto);
-    return Number.isFinite(numero) ? numero : null;
+    // Campo ainda vazio não equivale a atributo 0. Sem pontuação válida,
+    // o benefício de Natureza espera o preenchimento em vez de aplicar -5.
+    if(bruto == null || String(bruto).trim() === "") return null;
+    const numero = Number(String(bruto).trim().replace(",", "."));
+    return Number.isFinite(numero) && numero > 0 ? numero : null;
   }
 
   function calcularModificadorLocal(valor){
+    if(valor == null) return null;
     const numero = Number(valor);
-    if(!Number.isFinite(numero)) return null;
+    if(!Number.isFinite(numero) || numero <= 0) return null;
     if(typeof calcularModificador === "function"){
       const resultado = Number(calcularModificador(numero));
       return Number.isFinite(resultado) ? resultado : null;
