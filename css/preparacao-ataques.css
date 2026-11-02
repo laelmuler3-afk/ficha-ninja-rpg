@@ -1,0 +1,28 @@
+/* Shinobi 2.5.8.181 — painel preparatório integrado à aba Ataques */
+#jutsus .shinobiAtaqueMetadados{margin:10px 8px 8px;padding:10px 12px;border:1px solid rgba(84,167,180,.28);border-radius:9px;background:rgba(15,36,42,.5);color:#cbe0e5;font-size:12px;line-height:1.45;}
+#jutsus .shinobiMetaTitulo{display:block;color:#addbe4;font-weight:800;margin-bottom:5px;font-size:12px;}
+#jutsus .shinobiMetaLinha{margin:3px 0;overflow-wrap:anywhere;}
+#jutsus .shinobiMetaPendente{color:#ffc995;}
+#jutsus .shinobiMetaAviso{display:block;color:#acc0c6;font-size:11px;margin:7px 0;}
+#jutsus .shinobiMetaBotao{display:inline-block;width:auto;min-height:32px;margin-top:7px;border:1px solid rgba(109,188,203,.38);border-radius:7px;background:rgba(29,67,74,.67);color:#d3f3fb;padding:6px 9px;font-weight:700;font-size:11px;cursor:pointer;}
+#jutsus .shinobiPrepPainel{margin-top:14px;border:1px solid rgba(108,166,179,.32);border-radius:11px;background:linear-gradient(160deg,rgba(6,21,26,.98),rgba(3,11,15,.98));color:#dceaf0;overflow:hidden;}
+#jutsus .shinobiPrepPainel > summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 13px;cursor:pointer;list-style:none;color:#e8f8fa;font-weight:800;font-size:13px;}
+#jutsus .shinobiPrepPainel > summary::-webkit-details-marker{display:none;}
+#jutsus .shinobiPrepPainel > summary:before{content:'▸';color:#a8d2dc;flex:none;}
+#jutsus .shinobiPrepPainel[open] > summary:before{content:'▾';}
+#jutsus .shinobiPrepPainel > summary span{font-weight:700;font-size:10px;color:#ffd19e;background:rgba(160,108,54,.13);padding:3px 6px;border-radius:5px;white-space:nowrap;}
+#jutsus .shinobiPrepConteudo{padding:0 13px 14px;border-top:1px solid rgba(93,164,180,.19);}
+#jutsus .shinobiPrepConteudo h3{font-size:13px;color:#dbf4fb;margin:17px 0 9px;}
+#jutsus .shinobiPrepDescricao,#jutsus .shinobiPrepRodape{font-size:11px;color:#b6c9ce;line-height:1.55;margin:12px 0;}
+#jutsus .shinobiPrepCampos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+#jutsus .shinobiPrepCampo{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11px;font-weight:650;color:#c5dce1;}
+#jutsus .shinobiPrepCampo select,#jutsus .shinobiPrepCampo input{display:block;box-sizing:border-box;width:100%;min-height:38px;padding:8px;border:1px solid rgba(117,166,177,.35);border-radius:7px;background:#07171b;color:#f3f8f9;font-size:12px;}
+#jutsus .shinobiPrepPrimario{margin-top:10px;display:block;width:100%;min-height:38px;padding:9px 12px;border-radius:7px;border:1px solid rgba(109,187,206,.35);background:linear-gradient(135deg,#235360,#12343d);color:#edfaff;font-size:12px;font-weight:800;cursor:pointer;}
+#jutsus .shinobiPrepRegistros{margin-top:10px;}
+#jutsus .shinobiPrepRegistro{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid rgba(116,160,170,.16);font-size:12px;}
+#jutsus .shinobiPrepRegistro span{min-width:0;overflow-wrap:anywhere;}
+#jutsus .shinobiPrepRegistro b{display:block;font-size:12px;color:#e5f2f7;}
+#jutsus .shinobiPrepRegistro small{display:block;color:#b4cad0;margin-top:3px;font-size:10px;line-height:1.4;}
+#jutsus .shinobiPrepRegistro button{display:block;flex:none;width:32px;height:32px;border-radius:7px;border:1px solid rgba(225,132,130,.3);background:rgba(93,29,29,.23);color:#ffd1ce;font-size:20px;cursor:pointer;}
+#jutsus .shinobiPrepVazio,#jutsus .shinobiPrepFixo{font-size:11px;color:#a8c3c9;margin:8px 0;}
+@media(max-width:370px){#jutsus .shinobiPrepCampos{grid-template-columns:1fr;}#jutsus .shinobiPrepPainel>summary{font-size:12px;}}
