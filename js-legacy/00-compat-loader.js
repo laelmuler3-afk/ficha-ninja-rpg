@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/00-compat-loader.js — app 2.5.8.180. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/00-compat-loader.js — app 2.5.8.181. Não editar. */
 (function () {
     "use strict";
     if (window.__shinobiCompatLoader)
@@ -24,7 +24,7 @@
         document.head.appendChild(l);
     }
     var files = [
-        "00-shinobi-ui.js", "00-item-identity.js", "01-core.js", "01-sheet-manager.js", "02-runtime.js", "03-images.js", "04-jutsus.js", "05-armados-item-level.js", "05-kekkei-item-level.js", "09-catalogo.js", "05-battle.js", "06-inventory.js", "06-wallet-item-level.js", "07-profile.js", "10-regras-natureza.js", "11-batalha-ui.js", "12-efeitos-jutsus.js", "13-motor-universal.js", "14-level-up.js", "15-testes-resistencia.js", "16-pericias.js", "17-dano-inteligente.js", "17-preparacao-ataques.js", "22-organizacao-retratil.js", "23-security-hardening.js", "24-terminologia-eko.js", "08-post-render-loader.js"
+        "00-shinobi-ui.js", "00-item-identity.js", "01-core.js", "01-sheet-manager.js", "02-runtime.js", "03-images.js", "04-jutsus.js", "05-armados-item-level.js", "05-kekkei-item-level.js", "09-catalogo.js", "05-battle.js", "06-inventory.js", "06-wallet-item-level.js", "07-profile.js", "10-regras-natureza.js", "11-batalha-ui.js", "12-efeitos-jutsus.js", "13-motor-universal.js", "14-level-up.js", "15-testes-resistencia.js", "16-pericias.js", "17-dano-inteligente.js", "17-preparacao-ataques.js", "17-integracao-ataques.js", "22-organizacao-retratil.js", "23-security-hardening.js", "24-terminologia-eko.js", "08-post-render-loader.js"
     ];
     function load(i) {
         if (i >= files.length) {
