@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.184",
+  "version": "2.5.8.185",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "20b88c051a9b61f6ca9fea49ec4d3e6eccf7fe2f4514a62980cbccdc9293c385",
-      "outputSha256": "1b507698e2b724ac6354be87e51c4ebf80ff9b07bbd991b8d986dbc77a62f4f7"
+      "sourceSha256": "d3acec952b6f3ef7863e1906724868ff6f8cd573bf8700edbf9b98dd167e4708",
+      "outputSha256": "14fd7a994e445c0f136275eec95ab1e3e60ea7eaa86a5563555e2c45ebbc70c7"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -108,8 +108,8 @@
       "outputSha256": "a60d3c8ef5f47beff369fd6544256c88dde8d9241147558ce39a3e410bc19e9c"
     },
     "js/17-integracao-ataques.js": {
-      "sourceSha256": "5cb6009eeccfa3c189b02a589a825e2225751033a58464cb9b856299a4584e83",
-      "outputSha256": "29c06a92ffdcac586e0ace69f72d43210c26851f214c7f7ffc21ba81c401d4af"
+      "sourceSha256": "c6fdc4f5eb5ae4691878bb64c7e11569ef1e90b202f9b36e484189976cffddda",
+      "outputSha256": "0ebba96df02d969817963ff2850aa2f15752ca92a1db79c55b6ee47ad1d09d4f"
     },
     "js/17-pontos-chave-engine.js": {
       "sourceSha256": "b10053a2957ba8e24258b39860970e0753e8cf9bf9f5f99f2d25149072e644cd",
@@ -180,8 +180,12 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "a33b30c60dc30a720381792345fbb7ec85c992bafe1cde7df53746aa0b976768",
-      "outputSha256": "9f6a783f411b7ac2ec0d2e14d66d27f95d7d0a9fc98d150ea0b2a9615133d907"
+      "sourceSha256": "e3b61aeac82636f1ac28a52c0e97b9bc12f2bd4d7176fbdb4361694cdabafd67",
+      "outputSha256": "a74296e0cd4210d3e258059172564a7e56a5f21c5bb0ceca822032b99d2dc9b8"
+    },
+    "js/17-ataques-automaticos.js": {
+      "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
+      "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
     }
   }
 }
