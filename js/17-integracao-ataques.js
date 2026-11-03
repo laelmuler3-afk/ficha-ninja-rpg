@@ -1,7 +1,6 @@
-/* Projetinho Shinobi — 2.5.8.184.
- * Integração preparatória: catálogo ↔ inventário ↔ ataques ↔ origem de proficiências.
- * Nenhum cálculo de acerto/dano, débito de pontos ou bônus é aplicado.
- * Os lançamentos são registros históricos provisórios até a decisão do mestre.
+/* Projetinho Shinobi — 2.5.8.185.
+ * Integração: catálogo e pontos-chave com exibição calculada opt-in por ataque.
+ * Não altera os valores manuais originais nem aplica bônus temporários ou débitos.
  */
 (function (root) {
   "use strict";
@@ -10,6 +9,8 @@
   var doc = root.document;
   var P = root.ShinobiPreparacaoAtaques;
   var C = root.ShinobiCalculosConfirmados;
+  var A = root.ShinobiAtaquesAutomaticos;
+  var L = root.ShinobiPontosChave;
   if (!P) { console.warn("Shinobi: módulo do catálogo ainda não carregado."); return; }
 
   var REGRAS_PENDENTES = "Somente exceções de proficiências antigas ou concedidas pelo mestre; novas compras ficam em Perfil → Pontos-Chave.";
@@ -102,6 +103,7 @@
         destino.appendChild(recolhivel);
       }
       var rel = relatorioAtaque(ataque);
+      if (A) atualizarCalculoOficial(card,ataque,i);
       bloco.textContent = "";
       var titulo = elemento("strong","shinobiMetaTitulo", "Referência da arma e prévia de cálculo");
       bloco.appendChild(titulo);
@@ -135,7 +137,7 @@
         (previa.avisos||[]).forEach(function (aviso) { resumo.appendChild(elemento("small","shinobiPreviaNota",aviso)); });
         bloco.appendChild(resumo);
       }
-      bloco.appendChild(elemento("small","shinobiMetaAviso","Os valores de acerto e dano da ficha continuam manuais e inalterados."));
+      bloco.appendChild(elemento("small","shinobiMetaAviso","O modo automático é uma visualização calculada; os campos manuais originais são preservados."));
       if (rel.catalogo && rel.catalogo.id !== "desarmado") {
         var botao = elemento("button","shinobiMetaBotao","Registrar origem de proficiência");
         botao.type = "button";
@@ -146,6 +148,74 @@
     });
   }
 
+  function atualizarCalculoOficial(card,ataque,indice) {
+    var atual=ficha(),arma=P.identificarAtaque(ataque),calc=A.calcular(atual,ataque,P,C,L),cfg=calc.configuracao;
+    var destino=card.querySelector(".ataqueDetalhesCompactos");
+    var acerto=card.querySelector(".ataqueBatalha183 .ataqueValor183:first-child strong");
+    var dano=card.querySelector(".ataqueBatalha183 .ataqueValor183:nth-child(2) strong");
+    if(!destino||!acerto||!dano)return;
+    if(!acerto.hasAttribute("data-manual185"))acerto.setAttribute("data-manual185",acerto.textContent);
+    if(!dano.hasAttribute("data-manual185"))dano.setAttribute("data-manual185",dano.textContent);
+    if(cfg.ativo&&calc.status==="calculado"){
+      acerto.textContent=(calc.acerto>=0?"+":"")+calc.acerto;
+      dano.textContent=calc.dano;
+    }else{
+      acerto.textContent=acerto.getAttribute("data-manual185");
+      dano.textContent=dano.getAttribute("data-manual185");
+    }
+    var selo=card.querySelector(".shinobiAuto185Selo");
+    if(!selo){selo=elemento("small","shinobiAuto185Selo");card.querySelector(".ataqueBatalha183").appendChild(selo);}
+    selo.textContent=cfg.ativo&&calc.status==="calculado"?"Cálculo automático · sem alterar seus valores salvos":cfg.ativo?"Automação indisponível: mostrando valor manual":"Valores manuais";
+    card.classList.toggle("shinobiAutomatico185",cfg.ativo&&calc.status==="calculado");
+    var painel=card.querySelector(".shinobiAuto185Painel");
+    if(!painel){
+      painel=elemento("details","shinobiAuto185Painel");
+      painel.innerHTML='<summary>Automação de acerto e dano</summary><div class="shinobiAuto185Campos">'+
+        '<label class="shinobiAuto185Check"><input type="checkbox" data-auto185="ativo"> Usar cálculo automático neste ataque</label>'+
+        '<label>Atributo<select data-auto185="atributo"><option value="">Atributo padrão</option><option value="forca">Força</option><option value="destreza">Destreza</option></select></label>'+
+        '<label>Tipo de golpe<select data-auto185="modo"><option value="corpo-a-corpo">Corpo a corpo</option><option value="arremesso">Arremesso</option><option value="distancia">Disparo à distância</option><option value="secundaria">Arma secundária (ação bônus)</option></select></label>'+
+        '<label>Empunhadura<select data-auto185="empunhadura"><option value="uma">Uma mão</option><option value="duas">Duas mãos</option></select></label>'+
+        '<label class="shinobiAuto185Check"><input type="checkbox" data-auto185="outraArma"> Outra arma na mão livre (sem Duelista)</label>'+
+        '</div><div class="shinobiAuto185Resultado" aria-live="polite"></div>';
+      destino.insertBefore(painel,destino.firstChild);
+    }
+    painel.querySelector('[data-auto185="ativo"]').checked=cfg.ativo;
+    ["atributo","modo","empunhadura"].forEach(function(chave){painel.querySelector('[data-auto185="'+chave+'"]').value=cfg[chave];});
+    painel.querySelector('[data-auto185="outraArma"]').checked=cfg.outraArma;
+    var box=painel.querySelector(".shinobiAuto185Resultado");box.textContent="";
+    if(calc.status==="calculado"){
+      box.appendChild(elemento("p","","Acerto "+(calc.acerto>=0?"+":"")+calc.acerto+" · Dano "+calc.dano+(calc.critico?" · Crítico "+calc.critico:"")));
+      box.appendChild(elemento("small","","Ação Atacar: "+calc.ataquesPorAcao+" golpe(s) por ação; jutsus e ações bônus têm regras próprias."));
+      calc.detalhes.forEach(function(t){box.appendChild(elemento("small","",t));});
+      calc.avisos.forEach(function(t){box.appendChild(elemento("small","shinobiAuto185Pendente",t));});
+    }else box.appendChild(elemento("p","shinobiAuto185Pendente",calc.motivo+" Use valores manuais até a confirmação."));
+  }
+  function salvarModoAutomatico(el) {
+    var card=el.closest(".ataqueListaCard"),f=ficha();
+    if(!card||!f||!Array.isArray(f.armados)||typeof root.persistirEstadoLocal!=="function")return;
+    var i=Number(card.getAttribute("data-ataque-index")),ataque=f.armados[i];if(!ataque)return;
+    var bloco=card.querySelector(".shinobiAuto185Painel");if(!bloco)return;
+    var proximo={ativo:bloco.querySelector('[data-auto185="ativo"]').checked,
+      atributo:bloco.querySelector('[data-auto185="atributo"]').value,
+      modo:bloco.querySelector('[data-auto185="modo"]').value,
+      empunhadura:bloco.querySelector('[data-auto185="empunhadura"]').value,
+      outraArma:bloco.querySelector('[data-auto185="outraArma"]').checked};
+    var temp=Object.assign({},ataque,{calculoAtaque185:proximo});
+    var calculo=A.calcular(f,temp,P,C,L);
+    if(proximo.ativo&&calculo.status!=="calculado"){
+      root.alert("Ainda não é seguro automatizar este ataque: "+calculo.motivo);
+      atualizarCalculoOficial(card,ataque,i);return;
+    }
+    if(proximo.ativo&&!ataque.calculoAtaque185?.ativo&&
+        !root.confirm("Ativar cálculo automático para "+(ataque.nome||"este ataque")+"? Os valores manuais serão mantidos e poderão ser recuperados ao desativar.")){
+      atualizarCalculoOficial(card,ataque,i);return;
+    }
+    var anterior=ataque.calculoAtaque185;
+    ataque.calculoAtaque185=proximo;
+    var ok=root.persistirEstadoLocal({confirmada:true,origem:"ataques-automaticos",campo:"armados",motivo:"configuracao-calculo-confirmada"});
+    if(ok!==true){if(anterior===undefined)delete ataque.calculoAtaque185;else ataque.calculoAtaque185=anterior;root.alert("Não foi possível salvar o modo de cálculo.");}
+    atualizarCalculoOficial(card,ataque,i);
+  }
   function selecionar(opcoes, id, titulo) {
     return '<label class="shinobiPrepCampo">'+h(titulo)+'<select id="'+id+'">' + opcoes.map(function (item) { return '<option value="'+h(item[0])+'">'+h(item[1])+'</option>'; }).join("") + '</select></label>';
   }
@@ -265,6 +335,7 @@
     });
     observador.observe(lista,{childList:true,subtree:false});
     doc.addEventListener("click",clicar);
+    doc.addEventListener("change",function(e){if(A&&e.target&&e.target.matches&&e.target.matches("[data-auto185]"))salvarModoAutomatico(e.target);});
     doc.addEventListener("change",function (e) {
       var el=e.target;
       if (el && el.dataset && ["forca","destreza","nivel","cla","proficiencia"].indexOf(el.dataset.save)>=0) {
@@ -274,15 +345,16 @@
     });
     root.addEventListener("pageshow",function () {atualizarPainel();atualizarCards();});
     root.addEventListener("shinobi:app-pronto",function () {atualizarPainel();atualizarCards();});
-    root.addEventListener("shinobi:ficha-persistida",function (e) {if (e.detail && e.detail.campo === "automacaoAtaques") atualizarPainel(); if (e.detail && (["automacaoAtaques","inventarioItens","forca","destreza","cla","nivel","proficiencia"].indexOf(e.detail.campo)>=0)) atualizarCards();});
+    root.addEventListener("shinobi:ficha-persistida",function (e) {if (e.detail && e.detail.campo === "automacaoAtaques") atualizarPainel(); if (e.detail && (["pontosChaveV1","armados","automacaoAtaques","inventarioItens","forca","destreza","cla","nivel","proficiencia"].indexOf(e.detail.campo)>=0)) atualizarCards();});
     root.addEventListener("shinobi:realtime-aplicado",function (e) {if (!e.detail || !Array.isArray(e.detail.campos) || e.detail.campos.indexOf("automacaoAtaques") >= 0) atualizarPainel(); atualizarCards();});
+    root.addEventListener("shinobi:pontos-chave-atualizados",atualizarCards);
     root.addEventListener("shinobi:realtime-colecao-aplicada",function (e) {if (e.detail && (e.detail.collection === "inventario" || e.detail.collection === "armados")) atualizarCards();});
     if (root.ShinobiOnline && typeof root.ShinobiOnline.on === "function") {
       try { root.ShinobiOnline.on("ficha-atualizada-nuvem",function () {atualizarPainel();atualizarCards();}); } catch (_e) {}
     }
   }
   root.ShinobiIntegracaoAtaques = Object.freeze({
-    versao:"2.5.8.184",
+    versao:"2.5.8.185",
     relatorioAtaque:relatorioAtaque,
     atualizarVisual:function () {criarPainel();atualizarPainel();atualizarCards();}
   });
