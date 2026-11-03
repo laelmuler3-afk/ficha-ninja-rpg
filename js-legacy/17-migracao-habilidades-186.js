@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-migracao-habilidades-186.js — app 2.5.8.187. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-migracao-habilidades-186.js — app 2.5.8.189. Não editar. */
 /* Projetinho Shinobi 2.5.8.186 — reconhecimento assistido de habilidades antigas.
  * Fonte: suplemento Shinobi pp. 19, 30, 41 e 52. Apenas dados da lista "Pontos chave gastos".
  * NUNCA recalcula atributos, custos dos jutsus ou saldos. Confirmação por ficha é obrigatória.
@@ -68,10 +68,26 @@
     var TEMPLATES = RAW.map(montar);
     function modelos() { return clone(TEMPLATES); }
     function identificar(ficha) {
+        // A interface do Perfil salva "Clã" e "Nome" em campos separados.
+        // O suplemento apresenta o nome completo, por exemplo "Luffy Sarutobi".
+        // Aceitar somente: nome completo exato OU primeiro nome exato + clã exato.
+        // Nunca relacionar por similaridade, somente sobrenome, ou clã incompatível.
         var nome = normal(ficha && ficha.nome), cla = normal(ficha && ficha.cla);
         if (!nome)
             return null;
-        var matches = TEMPLATES.filter(function (t) { return normal(t.nome) === nome && (!t.cla || normal(t.cla) === cla || cla === 'cla ' + normal(t.cla)); });
+        var matches = TEMPLATES.filter(function (t) {
+            var nomeSuplemento = normal(t.nome), claSuplemento = normal(t.cla);
+            if (claSuplemento && cla !== claSuplemento && cla !== 'cla ' + claSuplemento)
+                return false;
+            if (nome === nomeSuplemento)
+                return true;
+            if (!claSuplemento)
+                return false;
+            var sufixo = ' ' + claSuplemento;
+            // O prefixo precisa ser o nome inteiro que precede o clã no suplemento.
+            // Isso mantém Shizen/Lee, Liu/Hyuuga e Luffy/Sarutobi inequívocos.
+            return nomeSuplemento.endsWith(sufixo) && nome === nomeSuplemento.slice(0, -sufixo.length);
+        });
         return matches.length === 1 ? clone(matches[0]) : null;
     }
     function obter(id) { var t = TEMPLATES.find(function (x) { return x.id === id; }); return t ? clone(t) : null; }

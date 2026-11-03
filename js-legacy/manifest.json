@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.188",
+  "version": "2.5.8.189",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -180,20 +180,20 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "6d395ce54c5263cc4edfd95595f100d8b2ac343ff88a5f195de49c8f00cb7e27",
-      "outputSha256": "465f6a6279c6da8c391f4a0b6406aacdb25035cde31b93df08c1e7061d24f0f5"
+      "sourceSha256": "ca2ff65eb8fe4e30fecc140fd6c2aca9b711ec894251eac35e40100c50942c0a",
+      "outputSha256": "6e10b79a13f6702c844c2df272817f610365ceef6030938dab0450bfd0194bd6"
     },
     "js/17-ataques-automaticos.js": {
       "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
       "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
     },
     "js/17-migracao-habilidades-186.js": {
-      "sourceSha256": "d5592e8e44bc9f1cd4eef006db5a72ee7979dc70b59ebeed33b17269a86aab3f",
-      "outputSha256": "d365fda475b8e16308d7b0238c0eb0a902a06d1c90e7dce49472547bc40e7156"
+      "sourceSha256": "a3d54538149d687878e0ffe3f50975371db9c15ea9d6033afd9fef7bd222c25f",
+      "outputSha256": "f72467aac4426a147940b7392e731fe328f0ab807ecd6f1bb13e2a36bcef2cb0"
     },
     "js/17-migracao-habilidades-ui-186.js": {
-      "sourceSha256": "2877d2aa71d6a4f7fff4c66be8c9a8a7b6d24a9576278a9851b5f72df918f011",
-      "outputSha256": "2434c8fce5d634357ac303348d2022fc467f4c9f6289611f575c9a4d27d28655"
+      "sourceSha256": "adf1c7cb7ba6fc543090a243d8dabc35030fe331722ad5d0f4c943aad97ed04c",
+      "outputSha256": "7ac48eca7005308ae3d349ea6bc99c5e4f7dc395422393528c271fcadb45e955"
     },
     "js/17-vinculos-jutsus-187.js": {
       "sourceSha256": "c126c5e52465a5bf2c592146afc95974d960ba781c7969a37dd37b851ad23977",
