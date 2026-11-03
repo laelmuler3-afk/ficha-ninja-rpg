@@ -373,7 +373,7 @@
         }
       : null;
 
-    return {
+    const regraCalculada = {
       natureza,
       elemento,
       nivel,
@@ -395,6 +395,9 @@
       resistenciaAutomatica:Boolean(natureza && nivel >= 3),
       imunidadeAutomatica:Boolean(natureza && nivel >= 7)
     };
+    const B = window.ShinobiBeneficiosJutsus188;
+    const E = window.ShinobiPontosChave;
+    return B && E ? B.aplicar(estado, jutsu, regraCalculada, E) : regraCalculada;
   }
 
   function formatarBonusTotal(regra){
@@ -624,6 +627,8 @@
           : ""
       );
 
+      const B = window.ShinobiBeneficiosJutsus188;
+      if(B && typeof B.decorarCard === "function") B.decorarCard(card, jutsu, regra);
       card.classList.toggle("jutsuComBeneficioNatureza", Boolean(regra.natureza && regra.nivel >= 2));
     });
   }
@@ -825,6 +830,8 @@
             : "Sem custo de chakra"
         : `Custo variável: ${custoTexto}`,
       danoTotal && danoTotal !== "—" ? `Dano total: ${danoTotal}` : "",
+      regra.beneficios188?.aplicados?.length ? regra.beneficios188.aplicados.join("; ") : "",
+      regra.beneficios188?.pendentes?.length ? "Melhorias pendentes: " + regra.beneficios188.pendentes.join("; ") : "",
       regra.bonusNivel2 ? `N2: ${comSinal(regra.bonusNivel2)}` : "",
       regra.bonusNivel6 ? `N6: ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)` : ""
     ].filter(Boolean).join("\n");
