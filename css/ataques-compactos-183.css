@@ -1,0 +1,162 @@
+/* Projetinho Shinobi 2.5.8.183 — uso rápido na batalha, detalhes sob demanda.
+   Escopo restrito à lista de ataques; não altera jutsus nem fichas salvas. */
+#jutsus #listaArmados .ataqueCard183 {
+  overflow:hidden!important;
+  background:#020a0e!important;
+  border-color:rgba(52,110,120,.40)!important;
+  border-radius:12px!important;
+  isolation:isolate;
+}
+#jutsus #listaArmados .ataqueTopo183 {
+  display:flex!important;
+  align-items:center!important;
+  gap:0!important;
+  min-width:0!important;
+  padding:0 8px 0 0!important;
+  position:relative;
+}
+#jutsus #listaArmados .ataqueTopo183 .ataqueLinhaResumo {
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:49px!important;
+  padding:7px 4px 7px 13px!important;
+  display:grid!important;
+  grid-template-columns:33px minmax(0,1fr) 16px!important;
+  gap:9px!important;
+  align-items:center!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+#jutsus #listaArmados .ataqueTopo183 .ataqueLinhaIcone {
+  width:33px!important;height:33px!important;border-radius:9px!important;
+}
+#jutsus #listaArmados .ataqueTopo183 .ataqueLinhaTexto strong {
+  font-size:13px!important;letter-spacing:0!important;
+}
+#jutsus #listaArmados .ataqueTopo183 .ataqueLinhaTexto small {
+  font-size:9px!important;letter-spacing:.32px!important;
+  text-transform:none!important;
+}
+#jutsus #listaArmados .ataqueTopo183 .ataqueLinhaSeta {
+  opacity:.82!important;visibility:visible!important;
+  width:16px!important;height:20px!important;
+  font-size:18px!important;display:grid!important;place-items:center!important;
+  color:#a8c0c3!important;
+}
+#jutsus #listaArmados .ataqueOpcoes183 {
+  flex:0 0 34px!important;display:block!important;
+  margin:0!important;padding:0!important;
+}
+#jutsus #listaArmados .ataqueOpcoes183 > summary {
+  list-style:none!important;
+  display:grid!important;place-items:center!important;
+  width:34px!important;height:36px!important;
+  border:1px solid transparent!important;border-radius:8px!important;
+  color:#c3d7da!important;font-size:22px!important;line-height:1!important;
+  cursor:pointer;user-select:none;
+}
+#jutsus #listaArmados .ataqueOpcoes183 > summary::-webkit-details-marker {display:none!important}
+#jutsus #listaArmados .ataqueOpcoes183[open] > summary,
+#jutsus #listaArmados .ataqueOpcoes183 > summary:focus-visible {
+  background:#11242a!important;border-color:#45656a!important;
+}
+#jutsus #listaArmados .ataqueOpcoesLista183 {
+  position:absolute;right:7px;top:43px;z-index:25;
+  width:min(205px,calc(100% - 18px));
+  padding:5px;border-radius:10px;
+  border:1px solid #46616b;
+  background:#08181d;box-shadow:0 12px 24px rgba(0,0,0,.75);
+  display:grid;gap:3px;
+}
+#jutsus #listaArmados .ataqueOpcoesLista183 button {
+  display:block!important;text-align:left!important;width:100%!important;
+  min-height:35px!important;padding:7px 10px!important;
+  border:0!important;border-radius:6px!important;
+  color:#e3ebec!important;background:transparent!important;
+  font-size:12px!important;font-weight:700!important;cursor:pointer;
+}
+#jutsus #listaArmados .ataqueOpcoesLista183 button:hover,
+#jutsus #listaArmados .ataqueOpcoesLista183 button:focus-visible {background:#18323a!important;}
+#jutsus #listaArmados .ataqueOpcoesLista183 .ataqueExcluir183 {color:#ffb5a5!important;}
+#jutsus #listaArmados .ataqueBatalha183 {
+  display:grid!important;
+  grid-template-columns:minmax(66px,.8fr) minmax(88px,1.3fr) minmax(82px,.9fr)!important;
+  align-items:stretch!important;
+  gap:6px!important;
+  padding:0 10px 10px 13px!important;
+}
+#jutsus #listaArmados .ataqueValor183 {
+  display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+  justify-content:center!important;gap:3px!important;
+  min-width:0!important;min-height:49px!important;
+  padding:7px 9px!important;border:1px solid rgba(49,101,111,.38)!important;
+  background:rgba(12,30,35,.56)!important;border-radius:8px!important;
+}
+#jutsus #listaArmados .ataqueValor183 span {
+  color:#93b0b5!important;font-weight:800!important;font-size:9px!important;
+  letter-spacing:.45px!important;text-transform:uppercase!important;line-height:1.1!important;
+}
+#jutsus #listaArmados .ataqueValor183 strong {
+  display:block!important;max-width:100%!important;overflow-wrap:anywhere!important;
+  color:#f3e9dd!important;font-size:16px!important;line-height:1.18!important;
+  font-weight:900!important;font-variant-numeric:tabular-nums!important;
+}
+#jutsus #listaArmados .ataqueUsar183 {
+  min-height:49px!important;min-width:0!important;
+  padding:7px 8px!important;margin:0!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  border-radius:8px!important;
+  border:1px solid rgba(255,133,54,.62)!important;
+  background:rgba(105,43,14,.23)!important;
+  color:#ffe0be!important;font-size:11px!important;font-weight:900!important;
+  letter-spacing:0!important;line-height:1.2!important;white-space:normal!important;
+}
+#jutsus #listaArmados .ataqueCard183 > .ataqueDetalhesCompactos {
+  display:none!important;padding:9px 12px 11px!important;
+  background:#020a0e!important;border-top:1px solid rgba(67,122,131,.28)!important;
+}
+#jutsus #listaArmados .ataqueCard183.ataqueAberto > .ataqueDetalhesCompactos {display:block!important;}
+#jutsus #listaArmados .ataqueEdicao183,
+#jutsus #listaArmados .shinobiReferencia183 {
+  margin:0 0 7px!important;padding:0!important;
+  border:1px solid rgba(65,119,129,.35)!important;
+  border-radius:9px!important;background:rgba(8,25,30,.45)!important;
+  overflow:hidden;
+}
+#jutsus #listaArmados .ataqueEdicao183 > summary,
+#jutsus #listaArmados .shinobiReferencia183 > summary {
+  list-style:none!important;display:flex!important;align-items:center!important;
+  min-height:39px!important;padding:10px 12px!important;
+  color:#c9e0e4!important;font-size:12px!important;font-weight:750!important;
+  cursor:pointer;
+}
+#jutsus #listaArmados .ataqueEdicao183 > summary::-webkit-details-marker,
+#jutsus #listaArmados .shinobiReferencia183 > summary::-webkit-details-marker {display:none!important;}
+#jutsus #listaArmados .ataqueEdicao183 > summary::before,
+#jutsus #listaArmados .shinobiReferencia183 > summary::before {
+  content:'›';display:inline-block;margin-right:9px;color:#e9a565;font-size:17px;
+}
+#jutsus #listaArmados .ataqueEdicao183[open] > summary::before,
+#jutsus #listaArmados .shinobiReferencia183[open] > summary::before {content:'⌄';}
+#jutsus #listaArmados .ataqueEdicao183 .armadoTopo {padding-top:6px!important;}
+#jutsus #listaArmados .ataqueEdicao183 .armadoResumoEditavel {padding-bottom:10px!important;}
+#jutsus #listaArmados .shinobiReferencia183 .shinobiAtaqueMetadados {
+  margin:0!important;padding:11px 12px!important;
+  border:0!important;border-top:1px solid rgba(65,119,129,.28)!important;
+  border-radius:0!important;background:transparent!important;
+}
+#jutsus #listaArmados .ataqueCard183 button:focus-visible,
+#jutsus #listaArmados .ataqueCard183 summary:focus-visible {
+  outline:2px solid #f2ac72!important;outline-offset:2px!important;
+}
+@media(max-width:360px){
+  #jutsus #listaArmados .ataqueBatalha183 {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  #jutsus #listaArmados .ataqueUsar183 {grid-column:1 / -1!important;min-height:37px!important;}
+}
+@media(prefers-reduced-motion:reduce){
+  #jutsus #listaArmados .ataqueCard183 * {transition:none!important;animation:none!important;}
+}
