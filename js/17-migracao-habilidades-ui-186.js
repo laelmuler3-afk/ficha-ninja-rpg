@@ -64,8 +64,9 @@
     assinatura=s;
     var box=doc.getElementById('mig186Conteudo');if(!box)return;
     if(!modelo){
-      box.innerHTML='<p class="mig186Nota">Nenhuma correspondência exata entre o nome desta ficha e as quatro fichas do suplemento. Não será feita associação pelo nome de outra pessoa ou por aproximação.</p>'+ 
-        '<p class="mig186Nota">Confira o nome e o clã no Perfil. Se seu personagem não estiver no suplemento, você pode registrar as habilidades anteriores pelo histórico normal de Pontos-Chave.</p>';
+      box.innerHTML='<p class="mig186Nota">Não foi possível identificar esta ficha entre as quatro fichas do suplemento. Nenhuma associação aproximada será feita.</p>'+ 
+        '<p class="mig186Nota"><strong>Dados lidos do Perfil:</strong> Clã: '+esc(f.cla||'(não preenchido)')+' · Nome: '+esc(f.nome||'(não preenchido)')+'.</p>'+ 
+        '<p class="mig186Nota">O sistema aceita nome completo ou nome e clã separados, como Luffy / Sarutobi. Confira os campos em Perfil. Se seu personagem não estiver no suplemento, registre as aquisições pelo histórico normal de Pontos-Chave.</p>';
       return;
     }
     var entradas=M.entradasValidas(modelo,f,E);var concluidos=entradas.filter(function(x){return x.estado==='importado'||x.estado==='vinculado';}).length;
