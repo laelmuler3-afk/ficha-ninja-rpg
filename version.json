@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.186",
-  "name": "Reconhecimento assistido das aquisições do suplemento",
-  "notes": "Conciliação de habilidades antigas por personagem, sem reaplicar efeitos ou descontar pontos, com confirmação de destino e situação manual.",
+  "version": "2.5.8.187",
+  "name": "Vínculos de habilidades diretamente na aba Jutsus",
+  "notes": "Corrige acesso às escolhas da migração do suplemento e vincula jutsus comprados com confirmação do jogador, sem reaplicar efeitos nem cobrar pontos.",
   "date": "2026-11-03"
 }
