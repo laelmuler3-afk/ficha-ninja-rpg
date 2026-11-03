@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.187",
-  "name": "Vínculos de habilidades diretamente na aba Jutsus",
-  "notes": "Corrige acesso às escolhas da migração do suplemento e vincula jutsus comprados com confirmação do jogador, sem reaplicar efeitos nem cobrar pontos.",
+  "version": "2.5.8.188",
+  "name": "Aplicação segura de melhorias confirmadas em jutsus",
+  "notes": "Aplica ao utilizar/exibir jutsus apenas Ninjutsu Aprimorado ainda não aplicado; não duplica valores manuais nem transforma Ninjutsu Melhorado II em desconto permanente.",
   "date": "2026-11-03"
 }

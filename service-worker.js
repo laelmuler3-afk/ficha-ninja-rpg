@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.187 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.188 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.187";
+const APP_VERSION = "2.5.8.188";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -38,6 +38,7 @@ const APP_SHELL = [
   `./css/ataques-automaticos-185.css?v=${APP_VERSION}`,
   `./css/migracao-habilidades-186.css?v=${APP_VERSION}`,
   `./css/vinculos-jutsus-187.css?v=${APP_VERSION}`,
+  `./css/beneficios-jutsus-188.css?v=${APP_VERSION}`,
   `./css/tcg-jutsus.css?v=${APP_VERSION}`,
   `./assets/tcg/filigrana.svg?v=${APP_VERSION}`,
   `./assets/tcg/placa-nome.svg?v=${APP_VERSION}`,
@@ -80,6 +81,7 @@ const APP_SHELL = [
   `./js/17-migracao-habilidades-186.js?v=${APP_VERSION}`,
   `./js/17-migracao-habilidades-ui-186.js?v=${APP_VERSION}`,
   `./js/17-vinculos-jutsus-187.js?v=${APP_VERSION}`,
+  `./js/17-beneficios-jutsus-188.js?v=${APP_VERSION}`,
   `./js-legacy/17-integracao-ataques.js?v=${APP_VERSION}`,
   `./js-legacy/17-preparacao-ataques.js?v=${APP_VERSION}`,
   `./js-legacy/17-pontos-chave-engine.js?v=${APP_VERSION}`,
@@ -88,6 +90,7 @@ const APP_SHELL = [
   `./js-legacy/17-migracao-habilidades-186.js?v=${APP_VERSION}`,
   `./js-legacy/17-migracao-habilidades-ui-186.js?v=${APP_VERSION}`,
   `./js-legacy/17-vinculos-jutsus-187.js?v=${APP_VERSION}`,
+  `./js-legacy/17-beneficios-jutsus-188.js?v=${APP_VERSION}`,
   `./js-legacy/17-calculos-confirmados.js?v=${APP_VERSION}`,
   `./js/18-online-config.js?v=${APP_VERSION}`,
   `./js/19-character-identity.js?v=${APP_VERSION}`,
