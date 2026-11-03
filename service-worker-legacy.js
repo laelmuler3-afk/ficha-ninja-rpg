@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.185. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.186. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,10 +71,10 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.185 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.186 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.185";
+var APP_VERSION = "2.5.8.186";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);
@@ -108,6 +108,7 @@ var APP_SHELL = [
     "./css/ataques-compactos-183.css?v=".concat(APP_VERSION),
     "./css/pontos-chave-184.css?v=".concat(APP_VERSION),
     "./css/ataques-automaticos-185.css?v=".concat(APP_VERSION),
+    "./css/migracao-habilidades-186.css?v=".concat(APP_VERSION),
     "./css/tcg-jutsus.css?v=".concat(APP_VERSION),
     "./assets/tcg/filigrana.svg?v=".concat(APP_VERSION),
     "./assets/tcg/placa-nome.svg?v=".concat(APP_VERSION),
@@ -147,11 +148,15 @@ var APP_SHELL = [
     "./js/17-ataques-automaticos.js?v=".concat(APP_VERSION),
     "./js/17-integracao-ataques.js?v=".concat(APP_VERSION),
     "./js/17-pontos-chave-ui.js?v=".concat(APP_VERSION),
+    "./js/17-migracao-habilidades-186.js?v=".concat(APP_VERSION),
+    "./js/17-migracao-habilidades-ui-186.js?v=".concat(APP_VERSION),
     "./js-legacy/17-integracao-ataques.js?v=".concat(APP_VERSION),
     "./js-legacy/17-preparacao-ataques.js?v=".concat(APP_VERSION),
     "./js-legacy/17-pontos-chave-engine.js?v=".concat(APP_VERSION),
     "./js-legacy/17-ataques-automaticos.js?v=".concat(APP_VERSION),
     "./js-legacy/17-pontos-chave-ui.js?v=".concat(APP_VERSION),
+    "./js-legacy/17-migracao-habilidades-186.js?v=".concat(APP_VERSION),
+    "./js-legacy/17-migracao-habilidades-ui-186.js?v=".concat(APP_VERSION),
     "./js-legacy/17-calculos-confirmados.js?v=".concat(APP_VERSION),
     "./js/18-online-config.js?v=".concat(APP_VERSION),
     "./js/19-character-identity.js?v=".concat(APP_VERSION),

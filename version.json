@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.185",
-  "name": "Cálculo automático de ataques opcional",
-  "notes": "Ataques consultam proficiências e talentos comprados com pontos-chave; visualização automática ativada por ataque, sem alterar dados manuais ou bônus temporários.",
+  "version": "2.5.8.186",
+  "name": "Reconhecimento assistido das aquisições do suplemento",
+  "notes": "Conciliação de habilidades antigas por personagem, sem reaplicar efeitos ou descontar pontos, com confirmação de destino e situação manual.",
   "date": "2026-11-03"
 }
