@@ -68,7 +68,7 @@ test('integração anexa regras a details recolhível sem perder referência',()
  const integrado=fs.readFileSync(path.join(root,'js/17-integracao-ataques.js'),'utf8');
  assert.match(integrado,/elemento\("details","shinobiReferencia183"\)/);
  assert.match(integrado,/recolhivel\.appendChild\(bloco\)/);
- assert.match(integrado,/versao:"2\.5\.8\.184"/);
+ assert.match(integrado,/versao:"2\.5\.8\.185"/);
 });
 test('ataque desarmado funciona sem item e não altera inventário', async()=>{
  const i=core.indexOf('async function usarAtaqueInventario(i)');
@@ -93,7 +93,7 @@ test('ataque desarmado funciona sem item e não altera inventário', async()=>{
 test('CSS e cache offline carregados depois dos estilos antigos',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const sw=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
- assert.match(html,/ataques-compactos-183\.css\?v=2\.5\.8\.184/);
+ assert.match(html,/ataques-compactos-183\.css\?v=2\.5\.8\.185/);
  assert.ok(html.indexOf('css/jutsus.css')<html.indexOf('css/ataques-compactos-183.css'));
  assert.match(sw,/\.\/css\/ataques-compactos-183\.css\?v=/);
  assert.ok(fs.existsSync(path.join(root,'css/ataques-compactos-183.css')));
