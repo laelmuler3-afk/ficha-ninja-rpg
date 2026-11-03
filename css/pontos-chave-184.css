@@ -1,0 +1,34 @@
+/* Shinobi 2.5.8.184 — Pontos-Chave dentro da área de evolução do personagem. */
+#identidade .shinobiPontos184{margin:12px 0 16px;border:1px solid rgba(112,176,189,.28);border-radius:12px;background:linear-gradient(160deg,rgba(10,28,34,.94),rgba(5,16,22,.96));color:#e5f3f5;overflow:hidden;}
+#identidade .shinobiPontos184>summary{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;}
+#identidade .shinobiPontos184>summary::-webkit-details-marker{display:none;}
+#identidade .shinobiPontos184>summary:before{content:'▸';color:#df925b;flex:none;}
+#identidade .shinobiPontos184[open]>summary:before{content:'▾';}
+#identidade .shinobiPontos184Titulo{display:flex;flex:1;flex-direction:column;gap:3px;font-size:14px;font-weight:800;}
+#identidade .shinobiPontos184Titulo small{font-size:10px;font-weight:500;color:#abc2c9;}
+#identidade .shinobiPontos184Tag{font-size:11px;font-weight:800;color:#f3c18c;border:1px solid rgba(206,140,78,.35);border-radius:6px;padding:5px 8px;white-space:nowrap;}
+#identidade .shinobiPontos184Corpo{padding:0 12px 15px;border-top:1px solid rgba(118,165,173,.18);}
+#identidade .shinobiPontos184Nota{font-size:11px;color:#bbd0d6;line-height:1.5;margin:10px 0;}
+#identidade .shinobiPontos184Saldos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0;}
+#identidade .shinobiPontos184Saldos>div{padding:11px;background:rgba(22,61,69,.45);border-radius:8px;border:1px solid rgba(104,161,172,.2);}
+#identidade .shinobiPontos184Saldos span{display:block;color:#b8ced6;font-size:10px;line-height:1.4;}
+#identidade .shinobiPontos184Saldos strong{display:block;color:#f6f8f9;font-size:22px;line-height:1.4;}
+#identidade .shinobiPontos184Secao{margin:10px 0;border:1px solid rgba(108,166,181,.25);border-radius:9px;overflow:hidden;}
+#identidade .shinobiPontos184Secao>summary{padding:12px;color:#deeff4;font-size:12px;font-weight:800;cursor:pointer;}
+#identidade .shinobiPontos184Secao>summary~*{margin:10px;}
+#identidade .shinobiPontos184Campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+#identidade .shinobiPontos184Campos label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:#c4d7de;min-width:0;}
+#identidade .shinobiPontos184Campos label.shinobiPontos184Largo,#identidade .shinobiPontos184Campos label.shinobiPontos184Check{grid-column:1/-1;}
+#identidade .shinobiPontos184Campos input:not([type="checkbox"]),#identidade .shinobiPontos184Campos select{box-sizing:border-box;width:100%;min-height:39px;padding:7px;border:1px solid rgba(118,163,171,.4);border-radius:7px;background:#07161b;color:#eef5f7;font-size:12px;}
+#identidade .shinobiPontos184Campos label.shinobiPontos184Check{flex-direction:row;gap:9px;align-items:flex-start;font-weight:500;line-height:1.5;}
+#identidade .shinobiPontos184Check input{min-width:17px;min-height:17px;}
+#identidade .shinobiPontos184AcaoCampo{display:flex;align-items:end;}
+#identidade .shinobiPontos184Principal,#identidade .shinobiPontos184Secundario{display:block;width:calc(100% - 20px);min-height:39px;margin:9px 10px;padding:8px;border:1px solid rgba(118,168,176,.4);border-radius:8px;background:#193f48;color:#eaf5f6;font-size:12px;font-weight:800;cursor:pointer;}
+#identidade .shinobiPontos184Principal{background:linear-gradient(150deg,#945123,#64341b);border-color:#bd7946;}
+#identidade .shinobiPontos184AcaoCampo .shinobiPontos184Secundario{width:100%;margin:0;}
+#identidade .shinobiPontos184Linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(104,161,172,.2);align-items:center;}
+#identidade .shinobiPontos184Linha div{min-width:0;overflow-wrap:anywhere;}
+#identidade .shinobiPontos184Linha strong{font-size:12px;display:block;}
+#identidade .shinobiPontos184Linha small{display:block;color:#acc6cc;font-size:10px;line-height:1.5;}
+#identidade .shinobiPontos184Linha button{border:1px solid rgba(205,140,110,.4);background:rgba(108,46,34,.35);border-radius:7px;padding:7px 8px;color:#ffd7ce;font-size:11px;cursor:pointer;}
+@media(max-width:360px){#identidade .shinobiPontos184Campos{grid-template-columns:1fr;}}
