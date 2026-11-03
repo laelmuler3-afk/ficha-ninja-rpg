@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/01-core.js — app 2.5.8.173. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/01-core.js — app 2.5.8.183. Não editar. */
 /* Shinobi 1.3.0 — arquivo modular gerado preservando a ordem do app original. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -1117,18 +1117,40 @@ function editarCampoArmadoPrompt(i, campo, rotulo) { var a = (estado.armados || 
 function valorArmado(a, campo, padrao) {
     if (padrao === void 0) { padrao = "—"; }
     return (a && void 0 !== a[campo] ? String(a[campo]).trim() : "") || padrao;
+} /* 2.5.8.183: abertura de ataques é apenas estado visual desta sessão.
+ * Não alterar a ficha nem sincronizar preferências temporárias de exibição. */
+var shinobiAtaquesAbertos183 = Object.create(null);
+function ataqueAberto(i) { return !!shinobiAtaquesAbertos183[i]; }
+function alternarAtaqueAberto(i) {
+    shinobiAtaquesAbertos183[i] = !shinobiAtaquesAbertos183[i];
+    renderizarArmados();
+    var botao = document.querySelector('#listaArmados [data-ataque-index="' + i + '"] .ataqueLinhaResumo');
+    if (botao && typeof botao.focus === 'function')
+        botao.focus({ preventScroll: true });
 }
-function ataqueAberto(i) { return estado.ataquesAbertos = estado.ataquesAbertos || {}, !!estado.ataquesAbertos[i]; }
-function alternarAtaqueAberto(i) { estado.ataquesAbertos = estado.ataquesAbertos || {}, estado.ataquesAbertos[i] = !estado.ataquesAbertos[i], persistirEstadoLocal({ emitir: false, confirmada: true, origem: "ui", motivo: "ataque-aberto" }), renderizarArmados(); }
 function renderizarArmados() {
     var box = document.getElementById("listaArmados");
     if (!box)
         return;
     var html = [];
     (estado.armados || []).forEach(function (a, i) {
-        var aberto = ataqueAberto(i), tipo = a.tipo || "armado", classeTipo = "desarmado" === tipo ? "ataque-desarmado" : "ataque-armado", nome = escaparHtmlShinobi(valorArmado(a, "nome", "Novo ataque")), acerto = escaparHtmlShinobi(valorArmado(a, "bonusAcerto", valorArmado(a, "bonus", "—"))), dano = escaparHtmlShinobi(valorArmado(a, "dano", "—")), bonusDano = escaparHtmlShinobi(valorArmado(a, "bonusDano", "—")), totalDano = escaparHtmlShinobi(formatarDanoTotal(a.dano, a.bonusDano)), obs = escaparHtmlShinobi(valorArmado(a, "obs", "Toque para editar observações")), itemInventario = escaparHtmlShinobi(valorArmado(a, "itemInventario", "Nenhum")), quantidadeUso = escaparHtmlShinobi(valorArmado(a, "quantidadeUso", "1")), iconeResumo = visualIconeAtaque(a, "ataqueArmaImagemResumo"), iconeDetalhe = visualIconeAtaque(a, "ataqueArmaImagemDetalhe"), iconeItem = visualIconeItemAtaque(a), resumoTipo = escaparHtmlShinobi(labelTipoAtaque(tipo));
-        html.push("\n      <div class=\"armadoCardCompacto ataqueListaCard ".concat(classeTipo, " ").concat(aberto ? "ataqueAberto" : "", "\">\n        <button class=\"ataqueLinhaResumo\" onclick=\"alternarAtaqueAberto(").concat(i, ")\">\n          <span class=\"ataqueLinhaIcone\" onclick=\"event.stopPropagation(); escolherTipoAtaquePrompt(").concat(i, ")\">").concat(iconeResumo, "</span>\n\n          <span class=\"ataqueLinhaTexto\">\n            <strong>").concat(nome, "</strong>\n            <small>").concat(resumoTipo, "</small>\n          </span>\n\n          <span class=\"ataqueLinhaDano\">").concat(totalDano, "</span>\n          <span class=\"ataqueLinhaSeta\" aria-hidden=\"true\">").concat(aberto ? "▲" : "›", "</span>\n        </button>\n\n        <div class=\"ataqueDetalhesCompactos\">\n          <div class=\"armadoTopo\">\n            <button class=\"armadoIcone\" onclick=\"escolherTipoAtaquePrompt(").concat(i, ")\" aria-label=\"Editar tipo do ataque\">").concat(iconeDetalhe, "</button>\n\n            <div class=\"armadoNome\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'nome','Nome do ataque')\">\n              <h3>").concat(nome, "</h3>\n              <span onclick=\"event.stopPropagation(); escolherTipoAtaquePrompt(").concat(i, ")\">").concat(resumoTipo, "</span>\n            </div>\n          </div>\n\n          <div class=\"armadoResumoEditavel\">\n            <button onclick=\"editarCampoArmadoPrompt(").concat(i, ",'bonusAcerto','B\u00F4nus de acerto')\"><b>Acerto</b>").concat(acerto, "</button>\n            <button onclick=\"editarCampoArmadoPrompt(").concat(i, ",'dano','Dano')\"><b>Dano</b>").concat(dano, "</button>\n            <button class=\"danoTotalBox\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>Dano total</b>").concat(totalDano, "</button>\n            <button onclick=\"editarCampoArmadoPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>B\u00F4nus dano</b>").concat(bonusDano, "</button>\n            <button class=\"armadoResumoFull\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'obs','Outros b\u00F4nus / observa\u00E7\u00F5es')\"><b>Observa\u00E7\u00F5es</b>").concat(obs, "</button>\n            <button onclick=\"vincularItemAtaque(").concat(i, ")\"><b>Item usado</b><span class=\"ataqueItemUsado\">").concat(iconeItem, "<span>").concat(itemInventario, "</span></span></button>\n            <button onclick=\"editarQtdUsoAtaque(").concat(i, ")\"><b>Qtd. por uso</b>").concat(quantidadeUso, "</button>\n          </div>\n\n          <div class=\"armadoAcoesCompactas ataqueAcoesUso\">\n            <button class=\"btn btnUsarAtaqueInventario\" onclick=\"usarAtaqueInventario(").concat(i, ")\">Usar ataque</button>\n            <button class=\"btn perigo\" onclick=\"removerArmado(").concat(i, ")\">Remover</button>\n          </div>\n        </div>\n      </div>\n    "));
-    }), box.innerHTML = html.join("");
+        var aberto = ataqueAberto(i), tipo = a.tipo || "armado";
+        var classeTipo = "desarmado" === tipo ? "ataque-desarmado" : "ataque-armado";
+        var nome = escaparHtmlShinobi(valorArmado(a, "nome", "Novo ataque"));
+        var acerto = escaparHtmlShinobi(valorArmado(a, "bonusAcerto", valorArmado(a, "bonus", "—")));
+        var dano = escaparHtmlShinobi(valorArmado(a, "dano", "—"));
+        var bonusDano = escaparHtmlShinobi(valorArmado(a, "bonusDano", "—"));
+        var totalDano = escaparHtmlShinobi(formatarDanoTotal(a.dano, a.bonusDano));
+        var obs = escaparHtmlShinobi(valorArmado(a, "obs", "Toque para editar observações"));
+        var itemInventario = escaparHtmlShinobi(valorArmado(a, "itemInventario", "Nenhum"));
+        var quantidadeUso = escaparHtmlShinobi(valorArmado(a, "quantidadeUso", "1"));
+        var iconeResumo = visualIconeAtaque(a, "ataqueArmaImagemResumo");
+        var iconeDetalhe = visualIconeAtaque(a, "ataqueArmaImagemDetalhe");
+        var iconeItem = visualIconeItemAtaque(a);
+        var resumoTipo = escaparHtmlShinobi(labelTipoAtaque(tipo));
+        html.push("\n      <article class=\"armadoCardCompacto ataqueListaCard ataqueCard183 ".concat(classeTipo, " ").concat(aberto ? "ataqueAberto" : "", "\" data-ataque-index=\"").concat(i, "\">\n        <div class=\"ataqueTopo183\">\n          <button type=\"button\" class=\"ataqueLinhaResumo\" onclick=\"alternarAtaqueAberto(").concat(i, ")\" aria-expanded=\"").concat(aberto, "\" aria-label=\"").concat(aberto ? 'Fechar' : 'Abrir', " detalhes de ").concat(nome, "\">\n            <span class=\"ataqueLinhaIcone\">").concat(iconeResumo, "</span>\n            <span class=\"ataqueLinhaTexto\"><strong>").concat(nome, "</strong><small>").concat(resumoTipo, "</small></span>\n            <span class=\"ataqueLinhaSeta\" aria-hidden=\"true\">").concat(aberto ? '⌃' : '⌄', "</span>\n          </button>\n          <details class=\"ataqueOpcoes183\">\n            <summary aria-label=\"Op\u00E7\u00F5es de ").concat(nome, "\" title=\"Op\u00E7\u00F5es de gerenciamento\">\u22EF</summary>\n            <div class=\"ataqueOpcoesLista183\">\n              <button type=\"button\" onclick=\"alternarAtaqueAberto(").concat(i, ")\">").concat(aberto ? 'Fechar detalhes' : 'Ver detalhes e editar', "</button>\n              <button type=\"button\" class=\"ataqueExcluir183\" onclick=\"removerArmado(").concat(i, ")\">Remover ataque</button>\n            </div>\n          </details>\n        </div>\n        <div class=\"ataqueBatalha183\">\n          <div class=\"ataqueValor183\"><span>Acerto</span><strong>").concat(acerto, "</strong></div>\n          <div class=\"ataqueValor183\"><span>Dano total</span><strong>").concat(totalDano, "</strong></div>\n          <button type=\"button\" class=\"btn btnUsarAtaqueInventario ataqueUsar183\" onclick=\"usarAtaqueInventario(").concat(i, ")\">Usar ataque</button>\n        </div>\n        <div class=\"ataqueDetalhesCompactos\">\n          <details class=\"ataqueEdicao183\">\n            <summary>Editar os dados do ataque</summary>\n            <div class=\"armadoTopo\">\n              <button type=\"button\" class=\"armadoIcone\" onclick=\"escolherTipoAtaquePrompt(").concat(i, ")\" aria-label=\"Editar tipo do ataque\">").concat(iconeDetalhe, "</button>\n              <div class=\"armadoNome\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'nome','Nome do ataque')\">\n                <h3>").concat(nome, "</h3><span>").concat(resumoTipo, "</span>\n              </div>\n            </div>\n            <div class=\"armadoResumoEditavel\">\n              <button type=\"button\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'bonusAcerto','B\u00F4nus de acerto')\"><b>Acerto</b>").concat(acerto, "</button>\n              <button type=\"button\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'dano','Dano')\"><b>Dano base</b>").concat(dano, "</button>\n              <button type=\"button\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'bonusDano','B\u00F4nus de dano')\"><b>B\u00F4nus dano</b>").concat(bonusDano, "</button>\n              <button type=\"button\" class=\"armadoResumoFull\" onclick=\"editarCampoArmadoPrompt(").concat(i, ",'obs','Outros b\u00F4nus / observa\u00E7\u00F5es')\"><b>Observa\u00E7\u00F5es</b>").concat(obs, "</button>\n              <button type=\"button\" onclick=\"vincularItemAtaque(").concat(i, ")\"><b>Item usado</b><span class=\"ataqueItemUsado\">").concat(iconeItem, "<span>").concat(itemInventario, "</span></span></button>\n              <button type=\"button\" onclick=\"editarQtdUsoAtaque(").concat(i, ")\"><b>Qtd. por uso</b>").concat(quantidadeUso, "</button>\n            </div>\n          </details>\n        </div>\n      </article>\n    "));
+    });
+    box.innerHTML = html.join("");
 }
 function numeroSeguro(valor) { var n = Number(valor); return Number.isFinite(n) ? n : 0; }
 function limitarPorcentagem(valor) { return Math.max(0, Math.min(100, valor)); }
@@ -1328,7 +1350,7 @@ function editarQtdUsoAtaque(i) { estado.armados = estado.armados || []; var ataq
     return; var atual = ataque.quantidadeUso || "1", nova = prompt("Quantos itens esse ataque consome por uso?", atual); null !== nova && (nova = parseInt(nova || "1"), (isNaN(nova) || nova < 1) && (nova = 1), ataque.quantidadeUso = String(nova), persistirSemRender({ confirmada: true, origem: "armados", campo: "armados", motivo: "alteracao-confirmada" }), renderizarArmados()); }
 function usarAtaqueInventario(i) {
     return __awaiter(this, void 0, void 0, function () {
-        var ataque, nomeAtaque, itemVinculado, qtdUso, idxItem, item, qtdAtual, ok;
+        var ataque, nomeAtaque, ok_1, itemVinculado, qtdUso, idxItem, item, qtdAtual, ok;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1338,30 +1360,45 @@ function usarAtaqueInventario(i) {
                     if (!ataque)
                         return [2 /*return*/];
                     nomeAtaque = ataque.nome || "Ataque";
-                    itemVinculado = String(ataque.itemInventario || "").trim();
-                    if (!!itemVinculado) return [3 /*break*/, 2];
-                    return [4 /*yield*/, avisoShinobi("Item não vinculado", 'Antes de usar, toque em "Item usado" e vincule esse ataque a um item do inventário.')];
+                    if (!(String(ataque.tipo || "").toLowerCase() === "desarmado")) return [3 /*break*/, 5];
+                    return [4 /*yield*/, confirmarUsoAcao("ataque", nomeAtaque, "Ataque desarmado: nenhum item será consumido.")];
                 case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-                case 2:
-                    qtdUso = Math.max(1, parseInt(ataque.quantidadeUso || "1"));
-                    idxItem = buscarItemInventarioPorNome(itemVinculado);
-                    if (!(idxItem < 0)) return [3 /*break*/, 4];
-                    return [4 /*yield*/, avisoShinobi("Item não encontrado", "N\u00E3o encontrei \"".concat(itemVinculado, "\" no invent\u00E1rio.\\nAdicione esse item no Invent\u00E1rio ou ajuste o nome em \"Item usado\"."))];
+                    ok_1 = _a.sent();
+                    if (!ok_1)
+                        return [2 /*return*/];
+                    if (!(typeof registrarLog === "function")) return [3 /*break*/, 2];
+                    registrarLog("".concat(nomeAtaque, " usado (ataque desarmado)."));
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, avisoShinobi("Ataque usado", "".concat(nomeAtaque, " usado sem consumir itens."))];
                 case 3:
                     _a.sent();
-                    return [2 /*return*/];
-                case 4:
-                    item = estado.inventarioItens[idxItem];
-                    qtdAtual = parseInt(item.quantidade || 0);
-                    if (!(qtdAtual < qtdUso)) return [3 /*break*/, 6];
-                    return [4 /*yield*/, avisoShinobi("Quantidade insuficiente", "Voc\u00EA tem: ".concat(qtdAtual, "\\nPrecisa: ").concat(qtdUso))];
+                    _a.label = 4;
+                case 4: return [2 /*return*/];
                 case 5:
+                    itemVinculado = String(ataque.itemInventario || "").trim();
+                    if (!!itemVinculado) return [3 /*break*/, 7];
+                    return [4 /*yield*/, avisoShinobi("Item não vinculado", 'Antes de usar, toque em "Item usado" e vincule esse ataque a um item do inventário.')];
+                case 6:
                     _a.sent();
                     return [2 /*return*/];
-                case 6: return [4 /*yield*/, confirmarUsoAcao("ataque", nomeAtaque, "Item consumido: ".concat(item.nome, "\\nQuantidade: ").concat(qtdUso, "\\nRestar\u00E1: ").concat(qtdAtual - qtdUso))];
                 case 7:
+                    qtdUso = Math.max(1, parseInt(ataque.quantidadeUso || "1"));
+                    idxItem = buscarItemInventarioPorNome(itemVinculado);
+                    if (!(idxItem < 0)) return [3 /*break*/, 9];
+                    return [4 /*yield*/, avisoShinobi("Item não encontrado", "N\u00E3o encontrei \"".concat(itemVinculado, "\" no invent\u00E1rio.\\nAdicione esse item no Invent\u00E1rio ou ajuste o nome em \"Item usado\"."))];
+                case 8:
+                    _a.sent();
+                    return [2 /*return*/];
+                case 9:
+                    item = estado.inventarioItens[idxItem];
+                    qtdAtual = parseInt(item.quantidade || 0);
+                    if (!(qtdAtual < qtdUso)) return [3 /*break*/, 11];
+                    return [4 /*yield*/, avisoShinobi("Quantidade insuficiente", "Voc\u00EA tem: ".concat(qtdAtual, "\\nPrecisa: ").concat(qtdUso))];
+                case 10:
+                    _a.sent();
+                    return [2 /*return*/];
+                case 11: return [4 /*yield*/, confirmarUsoAcao("ataque", nomeAtaque, "Item consumido: ".concat(item.nome, "\\nQuantidade: ").concat(qtdUso, "\\nRestar\u00E1: ").concat(qtdAtual - qtdUso))];
+                case 12:
                     ok = _a.sent();
                     if (!ok)
                         return [2 /*return*/];

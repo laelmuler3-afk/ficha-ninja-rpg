@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.182",
+  "version": "2.5.8.183",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -16,8 +16,8 @@
       "outputSha256": "9c1ada53769c80bf5a59b6aeb4b3861fe95c25162322c7a4ed93146fe2944ab3"
     },
     "js/01-core.js": {
-      "sourceSha256": "c1d7eb160fea72d5d154b54ad033d170a7b66dfd36095043081819be97456694",
-      "outputSha256": "e564f26920447771ea166472be75ab50694ebd015d767693482be0df458ade9b"
+      "sourceSha256": "88eb8e5c1bbe87ab4800930de55255bc36bfa4931624fd3e490d332f339e7a3a",
+      "outputSha256": "2f956690d938d3e8d684d74161a325cbaf842c8f5791ffea76affcd9a9f963d3"
     },
     "js/01-sheet-manager.js": {
       "sourceSha256": "e0967d2ce85e7031719eeb12ba70c7c39b1ad1ff761b1dc9bc10a5168ccdba4b",
@@ -108,8 +108,8 @@
       "outputSha256": "a60d3c8ef5f47beff369fd6544256c88dde8d9241147558ce39a3e410bc19e9c"
     },
     "js/17-integracao-ataques.js": {
-      "sourceSha256": "9de4263399ab08566414f2a46c4a378b8e8c35c9f08867db3d4667d38460b490",
-      "outputSha256": "d9076c9aa5fa6ceb6695376318343ad03d85f6a0f342ca19eb55b442a0c924c4"
+      "sourceSha256": "00ea8f732ab5f7c340cb891bbb1fee80f8455c8792f22807765ce199121eb7e3",
+      "outputSha256": "29ae1a8834fb6a589b1c21a45a8bc6fe81084b6f3ce95d69ef96e75b2757844d"
     },
     "js/17-preparacao-ataques.js": {
       "sourceSha256": "57ee13d8a15470f7e35d27782c58fe341b6b538af019d68c06fe6b52b9890811",
@@ -172,8 +172,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "540977cdba3b63aeed33c91e5cd1546f8d3a9129c40a879fe87a5d261f542cbf",
-      "outputSha256": "2749723b17b64ac477348ecc6776c85c86987516adacf173f7a26a43f3d4a1c4"
+      "sourceSha256": "5273f0c485e2682e2f9c027279293e88ca9d4c65763b76f5667253611600523b",
+      "outputSha256": "6d9725d9e8bf3928acb84155f1897cfd74e0cd61de036ad73363f8d4ccf513c1"
     }
   }
 }

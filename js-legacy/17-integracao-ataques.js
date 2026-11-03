@@ -1,5 +1,5 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-integracao-ataques.js — app 2.5.8.182. Não editar. */
-/* Projetinho Shinobi — 2.5.8.182.
+/* GERADO AUTOMATICAMENTE — fonte: js/17-integracao-ataques.js — app 2.5.8.183. Não editar. */
+/* Projetinho Shinobi — 2.5.8.183.
  * Integração preparatória: catálogo ↔ inventário ↔ ataques ↔ origem de proficiências.
  * Nenhum cálculo de acerto/dano, débito de pontos ou bônus é aplicado.
  * Os lançamentos são registros históricos provisórios até a decisão do mestre.
@@ -127,9 +127,12 @@
                 var destino = card.querySelector(".ataqueDetalhesCompactos");
                 if (!destino)
                     return;
+                var recolhivel = elemento("details", "shinobiReferencia183");
+                recolhivel.appendChild(elemento("summary", "shinobiReferenciaTitulo183", "Regras, proficiência e prévia automática"));
                 bloco = elemento("section", "shinobiAtaqueMetadados");
                 bloco.setAttribute("aria-label", "Referência de regras do ataque");
-                destino.appendChild(bloco);
+                recolhivel.appendChild(bloco);
+                destino.appendChild(recolhivel);
             }
             var rel = relatorioAtaque(ataque);
             bloco.textContent = "";
@@ -361,7 +364,7 @@
         }
     }
     root.ShinobiIntegracaoAtaques = Object.freeze({
-        versao: "2.5.8.182",
+        versao: "2.5.8.183",
         relatorioAtaque: relatorioAtaque,
         atualizarVisual: function () { criarPainel(); atualizarPainel(); atualizarCards(); }
     });
