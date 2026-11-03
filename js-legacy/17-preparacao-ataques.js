@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-preparacao-ataques.js — app 2.5.8.180. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-preparacao-ataques.js — app 2.5.8.182. Não editar. */
 /* Projetinho Shinobi — preparação não destrutiva da futura automação de ataques.
  * Fonte das propriedades: DOC-20261102-WA0002.pdf, pp. 1-3 e 7.
  * Este módulo é SOMENTE LEITURA: nenhuma fórmula provisória é aplicada à ficha,
@@ -35,10 +35,10 @@
         { id: "lanca", nome: "Lança", grupo: "corpo-a-corpo", dano: "1d8", tipoDano: "perfurante", propriedades: ["duas maos", "alcance"] },
         { id: "chicote", nome: "Chicote", grupo: "corpo-a-corpo", dano: "1d8", tipoDano: "cortante", propriedades: ["leve", "alcance"] },
         { id: "tanto", nome: "Tanto", grupo: "corpo-a-corpo", dano: "1d6", tipoDano: "cortante", propriedades: ["leve", "arremesso"], alcance: [18, 27] },
-        { id: "wakizaki", nome: "Wakizaki (Wakizashi)", grupo: "corpo-a-corpo", dano: "1d8", tipoDano: "cortante", propriedades: ["versatil"], observacao: "A ficha-exemplo da p. 52 mostra 1d8/1d10. Uso de Destreza e dado versátil dependem de confirmação." },
+        { id: "wakizaki", nome: "Wakizaki (Wakizashi)", grupo: "corpo-a-corpo", dano: "1d8", tipoDano: "cortante", propriedades: ["versatil"], observacao: "A ficha-exemplo da p. 52 mostra 1d8/1d10. Confirmado pelo mestre: utiliza Destreza; duas mãos alteram o dado para 1d10." },
         { id: "katana", nome: "Katana", grupo: "corpo-a-corpo", dano: "1d12", tipoDano: "cortante", propriedades: ["duas maos", "pesada"] },
-        { id: "corrente", nome: "Corrente", grupo: "corpo-a-corpo", dano: "Modificador de Força x3", tipoDano: null, propriedades: ["pesada", "duas maos"], observacao: "Fórmula especial; confirmar se substitui o dano ou soma outro modificador." },
-        { id: "nunchaku", nome: "Nunchaku", grupo: "corpo-a-corpo", dano: "Modificador de Destreza x2", tipoDano: null, propriedades: ["leve", "duas maos"], observacao: "Fórmula especial; confirmar se substitui o dano ou soma outro modificador." }
+        { id: "corrente", nome: "Corrente", grupo: "corpo-a-corpo", dano: "Modificador de Força x3", tipoDano: null, propriedades: ["pesada", "duas maos"], observacao: "Confirmado pelo mestre: dano fixo pelo multiplicador; não soma o atributo novamente." },
+        { id: "nunchaku", nome: "Nunchaku", grupo: "corpo-a-corpo", dano: "Modificador de Destreza x2", tipoDano: null, propriedades: ["leve", "duas maos"], observacao: "Confirmado pelo mestre: dano fixo pelo multiplicador; não soma o atributo novamente." }
     ];
     /* Catálogo informativo; nenhum efeito é ativado por adquirir uma entrada. */
     var HABILIDADES = [
@@ -93,7 +93,7 @@
         if (!item || typeof item !== "object")
             return null;
         if (normalizar(item.tipo) === "desarmado")
-            return { id: "desarmado", nome: "Ataque desarmado", grupo: "desarmado", dano: null, origem: "Dado-base pendente do mestre" };
+            return { id: "desarmado", nome: "Ataque desarmado", grupo: "desarmado", dano: null, origem: "Dano-base depende do clã; ver prévia confirmada do mestre" };
         return obterArma(item.itemInventario) || obterArma(item.nome) || null;
     }
     function catalogoArmas() { return copiar(ARMAS); }
@@ -140,15 +140,15 @@
     }
     function resumirAtaque(ataque, indice) {
         var catalogado = identificarAtaque(ataque);
-        var avisos = ["Atributo do acerto, modificador de dano e proficiências ainda não foram aprovados pelo mestre."];
+        var avisos = ["Cálculos disponíveis na prévia apenas quando os atributos e condições forem conhecidos."];
         if (!catalogado)
             avisos.push("Ataque personalizado ou nome de arma não identificado no catálogo.");
         if (catalogado && catalogado.id === "agulha")
-            avisos.push("Agulha está marcada como Especial; ficha-exemplo usa uma compra comum de proficiência.");
+            avisos.push("Agulha é Especial; proficiência antiga é preservada até migração para o sistema novo.");
         if (catalogado && catalogado.id === "wakizaki")
-            avisos.push("Wakizashi: acuidade/Destreza e dano versátil de 1d10 dependem de confirmação.");
+            avisos.push("Wakizashi: Destreza para acerto e dano, 1d10 ao empunhar com duas mãos.");
         if (catalogado && (catalogado.id === "corrente" || catalogado.id === "nunchaku"))
-            avisos.push("Dano baseado em multiplicador de atributo necessita confirmação.");
+            avisos.push("Dano por multiplicador fixo, sem somar modificador novamente.");
         return {
             indice: indice, ataqueId: String(ataque && ataque.ataqueId || ""),
             nome: String(ataque && ataque.nome || ""), tipo: String(ataque && ataque.tipo || "armado"),
