@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.188",
-  "name": "Aplicação segura de melhorias confirmadas em jutsus",
-  "notes": "Aplica ao utilizar/exibir jutsus apenas Ninjutsu Aprimorado ainda não aplicado; não duplica valores manuais nem transforma Ninjutsu Melhorado II em desconto permanente.",
+  "version": "2.5.8.189",
+  "name": "Correção do reconhecimento de personagens no suplemento",
+  "notes": "Aceita Nome e Clã separados no Perfil, preservando o vínculo exato com o suplemento; não cobra compras nem reaplica bônus.",
   "date": "2026-11-03"
 }
