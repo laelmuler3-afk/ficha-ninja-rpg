@@ -88,6 +88,7 @@
       var titulo="",valor="",estornado=!!anulados[e.id];
       if(e.tipo==="compra"){titulo=e.nome||e.habilidadeId;valor="−"+e.custo+" pontos-chave";}
       else if(e.tipo==="historico"){titulo="Histórico: "+(e.nome||e.habilidadeId);valor="Sem débito";}
+      else if(e.tipo==="vinculo-habilidade"){titulo="Vínculo do suplemento: "+(e.nome||e.habilidadeId);valor="Sem débito · "+(e.escolhas&&e.escolhas.alvoNome||"benefício confirmado");}
       else if(e.tipo==="conversao"){titulo="Conversão de clã";valor="−"+e.quantidade+" de clã, +"+(2*e.quantidade)+" chave";}
       else if(e.tipo==="ajuste-nivel"){titulo="Crédito definido no nível "+e.nivel;valor=e.quantidade+" pontos de "+(e.bolsa==="cla"?"clã":"chave");}
       else if(e.tipo==="credito-extra"){titulo="Crédito extra";valor="+"+e.quantidade+" de "+(e.bolsa==="cla"?"clã":"chave");}

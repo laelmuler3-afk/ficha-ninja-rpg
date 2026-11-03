@@ -84,6 +84,16 @@
     reg.eventos.forEach(function(e){if(ativa(e,cancelados)&&(e.tipo==="compra"||e.tipo==="historico"))compras.push(e);});
     var antigo=ficha&&ficha.automacaoAtaques&&ficha.automacaoAtaques.aquisicoes;
     (Array.isArray(antigo)?antigo:[]).forEach(function(e){if(e&&e.habilidadeId)compras.push({id:String(e.id||"antigo-"+compras.length),habilidadeId:e.habilidadeId,tipo:"historico-antigo",nome:e.habilidadeId,origem:"registro anterior",nivel:e.nivelAquisicao,escolhas:e.escolhas||{}});});
+    // O vínculo traz a escolha e o estado de uma compra já existente, mas não
+    // representa outra compra. É append-only para sincronização e histórico.
+    reg.eventos.forEach(function(v){
+      if(!ativa(v,cancelados)||v.tipo!=="vinculo-habilidade")return;
+      var alvo=compras.find(function(c){return String(c.id)===String(v.alvoId);});
+      if(!alvo)return;
+      alvo.escolhas=Object.assign({},alvo.escolhas||{},v.escolhas||{});
+      alvo.origemSuplementoId=v.origemSuplementoId;
+      alvo.paginaSuplemento=v.paginaSuplemento;
+    });
     return compras;
   }
   function resumo(ficha,reg){
@@ -171,7 +181,7 @@
       e.bolsa="chave";e.custo=info.custo;e.nome=info.habilidade.nome;e.nivel=info.nivel;e.escolhas=info.escolhas;
     }else if(e.tipo==="historico"){
       var hab=POR_ID[e.habilidadeId];if(!hab)throw new Error("Habilidade não cadastrada.");
-      if(temHabilidade(ficha,clone,hab.id))throw new Error("Esta habilidade já consta do histórico. Não duplicamos a aquisição antiga.");
+      if(!hab.repetivel&&temHabilidade(ficha,clone,hab.id))throw new Error("Esta habilidade já consta do histórico. Não duplicamos a aquisição antiga.");
       e.nome=hab.nome;e.nivel=inteiro(e.nivel,nivelDaFicha(ficha));
       if(!nivelValido(e.nivel)||e.nivel>nivelDaFicha(ficha))throw new Error("Nível histórico inválido.");
       e.custo=0;e.bolsa="historico";
