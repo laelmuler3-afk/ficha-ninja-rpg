@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.182",
-  "name": "Prévia de ataques com regras confirmadas pelo mestre",
-  "notes": "Calcula prévias não destrutivas de acerto, dano e crítico para ataques com regras confirmadas; preserva campos manuais, compras e saldo.",
-  "date": "2026-11-02"
+  "version": "2.5.8.183",
+  "name": "Interface compacta de Ataques",
+  "notes": "Resumo de acerto/dano e ação principal sempre visíveis; edição e prévias recolhidas; ataques desarmados dispensam inventário.",
+  "date": "2026-11-03"
 }

@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.182. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.183. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,10 +71,10 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.182 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.183 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.182";
+var APP_VERSION = "2.5.8.183";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);
@@ -105,6 +105,7 @@ var APP_SHELL = [
     "./css/combate.css?v=".concat(APP_VERSION),
     "./css/jutsus.css?v=".concat(APP_VERSION),
     "./css/preparacao-ataques.css?v=".concat(APP_VERSION),
+    "./css/ataques-compactos-183.css?v=".concat(APP_VERSION),
     "./css/tcg-jutsus.css?v=".concat(APP_VERSION),
     "./assets/tcg/filigrana.svg?v=".concat(APP_VERSION),
     "./assets/tcg/placa-nome.svg?v=".concat(APP_VERSION),
