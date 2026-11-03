@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/21-online-hooks.js — app 2.5.8.173. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/21-online-hooks.js — app 2.5.8.183. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -84,7 +84,8 @@ var __values = (this && this.__values) || function(o) {
         "pvMax", "chakraMax", "forca", "destreza", "constituicao", "inteligencia", "sabedoria", "carisma",
         "ca", "cd", "bonusCA", "iniciativa", "velocidade",
         "jutsus", "armados", "inventarioItens", "notasTopicos", "carteira", "carteiraHistorico", "kekkeiGenkai",
-        "resistenciasEscolhidas", "progressaoFixa", "atributoConjuracaoNatureza"
+        "resistenciasEscolhidas", "progressaoFixa", "atributoConjuracaoNatureza",
+        "automacaoAtaques", "pontosChaveV1"
     ]);
     var aplicandoRodada = false;
     var sincronizandoPendentes = false;

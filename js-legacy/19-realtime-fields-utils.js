@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/19-realtime-fields-utils.js — app 2.5.8.183. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -213,7 +214,29 @@ var __values = (this && this.__values) || function(o) {
         }
         return copia;
     }
+    // O livro-caixa é append-only. Ao receber uma versão remota, preservamos
+    // eventos locais com IDs distintos (compras, créditos, conversões e estornos).
+    // Isso evita que um snapshot desatualizado apague uma operação já registrada.
+    function mesclarLivroCaixa(remoto, local) {
+        var r = remoto && typeof remoto === "object" && !Array.isArray(remoto) ? remoto : {};
+        var l = local && typeof local === "object" && !Array.isArray(local) ? local : {};
+        var porId = new Map();
+        [l, r].forEach(function (registro) { return (Array.isArray(registro.eventos) ? registro.eventos : []).forEach(function (evento) {
+            if (!evento || typeof evento !== "object")
+                return;
+            var id = String(evento.id || "").trim();
+            if (!id)
+                return;
+            // Para o mesmo ID, o registro recebido do servidor tem precedência.
+            porId.set(id, clonar(evento));
+        }); });
+        return { versao: 1, eventos: __spreadArray([], __read(porId.values()), false).sort(function (a, b) {
+                return String(a.criadoEm || "").localeCompare(String(b.criadoEm || "")) || String(a.id).localeCompare(String(b.id));
+            }) };
+    }
     function mesclarValorRemoto(nome, remoto, local) {
+        if (nome === "pontosChaveV1")
+            return mesclarLivroCaixa(remoto, local);
         var copia = clonar(remoto);
         if (nome === "jutsus" && Array.isArray(copia))
             return mesclarJutsusRemotos(copia, local);
