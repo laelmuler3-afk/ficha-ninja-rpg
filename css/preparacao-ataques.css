@@ -26,3 +26,12 @@
 #jutsus .shinobiPrepRegistro button{display:block;flex:none;width:32px;height:32px;border-radius:7px;border:1px solid rgba(225,132,130,.3);background:rgba(93,29,29,.23);color:#ffd1ce;font-size:20px;cursor:pointer;}
 #jutsus .shinobiPrepVazio,#jutsus .shinobiPrepFixo{font-size:11px;color:#a8c3c9;margin:8px 0;}
 @media(max-width:370px){#jutsus .shinobiPrepCampos{grid-template-columns:1fr;}#jutsus .shinobiPrepPainel>summary{font-size:12px;}}
+
+/* 2.5.8.182: leitura dos cálculos confirmados, sem sobrescrever os valores manuais. */
+#jutsus .shinobiPreviaBloco{margin:10px 0 4px;padding:9px 10px;border-radius:8px;background:rgba(37,88,99,.20);border:1px solid rgba(111,189,203,.23);}
+#jutsus .shinobiPreviaTitulo{display:block;color:#d2f4f6;font-size:11px;margin-bottom:6px;}
+#jutsus .shinobiPreviaFormula{font-size:12px;color:#e6f9f8;font-weight:650;line-height:1.6;margin:5px 0;overflow-wrap:anywhere;}
+#jutsus .shinobiPreviaNota{display:block;font-size:10px;line-height:1.4;color:#b9cdd1;margin-top:4px;}
+#jutsus .shinobiPreviaPendente{font-size:11px;color:#f4c799;margin:4px 0;}
+
+#jutsus .shinobiPrepNotaNatureza{margin:12px 0 4px;padding:9px 10px;border:1px solid rgba(87,153,162,.28);border-radius:8px;font-size:11px;line-height:1.5;color:#cfe4e5;background:rgba(32,81,84,.15);}
