@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-pontos-chave-ui.js — app 2.5.8.184. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-pontos-chave-ui.js — app 2.5.8.186. Não editar. */
 /* Shinobi 2.5.8.184 — área de Pontos-Chave no Perfil / Progressão.
  * Nenhum efeito de talento é aplicado diretamente à ficha nesta etapa.
  */
@@ -144,6 +144,10 @@
             else if (e.tipo === "historico") {
                 titulo = "Histórico: " + (e.nome || e.habilidadeId);
                 valor = "Sem débito";
+            }
+            else if (e.tipo === "vinculo-habilidade") {
+                titulo = "Vínculo do suplemento: " + (e.nome || e.habilidadeId);
+                valor = "Sem débito · " + (e.escolhas && e.escolhas.alvoNome || "benefício confirmado");
             }
             else if (e.tipo === "conversao") {
                 titulo = "Conversão de clã";

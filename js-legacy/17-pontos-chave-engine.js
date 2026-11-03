@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-pontos-chave-engine.js — app 2.5.8.184. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-pontos-chave-engine.js — app 2.5.8.186. Não editar. */
 /* Shinobi 2.5.8.184 — livro-caixa de Pontos-Chave / Pontos de Clã.
  * Funções puras, sem alterar atributos, ataques ou habilidades antigas.
  * Regras confirmadas pelo mestre em 02/11/2026; créditos por nível podem ser ajustados.
@@ -91,6 +91,18 @@
         var antigo = ficha && ficha.automacaoAtaques && ficha.automacaoAtaques.aquisicoes;
         (Array.isArray(antigo) ? antigo : []).forEach(function (e) { if (e && e.habilidadeId)
             compras.push({ id: String(e.id || "antigo-" + compras.length), habilidadeId: e.habilidadeId, tipo: "historico-antigo", nome: e.habilidadeId, origem: "registro anterior", nivel: e.nivelAquisicao, escolhas: e.escolhas || {} }); });
+        // O vínculo traz a escolha e o estado de uma compra já existente, mas não
+        // representa outra compra. É append-only para sincronização e histórico.
+        reg.eventos.forEach(function (v) {
+            if (!ativa(v, cancelados) || v.tipo !== "vinculo-habilidade")
+                return;
+            var alvo = compras.find(function (c) { return String(c.id) === String(v.alvoId); });
+            if (!alvo)
+                return;
+            alvo.escolhas = Object.assign({}, alvo.escolhas || {}, v.escolhas || {});
+            alvo.origemSuplementoId = v.origemSuplementoId;
+            alvo.paginaSuplemento = v.paginaSuplemento;
+        });
         return compras;
     }
     function resumo(ficha, reg) {
@@ -246,7 +258,7 @@
             var hab = POR_ID[e.habilidadeId];
             if (!hab)
                 throw new Error("Habilidade não cadastrada.");
-            if (temHabilidade(ficha, clone, hab.id))
+            if (!hab.repetivel && temHabilidade(ficha, clone, hab.id))
                 throw new Error("Esta habilidade já consta do histórico. Não duplicamos a aquisição antiga.");
             e.nome = hab.nome;
             e.nivel = inteiro(e.nivel, nivelDaFicha(ficha));
