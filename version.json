@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.183",
-  "name": "Interface compacta de Ataques",
-  "notes": "Resumo de acerto/dano e ação principal sempre visíveis; edição e prévias recolhidas; ataques desarmados dispensam inventário.",
+  "version": "2.5.8.184",
+  "name": "Livro-caixa de Pontos-Chave na progressão",
+  "notes": "Créditos por nível, compras com saldo, conversão de clã, ajustes e estornos registrados; habilidades antigas preservadas sem débito e sem aplicar efeitos automaticamente.",
   "date": "2026-11-03"
 }
