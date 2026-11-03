@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.184",
-  "name": "Livro-caixa de Pontos-Chave na progressão",
-  "notes": "Créditos por nível, compras com saldo, conversão de clã, ajustes e estornos registrados; habilidades antigas preservadas sem débito e sem aplicar efeitos automaticamente.",
+  "version": "2.5.8.185",
+  "name": "Cálculo automático de ataques opcional",
+  "notes": "Ataques consultam proficiências e talentos comprados com pontos-chave; visualização automática ativada por ataque, sem alterar dados manuais ou bônus temporários.",
   "date": "2026-11-03"
 }
