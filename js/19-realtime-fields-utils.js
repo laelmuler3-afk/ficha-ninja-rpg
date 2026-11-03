@@ -145,7 +145,26 @@
     return copia;
   }
 
+  // O livro-caixa é append-only. Ao receber uma versão remota, preservamos
+  // eventos locais com IDs distintos (compras, créditos, conversões e estornos).
+  // Isso evita que um snapshot desatualizado apague uma operação já registrada.
+  function mesclarLivroCaixa(remoto,local){
+    const r=remoto&&typeof remoto==="object"&&!Array.isArray(remoto)?remoto:{};
+    const l=local&&typeof local==="object"&&!Array.isArray(local)?local:{};
+    const porId=new Map();
+    [l,r].forEach(registro=>(Array.isArray(registro.eventos)?registro.eventos:[]).forEach(evento=>{
+      if(!evento||typeof evento!=="object")return;
+      const id=String(evento.id||"").trim();
+      if(!id)return;
+      // Para o mesmo ID, o registro recebido do servidor tem precedência.
+      porId.set(id,clonar(evento));
+    }));
+    return {versao:1,eventos:[...porId.values()].sort((a,b)=>
+      String(a.criadoEm||"").localeCompare(String(b.criadoEm||""))||String(a.id).localeCompare(String(b.id)))};
+  }
+
   function mesclarValorRemoto(nome,remoto,local){
+    if(nome==="pontosChaveV1") return mesclarLivroCaixa(remoto,local);
     const copia=clonar(remoto);
     if(nome==="jutsus"&&Array.isArray(copia)) return mesclarJutsusRemotos(copia,local);
     if(nome!=="notasTopicos"||!Array.isArray(copia)) return copia;

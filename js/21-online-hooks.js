@@ -12,7 +12,8 @@
     "pvMax","chakraMax","forca","destreza","constituicao","inteligencia","sabedoria","carisma",
     "ca","cd","bonusCA","iniciativa","velocidade",
     "jutsus","armados","inventarioItens","notasTopicos","carteira","carteiraHistorico","kekkeiGenkai",
-    "resistenciasEscolhidas","progressaoFixa","atributoConjuracaoNatureza"
+    "resistenciasEscolhidas","progressaoFixa","atributoConjuracaoNatureza",
+    "automacaoAtaques","pontosChaveV1"
   ]);
   let aplicandoRodada=false;
   let sincronizandoPendentes=false;

@@ -1,4 +1,4 @@
-/* Projetinho Shinobi — 2.5.8.183.
+/* Projetinho Shinobi — 2.5.8.184.
  * Integração preparatória: catálogo ↔ inventário ↔ ataques ↔ origem de proficiências.
  * Nenhum cálculo de acerto/dano, débito de pontos ou bônus é aplicado.
  * Os lançamentos são registros históricos provisórios até a decisão do mestre.
@@ -12,7 +12,7 @@
   var C = root.ShinobiCalculosConfirmados;
   if (!P) { console.warn("Shinobi: módulo do catálogo ainda não carregado."); return; }
 
-  var REGRAS_PENDENTES = "Registro preparatório: não modifica bônus, dano ou saldo de pontos-chave.";
+  var REGRAS_PENDENTES = "Somente exceções de proficiências antigas ou concedidas pelo mestre; novas compras ficam em Perfil → Pontos-Chave.";
   var TIPOS_ORIGEM = [
     ["pontos-chave", "Pontos-chave"],
     ["pontos-de-cla", "Pontos de clã"],
@@ -52,6 +52,8 @@
   function origemProficiencia(armaId,registro) {
     if (!armaId) return {rotulo:"Arma não identificada",estado:"incerto"};
     if (armaId === "kunai" || armaId === "shuriken") return {rotulo:"Proficiência inicial (PDF, p. 1)",estado:"inicial"};
+    var ledger = root.ShinobiPontosChave;
+    if (ledger && ledger.proficiencias(ficha()).indexOf(armaId) >= 0) return {rotulo:"Proficiência adquirida em Pontos-Chave (compra registrada)",estado:"registrada"};
     var entrada = (registro.proficienciasExtras || []).find(function (p) { return p && p.armaId === armaId; });
     return entrada ? {rotulo:"Registrada: " + descricaoOrigem(entrada.origem) + " (a confirmar)",estado:"registrada"} :
       {rotulo:"Proficiência não registrada",estado:"incerto"};
@@ -153,26 +155,16 @@
     var painel = doc.createElement("details");
     painel.id = "shinobiPrepPainel";
     painel.className = "shinobiPrepPainel";
-    painel.innerHTML = '<summary>Preparação de ataques e pontos-chave <span>Regras pendentes</span></summary>' +
+    painel.innerHTML = '<summary>Proficiências anteriores <span>Regras especiais</span></summary>' +
       '<div class="shinobiPrepConteudo">' +
       '<p class="shinobiPrepDescricao">' + h(REGRAS_PENDENTES) + ' As proficiências iniciais em Kunai e Shuriken são reconhecidas pelo PDF.</p>' +
-      '<div id="shinobiPrepCustoNatureza" class="shinobiPrepNotaNatureza"></div>' +
       '<h3>Registrar origem de proficiência</h3>' +
       '<div class="shinobiPrepCampos">' +
       selecionar(P.catalogoArmas().map(function (arma) {return [arma.id,arma.nome];}),"shinobiPrepArma","Arma") +
-      selecionar(TIPOS_ORIGEM,"shinobiPrepOrigemProf","Origem") +
+      selecionar(TIPOS_ORIGEM.filter(function (item) {return ["mestre","ficha-antiga","inicial"].indexOf(item[0])>=0;}),"shinobiPrepOrigemProf","Origem") +
       '<label class="shinobiPrepCampo">Observação <input id="shinobiPrepNotaProf" type="text" maxlength="240" placeholder="Ex.: concessão do mestre na sessão 4"></label>' +
       '</div><button type="button" class="shinobiPrepPrimario" data-shinobi="registrar-proficiencia">Registrar proficiência</button>' +
       '<div id="shinobiPrepProfLista" class="shinobiPrepRegistros"></div>' +
-      '<h3>Histórico provisório de pontos-chave</h3>' +
-      '<p class="shinobiPrepDescricao">Somente histórico. Nenhum custo é descontado e os requisitos ainda não são aplicados.</p>' +
-      '<div class="shinobiPrepCampos">' +
-      selecionar(P.catalogoHabilidades().map(function (item) {return [item.id,item.nome + " (" + item.custo + " pontos de referência)"];}),"shinobiPrepHabilidade","Habilidade") +
-      '<label class="shinobiPrepCampo">Nível de aquisição <input id="shinobiPrepNivel" type="number" min="1" max="20" inputmode="numeric" value="1"></label>' +
-      selecionar(TIPOS_ORIGEM,"shinobiPrepOrigemHab","Origem") +
-      '<label class="shinobiPrepCampo">Escolhas / detalhes <input id="shinobiPrepEscolhas" type="text" maxlength="240" placeholder="Ex.: Wakizashi e Agulha"></label>' +
-      '</div><button type="button" class="shinobiPrepPrimario" data-shinobi="registrar-aquisicao">Registrar habilidade (sem gastar pontos)</button>' +
-      '<div id="shinobiPrepHabilidadeLista" class="shinobiPrepRegistros"></div>' +
       '<p class="shinobiPrepRodape">Os registros acompanham o backup e a sincronização da ficha. Compras antigas não serão aplicadas novamente aos atributos.</p></div>';
     var botao = lista.parentElement && lista.parentElement.querySelector('button[onclick*="adicionarArmado"]');
     if (botao && botao.parentElement) botao.insertAdjacentElement("afterend",painel);
@@ -290,7 +282,7 @@
     }
   }
   root.ShinobiIntegracaoAtaques = Object.freeze({
-    versao:"2.5.8.183",
+    versao:"2.5.8.184",
     relatorioAtaque:relatorioAtaque,
     atualizarVisual:function () {criarPainel();atualizarPainel();atualizarCards();}
   });
