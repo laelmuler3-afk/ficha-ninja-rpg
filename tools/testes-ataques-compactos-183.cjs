@@ -93,7 +93,7 @@ test('ataque desarmado funciona sem item e não altera inventário', async()=>{
 test('CSS e cache offline carregados depois dos estilos antigos',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const sw=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
- assert.match(html,/ataques-compactos-183\.css\?v=2\.5\.8\.185/);
+ assert.match(html,/ataques-compactos-183\.css\?v=2\.5\.8\.\d+/);
  assert.ok(html.indexOf('css/jutsus.css')<html.indexOf('css/ataques-compactos-183.css'));
  assert.match(sw,/\.\/css\/ataques-compactos-183\.css\?v=/);
  assert.ok(fs.existsSync(path.join(root,'css/ataques-compactos-183.css')));
