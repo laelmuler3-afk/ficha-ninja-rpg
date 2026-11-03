@@ -18,6 +18,29 @@ test('só sugere modelo quando o nome da ficha confere',()=>{
  assert.equal(M.identificar(ficha('Luffy Sarutobi','Uchiha')),null);
  assert.equal(M.identificar(ficha('Sora Aoki','Out Clan')).id,'sora');
 });
+test('reconhece nome e clã preenchidos separadamente no Perfil',()=>{
+ assert.equal(M.identificar(ficha('Luffy','Sarutobi')).id,'luffy');
+ assert.equal(M.identificar(ficha('lÚffY','Clã Sarutobi')).id,'luffy');
+ assert.equal(M.identificar(ficha('Shizen','Lee')).id,'shizen');
+ assert.equal(M.identificar(ficha('Liu','Hyuuga')).id,'liu');
+ assert.equal(M.identificar(ficha('Luffy','Uchiha')),null);
+ assert.equal(M.identificar(ficha('Luffy Sarutobi','Uchiha')),null);
+ assert.equal(M.identificar(ficha('Luffy','')),null);
+ assert.equal(M.identificar(ficha('Luf','Sarutobi')),null);
+ assert.equal(M.identificar(ficha('Sarutobi','Sarutobi')),null);
+});
+test('vínculo da ficha com campos separados preserva os dados e não cobra duas vezes',()=>{
+ const f=ficha('Luffy','Sarutobi'),antes=JSON.stringify(f);
+ const m=M.identificar(f);
+ const item=entrada(m,'ninjutsu_melhorado_2');
+ const r=M.conciliar(f,m.id,{[item.sourceId]:d('j_katon','ja-aplicado')},P);
+ assert.equal(r.confirmadas,1);
+ assert.equal(JSON.stringify(f),antes);
+ f.pontosChaveV1=r.registro;
+ assert.equal(M.conciliar(f,m.id,{[item.sourceId]:d('j_katon','ja-aplicado')},P).confirmadas,0);
+ assert.equal(P.resumo(f).chaveGasta,0);
+ assert.equal(f.jutsus[0].custo,'7');
+});
 test('não modifica ficha na leitura de prévia',()=>{
  const f=luffy(),antes=JSON.stringify(f),lista=M.entradasValidas(M.identificar(f),f,P);
  assert.equal(lista.length,17);assert.equal(JSON.stringify(f),antes);
