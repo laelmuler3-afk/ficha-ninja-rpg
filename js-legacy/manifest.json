@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.187",
+  "version": "2.5.8.188",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "eb6cd23a8269fd60b49704a24aa3544353bad34f8443d38d624ba84356e9b5ac",
-      "outputSha256": "2c4c6e5f00de3abbb9267ce734fb3bc5df157201c2da31758dc1408d6d17835c"
+      "sourceSha256": "244d2d007147ca15ce064300955486f3b862bcbaf19188f6cc112c206a0755f6",
+      "outputSha256": "fda63e0aa85298f32d2900be7c77989515f6044318497717b19f62a95b70233a"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -72,8 +72,8 @@
       "outputSha256": "ddb7583c4a78cf000135c1c50ab3995b0b6969ed160cb1f3700a5b6b38107077"
     },
     "js/10-regras-natureza.js": {
-      "sourceSha256": "e84bf9f8ae73bef920b2e1ce56397aadd7ecf1ef825a2980e90182532a3a197c",
-      "outputSha256": "ea23e65103218a4ad80dadc2c60d6086f8e06458fb7bb2c670aa907b1bad4780"
+      "sourceSha256": "8905f5738f7eddec2219cbaf9eea9992bbdb7615783223bd7adc09f6c39e9ed3",
+      "outputSha256": "21822aee3baddb625590e7b1f729bc8c50bc75726e026ff2dee234c4ffa5ac24"
     },
     "js/11-batalha-ui.js": {
       "sourceSha256": "ac9cececea347b357268ab0af81ae2568a872b9330b7bcf99235d640bbb6036d",
@@ -180,8 +180,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "990e54a2c287ea32f315a0cd3b81d7115cd12130ed52a6e6f7f53f15d21554d4",
-      "outputSha256": "0f0c67231bc1b8551de060615f74b050914ff2df16b268bfa5b09e697cb2ab58"
+      "sourceSha256": "6d395ce54c5263cc4edfd95595f100d8b2ac343ff88a5f195de49c8f00cb7e27",
+      "outputSha256": "465f6a6279c6da8c391f4a0b6406aacdb25035cde31b93df08c1e7061d24f0f5"
     },
     "js/17-ataques-automaticos.js": {
       "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
@@ -198,6 +198,10 @@
     "js/17-vinculos-jutsus-187.js": {
       "sourceSha256": "c126c5e52465a5bf2c592146afc95974d960ba781c7969a37dd37b851ad23977",
       "outputSha256": "e9e254f7358efdb7a302da6e84cdfd9fdcf4a5c1f8362f63b072931205930712"
+    },
+    "js/17-beneficios-jutsus-188.js": {
+      "sourceSha256": "218aa69d752522828f5ca252ab2b885aa13075de94c46f934332625d3b7c9495",
+      "outputSha256": "da5495e4d0b48eb30799230d36588aa16ed534584401b012a82d6dc3a15f064e"
     }
   }
 }

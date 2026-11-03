@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.178. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.188. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -399,7 +399,7 @@ var __read = (this && this.__read) || function (o, n) {
                 dinamico: true
             }
             : null;
-        return {
+        var regraCalculada = {
             natureza: natureza,
             elemento: elemento,
             nivel: nivel,
@@ -421,6 +421,9 @@ var __read = (this && this.__read) || function (o, n) {
             resistenciaAutomatica: Boolean(natureza && nivel >= 3),
             imunidadeAutomatica: Boolean(natureza && nivel >= 7)
         };
+        var B = window.ShinobiBeneficiosJutsus188;
+        var E = window.ShinobiPontosChave;
+        return B && E ? B.aplicar(estado, jutsu, regraCalculada, E) : regraCalculada;
     }
     function formatarBonusTotal(regra) {
         if (regra.bonusTotalNumero !== null)
@@ -593,6 +596,9 @@ var __read = (this && this.__read) || function (o, n) {
             preencherBotaoResumo(botaoResumoPorRotulo(card, "Dano total"), "Dano total", formatarDanoTotal(regra), regra.natureza && regra.nivel >= 2
                 ? "".concat(regra.natureza.nome, " N").concat(regra.nivel, " \u00B7 benef\u00EDcios N1\u2013N").concat(regra.nivel, " ativos")
                 : "");
+            var B = window.ShinobiBeneficiosJutsus188;
+            if (B && typeof B.decorarCard === "function")
+                B.decorarCard(card, jutsu, regra);
             card.classList.toggle("jutsuComBeneficioNatureza", Boolean(regra.natureza && regra.nivel >= 2));
         });
     }
@@ -811,9 +817,9 @@ var __read = (this && this.__read) || function (o, n) {
     function usarJutsuComRegras(indice) {
         return __awaiter(this, void 0, void 0, function () {
             var jutsu, regra, custoTexto, custoNumero, chakra, chakraAtual, dadosElemento, nome, danoTotal, detalhe, confirmado, _a, mensagem, danoLog, custoLog;
-            var _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var _b, _c, _d, _e, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         aplicarNiveis5Pendentes({ persistir: true });
                         jutsu = (_b = estado === null || estado === void 0 ? void 0 : estado.jutsus) === null || _b === void 0 ? void 0 : _b[indice];
@@ -839,17 +845,19 @@ var __read = (this && this.__read) || function (o, n) {
                                         : "Sem custo de chakra"
                                 : "Custo vari\u00E1vel: ".concat(custoTexto),
                             danoTotal && danoTotal !== "—" ? "Dano total: ".concat(danoTotal) : "",
+                            ((_d = (_c = regra.beneficios188) === null || _c === void 0 ? void 0 : _c.aplicados) === null || _d === void 0 ? void 0 : _d.length) ? regra.beneficios188.aplicados.join("; ") : "",
+                            ((_f = (_e = regra.beneficios188) === null || _e === void 0 ? void 0 : _e.pendentes) === null || _f === void 0 ? void 0 : _f.length) ? "Melhorias pendentes: " + regra.beneficios188.pendentes.join("; ") : "",
                             regra.bonusNivel2 ? "N2: ".concat(comSinal(regra.bonusNivel2)) : "",
                             regra.bonusNivel6 ? "N6: ".concat(comSinal(regra.bonusNivel6), " (").concat(regra.quantidadeDados, " dados)") : ""
                         ].filter(Boolean).join("\n");
                         if (!(typeof confirmarUsoAcao === "function")) return [3 /*break*/, 2];
                         return [4 /*yield*/, confirmarUsoAcao("jutsu", nome, detalhe)];
                     case 1:
-                        _a = _c.sent();
+                        _a = _g.sent();
                         return [3 /*break*/, 3];
                     case 2:
                         _a = confirm("".concat(nome, "\n\n").concat(detalhe, "\n\nUsar este jutsu?"));
-                        _c.label = 3;
+                        _g.label = 3;
                     case 3:
                         confirmado = _a;
                         if (!confirmado)
@@ -859,11 +867,11 @@ var __read = (this && this.__read) || function (o, n) {
                         if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 5];
                         return [4 /*yield*/, avisoShinobi("Chakra insuficiente", mensagem)];
                     case 4:
-                        _c.sent();
+                        _g.sent();
                         return [3 /*break*/, 6];
                     case 5:
                         alert(mensagem);
-                        _c.label = 6;
+                        _g.label = 6;
                     case 6: return [2 /*return*/];
                     case 7:
                         if (chakra && custoNumero !== null) {
@@ -880,8 +888,8 @@ var __read = (this && this.__read) || function (o, n) {
                         if (!(typeof window.aplicarEfeitosJutsuBatalha === "function")) return [3 /*break*/, 9];
                         return [4 /*yield*/, window.aplicarEfeitosJutsuBatalha(jutsu, indice)];
                     case 8:
-                        _c.sent();
-                        _c.label = 9;
+                        _g.sent();
+                        _g.label = 9;
                     case 9:
                         if (typeof atualizarHUD === "function")
                             atualizarHUD();
