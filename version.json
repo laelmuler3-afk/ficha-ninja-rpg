@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.180",
-  "name": "Preparação segura para automação de ataques e pontos-chave",
-  "notes": "Adiciona catálogo e adaptador de leitura sem sobrescrever ataques manuais ou aplicar regras ainda pendentes do mestre.",
+  "version": "2.5.8.181",
+  "name": "Integração preparatória: arsenal, proficiências e histórico de pontos-chave",
+  "notes": "Mostra referências de armas e registra origens de proficiências e habilidades sem recalcular ataques nem descontar pontos-chave.",
   "date": "2026-11-02"
 }

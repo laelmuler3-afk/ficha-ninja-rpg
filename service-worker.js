@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.180 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.181 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.180";
+const APP_VERSION = "2.5.8.181";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -32,6 +32,7 @@ const APP_SHELL = [
   `./css/status.css?v=${APP_VERSION}`,
   `./css/combate.css?v=${APP_VERSION}`,
   `./css/jutsus.css?v=${APP_VERSION}`,
+  `./css/preparacao-ataques.css?v=${APP_VERSION}`,
   `./css/tcg-jutsus.css?v=${APP_VERSION}`,
   `./assets/tcg/filigrana.svg?v=${APP_VERSION}`,
   `./assets/tcg/placa-nome.svg?v=${APP_VERSION}`,
@@ -66,6 +67,8 @@ const APP_SHELL = [
   `./js/16-pericias.js?v=${APP_VERSION}`,
   `./js/17-dano-inteligente.js?v=${APP_VERSION}`,
   `./js/17-preparacao-ataques.js?v=${APP_VERSION}`,
+  `./js/17-integracao-ataques.js?v=${APP_VERSION}`,
+  `./js-legacy/17-integracao-ataques.js?v=${APP_VERSION}`,
   `./js-legacy/17-preparacao-ataques.js?v=${APP_VERSION}`,
   `./js/18-online-config.js?v=${APP_VERSION}`,
   `./js/19-character-identity.js?v=${APP_VERSION}`,
