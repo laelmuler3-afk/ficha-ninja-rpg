@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.181",
-  "name": "Integração preparatória: arsenal, proficiências e histórico de pontos-chave",
-  "notes": "Mostra referências de armas e registra origens de proficiências e habilidades sem recalcular ataques nem descontar pontos-chave.",
+  "version": "2.5.8.182",
+  "name": "Prévia de ataques com regras confirmadas pelo mestre",
+  "notes": "Calcula prévias não destrutivas de acerto, dano e crítico para ataques com regras confirmadas; preserva campos manuais, compras e saldo.",
   "date": "2026-11-02"
 }
