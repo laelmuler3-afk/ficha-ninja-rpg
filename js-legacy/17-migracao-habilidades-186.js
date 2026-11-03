@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-migracao-habilidades-186.js — app 2.5.8.186. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-migracao-habilidades-186.js — app 2.5.8.187. Não editar. */
 /* Projetinho Shinobi 2.5.8.186 — reconhecimento assistido de habilidades antigas.
  * Fonte: suplemento Shinobi pp. 19, 30, 41 e 52. Apenas dados da lista "Pontos chave gastos".
  * NUNCA recalcula atributos, custos dos jutsus ou saldos. Confirmação por ficha é obrigatória.
@@ -153,7 +153,8 @@
                 throw new Error('Selecione o destino da melhoria ou marque como incerto.');
         }
         return { aplicacao: aplicacao, alvoTipo: alvoTipo, alvoId: alvoId, alvoNome: alvoNome,
-            observacao: String(opt.observacao || '').trim().slice(0, 240), tipoNatureza: alvoTipo === 'natureza' ? String(opt.tipoNatureza || '') : '' };
+            observacao: String(opt.observacao || '').trim().slice(0, 240), tipoNatureza: alvoTipo === 'natureza' ? String(opt.tipoNatureza || '') : '',
+            efeito: alvoTipo === 'jutsu' ? String(opt.efeito || '') : '' };
     }
     function conciliar(ficha, modeloId, decisoes, livro) {
         if (!livro || typeof livro.registro !== 'function')
@@ -183,7 +184,7 @@
                 nome: item.rotulo, origem: 'suplemento-shinobi-2026', origemSuplementoId: item.sourceId, paginaSuplemento: modelo.pagina,
                 nivel: 8, nivelAquisicaoDesconhecido: true, custo: 0, bolsa: 'historico',
                 criadoEm: new Date().toISOString(), escolhas: { alvoId: destino.alvoId, alvoNome: destino.alvoNome,
-                    alvoTipo: destino.alvoTipo, aplicacao: destino.aplicacao, observacao: destino.observacao, tipoNatureza: destino.tipoNatureza,
+                    alvoTipo: destino.alvoTipo, aplicacao: destino.aplicacao, observacao: destino.observacao, tipoNatureza: destino.tipoNatureza, efeito: destino.efeito,
                     descricao: item.rotulo, armas: item.tipoAlvo === 'armas' ? ['wakizaki', 'agulha'] : [] } };
             if (existente) {
                 evento.alvoId = item.eventoExistenteId;

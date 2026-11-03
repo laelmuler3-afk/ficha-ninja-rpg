@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.186",
+  "version": "2.5.8.187",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "301ddf5dfac6692705d95d357f21f96c256f4e6377fcbbe58e6d5a4abc9a083b",
-      "outputSha256": "72bca9fafb88bee79989546a962b4d86ef80e991e6c8bc1c1c5080cf894813ae"
+      "sourceSha256": "eb6cd23a8269fd60b49704a24aa3544353bad34f8443d38d624ba84356e9b5ac",
+      "outputSha256": "2c4c6e5f00de3abbb9267ce734fb3bc5df157201c2da31758dc1408d6d17835c"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -180,20 +180,24 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "8f41b448964085a12ebf0094903e3348953b1ef8d04ba3a69d48a60a770bdf35",
-      "outputSha256": "d64305ac1cb18f0d7b1489e71e7f7ae112cae04b48cea5978512e44cc9b8e57d"
+      "sourceSha256": "990e54a2c287ea32f315a0cd3b81d7115cd12130ed52a6e6f7f53f15d21554d4",
+      "outputSha256": "0f0c67231bc1b8551de060615f74b050914ff2df16b268bfa5b09e697cb2ab58"
     },
     "js/17-ataques-automaticos.js": {
       "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
       "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
     },
     "js/17-migracao-habilidades-186.js": {
-      "sourceSha256": "8d4b0ee28720b7c115a01a62c230a6e0f2f26170ba82c4277dd41bf9a92f87a9",
-      "outputSha256": "5799d7ee5be908c38a1c67dfcfa083fa7a72521b6b5b8922c9964b73761c1e7b"
+      "sourceSha256": "d5592e8e44bc9f1cd4eef006db5a72ee7979dc70b59ebeed33b17269a86aab3f",
+      "outputSha256": "d365fda475b8e16308d7b0238c0eb0a902a06d1c90e7dce49472547bc40e7156"
     },
     "js/17-migracao-habilidades-ui-186.js": {
       "sourceSha256": "2877d2aa71d6a4f7fff4c66be8c9a8a7b6d24a9576278a9851b5f72df918f011",
       "outputSha256": "2434c8fce5d634357ac303348d2022fc467f4c9f6289611f575c9a4d27d28655"
+    },
+    "js/17-vinculos-jutsus-187.js": {
+      "sourceSha256": "c126c5e52465a5bf2c592146afc95974d960ba781c7969a37dd37b851ad23977",
+      "outputSha256": "e9e254f7358efdb7a302da6e84cdfd9fdcf4a5c1f8362f63b072931205930712"
     }
   }
 }
