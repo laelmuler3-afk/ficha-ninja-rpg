@@ -1,4 +1,4 @@
-/* Projetinho Shinobi — 2.5.8.181.
+/* Projetinho Shinobi — 2.5.8.182.
  * Integração preparatória: catálogo ↔ inventário ↔ ataques ↔ origem de proficiências.
  * Nenhum cálculo de acerto/dano, débito de pontos ou bônus é aplicado.
  * Os lançamentos são registros históricos provisórios até a decisão do mestre.
@@ -9,6 +9,7 @@
   root.__shinobiIntegracaoAtaques181 = true;
   var doc = root.document;
   var P = root.ShinobiPreparacaoAtaques;
+  var C = root.ShinobiCalculosConfirmados;
   if (!P) { console.warn("Shinobi: módulo do catálogo ainda não carregado."); return; }
 
   var REGRAS_PENDENTES = "Registro preparatório: não modifica bônus, dano ou saldo de pontos-chave.";
@@ -71,7 +72,7 @@
     var catalogo = P.identificarAtaque(ataque);
     var id = catalogo && catalogo.id;
     var reg = dados();
-    return {catalogo:catalogo,proficiencia:origemProficiencia(id,reg),inventario:ataque && ataque.tipo === "desarmado" ? null : noInventario(ataque,id)};
+    return {catalogo:catalogo,proficiencia:origemProficiencia(id,reg),inventario:ataque && ataque.tipo === "desarmado" ? null : noInventario(ataque,id),previa:C ? C.calcularPrevia(ficha(),ataque,P) : null};
   }
   function elemento(tag,classe,texto) {
     var el = doc.createElement(tag);
@@ -97,22 +98,39 @@
       }
       var rel = relatorioAtaque(ataque);
       bloco.textContent = "";
-      var titulo = elemento("strong","shinobiMetaTitulo", "Referência da arma — preparação");
+      var titulo = elemento("strong","shinobiMetaTitulo", "Referência da arma e prévia de cálculo");
       bloco.appendChild(titulo);
       if (!rel.catalogo) {
         bloco.appendChild(elemento("p","shinobiMetaLinha", "Ataque personalizado: sem referência automática no catálogo."));
       } else {
         var arma = rel.catalogo;
         var props = Array.isArray(arma.propriedades) ? arma.propriedades.join(", ") : "";
-        var texto = arma.id === "desarmado" ? "Ataque desarmado: dano-base aguardando confirmação." :
+        var texto = arma.id === "desarmado" ? "Ataque desarmado: padrão 1d6 + FOR (exceções por clã)." :
           arma.nome + " · dano base " + (arma.dano || "não informado") + (arma.tipoDano ? " " + arma.tipoDano : "") + (props ? " · " + props : "");
         bloco.appendChild(elemento("p","shinobiMetaLinha",texto));
-        if (arma.observacao) bloco.appendChild(elemento("p","shinobiMetaLinha shinobiMetaPendente",arma.observacao));
-        if (arma.id === "agulha") bloco.appendChild(elemento("p","shinobiMetaLinha shinobiMetaPendente","Agulha é Especial no catálogo. A compra comum da ficha-exemplo depende do mestre."));
+        if (arma.observacao) bloco.appendChild(elemento("p","shinobiMetaLinha",arma.observacao));
+        if (arma.id === "agulha") bloco.appendChild(elemento("p","shinobiMetaLinha shinobiMetaPendente","Agulha Especial: preserve a proficiência antiga até a migração autorizada pelo mestre."));
       }
       bloco.appendChild(elemento("p","shinobiMetaLinha " + (rel.proficiencia.estado === "incerto" ? "shinobiMetaPendente" : ""),rel.proficiencia.rotulo));
       if (rel.inventario) bloco.appendChild(elemento("p","shinobiMetaLinha",rel.inventario.rotulo));
-      bloco.appendChild(elemento("small","shinobiMetaAviso","Acerto e dano acima continuam manuais."));
+      if (rel.previa) {
+        var previa = rel.previa;
+        var resumo = elemento("div","shinobiPreviaBloco");
+        resumo.appendChild(elemento("strong","shinobiPreviaTitulo","Prévia automática (sem salvar)"));
+        if (previa.status === "calculado") {
+          previa.variantes.forEach(function (v) {
+            var acerto = previa.proficiencia === "confirmada" ? "d20 " + (v.acertoComProficiencia>=0?"+ ":"− ") + Math.abs(v.acertoComProficiencia) :
+              "d20 " + (v.acertoSemProficiencia>=0?"+ ":"− ") + Math.abs(v.acertoSemProficiencia) +
+              " / c/PRO " + (v.acertoComProficiencia>=0?"+ ":"− ") + Math.abs(v.acertoComProficiencia);
+            resumo.appendChild(elemento("p","shinobiPreviaFormula",v.modo + " · Acerto " + acerto + " · Dano " + v.dano + (v.danoCritico ? " · Crítico " + v.danoCritico : "")));
+          });
+        } else {
+          resumo.appendChild(elemento("p","shinobiPreviaPendente","Prévia incompleta: faltam dados ou confirmação da regra."));
+        }
+        (previa.avisos||[]).forEach(function (aviso) { resumo.appendChild(elemento("small","shinobiPreviaNota",aviso)); });
+        bloco.appendChild(resumo);
+      }
+      bloco.appendChild(elemento("small","shinobiMetaAviso","Os valores de acerto e dano da ficha continuam manuais e inalterados."));
       if (rel.catalogo && rel.catalogo.id !== "desarmado") {
         var botao = elemento("button","shinobiMetaBotao","Registrar origem de proficiência");
         botao.type = "button";
@@ -135,6 +153,7 @@
     painel.innerHTML = '<summary>Preparação de ataques e pontos-chave <span>Regras pendentes</span></summary>' +
       '<div class="shinobiPrepConteudo">' +
       '<p class="shinobiPrepDescricao">' + h(REGRAS_PENDENTES) + ' As proficiências iniciais em Kunai e Shuriken são reconhecidas pelo PDF.</p>' +
+      '<div id="shinobiPrepCustoNatureza" class="shinobiPrepNotaNatureza"></div>' +
       '<h3>Registrar origem de proficiência</h3>' +
       '<div class="shinobiPrepCampos">' +
       selecionar(P.catalogoArmas().map(function (arma) {return [arma.id,arma.nome];}),"shinobiPrepArma","Arma") +
@@ -163,6 +182,13 @@
     var painel = doc.getElementById("shinobiPrepPainel");
     if (!painel) return;
     var regs = dados();
+    var simulacao = doc.getElementById("shinobiPrepCustoNatureza");
+    if (simulacao && C) {
+      var desconto = C.custoNovaNatureza(ficha(),4,"nova-elemental");
+      simulacao.textContent = "Simulação de nova natureza elemental: 4 pontos-chave" +
+        (desconto && desconto.descontoAplicavel ? " → 2 pontos-chave (Sarutobi)" : " (sem desconto de clã confirmado)") +
+        ". Evoluir uma natureza conhecida permanece pendente; nenhum ponto foi debitado.";
+    }
     var profBox = doc.getElementById("shinobiPrepProfLista");
     var habilidadeBox = doc.getElementById("shinobiPrepHabilidadeLista");
     if (profBox) {
@@ -244,9 +270,16 @@
     });
     observador.observe(lista,{childList:true,subtree:false});
     doc.addEventListener("click",clicar);
+    doc.addEventListener("change",function (e) {
+      var el=e.target;
+      if (el && el.dataset && ["forca","destreza","nivel","cla","proficiencia"].indexOf(el.dataset.save)>=0) {
+        atualizarCards();
+        if (el.dataset.save === "cla") atualizarPainel();
+      }
+    });
     root.addEventListener("pageshow",function () {atualizarPainel();atualizarCards();});
     root.addEventListener("shinobi:app-pronto",function () {atualizarPainel();atualizarCards();});
-    root.addEventListener("shinobi:ficha-persistida",function (e) {if (e.detail && e.detail.campo === "automacaoAtaques") atualizarPainel(); if (e.detail && (e.detail.campo === "automacaoAtaques" || e.detail.campo === "inventarioItens")) atualizarCards();});
+    root.addEventListener("shinobi:ficha-persistida",function (e) {if (e.detail && e.detail.campo === "automacaoAtaques") atualizarPainel(); if (e.detail && (["automacaoAtaques","inventarioItens","forca","destreza","cla","nivel","proficiencia"].indexOf(e.detail.campo)>=0)) atualizarCards();});
     root.addEventListener("shinobi:realtime-aplicado",function (e) {if (!e.detail || !Array.isArray(e.detail.campos) || e.detail.campos.indexOf("automacaoAtaques") >= 0) atualizarPainel(); atualizarCards();});
     root.addEventListener("shinobi:realtime-colecao-aplicada",function (e) {if (e.detail && (e.detail.collection === "inventario" || e.detail.collection === "armados")) atualizarCards();});
     if (root.ShinobiOnline && typeof root.ShinobiOnline.on === "function") {
@@ -254,7 +287,7 @@
     }
   }
   root.ShinobiIntegracaoAtaques = Object.freeze({
-    versao:"2.5.8.181",
+    versao:"2.5.8.182",
     relatorioAtaque:relatorioAtaque,
     atualizarVisual:function () {criarPainel();atualizarPainel();atualizarCards();}
   });
