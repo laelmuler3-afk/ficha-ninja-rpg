@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.190. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.193. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -587,6 +587,11 @@ var __read = (this && this.__read) || function (o, n) {
                     ? "N5 aguardando uma fórmula de dado no campo Dano"
                     : "";
             preencherBotaoResumo(botaoResumoPorRotulo(card, "Dano"), "Dano", regra.danoEfetivo || "—", detalheDano);
+            // Ninjutsu Aprimorado pode alterar alcance sem alterar o campo salvo.
+            // A carta expandida precisa mostrar a distância efetiva, não a base.
+            if (regra.alcanceEfetivo) {
+                preencherBotaoResumo(botaoResumoPorRotulo(card, "Alcance"), "Alcance", regra.alcanceEfetivo, "Alcance original: ".concat(jutsu.alcance || "—"));
+            }
             var partesBonus = [];
             if (regra.bonusManualTexto)
                 partesBonus.push("Manual ".concat(regra.bonusManualTexto));

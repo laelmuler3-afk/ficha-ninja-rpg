@@ -1,5 +1,5 @@
 {
-  "version": "2.5.8.192",
+  "version": "2.5.8.193",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
@@ -72,8 +72,8 @@
       "outputSha256": "ddb7583c4a78cf000135c1c50ab3995b0b6969ed160cb1f3700a5b6b38107077"
     },
     "js/10-regras-natureza.js": {
-      "sourceSha256": "fc121cca62184c6dc467f93bb211a3e2cb1377e27ca92290fc8ae5a038660f15",
-      "outputSha256": "6740141170b86c7e5b1ce1a7c4be8caeac69440b25fe9fa997e0cee5d858eab1"
+      "sourceSha256": "85ff314b4b0764ff57b868123fb5e1adaaf0ab33d84753643db7cd2ec1336aba",
+      "outputSha256": "1cb7e142aacb3f2719210860c1957e8d0f16ef7483dd2b734c742f6e570160e5"
     },
     "js/11-batalha-ui.js": {
       "sourceSha256": "ac9cececea347b357268ab0af81ae2568a872b9330b7bcf99235d640bbb6036d",
@@ -104,8 +104,8 @@
       "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
     },
     "js/17-beneficios-jutsus-188.js": {
-      "sourceSha256": "218aa69d752522828f5ca252ab2b885aa13075de94c46f934332625d3b7c9495",
-      "outputSha256": "da5495e4d0b48eb30799230d36588aa16ed534584401b012a82d6dc3a15f064e"
+      "sourceSha256": "bc7e0dc1bb73bfe76bb324e922833e2f28427b21376cf68811ec9d4f13e09f45",
+      "outputSha256": "aea79cccf943999a2cafe4ed0b6d5e7254d94eb1c8342d1a424ba733deac9a50"
     },
     "js/17-beneficios-pontos-chave-190.js": {
       "sourceSha256": "726f95cf07de7a800f5a29d92d5891d160e9284d7cdfc60bc8f3d83a7d935ebb",
@@ -204,8 +204,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "e90b8845592a64a55c36870eaf50b05cd59e63e2f3dd8cf6166730f9b8152159",
-      "outputSha256": "9aadc1639195343c348142e08644b1b505813385897217802911a367ce8b58c2"
+      "sourceSha256": "5be5d2d8b1ccb88a4ab5ce23517718bc4bd8a5414cc6767f6903710139becb54",
+      "outputSha256": "b2839822796dc1598a6965b4c8e26778af0a662942da0e590e65818bee66a992"
     },
     "js/17-motor-beneficios-192.js": {
       "sourceSha256": "0abd089e805d1085bc1c233b06738d5cc29072d671b198c1d438931414158e1a",
