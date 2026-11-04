@@ -818,12 +818,46 @@
     return toggleResistenciaBase?.apply(this, arguments);
   }
 
+  const emUso194 = new Set();
   async function usarJutsuComRegras(indice){
+    if(emUso194.has(indice)) return;
+    emUso194.add(indice);
+    try{
     aplicarNiveis5Pendentes({persistir:true});
     const jutsu = estado?.jutsus?.[indice];
     if(!jutsu) return;
 
     const regra = calcularJutsuComNatureza(jutsu);
+    const B194 = window.ShinobiBeneficiosJutsus188;
+    const livro194 = window.ShinobiPontosChave;
+    let uso194 = null;
+    if(B194 && livro194 && typeof B194.estadoMelhoradoII === 'function'){
+      const atual194=B194.estadoMelhoradoII(estado,jutsu,livro194);
+      if(atual194){
+        let custoOriginal194;
+        if(atual194.precisaCustoOriginal){
+          const nome194=String(jutsu.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+          // Este custo é do catálogo do suplemento; o usuário sempre confirma.
+          const sugestao194=nome194.includes('grande bola de fogo')?'10':String(jutsu.custo||'');
+          custoOriginal194=prompt('O custo de '+(jutsu.nome||'este jutsu')+' já foi reduzido manualmente para '+String(jutsu.custo)+
+            ' EKO. Informe o custo ORIGINAL, sem Ninjutsu Melhorado II, para que o app possa restaurá-lo ao esgotar os usos:',sugestao194);
+          if(custoOriginal194===null)return;
+        }
+        try{uso194=B194.prepararUsoMelhoradoII(estado,jutsu,livro194,custoOriginal194);}
+        catch(erro){if(typeof avisoShinobi==='function')await avisoShinobi('Conferir Ninjutsu Melhorado II',erro.message);
+          else alert(erro.message);return;}
+        const m=uso194.info;
+        if(m && m.modo==='reduzir-custo'){
+          const custo=B194.custoEfetivoMelhoradoII(m,Number(regra.custoEfetivoTexto));
+          if(Number.isFinite(custo))regra.custoEfetivoTexto=String(custo);
+        }
+        if(m && m.modo==='dobrar-alcance' && m.restantes>0 && !regra.alcanceEfetivo){
+          if(typeof avisoShinobi==='function')await avisoShinobi('Alcance não calculável','Este jutsu não possui um alcance numérico simples. Revise o alcance antes de usar a melhoria.');
+          else alert('O alcance do jutsu precisa ser numérico para aplicar Ninjutsu Melhorado II.');
+          return;
+        }
+      }
+    }
     const custoTexto = regra.custoEfetivoTexto || "0";
     const custoNumero = valorNumericoEstrito(custoTexto);
     const chakra = document.getElementById("chakra");
@@ -846,6 +880,8 @@
       danoTotal && danoTotal !== "—" ? `Dano total: ${danoTotal}` : "",
       regra.beneficios188?.aplicados?.length ? regra.beneficios188.aplicados.join("; ") : "",
       regra.beneficios188?.pendentes?.length ? "Melhorias pendentes: " + regra.beneficios188.pendentes.join("; ") : "",
+      uso194?.info ? `Ninjutsu Melhorado II: ${uso194.info.usos}/${uso194.info.limite} usos desde o descanso longo`+
+        (uso194.info.restantes>0?` (neste uso: ${uso194.info.modo==='reduzir-custo'?'redução de EKO':'alcance dobrado'})`:' (esgotado; custo/alcance normal)') : "",
       regra.bonusNivel2 ? `N2: ${comSinal(regra.bonusNivel2)}` : "",
       regra.bonusTalento190 ? `Ninjutsu Melhorado I: ${comSinal(regra.bonusTalento190)}` : "",
       regra.bonusNivel6 ? `N6: ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)` : ""
@@ -863,12 +899,30 @@
       return;
     }
 
+    // O contador somente é gravado após confirmação e verificação do EKO.
+    const historicoAnterior194=estado.pontosChaveV1;
+    let historicoNovo194=null;
+    if(uso194 && uso194.info){
+      try{historicoNovo194=B194.registrarUsoMelhoradoII(estado,jutsu,livro194,uso194,custoNumero);}
+      catch(erro){if(typeof avisoShinobi==='function')await avisoShinobi('Ninjutsu Melhorado II',erro.message);
+        else alert(erro.message);return;}
+    }
+    if(historicoNovo194)estado.pontosChaveV1=historicoNovo194;
     if(chakra && custoNumero !== null){
       chakra.value = Math.max(0, chakraAtual - Math.max(0, custoNumero));
     }
 
-    if(typeof salvar === "function") salvar({confirmada:true,origem:"jutsu",campo:"chakra",antes:chakraAtual,depois:chakra?Number(chakra.value):chakraAtual,motivo:"alteracao-confirmada"});
-    else persistirEstadoSeguro({confirmada:true,origem:"jutsu",campo:"chakra",motivo:"alteracao-confirmada"});
+    const contextoPersistencia194={confirmada:true,origem:'uso-jutsu',
+      campos:historicoNovo194?['chakra','pontosChaveV1']:['chakra'],motivo:'jutsu-usado-confirmado'};
+    const gravado194=typeof salvar==='function'?salvar(contextoPersistencia194):
+      persistirEstadoSeguro(contextoPersistencia194);
+    if(gravado194===false){
+      if(historicoNovo194)estado.pontosChaveV1=historicoAnterior194;
+      if(chakra)chakra.value=String(chakraAtual);
+      if(typeof avisoShinobi==='function')await avisoShinobi('Não foi possível salvar','O jutsu não foi registrado e o EKO foi restaurado.');
+      else alert('Não foi possível salvar a utilização do jutsu.');
+      return;
+    }
 
     const danoLog = danoTotal && danoTotal !== "—" ? ` | Dano: ${danoTotal}` : "";
     const custoLog = custoNumero !== null && custoNumero > 0 ? ` | Chakra: -${custoNumero}` : "";
@@ -896,6 +950,7 @@
     if(typeof persistirSemRender === "function") persistirSemRender();
     else persistirEstadoSeguro();
     if(typeof renderizarJutsus === "function") renderizarJutsus();
+    }finally{emUso194.delete(indice);}
   }
 
   /* Publica também nas ligações globais usadas pelo código antigo e pelos onclicks. */
