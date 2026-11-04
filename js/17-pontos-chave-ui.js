@@ -33,11 +33,12 @@
     if(doc.getElementById("shinobiPontos184"))return;
     var linha=doc.querySelector("#identidade .xpLinhaNova");if(!linha)return;
     var painel=doc.createElement("details");painel.id="shinobiPontos184";painel.className="shinobiPontos184";
-    painel.innerHTML='<summary><span class="shinobiPontos184Titulo">Pontos-Chave <small>Histórico e evolução</small></span><span id="pontos184ResumoTopo" class="shinobiPontos184Tag">Conferir</span></summary>'+ 
+    painel.innerHTML='<summary><span class="shinobiPontos184Titulo">Pontos-Chave <small>Evolução daqui para frente</small></span><span id="pontos184ResumoTopo" class="shinobiPontos184Tag">Conferir</span></summary>'+ 
       '<div class="shinobiPontos184Corpo">'+
-      '<p class="shinobiPontos184Nota">Os saldos são estimativas até conferir gastos anteriores com o mestre. Os créditos seguem a tabela do livro e podem ser ajustados por decisão do mestre. Compras novas entram no saldo, mas seus efeitos ainda não são aplicados automaticamente à ficha.</p>'+ 
-      '<div class="shinobiPontos184Saldos"><div><span>Pontos-chave (estimados)</span><strong id="pontos184SaldoChave">—</strong></div><div><span>Pontos de clã (estimados)</span><strong id="pontos184SaldoCla">—</strong></div></div>'+ 
+      '<p class="shinobiPontos184Nota">As compras antigas continuam reconhecidas, sem exigir a reconstrução dos gastos. Para fichas antigas, comece o controle no nível atual. Novas fichas seguem os créditos por nível. Benefícios ainda dependem das regras integradas.</p>'+ 
+      '<div class="shinobiPontos184Saldos"><div><span>Pontos-chave disponíveis</span><strong id="pontos184SaldoChave">—</strong></div><div><span>Pontos de clã disponíveis</span><strong id="pontos184SaldoCla">—</strong></div></div>'+ 
       '<p id="pontos184Totais" class="shinobiPontos184Nota"></p>'+ 
+      '<div id="pontos192Inicio" class="pontos192Inicio" aria-live="polite"></div>'+ 
       '<div id="pontos191Auditoria" class="shinobiPontos191Auditoria" aria-live="polite"></div>'+ 
       '<details class="shinobiPontos184Secao" open><summary>Adquirir ou registrar habilidade</summary><div class="shinobiPontos184Campos">'+
       '<label>Habilidade<select id="pontos184Habilidade"><option value="">Selecione uma habilidade</option>'+E.catalogo().map(function(x){return '<option value="'+escape(x.id)+'">'+escape(x.nome)+' · '+(x.custo==null?'custo pendente':x.custo+' pts')+'</option>';}).join("")+'</select></label>'+ 
@@ -55,8 +56,9 @@
       '<label>Quantidade concedida nesse nível<input id="pontos184Credito" type="number" min="0" max="200" inputmode="numeric"></label>'+ 
       '<label class="shinobiPontos184Largo">Justificativa do mestre<input id="pontos184Motivo" maxlength="180" placeholder="Ex.: ajuste autorizado na campanha"></label>'+ 
       '</div><button type="button" class="shinobiPontos184Secundario" data-pontos184="ajustar">Registrar ajuste por nível</button>'+ 
-      '<div class="shinobiPontos184Campos"><label>Gastos antigos já realizados<input id="pontos184GastoAntigo" type="number" min="0" inputmode="numeric"></label><label>Reserva usada<select id="pontos184BolsaAntiga"><option value="chave">Pontos-chave</option><option value="cla">Pontos de clã</option></select></label><label class="shinobiPontos184Largo">Descrição dos gastos antigos<input id="pontos184MotivoAntigo" maxlength="180" placeholder="Ex.: total pago por talentos já anotados na ficha"></label></div><button type="button" class="shinobiPontos184Secundario" data-pontos184="reconciliar">Reconciliar gasto anterior (sem reaplicar talentos)</button>'+ 
-      '<p class="shinobiPontos184Nota">Cada novo ajuste substitui o valor anterior daquele nível. Esta tela registra a decisão informada; não autentica a identidade do mestre.</p></details>'+ 
+
+      '<div class="shinobiPontos184Campos"><label>Novos pontos concedidos<select id="pontos192BolsaExtra"><option value="chave">Pontos-chave</option><option value="cla">Pontos de clã</option></select></label><label>Quantidade<input id="pontos192QuantExtra" type="number" min="1" max="200" value="1" inputmode="numeric"></label><label class="shinobiPontos184Largo">Motivo / decisão do mestre<input id="pontos192MotivoExtra" maxlength="180" placeholder="Ex.: pontos que ainda estavam disponíveis"></label></div><button type="button" class="shinobiPontos184Secundario" data-pontos184="creditar-extra">Registrar novo crédito</button>'+ 
+      '<p class="shinobiPontos184Nota">Os ajustes por nível seguem a tabela vigente. Créditos extras podem incluir saldo inicial ainda disponível, quando confirmado com o mestre. Esta tela não autentica o mestre.</p></details>'+ 
       '<details class="shinobiPontos184Secao"><summary>Histórico e conferência</summary><div id="pontos184Historico" class="shinobiPontos184Historico"></div></details>'+ 
       '</div>';
     linha.insertAdjacentElement("afterend",painel);
@@ -78,28 +80,22 @@
   function atualizar(){
     var painel=doc.getElementById("shinobiPontos184");if(!painel)return;
     var f=ficha()||{},r=E.resumo(f);
+    var campoNivel=doc.getElementById('pontos184Nivel');
+    if(campoNivel&&doc.activeElement!==campoNivel&&Number(campoNivel.value)<r.nivel)campoNivel.value=String(r.nivel);
     function set(id,val){var e=doc.getElementById(id);if(e)e.textContent=val;}
-    set("pontos184ResumoTopo",formatarNumero(r.chaveDisponivel)+" estimados");
-    set("pontos184SaldoChave",formatarNumero(r.chaveDisponivel));
-    set("pontos184SaldoCla",formatarNumero(r.claDisponivel));
-    var estimativa=E.estimarGastosHistoricos?E.estimarGastosHistoricos(f):null;
+    var futuro=r.controleIniciado,antiga=r.precisaIniciarControle;
+    set("pontos184ResumoTopo",antiga?"Iniciar controle":formatarNumero(r.chaveDisponivel)+" disponíveis");
+    set("pontos184SaldoChave",antiga?"—":formatarNumero(r.chaveDisponivel));
+    set("pontos184SaldoCla",antiga?"—":formatarNumero(r.claDisponivel));
+    set("pontos184Totais",antiga?"As habilidades antigas continuam reconhecidas. Inicie o controle para contabilizar somente as próximas aquisições.":
+      futuro?"Contagem iniciada no nível "+r.controleDesdeNivel+". Novos créditos e despesas passam a ser acompanhados a partir desse marco. Compras antigas permanecem preservadas.":
+      "Até o nível "+r.nivel+": "+r.chaveRecebida+" pontos-chave concedidos, "+r.chaveGasta+" gastos; "+r.claRecebida+" pontos de clã concedidos.");
+    var inicio=doc.getElementById('pontos192Inicio');
+    if(inicio){inicio.innerHTML=antiga?'<p><strong>Ficha antiga: comece daqui em diante</strong></p><p>Não é necessário lembrar quantos pontos foram gastos ou convertidos no passado. O saldo inicial será <strong>0</strong> em ambas as reservas; novas concessões, compras e conversões serão registradas normalmente.</p><button type="button" class="shinobiPontos184Principal" data-pontos184="iniciar-controle">Começar controle no nível '+r.nivel+'</button><p class="shinobiPontos184Nota">Se ainda houver pontos não gastos, eles poderão ser concedidos depois por crédito extra, mediante decisão do mestre.</p>':'';}
     var auditoria=E.auditarIntegridade?E.auditarIntegridade(f):null;
-    var pendentes=estimativa&&estimativa.haHistoricos&&!(estimativa.gastosJaConciliados>0)&&
-      !E.registro(f).eventos.some(function(e){return e.tipo==="despesa-antiga"&&!E.registro(f).eventos.some(function(t){return t.tipo==="estorno"&&t.alvoId===e.id;});});
-    set("pontos184Totais",(pendentes?"Saldo ainda NÃO conciliado · ":"Saldo conforme transações registradas · ")+
-      "Até o nível "+r.nivel+": "+r.chaveRecebida+" pontos-chave concedidos, "+r.chaveGasta+" gastos; "+r.claRecebida+" pontos de clã concedidos, "+r.pontosClaConvertidos+" convertidos. "+r.legados+" registro(s) histórico(s) sem débito.");
-    var aviso=doc.getElementById("pontos191Auditoria");
+    var aviso=doc.getElementById('pontos191Auditoria');
     if(aviso){
-      var out='';
-      if(auditoria&&!auditoria.ok)out+='<div class="pontos191Alerta" role="alert"><strong>Conflito no histórico após sincronização</strong><p>Não registre novas compras até conferir as operações. Nenhuma transação foi apagada automaticamente.</p><ul>'+auditoria.problemas.map(function(p){return '<li>'+escape(p.mensagem)+'</li>';}).join('')+'</ul></div>';
-      if(estimativa&&estimativa.haHistoricos){
-        out+='<details class="pontos191Conferencia"><summary>Conferir gastos das '+estimativa.itens.length+' habilidades antigas</summary>'+
-          '<p>Estimativa parcial pelo catálogo: <strong>'+estimativa.estimativaParcial+' pontos-chave</strong>'+(estimativa.pendentes?' · '+estimativa.pendentes+' custo(s) dependem de confirmação.':'')+'. O valor real pode incluir descontos, conversões e decisões do mestre. <strong>Nenhum ponto foi debitado automaticamente.</strong></p>'+
-          '<p>Já conciliado no histórico: '+estimativa.gastosJaConciliados+' ponto(s).'+(pendentes?' Saldo ainda é teórico.':'')+'</p>'+
-          '<ul>'+estimativa.itens.map(function(item){return '<li>'+escape(item.nome)+' — '+(item.custoSugerido==null?'conferir custo':item.custoSugerido+' pts')+(item.motivo?' ('+escape(item.motivo)+')':'')+'</li>';}).join('')+'</ul>'+
-          (pendentes?'<button type="button" class="shinobiPontos184Secundario" data-pontos184="preparar-gasto">Preparar conciliação para conferir com o mestre</button>':'')+'</details>';
-      }
-      aviso.innerHTML=out;
+      aviso.innerHTML=auditoria&&!auditoria.ok?'<div class="pontos191Alerta" role="alert"><strong>Conflito no histórico após sincronização</strong><p>Não registre novas compras até conferir as operações. Nenhuma transação foi apagada automaticamente.</p><ul>'+auditoria.problemas.map(function(p){return '<li>'+escape(p.mensagem)+'</li>';}).join('')+'</ul></div>':'';
     }
     var host=doc.getElementById("pontos184Historico");if(!host)return;
     var eventos=E.registro(f).eventos,anulados={};eventos.forEach(function(e){if(e.tipo==="estorno")anulados[e.alvoId]=true;});
@@ -111,11 +107,12 @@
       else if(e.tipo==="conversao"){titulo="Conversão de clã";valor="−"+e.quantidade+" de clã, +"+(2*e.quantidade)+" chave";}
       else if(e.tipo==="ajuste-nivel"){titulo="Crédito definido no nível "+e.nivel;valor=e.quantidade+" pontos de "+(e.bolsa==="cla"?"clã":"chave");}
       else if(e.tipo==="credito-extra"){titulo="Crédito extra";valor="+"+e.quantidade+" de "+(e.bolsa==="cla"?"clã":"chave");}
-      else if(e.tipo==="despesa-antiga"){titulo="Revisão de gasto anterior";valor="−"+e.custo+" de "+(e.bolsa==="cla"?"clã":"chave");}
+      else if(e.tipo==="despesa-antiga"){titulo="Registro anterior preservado";valor="Registrado antes do marco atual";}
+      else if(e.tipo==="inicio-controle"){titulo="Início do controle no nível "+e.nivel;valor="Saldo inicial "+e.saldoChave+" chave / "+e.saldoCla+" clã; aquisições antigas mantidas";}
       else if(e.tipo==="efetivacao-beneficio"){titulo="Benefício efetivado: "+(e.habilidadeId||"Habilidade");valor=(e.campo||"Atributo")+" "+e.antes+" → "+e.depois+" · preservado no histórico";}
       else if(e.tipo==="estorno"){titulo="Estorno";valor="Transação "+e.alvoId;}
       var aplicada=eventos.some(function(x){return x.tipo==="efetivacao-beneficio"&&String(x.alvoId)===String(e.id)&&!anulados[x.id];});
-      var botao=e.tipo!=="estorno"&&e.tipo!=="efetivacao-beneficio"&&!estornado&&!aplicada?'<button type="button" data-pontos184="estornar" data-id="'+escape(e.id)+'" aria-label="Estornar registro">Estornar</button>':"";
+      var botao=e.tipo!=="estorno"&&e.tipo!=="efetivacao-beneficio"&&e.tipo!=="inicio-controle"&&!estornado&&!aplicada?'<button type="button" data-pontos184="estornar" data-id="'+escape(e.id)+'" aria-label="Estornar registro">Estornar</button>':"";
       return '<div class="shinobiPontos184Linha"><div><strong>'+escape(titulo)+'</strong><small>'+escape(valor)+(estornado?' · ESTORNADO':'')+'</small></div>'+botao+'</div>';
     }).join("");
     var antigos=(f.automacaoAtaques&&f.automacaoAtaques.aquisicoes)||[];
@@ -125,7 +122,11 @@
   function clicar(ev){
     var btn=ev.target&&ev.target.closest?ev.target.closest("[data-pontos184]"):null;if(!btn)return;
     var acao=btn.getAttribute("data-pontos184"),f=ficha();if(!f)return;
-    if(acao==="comprar"||acao==="historico"){
+    if(acao==="iniciar-controle"){
+      if(!E.precisaMarco(f,E.registro(f)))return root.alert("O controle já está ativo ou esta ficha utiliza o saldo normal por nível.");
+      if(!root.confirm("Iniciar o controle de Pontos-Chave e Pontos de Clã no nível "+E.resumo(f).nivel+" com saldo inicial ZERO?\n\nTodas as habilidades antigas serão preservadas. Nenhum gasto antigo precisa ser informado. Os novos créditos começam nos níveis seguintes. Esta decisão ficará registrada no histórico."))return;
+      transacionar({tipo:"inicio-controle",saldoChave:0,saldoCla:0},"iniciar-controle-futuro");
+    }else if(acao==="comprar"||acao==="historico"){
       var id=valorCampo("pontos184Habilidade"),nivel=numeroCampo("pontos184Nivel"),detalhes=valorCampo("pontos184Detalhes");
       var h=E.habilidade(id);if(!h)return root.alert("Selecione uma habilidade.");
       if(acao==="comprar"){
@@ -140,22 +141,16 @@
     }else if(acao==="converter"){
       var quant=numeroCampo("pontos184Converter");if(!root.confirm("Converter "+quant+" ponto(s) de clã em "+(2*quant)+" ponto(s)-chave?"))return;
       transacionar({tipo:"conversao",quantidade:quant},"converter-pontos-cla");
+    }else if(acao==="creditar-extra"){
+      if(E.precisaMarco(f,E.registro(f)))return root.alert("Inicie o controle futuro antes de registrar novos créditos.");
+      var quantidade=numeroCampo("pontos192QuantExtra"),bolsaExtra=valorCampo("pontos192BolsaExtra"),motivoExtra=valorCampo("pontos192MotivoExtra");
+      if(!motivoExtra)return root.alert("Informe a origem do crédito e a decisão do mestre.");
+      if(!root.confirm("Registrar "+quantidade+" ponto(s) "+(bolsaExtra==="cla"?"de clã":"-chave")+" como novo crédito? Isso não reconstrói gastos antigos e ficará no histórico."))return;
+      transacionar({tipo:"credito-extra",quantidade:quantidade,bolsa:bolsaExtra,motivo:motivoExtra},"credito-novo-confirmado");
     }else if(acao==="ajustar"){
       var n=numeroCampo("pontos184NivelAjuste"),q=numeroCampo("pontos184Credito"),bolsa=valorCampo("pontos184Bolsa"),motivo=valorCampo("pontos184Motivo");
       if(!root.confirm("Registrar decisão do mestre: conceder "+q+" pontos de "+(bolsa==="cla"?"clã":"chave")+" no nível "+n+"? Substituirá o valor anterior deste nível."))return;
       transacionar({tipo:"ajuste-nivel",nivel:n,quantidade:q,bolsa:bolsa,motivo:motivo},"ajuste-credito-mestre");
-    }else if(acao==="preparar-gasto"){
-      var estimativa=E.estimarGastosHistoricos(f);var campo=doc.getElementById("pontos184GastoAntigo");
-      if(campo)campo.value=String(estimativa.estimativaParcial);
-      var secao=doc.querySelector('#shinobiPontos184 .shinobiPontos184Secao:nth-of-type(2)');
-      // Procura o bloco de créditos pela presença do formulário, não por versão de CSS.
-      if(campo){var d=campo.closest('details');if(d){d.open=true;try{d.scrollIntoView({behavior:'smooth',block:'center'});}catch(_){}}}
-      root.alert('Preenchi apenas a estimativa parcial. Confira cada aquisição, descontos e pontos de clã com o mestre antes de salvar a despesa antiga.');
-    }else if(acao==="reconciliar"){
-      var gasto=numeroCampo("pontos184GastoAntigo"),reserva=valorCampo("pontos184BolsaAntiga"),razao=valorCampo("pontos184MotivoAntigo");
-      if(!razao||razao.length<8)return root.alert('Descreva quais gastos foram conferidos e por quem.');
-      if(!root.confirm('Confirmou os valores com o mestre? Registrar '+gasto+' ponto(s) de '+(reserva==='cla'?'clã':'chave')+' como despesas ANTERIORES? Não altera talentos ou atributos e não pode ser registrado duas vezes na mesma reserva.'))return;
-      transacionar({tipo:"despesa-antiga",custo:gasto,bolsa:reserva,motivo:razao},"reconciliar-gasto-antigo");
     }else if(acao==="estornar"){
       var alvo=btn.getAttribute("data-id");
       if(E.registro(f).eventos.some(function(e){return e.tipo==="efetivacao-beneficio"&&String(e.alvoId)===String(alvo)}))return root.alert("Esta compra já alterou um atributo. Faça uma conciliação supervisionada antes de estornar.");

@@ -79,6 +79,22 @@
   function catalogo(){return copiar(CATALOGO);}
   function ativa(e,estornos){return e && e.tipo!=="estorno" && !estornos.has(String(e.id));}
   function estornados(eventos){var s=new Set();eventos.forEach(function(e){if(e && e.tipo==="estorno")s.add(String(e.alvoId));});return s;}
+  // Marco opcional para fichas antigas. Ele NÃO altera compras, proficiências
+  // nem melhorias. Apenas define de onde em diante o saldo será contabilizado.
+  function marcoInicial(reg){
+    var cancelados=estornados(reg.eventos);
+    var ativos=reg.eventos.filter(function(e){return e&&e.tipo==='inicio-controle'&&ativa(e,cancelados);});
+    return ativos.length===1?ativos[0]:null;
+  }
+  function possuiHistoricos(ficha,reg){
+    return reg.eventos.some(function(e){return e&&(e.tipo==='historico'||e.tipo==='despesa-antiga');}) ||
+      !!(ficha&&ficha.automacaoAtaques&&Array.isArray(ficha.automacaoAtaques.aquisicoes)&&ficha.automacaoAtaques.aquisicoes.length);
+  }
+  function precisaMarco(ficha,reg){
+    reg=reg||registro(ficha);
+    return possuiHistoricos(ficha,reg)&&!marcoInicial(reg);
+  }
+  function eventoAnterior(marco,e){return !!(marco&&Array.isArray(marco.anterioresIds)&&marco.anterioresIds.indexOf(String(e.id))>=0);}
   function dadosCompras(ficha,reg){
     var cancelados=estornados(reg.eventos),compras=[];
     reg.eventos.forEach(function(e){if(ativa(e,cancelados)&&(e.tipo==="compra"||e.tipo==="historico"))compras.push(e);});
@@ -98,21 +114,31 @@
   }
   function resumo(ficha,reg){
     reg=reg||registro(ficha);
-    var nivel=nivelDaFicha(ficha),anulados=estornados(reg.eventos),chave=0,cla=0;
+    var nivel=nivelDaFicha(ficha),anulados=estornados(reg.eventos),marco=marcoInicial(reg);
+    var chave=marco?Number(marco.saldoChave):0,cla=marco?Number(marco.saldoCla):0;
     var creditoNiveis=[],gastos=0,claGastos=0,convertidos=0,gastosAntigos=0;
-    for(var i=1;i<=nivel;i++){
+    var inicio=marco?marco.nivel+1:1;
+    for(var i=inicio;i<=nivel;i++){
       var pc=PADRAO_CHAVE[i]||0,cl=PADRAO_CLA[i]||0;
-      reg.eventos.forEach(function(e){if(!ativa(e,anulados)||e.tipo!=="ajuste-nivel"||e.nivel!==i)return; if(e.bolsa==="chave")pc=e.quantidade; if(e.bolsa==="cla")cl=e.quantidade;});
-      chave+=pc; cla+=cl; if(pc||cl)creditoNiveis.push({nivel:i,chave:pc,cla:cl});
+      reg.eventos.forEach(function(e){if(!ativa(e,anulados)||e.tipo!=="ajuste-nivel"||e.nivel!==i||eventoAnterior(marco,e))return;
+        if(e.bolsa==="chave")pc=e.quantidade;if(e.bolsa==="cla")cl=e.quantidade;
+      });
+      chave+=pc;cla+=cl;if(pc||cl)creditoNiveis.push({nivel:i,chave:pc,cla:cl});
     }
     var ganhoChave=chave,ganhoCla=cla;
-    reg.eventos.forEach(function(e){if(!ativa(e,anulados))return;
+    reg.eventos.forEach(function(e){if(!ativa(e,anulados)||eventoAnterior(marco,e))return;
       if(e.tipo==="credito-extra"){if(e.bolsa==="chave"){chave+=e.quantidade;ganhoChave+=e.quantidade;}else{cla+=e.quantidade;ganhoCla+=e.quantidade;}}
       if(e.tipo==="conversao"){cla-=e.quantidade;chave+=2*e.quantidade;convertidos+=e.quantidade;}
-      if(e.tipo==="compra"||e.tipo==="despesa-antiga"){if(e.bolsa==="cla"){cla-=e.custo;claGastos+=e.custo;}else{chave-=e.custo;gastos+=e.custo;}if(e.tipo==="despesa-antiga")gastosAntigos+=e.custo;}
+      if(e.tipo==="compra"||e.tipo==="despesa-antiga"){if(e.bolsa==="cla"){cla-=e.custo;claGastos+=e.custo;}else{chave-=e.custo;gastos+=e.custo;}
+        if(e.tipo==="despesa-antiga")gastosAntigos+=e.custo;
+      }
     });
     var compras=dadosCompras(ficha,reg);
-    return {nivel:nivel,chaveDisponivel:chave,claDisponivel:cla,chaveRecebida:ganhoChave,claRecebida:ganhoCla,chaveGasta:gastos,claGasta:claGastos,gastosAntigos:gastosAntigos,pontosClaConvertidos:convertidos,creditosPorNivel:creditoNiveis,compras:compras,legados:compras.filter(function(c){return c.tipo!=="compra";}).length};
+    return {nivel:nivel,chaveDisponivel:chave,claDisponivel:cla,chaveRecebida:ganhoChave,claRecebida:ganhoCla,
+      chaveGasta:gastos,claGasta:claGastos,gastosAntigos:gastosAntigos,pontosClaConvertidos:convertidos,
+      creditosPorNivel:creditoNiveis,compras:compras,legados:compras.filter(function(c){return c.tipo!=="compra";}).length,
+      controleDesdeNivel:marco?marco.nivel:null,controleIniciado:!!marco,precisaIniciarControle:precisaMarco(ficha,reg),
+      saldoHistoricoDesconhecido:precisaMarco(ficha,reg)};
   }
   /* Conferência não destrutiva: o suplemento descreve aquisições, mas não prova
    * quanto foi efetivamente gasto. NUNCA lança despesas automaticamente. */
@@ -144,6 +170,17 @@
   function auditarIntegridade(ficha,reg){
     reg=reg||registro(ficha);
     var r=resumo(ficha,reg),problemas=[],cancelados=estornados(reg.eventos),ids=new Set(),fontes=new Map(),revisoes=new Map(),unicos=new Map();
+    var marcos=reg.eventos.filter(function(e){return e&&e.tipo==='inicio-controle'&&ativa(e,cancelados);});
+    if(marcos.length>1)problemas.push({codigo:'marco-inicial-duplicado',mensagem:'Dois dispositivos iniciaram o controle com marcos diferentes. Conferir antes de fazer novas compras.'});
+    var marco=marcoInicial(reg);
+    if(marco){
+      var conjunto=new Set((marco.anterioresIds||[]).map(String));
+      reg.eventos.forEach(function(e){if(!e||!e.id||!ativa(e,cancelados)||conjunto.has(String(e.id))||e.tipo==='inicio-controle')return;
+        if((e.tipo==='compra'||e.tipo==='conversao'||e.tipo==='credito-extra'||e.tipo==='despesa-antiga')&&e.criadoEm&&marco.criadoEm&&String(e.criadoEm)<String(marco.criadoEm)){
+          problemas.push({codigo:'evento-anterior-nao-vinculado',mensagem:'Transação anterior ao início apareceu após sincronização: '+String(e.id)});
+        }
+      });
+    }
     (Array.isArray(reg.conflitosSync)?reg.conflitosSync:[]).forEach(function(id){problemas.push({codigo:"colisao-id-sync",mensagem:"O mesmo evento teve versões diferentes em dois dispositivos: "+String(id)+". Conferência do histórico necessária."});});
     if(r.chaveDisponivel<0)problemas.push({codigo:"saldo-chave-negativo",mensagem:"Pontos-chave negativos após conciliação/sincronização: "+r.chaveDisponivel+"."});
     if(r.claDisponivel<0)problemas.push({codigo:"saldo-cla-negativo",mensagem:"Pontos de clã negativos após conciliação/sincronização: "+r.claDisponivel+"."});
@@ -185,6 +222,7 @@
     if(REQUISITOS_EXTRAS[h.id])throw new Error("Requisito ainda não verificável automaticamente: "+REQUISITOS_EXTRAS[h.id]+". Registre como histórico somente se já adquirido.");
     var nivel=nivelDaFicha(ficha),nivelCompra=inteiro(op.nivel,nivel);
     if(!nivelValido(nivelCompra)||nivelCompra>nivel)throw new Error("O nível da compra deve estar entre 1 e o nível atual.");
+    var marco=marcoInicial(reg);if(marco&&nivelCompra<marco.nivel)throw new Error('Compras novas não podem ser lançadas antes do início do controle futuro.');
     if(nivelCompra<h.nivelMin)throw new Error("Esta habilidade exige nível "+h.nivelMin+".");
     if(!h.repetivel&&temHabilidade(ficha,reg,h.id))throw new Error("Essa habilidade já foi adquirida. O livro não permite comprá-la outra vez.");
     if(h.requer&&!temHabilidade(ficha,reg,h.requer))throw new Error("É necessário adquirir antes: "+POR_ID[h.requer].nome+".");
@@ -231,11 +269,18 @@
     if(!e.id||!/^[-a-z0-9_:]{8,100}$/i.test(String(e.id)))throw new Error("Identificador de transação inválido.");
     if(clone.eventos.some(function(item){return String(item.id)===String(e.id);}))throw new Error("Esta transação já foi registrada.");
     e.criadoEm=String(e.criadoEm||new Date().toISOString());
-    if(e.tipo==="compra"){
+    if(e.tipo==="inicio-controle"){
+      if(!possuiHistoricos(ficha,clone))throw new Error('Esta ficha não tem aquisições antigas; o saldo normal já funciona por nível.');
+      if(marcoInicial(clone)||clone.eventos.some(function(x){return x.tipo==='inicio-controle'&&!estornados(clone.eventos).has(String(x.id));}))throw new Error('O controle futuro já foi iniciado. Não é possível criar outro marco.');
+      e.nivel=nivelDaFicha(ficha);
+      e.saldoChave=inteiro(e.saldoChave,-1);e.saldoCla=inteiro(e.saldoCla,-1);
+      if(e.saldoChave<0||e.saldoChave>1000||e.saldoCla<0||e.saldoCla>1000)throw new Error('O saldo inicial deve ser um número entre 0 e 1000.');
+      e.anterioresIds=clone.eventos.filter(function(x){return x&&x.id;}).map(function(x){return String(x.id);});
+      e.origem='marco-futuro-confirmado-pelo-jogador';
+    }else if(e.tipo==="compra"){
       if(e.bolsa&&e.bolsa!=="chave")throw new Error("Este catálogo usa pontos-chave. Compras de habilidades exclusivas de clã ainda não estão habilitadas.");
       var info=avaliarCompra(ficha,clone,e,dependencias);
-      var possuiHistoricos=dadosCompras(ficha,clone).some(function(c){return c.tipo!=="compra";});
-      if(possuiHistoricos&&!clone.eventos.some(function(x){return x.tipo==="despesa-antiga"&&!estornados(clone.eventos).has(String(x.id));}))throw new Error("Esta ficha tem aquisições antigas do suplemento ou da preparação. Reconcilie os gastos anteriores (até mesmo 0, se não houve gasto) antes de comprar novamente.");
+      if(precisaMarco(ficha,clone))throw new Error('Inicie o controle a partir do nível atual, sem reconstruir gastos antigos, antes de comprar.');
       e.bolsa="chave";e.custo=info.custo;e.nome=info.habilidade.nome;e.nivel=info.nivel;e.escolhas=info.escolhas;
     }else if(e.tipo==="historico"){
       var hab=POR_ID[e.habilidadeId];if(!hab)throw new Error("Habilidade não cadastrada.");
@@ -244,14 +289,18 @@
       if(!nivelValido(e.nivel)||e.nivel>nivelDaFicha(ficha))throw new Error("Nível histórico inválido.");
       e.custo=0;e.bolsa="historico";
     }else if(e.tipo==="conversao"){
+      if(precisaMarco(ficha,clone))throw new Error('Inicie o controle futuro antes de converter novos pontos.');
       e.quantidade=inteiro(e.quantidade,-1);
       if(e.quantidade<1||e.quantidade>100)throw new Error("Informe quantos pontos de clã converter (1 a 100).");
     }else if(e.tipo==="ajuste-nivel"){
       e.nivel=inteiro(e.nivel,-1);e.quantidade=inteiro(e.quantidade,-1);
       if(!nivelValido(e.nivel)||e.nivel>nivelDaFicha(ficha)||e.quantidade<0||e.quantidade>200)throw new Error("Informe um nível já alcançado e um crédito de 0 a 200 pontos.");
+      var inicioAtivo=marcoInicial(clone);
+      if(inicioAtivo&&e.nivel<=inicioAtivo.nivel)throw new Error('Esse nível é anterior ao marco. Use crédito extra para conceder novos pontos sem recalcular o passado.');
       if(e.bolsa!=="chave"&&e.bolsa!=="cla")throw new Error("Tipo de pontos inválido.");
       if(!String(e.motivo||"").trim())throw new Error("Descreva a decisão do mestre para o ajuste.");
     }else if(e.tipo==="despesa-antiga"){
+      if(marcoInicial(clone))throw new Error('O controle futuro já foi iniciado; não é necessário registrar gastos antigos.');
       var anulados=estornados(clone.eventos);
       if(clone.eventos.some(function(x){return x.tipo==="despesa-antiga"&&x.bolsa===e.bolsa&&ativa(x,anulados);}))throw new Error("Os gastos antigos desta reserva já foram conciliados. Para corrigir, estorne a conciliação anterior antes de registrar outra.");
       e.custo=inteiro(e.custo,-1);
@@ -263,6 +312,7 @@
       if(!String(e.motivo||"").trim())throw new Error("Informe a razão do crédito extra.");
     }else if(e.tipo==="estorno"){
       if(!e.alvoId||!clone.eventos.some(function(x){return String(x.id)===String(e.alvoId)&&x.tipo!=="estorno"}))throw new Error("Transação original não encontrada.");
+      if(clone.eventos.some(function(x){return String(x.id)===String(e.alvoId)&&x.tipo==='inicio-controle';}))throw new Error('O marco inicial não pode ser estornado; mudanças de saldo precisam de novo crédito ou correção autorizada.');
       if(clone.eventos.some(function(x){return x.tipo==="estorno"&&String(x.alvoId)===String(e.alvoId)}))throw new Error("Essa transação já foi estornada.");
     }else throw new Error("Tipo de transação desconhecido.");
     clone.eventos.push(e);
@@ -285,11 +335,11 @@
     var auditoriaAntes=auditarIntegridade(ficha,reg),auditoriaDepois=auditarIntegridade(ficha,clone);
     var corrigindo=e.tipo==="estorno"||e.tipo==="credito-extra"||e.tipo==="ajuste-nivel";
     if(!corrigindo&&auditoriaDepois.problemas.length>auditoriaAntes.problemas.length)throw new Error("Operação criaria inconsistência no histórico. Confira o saldo e as compras existentes.");
-    if(e.tipo==="compra"&&(!auditoriaAntes.ok||!auditoriaDepois.ok))throw new Error("Histórico em conflito após sincronização. Resolva os avisos antes de novas compras.");
+    if((e.tipo==="compra"||e.tipo==="inicio-controle")&&(!auditoriaAntes.ok||!auditoriaDepois.ok))throw new Error("Histórico em conflito após sincronização. Resolva os avisos antes de novas compras.");
     return clone;
   }
   function proficiencias(ficha,reg){
     return dadosCompras(ficha,reg||registro(ficha)).filter(function(c){return c.habilidadeId==="habilidade_com_armas"||c.habilidadeId==="versatilidade_com_armas";}).reduce(function(acc,c){var escolhidas=c.escolhas&&c.escolhas.armas||[];escolhidas.forEach(function(id){if(acc.indexOf(id)<0)acc.push(id);});return acc;},[]);
   }
-  return Object.freeze({versao:VERSAO,creditoPadraoChave:copiar(PADRAO_CHAVE),creditoPadraoCla:copiar(PADRAO_CLA),catalogo:catalogo,habilidade:habilidade,registro:registro,resumo:resumo,registrarEvento:registrarEvento,avaliarCompra:avaliarCompra,proficiencias:proficiencias,estimarGastosHistoricos:estimarGastosHistoricos,auditarIntegridade:auditarIntegridade});
+  return Object.freeze({versao:VERSAO,marcoInicial:marcoInicial,precisaMarco:precisaMarco,creditoPadraoChave:copiar(PADRAO_CHAVE),creditoPadraoCla:copiar(PADRAO_CLA),catalogo:catalogo,habilidade:habilidade,registro:registro,resumo:resumo,registrarEvento:registrarEvento,avaliarCompra:avaliarCompra,proficiencias:proficiencias,estimarGastosHistoricos:estimarGastosHistoricos,auditarIntegridade:auditarIntegridade});
 });
