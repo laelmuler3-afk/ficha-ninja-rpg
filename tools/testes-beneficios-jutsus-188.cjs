@@ -39,11 +39,12 @@ test('jutsu sem ID estável não recebe benefícios por nome',()=>{
   const f=ficha('acao-bonus');const j={nome:'Katon: Grande Bola de Fogo'};
   assert.equal(B.vinculos(f,j,E).length,0);
 });
-test('Ninjutsu Melhorado II não reduz custo automaticamente por ser limitado por uso',()=>{
+test('Ninjutsu Melhorado II deriva custo por uso sem reescrever a ficha',()=>{
   const f=ficha('reduzir-custo','nao-aplicado','ninjutsu_melhorado_2');
   const r=B.aplicar(f,f.jutsus[0],regra(),E);
-  assert.equal(r.custoEfetivoTexto,'7');
-  assert.match(r.beneficios188.pendentes[0],/por uso/);
+  assert.equal(r.custoEfetivoTexto,'3');
+  assert.equal(f.jutsus[0].custo,'7');
+  assert.equal(r.melhoradoII.restantes,3);
 });
 test('Ninjutsu Melhorado II já aplicado preserva custo 7, sem duplicar desconto',()=>{
   const f=ficha('reduzir-custo','ja-aplicado','ninjutsu_melhorado_2');

@@ -37,12 +37,12 @@ test('habilidade declarada manualmente aplicada nunca é reaplicada, nem recebe 
   assert.equal(r.danoEfetivo,'8d6');assert.equal(map['.b188Selo'],undefined);
   assert.match(map['.b188Detalhes'].textContent,/já ajustado manualmente/);
 });
-test('Melhorado II sem controle de uso não cria custo permanente de 7 no cartão',()=>{
+test('Melhorado II mostra custo temporário sem modificar valor original',()=>{
   const f=ficha('ninjutsu_melhorado_2','reduzir-custo','nao-aplicado');const {card,map}=fakeCard(),r=calculo(f);
   B.decorarCard(card,f.jutsus[0],r);
-  assert.equal(map['.jutsuTcgChipCusto strong'].textContent,'10 EKO');
+  assert.equal(map['.jutsuTcgChipCusto strong'].textContent,'6 EKO');
+  assert.equal(f.jutsus[0].custo,'10');
   assert.equal(map['.b188Selo'],undefined);
-  assert.match(map['.b188Detalhes'].textContent,/por uso/);
 });
 test('Custo efetivo de Kai pode aparecer na capa sem alterar custo salvo',()=>{
   const f=ficha('ninjutsu_melhorado_2','reduzir-custo','incerto');const {card,map}=fakeCard(),r=B.aplicar(f,f.jutsus[0],{custoEfetivoTexto:'0'},E);
