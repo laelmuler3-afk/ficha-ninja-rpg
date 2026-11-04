@@ -1,3 +1,4 @@
+/* GERADO AUTOMATICAMENTE — fonte: js/05-battle.js — app 2.5.8.190. Não editar. */
 /* Shinobi 1.8.5 — painel de combate com modificadores e efeitos acumulados. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -399,16 +400,20 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         return grade;
     }
     window.atualizarMostradoresExtrasBatalha = function () {
-        var _a, _b;
+        var _a, _b, _c, _d;
         if (!criarExtras())
             return;
         var iniciativa = document.getElementById("batalhaIniciativaView");
         var velocidade = document.getElementById("batalhaVelocidadeView");
         var proficiencia = document.getElementById("batalhaProficienciaView");
-        if (iniciativa)
-            iniciativa.textContent = comSinal(numeroCampo("iniciativa"));
+        if (iniciativa) {
+            var manual = numeroCampo("iniciativa");
+            var talento = ((_b = (_a = window.ShinobiBeneficiosPontos190) === null || _a === void 0 ? void 0 : _a.bonusAlerta) === null || _b === void 0 ? void 0 : _b.call(_a, estado, window.ShinobiPontosChave)) || 0;
+            iniciativa.textContent = comSinal(manual + talento);
+            iniciativa.title = talento ? "Iniciativa registrada ".concat(comSinal(manual), " + Alerta ").concat(comSinal(talento), " (benef\u00EDcio n\u00E3o aplicado manualmente)") : 'Iniciativa registrada na ficha';
+        }
         if (velocidade) {
-            var base = numeroCampo("velocidade"), multiplicador = Number(((_a = window.obterMultiplicadorEfeitosJutsuBatalha) === null || _a === void 0 ? void 0 : _a.call(window, "velocidade")) || 1), bonus = Number(((_b = window.obterBonusEfeitosJutsuBatalha) === null || _b === void 0 ? void 0 : _b.call(window, "velocidade")) || 0), total = Math.floor(base * multiplicador * 1000) / 1000 + bonus, detalhes = [];
+            var base = numeroCampo("velocidade"), multiplicador = Number(((_c = window.obterMultiplicadorEfeitosJutsuBatalha) === null || _c === void 0 ? void 0 : _c.call(window, "velocidade")) || 1), bonus = Number(((_d = window.obterBonusEfeitosJutsuBatalha) === null || _d === void 0 ? void 0 : _d.call(window, "velocidade")) || 0), total = Math.floor(base * multiplicador * 1000) / 1000 + bonus, detalhes = [];
             multiplicador !== 1 && detalhes.push("\u00D7".concat(multiplicador, " jutsu")), bonus && detalhes.push("".concat(bonus > 0 ? "+" : "").concat(bonus, "m jutsu")), velocidade.innerHTML = "".concat(String(total).replace(".", ",")).concat(detalhes.length ? "<span class=\"bonusDefesaTexto\">".concat(detalhes.join(" · "), "</span>") : "");
         }
         if (proficiencia)
@@ -443,6 +448,8 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         agendar();
     }
     window.addEventListener("pageshow", agendar);
+    window.addEventListener("shinobi:pontos-chave-atualizados", agendar);
+    window.addEventListener("shinobi:realtime-aplicado", agendar);
 })();
 /* ===== NAVEGAÇÃO VERTICAL CONTÍNUA ===== */
 (function () {

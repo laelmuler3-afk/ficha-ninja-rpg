@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.188. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.190. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -383,11 +383,16 @@ var __read = (this && this.__read) || function (o, n) {
             }
         }
         var bonusNatureza = bonusNivel2 + bonusNivel6;
+        var T = window.ShinobiBeneficiosPontos190;
+        var bonusTalento190 = T && window.ShinobiPontosChave
+            ? T.bonusNinjutsuMelhoradoI(estado, window.ShinobiPontosChave, { natureza: natureza, nivel: nivel, conjuracao: conjuracao, danoBase: danoBase })
+            : 0;
+        var bonusTotalAutomatico = bonusNatureza + (temDano ? bonusTalento190 : 0);
         var bonusManualTexto = String((_b = jutsu === null || jutsu === void 0 ? void 0 : jutsu.bonusDano) !== null && _b !== void 0 ? _b : "").trim();
         var bonusManualNumero = valorNumericoEstrito(bonusManualTexto);
         var bonusTotalNumero = bonusManualNumero === null
             ? null
-            : bonusManualNumero + bonusNatureza;
+            : bonusManualNumero + bonusTotalAutomatico;
         var custoBaseTexto = String((_c = jutsu === null || jutsu === void 0 ? void 0 : jutsu.custo) !== null && _c !== void 0 ? _c : "").trim();
         var kaiSemCusto = Boolean(natureza && nivel >= 4 && ehTecnicaKai(jutsu));
         var metaNivel5 = nivel5Ativo
@@ -409,6 +414,8 @@ var __read = (this && this.__read) || function (o, n) {
             bonusNivel2: bonusNivel2,
             bonusNivel6: bonusNivel6,
             bonusNatureza: bonusNatureza,
+            bonusTalento190: temDano ? bonusTalento190 : 0,
+            bonusTotalAutomatico: bonusTotalAutomatico,
             motivoBonus: motivos.join(" + "),
             bonusManualTexto: bonusManualTexto,
             bonusManualNumero: bonusManualNumero,
@@ -426,20 +433,21 @@ var __read = (this && this.__read) || function (o, n) {
         return B && E ? B.aplicar(estado, jutsu, regraCalculada, E) : regraCalculada;
     }
     function formatarBonusTotal(regra) {
+        var _a, _b;
+        var bonus = Number((_b = (_a = regra.bonusTotalAutomatico) !== null && _a !== void 0 ? _a : regra.bonusNatureza) !== null && _b !== void 0 ? _b : 0);
         if (regra.bonusTotalNumero !== null)
             return comSinal(regra.bonusTotalNumero);
-        if (regra.bonusManualTexto && regra.bonusNatureza) {
-            return "".concat(regra.bonusManualTexto, " \u00B7 autom\u00E1tico ").concat(comSinal(regra.bonusNatureza));
-        }
+        if (regra.bonusManualTexto && bonus)
+            return "".concat(regra.bonusManualTexto, " \u00B7 autom\u00E1tico ").concat(comSinal(bonus));
         if (regra.bonusManualTexto)
             return regra.bonusManualTexto;
-        if (regra.bonusNatureza)
-            return comSinal(regra.bonusNatureza);
-        return "—";
+        return bonus ? comSinal(bonus) : "—";
     }
     function formatarDanoTotal(regra) {
+        var _a, _b;
         var dano = regra.danoEfetivo || "";
         var bonus = formatarBonusTotal(regra);
+        var automatico = Number((_b = (_a = regra.bonusTotalAutomatico) !== null && _a !== void 0 ? _a : regra.bonusNatureza) !== null && _b !== void 0 ? _b : 0);
         if (!dano)
             return bonus;
         if (bonus === "—" || bonus === "0")
@@ -447,11 +455,11 @@ var __read = (this && this.__read) || function (o, n) {
         if (regra.bonusTotalNumero !== null) {
             return "".concat(dano, " ").concat(regra.bonusTotalNumero >= 0 ? "+" : "-", " ").concat(Math.abs(regra.bonusTotalNumero));
         }
-        if (regra.bonusManualTexto && regra.bonusNatureza) {
-            return "".concat(dano, " + ").concat(regra.bonusManualTexto, " ").concat(regra.bonusNatureza >= 0 ? "+" : "-", " ").concat(Math.abs(regra.bonusNatureza));
+        if (regra.bonusManualTexto && automatico) {
+            return "".concat(dano, " + ").concat(regra.bonusManualTexto, " ").concat(automatico >= 0 ? "+" : "-", " ").concat(Math.abs(automatico));
         }
-        if (regra.bonusNatureza) {
-            return "".concat(dano, " ").concat(regra.bonusNatureza >= 0 ? "+" : "-", " ").concat(Math.abs(regra.bonusNatureza));
+        if (automatico) {
+            return "".concat(dano, " ").concat(automatico >= 0 ? "+" : "-", " ").concat(Math.abs(automatico));
         }
         return "".concat(dano, " + ").concat(regra.bonusManualTexto);
     }
@@ -584,6 +592,8 @@ var __read = (this && this.__read) || function (o, n) {
                 partesBonus.push("Manual ".concat(regra.bonusManualTexto));
             if (regra.bonusNivel2)
                 partesBonus.push("N2 ".concat(comSinal(regra.bonusNivel2)));
+            if (regra.bonusTalento190)
+                partesBonus.push("Ninjutsu Melhorado I ".concat(comSinal(regra.bonusTalento190)));
             if (regra.bonusNivel6 || (regra.nivel >= 6 && regra.quantidadeDados > 0)) {
                 partesBonus.push("N6 ".concat(comSinal(regra.bonusNivel6), " (").concat(regra.quantidadeDados, " dados)"));
             }
@@ -848,6 +858,7 @@ var __read = (this && this.__read) || function (o, n) {
                             ((_d = (_c = regra.beneficios188) === null || _c === void 0 ? void 0 : _c.aplicados) === null || _d === void 0 ? void 0 : _d.length) ? regra.beneficios188.aplicados.join("; ") : "",
                             ((_f = (_e = regra.beneficios188) === null || _e === void 0 ? void 0 : _e.pendentes) === null || _f === void 0 ? void 0 : _f.length) ? "Melhorias pendentes: " + regra.beneficios188.pendentes.join("; ") : "",
                             regra.bonusNivel2 ? "N2: ".concat(comSinal(regra.bonusNivel2)) : "",
+                            regra.bonusTalento190 ? "Ninjutsu Melhorado I: ".concat(comSinal(regra.bonusTalento190)) : "",
                             regra.bonusNivel6 ? "N6: ".concat(comSinal(regra.bonusNivel6), " (").concat(regra.quantidadeDados, " dados)") : ""
                         ].filter(Boolean).join("\n");
                         if (!(typeof confirmarUsoAcao === "function")) return [3 /*break*/, 2];

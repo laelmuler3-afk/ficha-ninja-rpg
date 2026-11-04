@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-pontos-chave-ui.js — app 2.5.8.186. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-pontos-chave-ui.js — app 2.5.8.190. Não editar. */
 /* Shinobi 2.5.8.184 — área de Pontos-Chave no Perfil / Progressão.
  * Nenhum efeito de talento é aplicado diretamente à ficha nesta etapa.
  */
@@ -165,11 +165,16 @@
                 titulo = "Revisão de gasto anterior";
                 valor = "−" + e.custo + " de " + (e.bolsa === "cla" ? "clã" : "chave");
             }
+            else if (e.tipo === "efetivacao-beneficio") {
+                titulo = "Benefício efetivado: " + (e.habilidadeId || "Habilidade");
+                valor = (e.campo || "Atributo") + " " + e.antes + " → " + e.depois + " · preservado no histórico";
+            }
             else if (e.tipo === "estorno") {
                 titulo = "Estorno";
                 valor = "Transação " + e.alvoId;
             }
-            var botao = e.tipo !== "estorno" && !estornado ? '<button type="button" data-pontos184="estornar" data-id="' + escape(e.id) + '" aria-label="Estornar registro">Estornar</button>' : "";
+            var aplicada = eventos.some(function (x) { return x.tipo === "efetivacao-beneficio" && String(x.alvoId) === String(e.id) && !anulados[x.id]; });
+            var botao = e.tipo !== "estorno" && e.tipo !== "efetivacao-beneficio" && !estornado && !aplicada ? '<button type="button" data-pontos184="estornar" data-id="' + escape(e.id) + '" aria-label="Estornar registro">Estornar</button>' : "";
             return '<div class="shinobiPontos184Linha"><div><strong>' + escape(titulo) + '</strong><small>' + escape(valor) + (estornado ? ' · ESTORNADO' : '') + '</small></div>' + botao + '</div>';
         }).join("");
         var antigos = (f.automacaoAtaques && f.automacaoAtaques.aquisicoes) || [];
@@ -232,6 +237,8 @@
         }
         else if (acao === "estornar") {
             var alvo = btn.getAttribute("data-id");
+            if (E.registro(f).eventos.some(function (e) { return e.tipo === "efetivacao-beneficio" && String(e.alvoId) === String(alvo); }))
+                return root.alert("Esta compra já alterou um atributo. Faça uma conciliação supervisionada antes de estornar.");
             if (!root.confirm("Estornar esta transação? O histórico será preservado e o saldo será recalculado."))
                 return;
             transacionar({ tipo: "estorno", alvoId: alvo }, "estorno-pontos-chave");

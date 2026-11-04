@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.189",
+  "version": "2.5.8.190",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "244d2d007147ca15ce064300955486f3b862bcbaf19188f6cc112c206a0755f6",
-      "outputSha256": "fda63e0aa85298f32d2900be7c77989515f6044318497717b19f62a95b70233a"
+      "sourceSha256": "16d8149da20ee0aa0f2c21268e660cf728f3fcdf9863133e2a43ceaf7e8b8e9a",
+      "outputSha256": "0de36a697eeb9039b294d5796406a9353b69244719630b95d96fa5c579b51ae5"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -40,8 +40,8 @@
       "outputSha256": "bc2550e88676f1a81e4d294fd4fb3ddf12579e83c6022bd107546b1b52ce6eba"
     },
     "js/05-battle.js": {
-      "sourceSha256": "1d53e2ce3a6e988fad109e60b8638e1939424c86f5207cdef0dd66846925d5ef",
-      "outputSha256": "550107daf576b840f1c5f936082f62d7d0c9e22f1c5cf7e87bcc65ccd6bbe951"
+      "sourceSha256": "206020aacb4cad9efb16afa121ebf41decd844976d653648bc26f9ae1cb3819c",
+      "outputSha256": "15b4b2e7dfc4c489231bf96f93fb96f7afd213a1d0a10662c07ea865dca4bbc6"
     },
     "js/05-kekkei-item-level.js": {
       "sourceSha256": "7d2d17d67371addbfee9fc4883e2112332194b10128a32d4fd6a867b61425659",
@@ -72,8 +72,8 @@
       "outputSha256": "ddb7583c4a78cf000135c1c50ab3995b0b6969ed160cb1f3700a5b6b38107077"
     },
     "js/10-regras-natureza.js": {
-      "sourceSha256": "8905f5738f7eddec2219cbaf9eea9992bbdb7615783223bd7adc09f6c39e9ed3",
-      "outputSha256": "21822aee3baddb625590e7b1f729bc8c50bc75726e026ff2dee234c4ffa5ac24"
+      "sourceSha256": "fc121cca62184c6dc467f93bb211a3e2cb1377e27ca92290fc8ae5a038660f15",
+      "outputSha256": "6740141170b86c7e5b1ce1a7c4be8caeac69440b25fe9fa997e0cee5d858eab1"
     },
     "js/11-batalha-ui.js": {
       "sourceSha256": "ac9cececea347b357268ab0af81ae2568a872b9330b7bcf99235d640bbb6036d",
@@ -99,6 +99,18 @@
       "sourceSha256": "845083e5b4ae18ca7b658ea46d43b9e5d876fd58e3019dc41ed1e87b333aed6c",
       "outputSha256": "7dedccb29afbb6dd0e048fa20f64427ffe7c4dc2089c39016927db286dcaea47"
     },
+    "js/17-ataques-automaticos.js": {
+      "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
+      "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
+    },
+    "js/17-beneficios-jutsus-188.js": {
+      "sourceSha256": "218aa69d752522828f5ca252ab2b885aa13075de94c46f934332625d3b7c9495",
+      "outputSha256": "da5495e4d0b48eb30799230d36588aa16ed534584401b012a82d6dc3a15f064e"
+    },
+    "js/17-beneficios-pontos-chave-190.js": {
+      "sourceSha256": "726f95cf07de7a800f5a29d92d5891d160e9284d7cdfc60bc8f3d83a7d935ebb",
+      "outputSha256": "d2ab067c89fedfe51ae6ff7b52296cb53040189e38f4b1c65dd8a02dfaec8655"
+    },
     "js/17-calculos-confirmados.js": {
       "sourceSha256": "5c4199b04a33753c7575f60a9e7f7826fa405a4c643bb3f5b2d162f05a4c3cc7",
       "outputSha256": "731b08f88a480699370cccf41941cd7654af341359bc269fddfd91e7c006fef4"
@@ -111,17 +123,29 @@
       "sourceSha256": "c6fdc4f5eb5ae4691878bb64c7e11569ef1e90b202f9b36e484189976cffddda",
       "outputSha256": "0ebba96df02d969817963ff2850aa2f15752ca92a1db79c55b6ee47ad1d09d4f"
     },
+    "js/17-migracao-habilidades-186.js": {
+      "sourceSha256": "a3d54538149d687878e0ffe3f50975371db9c15ea9d6033afd9fef7bd222c25f",
+      "outputSha256": "f72467aac4426a147940b7392e731fe328f0ab807ecd6f1bb13e2a36bcef2cb0"
+    },
+    "js/17-migracao-habilidades-ui-186.js": {
+      "sourceSha256": "adf1c7cb7ba6fc543090a243d8dabc35030fe331722ad5d0f4c943aad97ed04c",
+      "outputSha256": "7ac48eca7005308ae3d349ea6bc99c5e4f7dc395422393528c271fcadb45e955"
+    },
     "js/17-pontos-chave-engine.js": {
       "sourceSha256": "5a14ab54ad667d348cb7a1b6a291869a564d130a1a57ad70533d25f6f8028b80",
       "outputSha256": "435fc6f65a30114c99431d0660e3447b49e04c22410c986309d850313f30af20"
     },
     "js/17-pontos-chave-ui.js": {
-      "sourceSha256": "308778b4e469d91426e6bc36671b0a8f2a1782ec60d92580947c4f05035087b3",
-      "outputSha256": "708b0dc9938552dca4eafbac5701b53ab8e5193ae7d10fd8b58eb349769e4321"
+      "sourceSha256": "52971756032b02a175a3ea941ad52b30ce84aeeab2171138397bf0ba8161fe2d",
+      "outputSha256": "782887aa3328dd9c2075b42db754b476d8787c43ede7b696acb3b7313b958905"
     },
     "js/17-preparacao-ataques.js": {
       "sourceSha256": "57ee13d8a15470f7e35d27782c58fe341b6b538af019d68c06fe6b52b9890811",
       "outputSha256": "519eb526ded724337e98af0abc37026f96946a813db8326defb83519635444b7"
+    },
+    "js/17-vinculos-jutsus-187.js": {
+      "sourceSha256": "c126c5e52465a5bf2c592146afc95974d960ba781c7969a37dd37b851ad23977",
+      "outputSha256": "e9e254f7358efdb7a302da6e84cdfd9fdcf4a5c1f8362f63b072931205930712"
     },
     "js/18-online-config.js": {
       "sourceSha256": "7b69b0554550eb88845a36cec8882dc5366d92a7fac223897fb093690130cd58",
@@ -180,28 +204,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "ca2ff65eb8fe4e30fecc140fd6c2aca9b711ec894251eac35e40100c50942c0a",
-      "outputSha256": "6e10b79a13f6702c844c2df272817f610365ceef6030938dab0450bfd0194bd6"
-    },
-    "js/17-ataques-automaticos.js": {
-      "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
-      "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
-    },
-    "js/17-migracao-habilidades-186.js": {
-      "sourceSha256": "a3d54538149d687878e0ffe3f50975371db9c15ea9d6033afd9fef7bd222c25f",
-      "outputSha256": "f72467aac4426a147940b7392e731fe328f0ab807ecd6f1bb13e2a36bcef2cb0"
-    },
-    "js/17-migracao-habilidades-ui-186.js": {
-      "sourceSha256": "adf1c7cb7ba6fc543090a243d8dabc35030fe331722ad5d0f4c943aad97ed04c",
-      "outputSha256": "7ac48eca7005308ae3d349ea6bc99c5e4f7dc395422393528c271fcadb45e955"
-    },
-    "js/17-vinculos-jutsus-187.js": {
-      "sourceSha256": "c126c5e52465a5bf2c592146afc95974d960ba781c7969a37dd37b851ad23977",
-      "outputSha256": "e9e254f7358efdb7a302da6e84cdfd9fdcf4a5c1f8362f63b072931205930712"
-    },
-    "js/17-beneficios-jutsus-188.js": {
-      "sourceSha256": "218aa69d752522828f5ca252ab2b885aa13075de94c46f934332625d3b7c9495",
-      "outputSha256": "da5495e4d0b48eb30799230d36588aa16ed534584401b012a82d6dc3a15f064e"
+      "sourceSha256": "b9a9ee1f8fbd8297963e0127f44982da941aa61b47b1eb31c82acd55eab22178",
+      "outputSha256": "fa3db61fd64a1a56a78744c76012dd33be810ba4dae298a7404833c89367210b"
     }
   }
 }
