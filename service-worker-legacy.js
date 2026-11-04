@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.189. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.190. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,10 +71,10 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.189 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.190 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.189";
+var APP_VERSION = "2.5.8.190";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);
@@ -111,6 +111,7 @@ var APP_SHELL = [
     "./css/migracao-habilidades-186.css?v=".concat(APP_VERSION),
     "./css/vinculos-jutsus-187.css?v=".concat(APP_VERSION),
     "./css/beneficios-jutsus-188.css?v=".concat(APP_VERSION),
+    "./css/beneficios-pontos-190.css?v=".concat(APP_VERSION),
     "./css/tcg-jutsus.css?v=".concat(APP_VERSION),
     "./assets/tcg/filigrana.svg?v=".concat(APP_VERSION),
     "./assets/tcg/placa-nome.svg?v=".concat(APP_VERSION),
@@ -154,6 +155,8 @@ var APP_SHELL = [
     "./js/17-migracao-habilidades-ui-186.js?v=".concat(APP_VERSION),
     "./js/17-vinculos-jutsus-187.js?v=".concat(APP_VERSION),
     "./js/17-beneficios-jutsus-188.js?v=".concat(APP_VERSION),
+    "./js/17-beneficios-pontos-chave-190.js?v=".concat(APP_VERSION),
+    "./js-legacy/17-beneficios-pontos-chave-190.js?v=".concat(APP_VERSION),
     "./js-legacy/17-integracao-ataques.js?v=".concat(APP_VERSION),
     "./js-legacy/17-preparacao-ataques.js?v=".concat(APP_VERSION),
     "./js-legacy/17-pontos-chave-engine.js?v=".concat(APP_VERSION),

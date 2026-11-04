@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.189",
-  "name": "Correção do reconhecimento de personagens no suplemento",
-  "notes": "Aceita Nome e Clã separados no Perfil, preservando o vínculo exato com o suplemento; não cobra compras nem reaplica bônus.",
+  "version": "2.5.8.190",
+  "name": "Benefícios confirmados de Pontos-Chave",
+  "notes": "Iniciativa com Alerta, Ninjutsu Melhorado I e efetivação assistida de Melhoria de Atributo com prevenção de duplicatas.",
   "date": "2026-11-03"
 }
