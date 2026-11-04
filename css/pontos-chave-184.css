@@ -32,3 +32,12 @@
 #identidade .shinobiPontos184Linha small{display:block;color:#acc6cc;font-size:10px;line-height:1.5;}
 #identidade .shinobiPontos184Linha button{border:1px solid rgba(205,140,110,.4);background:rgba(108,46,34,.35);border-radius:7px;padding:7px 8px;color:#ffd7ce;font-size:11px;cursor:pointer;}
 @media(max-width:360px){#identidade .shinobiPontos184Campos{grid-template-columns:1fr;}}
+
+/* 2.5.8.191: conciliação não destrutiva e avisos de histórico */
+.shinobiPontos191Auditoria{display:grid;gap:10px;margin:12px 0;color:var(--text-color,#d3e0e5)}
+.pontos191Alerta,.pontos191Conferencia{border:1px solid rgba(221,160,91,.38);border-radius:12px;padding:12px;background:rgba(96,48,21,.14);font-size:.91rem;line-height:1.55}
+.pontos191Alerta strong{color:#ffc28a}
+.pontos191Alerta p,.pontos191Conferencia p{margin:7px 0}
+.pontos191Alerta ul,.pontos191Conferencia ul{margin:8px 0;padding-left:18px;max-height:260px;overflow:auto}
+.pontos191Conferencia summary{cursor:pointer;font-weight:700;touch-action:manipulation}
+.pontos191Conferencia .shinobiPontos184Secundario{margin-top:6px;width:100%;white-space:normal}
