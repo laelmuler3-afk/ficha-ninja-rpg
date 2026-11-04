@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/19-realtime-fields-utils.js — app 2.5.8.183. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/19-realtime-fields-utils.js — app 2.5.8.191. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -221,18 +221,36 @@ var __values = (this && this.__values) || function(o) {
         var r = remoto && typeof remoto === "object" && !Array.isArray(remoto) ? remoto : {};
         var l = local && typeof local === "object" && !Array.isArray(local) ? local : {};
         var porId = new Map();
+        var colisoes = new Set(__spreadArray(__spreadArray([], __read((Array.isArray(l.conflitosSync) ? l.conflitosSync : [])), false), __read((Array.isArray(r.conflitosSync) ? r.conflitosSync : [])), false));
+        function canonico(v) {
+            if (Array.isArray(v))
+                return v.map(canonico);
+            if (v && typeof v === 'object')
+                return Object.keys(v).sort().reduce(function (a, k) { a[k] = canonico(v[k]); return a; }, {});
+            return v;
+        }
         [l, r].forEach(function (registro) { return (Array.isArray(registro.eventos) ? registro.eventos : []).forEach(function (evento) {
             if (!evento || typeof evento !== "object")
                 return;
             var id = String(evento.id || "").trim();
             if (!id)
                 return;
-            // Para o mesmo ID, o registro recebido do servidor tem precedência.
+            var anterior = porId.get(id);
+            if (anterior && JSON.stringify(canonico(anterior)) !== JSON.stringify(canonico(evento))) {
+                // IDs são imutáveis: duas versões distintas do mesmo evento exigem
+                // conferência humana. Não inventar resolução financeira silenciosa.
+                colisoes.add(id);
+            }
+            // Para o mesmo ID, o registro recebido do servidor tem precedência,
+            // mas a colisão fica registrada para bloquear novos débitos.
             porId.set(id, clonar(evento));
         }); });
-        return { versao: 1, eventos: __spreadArray([], __read(porId.values()), false).sort(function (a, b) {
+        var combinado = { versao: 1, eventos: __spreadArray([], __read(porId.values()), false).sort(function (a, b) {
                 return String(a.criadoEm || "").localeCompare(String(b.criadoEm || "")) || String(a.id).localeCompare(String(b.id));
             }) };
+        if (colisoes.size)
+            combinado.conflitosSync = __spreadArray([], __read(colisoes), false).sort();
+        return combinado;
     }
     function mesclarValorRemoto(nome, remoto, local) {
         if (nome === "pontosChaveV1")

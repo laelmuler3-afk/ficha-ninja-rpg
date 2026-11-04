@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-migracao-habilidades-186.js — app 2.5.8.189. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-migracao-habilidades-186.js — app 2.5.8.191. Não editar. */
 /* Projetinho Shinobi 2.5.8.186 — reconhecimento assistido de habilidades antigas.
  * Fonte: suplemento Shinobi pp. 19, 30, 41 e 52. Apenas dados da lista "Pontos chave gastos".
  * NUNCA recalcula atributos, custos dos jutsus ou saldos. Confirmação por ficha é obrigatória.
@@ -101,6 +101,7 @@
             if (existente) {
                 copia.estado = 'importado';
                 copia.eventoExistenteId = String(existente.id);
+                copia.escolhasAtuais = clone(existente.escolhas || {});
                 return copia;
             }
             // Um vínculo já registrado em evento de metadados também conta como confirmado.
@@ -110,6 +111,8 @@
             if (vinculo) {
                 copia.estado = 'vinculado';
                 copia.eventoExistenteId = String(vinculo.alvoId);
+                var compra = livro.resumo(ficha).compras.find(function (c) { return String(c.id) === String(vinculo.alvoId); });
+                copia.escolhasAtuais = clone(compra && compra.escolhas || vinculo.escolhas || {});
                 return copia;
             }
             var compativeis = compras.filter(function (c) {
@@ -213,6 +216,52 @@
         });
         return { registro: registro, confirmadas: confirmadas, omitidas: omitidas, naoAlteraFicha: true };
     }
+    /* Uma correção de destino cria outro VÍNCULO (não outra compra).
+     * O vínculo anterior permanece no histórico para auditoria/sincronização. */
+    function revisar(ficha, sourceId, opcoes, livro) {
+        var modelo = identificar(ficha);
+        if (!modelo)
+            throw new Error('Esta ficha não corresponde ao suplemento; revisão indisponível.');
+        var entrada = entradasValidas(modelo, ficha, livro).find(function (e) { return e.sourceId === sourceId; });
+        if (!entrada || ['importado', 'vinculado'].indexOf(entrada.estado) < 0)
+            throw new Error('A aquisição ainda não foi confirmada. Use a importação inicial.');
+        var registro = livro.registro(ficha), cancelados = new Set(registro.eventos.filter(function (e) { return e.tipo === 'estorno'; }).map(function (e) { return String(e.alvoId); }));
+        var compra = livro.resumo(ficha).compras.find(function (c) { return String(c.id) === String(entrada.eventoExistenteId); });
+        if (!compra)
+            throw new Error('Não foi encontrada a aquisição original. Nenhum dado foi modificado.');
+        if (registro.eventos.some(function (e) { return e.tipo === 'efetivacao-beneficio' && String(e.alvoId) === String(compra.id) && !cancelados.has(String(e.id)); })) {
+            throw new Error('O benefício já alterou permanentemente um atributo. Corrija com supervisão do mestre, não movendo o vínculo.');
+        }
+        var destino = validarDestino(entrada, opcoes, ficha);
+        if (entrada.tipoAlvo === 'jutsu') {
+            var opcoesEfeito = entrada.habilidadeId === 'ninjutsu_aprimorado' ? ['aumentar-dado', 'acao-bonus', 'triplicar-alcance'] :
+                entrada.habilidadeId === 'ninjutsu_melhorado_2' ? ['reduzir-custo', 'dobrar-alcance'] : [];
+            if (opcoesEfeito.length && opcoesEfeito.indexOf(destino.efeito) < 0)
+                throw new Error('Informe o tipo de melhoria aplicado ao jutsu.');
+            if (/^indice:/.test(destino.alvoId))
+                throw new Error('Este jutsu não tem identificador estável. Salve-o antes de vincular.');
+        }
+        var escolhas = { alvoId: destino.alvoId, alvoNome: destino.alvoNome, alvoTipo: destino.alvoTipo,
+            aplicacao: destino.aplicacao, observacao: destino.observacao, tipoNatureza: destino.tipoNatureza, efeito: destino.efeito,
+            descricao: entrada.rotulo, armas: entrada.tipoAlvo === 'armas' ? ['wakizaki', 'agulha'] : [] };
+        var atuais = compra.escolhas || {};
+        if (['alvoId', 'alvoTipo', 'aplicacao', 'tipoNatureza', 'efeito', 'observacao'].every(function (k) { return String(atuais[k] || '') === String(escolhas[k] || ''); }))
+            throw new Error('Nenhuma informação foi alterada.');
+        var anteriores = registro.eventos.filter(function (e) { return e && e.origemSuplementoId === sourceId && !cancelados.has(String(e.id)); });
+        var base = anteriores.length ? anteriores[anteriores.length - 1] : null;
+        var evento = { id: 'rv191_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 11),
+            tipo: 'vinculo-habilidade', alvoId: String(compra.id), habilidadeId: entrada.habilidadeId, nome: entrada.rotulo,
+            origem: 'revisao-assistida-191', origemSuplementoId: sourceId, paginaSuplemento: modelo.pagina,
+            revisaEventoId: base ? String(base.id) : String(compra.id),
+            criadoEm: new Date().toISOString(), escolhas: escolhas };
+        registro.eventos.push(evento);
+        if (livro.auditarIntegridade) {
+            var audit = livro.auditarIntegridade(ficha, registro);
+            if (audit.problemas.some(function (p) { return p.codigo === 'revisao-concorrente'; }))
+                throw new Error('Outra revisão concorrente deste vínculo foi detectada. Atualize a ficha antes de tentar novamente.');
+        }
+        return { registro: registro, evento: evento, naoAlteraFicha: true, naoDebita: true };
+    }
     return Object.freeze({ versao: VERSAO, modelos: modelos, obter: obter, identificar: identificar, entradasValidas: entradasValidas,
-        alvos: alvos, validarDestino: validarDestino, conciliar: conciliar, normalizar: normal });
+        alvos: alvos, validarDestino: validarDestino, conciliar: conciliar, revisar: revisar, normalizar: normal });
 });
