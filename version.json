@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.190",
-  "name": "Benefícios confirmados de Pontos-Chave",
-  "notes": "Iniciativa com Alerta, Ninjutsu Melhorado I e efetivação assistida de Melhoria de Atributo com prevenção de duplicatas.",
-  "date": "2026-11-03"
+  "version": "2.5.8.191",
+  "name": "Conciliação e integridade de Pontos-Chave",
+  "notes": "Prévia sem débito dos gastos antigos, alerta de conflitos sincronizados e revisão de vínculos sem compras duplicadas.",
+  "date": "2026-11-04"
 }
