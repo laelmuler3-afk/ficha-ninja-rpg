@@ -600,6 +600,17 @@
         detalheDano
       );
 
+      // Ninjutsu Aprimorado pode alterar alcance sem alterar o campo salvo.
+      // A carta expandida precisa mostrar a distância efetiva, não a base.
+      if(regra.alcanceEfetivo){
+        preencherBotaoResumo(
+          botaoResumoPorRotulo(card, "Alcance"),
+          "Alcance",
+          regra.alcanceEfetivo,
+          `Alcance original: ${jutsu.alcance || "—"}`
+        );
+      }
+
       const partesBonus = [];
       if(regra.bonusManualTexto) partesBonus.push(`Manual ${regra.bonusManualTexto}`);
       if(regra.bonusNivel2) partesBonus.push(`N2 ${comSinal(regra.bonusNivel2)}`);

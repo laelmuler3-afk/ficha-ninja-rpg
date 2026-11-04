@@ -47,7 +47,7 @@
     return (m[1]||'')+valor+' '+m[3];
   }
   function aplicar(ficha,jutsu,regra,livro){
-    var saida=Object.assign({},regra||{}),aplicados=[],preservados=[],pendentes=[];
+    var saida=Object.assign({},regra||{}),aplicados=[],preservados=[],pendentes=[],indicadores=[];
     var encontrados=vinculos(ficha,jutsu,livro);
     var usados=new Set();
     encontrados.forEach(function(c){
@@ -71,35 +71,54 @@
         if(!novo){pendentes.push(tag+': dano sem dado compatível; não alterado');return;}
         saida.danoEfetivo=novo;
         aplicados.push('Ninjutsu Aprimorado: dado de dano '+novo);
+        indicadores.push('Dano '+novo);
       }else if(efeito==='acao-bonus'){
         saida.acaoEfetiva='Ação Bônus';
         aplicados.push('Ninjutsu Aprimorado: Ação Bônus (AB)');
+        indicadores.push('Ação AB');
       }else if(efeito==='triplicar-alcance'){
         var alcance=triplicarAlcance(jutsu.alcance);
         if(!alcance){pendentes.push(tag+': alcance não é uma distância simples; revisão necessária');return;}
         saida.alcanceEfetivo=alcance;
         aplicados.push('Ninjutsu Aprimorado: alcance '+alcance);
+        indicadores.push('Alcance '+alcance);
       }else{
         pendentes.push(tag+': efeito não reconhecido; não aplicado');return;
       }
       usados.add(efeito);
     });
-    saida.beneficios188={aplicados:aplicados,preservados:preservados,pendentes:pendentes};
+    saida.beneficios188={aplicados:aplicados,preservados:preservados,pendentes:pendentes,indicadores:indicadores};
     return saida;
   }
+  /* Apenas projeta o resultado calculado na interface. Nenhuma edição no objeto
+   * do jutsu ou nas compras: base e benefícios continuam separados.
+   * A capa TCG usa elementos diferentes da versão expandida; atualizar só a
+   * linha superior deixava o preço/ação antigos e um selo enganoso.
+   */
   function decorarCard(card,jutsu,regra){
     if(!card||!regra||!regra.beneficios188)return;
     var b=regra.beneficios188,linha=card.querySelector('.jutsuLinhaTexto small');
+    var selo=card.querySelector('.b188Selo');
     if(linha&&b.aplicados.length){
-      var selo=card.querySelector('.b188Selo');
       if(!selo){selo=card.ownerDocument.createElement('span');selo.className='b188Selo';linha.appendChild(selo);}
-      selo.textContent='Melhoria ativa';
+      var etiquetas=Array.isArray(b.indicadores)&&b.indicadores.length?b.indicadores:b.aplicados;
+      selo.textContent=etiquetas.length===1?etiquetas[0]:'Melhorias: '+etiquetas.join(' · ');
       selo.title=b.aplicados.join(' · ');
-    }
+    }else if(selo){selo.remove();}
+
+    // A capa compacta tem chips próprios: não herda o valor atualizado do
+    // cabeçalho expandido. Mostrar o custo efetivo (ex.: Kai grátis), MAS
+    // nunca presumir desconto permanente do Ninjutsu Melhorado II.
+    var custoEfetivo=texto(regra.custoEfetivoTexto);
+    var custoCapa=card.querySelector('.jutsuTcgChipCusto strong');
+    if(custoCapa&&custoEfetivo)custoCapa.textContent=custoEfetivo+' EKO';
     if(regra.acaoEfetiva){
-      var a=card.querySelector('.jutsuAcaoRapida'),pill=card.querySelector('.jutsuAcaoPill');
+      var a=card.querySelector('.jutsuAcaoRapida');
+      var pill=card.querySelector('.jutsuAcaoPill');
+      var acaoCapa=card.querySelector('.jutsuTcgChipAcao strong');
       if(a){a.textContent='AB';a.setAttribute('data-acao','AB');a.title='Ação Bônus por Ninjutsu Aprimorado';a.setAttribute('aria-label',a.title);}
       if(pill){pill.textContent='AB';pill.title='Ação Bônus por Ninjutsu Aprimorado';}
+      if(acaoCapa){acaoCapa.textContent='AB';acaoCapa.title='Ação Bônus por Ninjutsu Aprimorado';}
     }
     var antigo=card.querySelector('.b188Detalhes');
     if(antigo)antigo.remove();
