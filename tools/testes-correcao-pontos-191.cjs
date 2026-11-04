@@ -26,9 +26,9 @@ test('natureza Sarutobi nova tem custo sugerido 2, evolução 4',()=>{
     {id:'hist_05',tipo:'historico',habilidadeId:'natureza_chakra',escolhas:{tipoNatureza:'evolucao'}}]};
   const a=E.estimarGastosHistoricos(f);assert.equal(a.estimativaParcial,6);
 });
-test('compras novas exigem conciliação mesmo para histórico que veio somente do suplemento',()=>{
+test('compras novas exigem marco futuro quando há histórico vindo do suplemento',()=>{
   const f=ficha();f.pontosChaveV1={eventos:[{id:'hist_supl',tipo:'historico',habilidadeId:'ninjutsu_melhorado_1'}]};
-  assert.throws(()=>registrar(f,E.registro(f),evt('compra',{habilidadeId:'duelista'})),/Reconcilie/);
+  assert.throws(()=>registrar(f,E.registro(f),evt('compra',{habilidadeId:'duelista'})),/Inicie o controle/);
 });
 test('um mesmo saco de gastos históricos não é debitado duas vezes',()=>{
   const f=ficha();let r=registrar(f,E.registro(f),evt('despesa-antiga',{custo:15,bolsa:'chave',motivo:'Conferido com o mestre'}));

@@ -142,16 +142,19 @@ test('segunda aquisição da mesma natureza nova não ganha desconto outra vez',
  const f=ficha(8,'Sarutobi');let r=push(f,E.registro(f),event('compra',{habilidadeId:'natureza_chakra',detalhes:'Fogo',tipoNatureza:'nova-elemental'}));
  assert.throws(()=>push(f,r,event('compra',{habilidadeId:'natureza_chakra',detalhes:'Katon',tipoNatureza:'nova-elemental'})),/já foi aprendida/);
 });
-test('aquisições antigas exigem conciliação explícita antes de novos débitos',()=>{
+test('aquisições antigas não exigem conciliar gastos, mas sim marco futuro',()=>{
  const f=ficha();f.automacaoAtaques.aquisicoes=[{id:'old001',habilidadeId:'melhoria_vida',nivelAquisicao:7}];
- let r=E.registro(f);assert.throws(()=>push(f,r,event('compra',{habilidadeId:'duelista'})),/Reconcilie/);
- r=push(f,r,event('despesa-antiga',{custo:0,bolsa:'chave',motivo:'Nenhum gasto anterior'}));
+ let r=E.registro(f);assert.throws(()=>push(f,r,event('compra',{habilidadeId:'duelista'})),/Inicie o controle/);
+ r=push(f,r,event('inicio-controle',{saldoChave:0,saldoCla:0}));
+ assert.equal(E.resumo(f,r).chaveDisponivel,0);
+ r=push(f,r,event('credito-extra',{bolsa:'chave',quantidade:4,motivo:'Novos pontos confirmados'}));
  r=push(f,r,event('compra',{habilidadeId:'duelista'}));
- assert.equal(E.resumo(f,r).chaveDisponivel,72);
+ assert.equal(E.resumo(f,r).chaveDisponivel,2);
+ assert.equal(E.resumo(f,r).compras.filter(c=>c.habilidadeId==='melhoria_vida').length,1);
 });
-test('estorno de despesa antiga permite refazer a conciliação, mas bloqueia novas compras',()=>{
+test('estorno antigo preserva histórico e compras futuras pedem marco inicial',()=>{
  const f=ficha();f.automacaoAtaques.aquisicoes=[{id:'old001',habilidadeId:'melhoria_vida',nivelAquisicao:7}];
  let r=push(f,E.registro(f),event('despesa-antiga',{custo:0,bolsa:'chave',motivo:'Revisão'}));
  const id=r.eventos[0].id;r=push(f,r,event('estorno',{alvoId:id}));
- assert.throws(()=>push(f,r,event('compra',{habilidadeId:'duelista'})),/Reconcilie/);
+ assert.throws(()=>push(f,r,event('compra',{habilidadeId:'duelista'})),/Inicie o controle/);
 });
