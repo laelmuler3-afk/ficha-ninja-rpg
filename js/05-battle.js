@@ -372,7 +372,12 @@
     const velocidade=document.getElementById("batalhaVelocidadeView");
     const proficiencia=document.getElementById("batalhaProficienciaView");
 
-    if(iniciativa) iniciativa.textContent=comSinal(numeroCampo("iniciativa"));
+    if(iniciativa){
+      const manual=numeroCampo("iniciativa");
+      const talento=window.ShinobiBeneficiosPontos190?.bonusAlerta?.(estado,window.ShinobiPontosChave)||0;
+      iniciativa.textContent=comSinal(manual+talento);
+      iniciativa.title=talento?`Iniciativa registrada ${comSinal(manual)} + Alerta ${comSinal(talento)} (benefício não aplicado manualmente)`:'Iniciativa registrada na ficha';
+    }
     if(velocidade){
       const base=numeroCampo("velocidade"),multiplicador=Number(window.obterMultiplicadorEfeitosJutsuBatalha?.("velocidade")||1),bonus=Number(window.obterBonusEfeitosJutsuBatalha?.("velocidade")||0),total=Math.floor(base*multiplicador*1000)/1000+bonus,detalhes=[];
       multiplicador!==1&&detalhes.push(`×${multiplicador} jutsu`),bonus&&detalhes.push(`${bonus>0?"+":""}${bonus}m jutsu`),velocidade.innerHTML=`${String(total).replace(".",",")}${detalhes.length?`<span class="bonusDefesaTexto">${detalhes.join(" · ")}</span>`:""}`;
@@ -408,6 +413,8 @@
     agendar();
   }
   window.addEventListener("pageshow",agendar);
+  window.addEventListener("shinobi:pontos-chave-atualizados",agendar);
+  window.addEventListener("shinobi:realtime-aplicado",agendar);
 })();
 
 /* ===== NAVEGAÇÃO VERTICAL CONTÍNUA ===== */

@@ -93,8 +93,10 @@
       else if(e.tipo==="ajuste-nivel"){titulo="Crédito definido no nível "+e.nivel;valor=e.quantidade+" pontos de "+(e.bolsa==="cla"?"clã":"chave");}
       else if(e.tipo==="credito-extra"){titulo="Crédito extra";valor="+"+e.quantidade+" de "+(e.bolsa==="cla"?"clã":"chave");}
       else if(e.tipo==="despesa-antiga"){titulo="Revisão de gasto anterior";valor="−"+e.custo+" de "+(e.bolsa==="cla"?"clã":"chave");}
+      else if(e.tipo==="efetivacao-beneficio"){titulo="Benefício efetivado: "+(e.habilidadeId||"Habilidade");valor=(e.campo||"Atributo")+" "+e.antes+" → "+e.depois+" · preservado no histórico";}
       else if(e.tipo==="estorno"){titulo="Estorno";valor="Transação "+e.alvoId;}
-      var botao=e.tipo!=="estorno"&&!estornado?'<button type="button" data-pontos184="estornar" data-id="'+escape(e.id)+'" aria-label="Estornar registro">Estornar</button>':"";
+      var aplicada=eventos.some(function(x){return x.tipo==="efetivacao-beneficio"&&String(x.alvoId)===String(e.id)&&!anulados[x.id];});
+      var botao=e.tipo!=="estorno"&&e.tipo!=="efetivacao-beneficio"&&!estornado&&!aplicada?'<button type="button" data-pontos184="estornar" data-id="'+escape(e.id)+'" aria-label="Estornar registro">Estornar</button>':"";
       return '<div class="shinobiPontos184Linha"><div><strong>'+escape(titulo)+'</strong><small>'+escape(valor)+(estornado?' · ESTORNADO':'')+'</small></div>'+botao+'</div>';
     }).join("");
     var antigos=(f.automacaoAtaques&&f.automacaoAtaques.aquisicoes)||[];
@@ -128,7 +130,9 @@
       if(!root.confirm("Registrar "+gasto+" ponto(s) de "+(reserva==="cla"?"clã":"chave")+" como despesas ANTERIORES já realizadas? Não altera talentos nem atributos."))return;
       transacionar({tipo:"despesa-antiga",custo:gasto,bolsa:reserva,motivo:razao},"reconciliar-gasto-antigo");
     }else if(acao==="estornar"){
-      var alvo=btn.getAttribute("data-id");if(!root.confirm("Estornar esta transação? O histórico será preservado e o saldo será recalculado."))return;
+      var alvo=btn.getAttribute("data-id");
+      if(E.registro(f).eventos.some(function(e){return e.tipo==="efetivacao-beneficio"&&String(e.alvoId)===String(alvo)}))return root.alert("Esta compra já alterou um atributo. Faça uma conciliação supervisionada antes de estornar.");
+      if(!root.confirm("Estornar esta transação? O histórico será preservado e o saldo será recalculado."))return;
       transacionar({tipo:"estorno",alvoId:alvo},"estorno-pontos-chave");
     }
   }

@@ -355,11 +355,16 @@
     }
 
     const bonusNatureza = bonusNivel2 + bonusNivel6;
+    const T = window.ShinobiBeneficiosPontos190;
+    const bonusTalento190 = T && window.ShinobiPontosChave
+      ? T.bonusNinjutsuMelhoradoI(estado, window.ShinobiPontosChave, {natureza, nivel, conjuracao, danoBase})
+      : 0;
+    const bonusTotalAutomatico = bonusNatureza + (temDano ? bonusTalento190 : 0);
     const bonusManualTexto = String(jutsu?.bonusDano ?? "").trim();
     const bonusManualNumero = valorNumericoEstrito(bonusManualTexto);
     const bonusTotalNumero = bonusManualNumero === null
       ? null
-      : bonusManualNumero + bonusNatureza;
+      : bonusManualNumero + bonusTotalAutomatico;
 
     const custoBaseTexto = String(jutsu?.custo ?? "").trim();
     const kaiSemCusto = Boolean(natureza && nivel >= 4 && ehTecnicaKai(jutsu));
@@ -383,6 +388,8 @@
       bonusNivel2,
       bonusNivel6,
       bonusNatureza,
+      bonusTalento190: temDano ? bonusTalento190 : 0,
+      bonusTotalAutomatico,
       motivoBonus:motivos.join(" + "),
       bonusManualTexto,
       bonusManualNumero,
@@ -401,33 +408,28 @@
   }
 
   function formatarBonusTotal(regra){
+    const bonus = Number(regra.bonusTotalAutomatico ?? regra.bonusNatureza ?? 0);
     if(regra.bonusTotalNumero !== null) return comSinal(regra.bonusTotalNumero);
-    if(regra.bonusManualTexto && regra.bonusNatureza){
-      return `${regra.bonusManualTexto} · automático ${comSinal(regra.bonusNatureza)}`;
-    }
+    if(regra.bonusManualTexto && bonus) return `${regra.bonusManualTexto} · automático ${comSinal(bonus)}`;
     if(regra.bonusManualTexto) return regra.bonusManualTexto;
-    if(regra.bonusNatureza) return comSinal(regra.bonusNatureza);
-    return "—";
+    return bonus ? comSinal(bonus) : "—";
   }
 
   function formatarDanoTotal(regra){
     const dano = regra.danoEfetivo || "";
     const bonus = formatarBonusTotal(regra);
+    const automatico = Number(regra.bonusTotalAutomatico ?? regra.bonusNatureza ?? 0);
     if(!dano) return bonus;
     if(bonus === "—" || bonus === "0") return dano;
-
     if(regra.bonusTotalNumero !== null){
       return `${dano} ${regra.bonusTotalNumero >= 0 ? "+" : "-"} ${Math.abs(regra.bonusTotalNumero)}`;
     }
-
-    if(regra.bonusManualTexto && regra.bonusNatureza){
-      return `${dano} + ${regra.bonusManualTexto} ${regra.bonusNatureza >= 0 ? "+" : "-"} ${Math.abs(regra.bonusNatureza)}`;
+    if(regra.bonusManualTexto && automatico){
+      return `${dano} + ${regra.bonusManualTexto} ${automatico >= 0 ? "+" : "-"} ${Math.abs(automatico)}`;
     }
-
-    if(regra.bonusNatureza){
-      return `${dano} ${regra.bonusNatureza >= 0 ? "+" : "-"} ${Math.abs(regra.bonusNatureza)}`;
+    if(automatico){
+      return `${dano} ${automatico >= 0 ? "+" : "-"} ${Math.abs(automatico)}`;
     }
-
     return `${dano} + ${regra.bonusManualTexto}`;
   }
 
@@ -601,6 +603,7 @@
       const partesBonus = [];
       if(regra.bonusManualTexto) partesBonus.push(`Manual ${regra.bonusManualTexto}`);
       if(regra.bonusNivel2) partesBonus.push(`N2 ${comSinal(regra.bonusNivel2)}`);
+      if(regra.bonusTalento190) partesBonus.push(`Ninjutsu Melhorado I ${comSinal(regra.bonusTalento190)}`);
       if(regra.bonusNivel6 || (regra.nivel >= 6 && regra.quantidadeDados > 0)){
         partesBonus.push(`N6 ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)`);
       }
@@ -833,6 +836,7 @@
       regra.beneficios188?.aplicados?.length ? regra.beneficios188.aplicados.join("; ") : "",
       regra.beneficios188?.pendentes?.length ? "Melhorias pendentes: " + regra.beneficios188.pendentes.join("; ") : "",
       regra.bonusNivel2 ? `N2: ${comSinal(regra.bonusNivel2)}` : "",
+      regra.bonusTalento190 ? `Ninjutsu Melhorado I: ${comSinal(regra.bonusTalento190)}` : "",
       regra.bonusNivel6 ? `N6: ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)` : ""
     ].filter(Boolean).join("\n");
 
