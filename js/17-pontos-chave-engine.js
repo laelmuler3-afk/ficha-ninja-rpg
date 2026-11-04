@@ -74,7 +74,7 @@
   function inteiro(v,des){var n=Number(v);return Number.isInteger(n)?n:des;}
   function nivelDaFicha(ficha){return Math.max(1,Math.min(20,inteiro(ficha && ficha.nivel,1)));}
   function nivelValido(n){return Number.isInteger(n)&&n>=1&&n<=20;}
-  function registro(ficha){var orig=ficha&&ficha.pontosChaveV1;return {versao:VERSAO,eventos:Array.isArray(orig&&orig.eventos)?copiar(orig.eventos):[]};}
+  function registro(ficha){var orig=ficha&&ficha.pontosChaveV1;var r={versao:VERSAO,eventos:Array.isArray(orig&&orig.eventos)?copiar(orig.eventos):[]};if(Array.isArray(orig&&orig.conflitosSync)&&orig.conflitosSync.length)r.conflitosSync=copiar(orig.conflitosSync);return r;}
   function habilidade(id){return POR_ID[id]?copiar(POR_ID[id]):null;}
   function catalogo(){return copiar(CATALOGO);}
   function ativa(e,estornos){return e && e.tipo!=="estorno" && !estornos.has(String(e.id));}
@@ -113,6 +113,64 @@
     });
     var compras=dadosCompras(ficha,reg);
     return {nivel:nivel,chaveDisponivel:chave,claDisponivel:cla,chaveRecebida:ganhoChave,claRecebida:ganhoCla,chaveGasta:gastos,claGasta:claGastos,gastosAntigos:gastosAntigos,pontosClaConvertidos:convertidos,creditosPorNivel:creditoNiveis,compras:compras,legados:compras.filter(function(c){return c.tipo!=="compra";}).length};
+  }
+  /* Conferência não destrutiva: o suplemento descreve aquisições, mas não prova
+   * quanto foi efetivamente gasto. NUNCA lança despesas automaticamente. */
+  function estimarGastosHistoricos(ficha,reg){
+    reg=reg||registro(ficha);
+    var compras=dadosCompras(ficha,reg),itens=[],estimado=0,indefinidos=0;
+    var jaVistos=new Set();
+    compras.filter(function(c){return c.tipo!=="compra";}).forEach(function(c){
+      var id=String(c.id||"");if(jaVistos.has(id))return;jaVistos.add(id);
+      var h=POR_ID[c.habilidadeId],custo=h&&h.custo,razao="";
+      if(custo==null){custo=null;razao="Custo/regra não catalogado";}
+      if(c.habilidadeId==="natureza_chakra"&&normalizarTexto(ficha&&ficha.cla).indexOf("sarutobi")>=0){
+        var tipo=c.escolhas&&c.escolhas.tipoNatureza;
+        if(tipo==="nova-elemental")custo=2;
+        else if(tipo==="evolucao"||tipo==="nova-nao-elemental")custo=4;
+        else {custo=null;razao="Confirmar se a natureza era nova ou evolução (desconto Sarutobi)";}
+      }
+      if(custo==null)indefinidos++;else estimado+=custo;
+      itens.push({compraId:id,habilidadeId:c.habilidadeId,nome:c.nome||(h&&h.nome)||c.habilidadeId,custoSugerido:custo,motivo:razao});
+    });
+    var totais=resumo(ficha,reg);
+    return {itens:itens,estimativaParcial:estimado,pendentes:indefinidos,
+      gastosJaConciliados:totais.gastosAntigos,haHistoricos:itens.length>0,
+      requerConfirmacao:itens.length>0};
+  }
+  /* Após o merge de duas sessões, a união dos eventos pode ser válida em termos
+   * de IDs e inválida financeiramente. Nunca descartamos operações: sinalizamos
+   * conflitos e impedimos novos débitos até a correção supervisionada. */
+  function auditarIntegridade(ficha,reg){
+    reg=reg||registro(ficha);
+    var r=resumo(ficha,reg),problemas=[],cancelados=estornados(reg.eventos),ids=new Set(),fontes=new Map(),revisoes=new Map(),unicos=new Map();
+    (Array.isArray(reg.conflitosSync)?reg.conflitosSync:[]).forEach(function(id){problemas.push({codigo:"colisao-id-sync",mensagem:"O mesmo evento teve versões diferentes em dois dispositivos: "+String(id)+". Conferência do histórico necessária."});});
+    if(r.chaveDisponivel<0)problemas.push({codigo:"saldo-chave-negativo",mensagem:"Pontos-chave negativos após conciliação/sincronização: "+r.chaveDisponivel+"."});
+    if(r.claDisponivel<0)problemas.push({codigo:"saldo-cla-negativo",mensagem:"Pontos de clã negativos após conciliação/sincronização: "+r.claDisponivel+"."});
+    reg.eventos.forEach(function(e){
+      if(!e||!e.id)return;
+      var id=String(e.id);
+      if(ids.has(id))problemas.push({codigo:"id-duplicado",mensagem:"Mesmo identificador repetido no histórico: "+id});
+      ids.add(id);
+      if(!ativa(e,cancelados))return;
+      if((e.tipo==="compra"||e.tipo==="historico")&&e.origemSuplementoId){
+        var origem=String(e.origemSuplementoId),antes=fontes.get(origem);
+        if(antes&&antes!==id)problemas.push({codigo:"suplemento-duplicado",mensagem:"A mesma aquisição do suplemento foi registrada duas vezes: "+origem});
+        fontes.set(origem,id);
+      }
+      if(e.tipo==="compra"){
+        var h=POR_ID[e.habilidadeId];if(h&&!h.repetivel){
+          var outra=unicos.get(h.id);if(outra)problemas.push({codigo:"compra-repetida",mensagem:"A habilidade "+h.nome+" foi comprada duas vezes em dispositivos/etapas diferentes."});
+          unicos.set(h.id,id);
+        }
+      }
+      if(e.tipo==="vinculo-habilidade"&&e.revisaEventoId){
+        var pai=String(e.revisaEventoId),anterior=revisoes.get(pai);
+        if(anterior&&JSON.stringify(anterior.escolhas)!==JSON.stringify(e.escolhas))problemas.push({codigo:"revisao-concorrente",mensagem:"Duas revisões distintas foram criadas sobre a mesma confirmação anterior."});
+        revisoes.set(pai,e);
+      }
+    });
+    return {ok:problemas.length===0,problemas:problemas,chaveDisponivel:r.chaveDisponivel,claDisponivel:r.claDisponivel};
   }
   function normalizarTexto(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();}
   function temHabilidade(ficha,reg,id){return dadosCompras(ficha,reg).some(function(c){return c.habilidadeId===id;});}
@@ -176,8 +234,8 @@
     if(e.tipo==="compra"){
       if(e.bolsa&&e.bolsa!=="chave")throw new Error("Este catálogo usa pontos-chave. Compras de habilidades exclusivas de clã ainda não estão habilitadas.");
       var info=avaliarCompra(ficha,clone,e,dependencias);
-      var antigos=ficha&&ficha.automacaoAtaques&&ficha.automacaoAtaques.aquisicoes;
-      if(Array.isArray(antigos)&&antigos.length&&!clone.eventos.some(function(x){return x.tipo==="despesa-antiga"&&!estornados(clone.eventos).has(String(x.id));}))throw new Error("Esta ficha tem aquisições antigas. Reconcilie os gastos anteriores (até mesmo 0, se não houve gasto) antes de comprar novamente.");
+      var possuiHistoricos=dadosCompras(ficha,clone).some(function(c){return c.tipo!=="compra";});
+      if(possuiHistoricos&&!clone.eventos.some(function(x){return x.tipo==="despesa-antiga"&&!estornados(clone.eventos).has(String(x.id));}))throw new Error("Esta ficha tem aquisições antigas do suplemento ou da preparação. Reconcilie os gastos anteriores (até mesmo 0, se não houve gasto) antes de comprar novamente.");
       e.bolsa="chave";e.custo=info.custo;e.nome=info.habilidade.nome;e.nivel=info.nivel;e.escolhas=info.escolhas;
     }else if(e.tipo==="historico"){
       var hab=POR_ID[e.habilidadeId];if(!hab)throw new Error("Habilidade não cadastrada.");
@@ -194,6 +252,8 @@
       if(e.bolsa!=="chave"&&e.bolsa!=="cla")throw new Error("Tipo de pontos inválido.");
       if(!String(e.motivo||"").trim())throw new Error("Descreva a decisão do mestre para o ajuste.");
     }else if(e.tipo==="despesa-antiga"){
+      var anulados=estornados(clone.eventos);
+      if(clone.eventos.some(function(x){return x.tipo==="despesa-antiga"&&x.bolsa===e.bolsa&&ativa(x,anulados);}))throw new Error("Os gastos antigos desta reserva já foram conciliados. Para corrigir, estorne a conciliação anterior antes de registrar outra.");
       e.custo=inteiro(e.custo,-1);
       if(e.custo<0||e.custo>1000||["chave","cla"].indexOf(e.bolsa)<0)throw new Error("Informe gastos históricos entre 0 e 1000 e uma reserva válida.");
       if(!String(e.motivo||"").trim())throw new Error("Descreva quais compras antigas esse gasto representa.");
@@ -214,12 +274,22 @@
         if(hAlvo&&dependentes.length)throw new Error("Não é possível estornar uma habilidade exigida por outra aquisição ativa.");
       }
     }
-    var r=resumo(ficha,clone);
-    if(r.chaveDisponivel<0||r.claDisponivel<0)throw new Error("Operação não permitida: saldo insuficiente ou ajuste inferior aos gastos já registrados.");
+    var r=resumo(ficha,clone),anteriorResumo=resumo(ficha,reg);
+    if(r.chaveDisponivel<0||r.claDisponivel<0){
+      // Permite estornos/créditos corretivos mesmo quando uma operação isolada
+      // não basta para reparar todos os débitos de dispositivos diferentes.
+      var corretiva=e.tipo==="estorno"||e.tipo==="credito-extra"||e.tipo==="ajuste-nivel";
+      var deficit=function(x){return Math.max(0,-x.chaveDisponivel)+Math.max(0,-x.claDisponivel);};
+      if(!corretiva||deficit(r)>=deficit(anteriorResumo))throw new Error("Operação não permitida: saldo insuficiente ou conflito de sincronização. Confira o histórico antes de novos débitos.");
+    }
+    var auditoriaAntes=auditarIntegridade(ficha,reg),auditoriaDepois=auditarIntegridade(ficha,clone);
+    var corrigindo=e.tipo==="estorno"||e.tipo==="credito-extra"||e.tipo==="ajuste-nivel";
+    if(!corrigindo&&auditoriaDepois.problemas.length>auditoriaAntes.problemas.length)throw new Error("Operação criaria inconsistência no histórico. Confira o saldo e as compras existentes.");
+    if(e.tipo==="compra"&&(!auditoriaAntes.ok||!auditoriaDepois.ok))throw new Error("Histórico em conflito após sincronização. Resolva os avisos antes de novas compras.");
     return clone;
   }
   function proficiencias(ficha,reg){
     return dadosCompras(ficha,reg||registro(ficha)).filter(function(c){return c.habilidadeId==="habilidade_com_armas"||c.habilidadeId==="versatilidade_com_armas";}).reduce(function(acc,c){var escolhidas=c.escolhas&&c.escolhas.armas||[];escolhidas.forEach(function(id){if(acc.indexOf(id)<0)acc.push(id);});return acc;},[]);
   }
-  return Object.freeze({versao:VERSAO,creditoPadraoChave:copiar(PADRAO_CHAVE),creditoPadraoCla:copiar(PADRAO_CLA),catalogo:catalogo,habilidade:habilidade,registro:registro,resumo:resumo,registrarEvento:registrarEvento,avaliarCompra:avaliarCompra,proficiencias:proficiencias});
+  return Object.freeze({versao:VERSAO,creditoPadraoChave:copiar(PADRAO_CHAVE),creditoPadraoCla:copiar(PADRAO_CLA),catalogo:catalogo,habilidade:habilidade,registro:registro,resumo:resumo,registrarEvento:registrarEvento,avaliarCompra:avaliarCompra,proficiencias:proficiencias,estimarGastosHistoricos:estimarGastosHistoricos,auditarIntegridade:auditarIntegridade});
 });

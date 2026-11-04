@@ -11,15 +11,20 @@
   function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
   function ficha(){try{return typeof estado!=='undefined'&&estado&&typeof estado==='object'?estado:null;}catch(_){return null;}}
   function listaOpcao(entrada,f){
-    var alvo=entrada.tipoAlvo,arr=M.alvos(f,alvo);
+    var alvo=entrada.tipoAlvo,arr=M.alvos(f,alvo),atual=entrada.escolhasAtuais||{};
     if(!alvo||alvo==='armas')return '';
-    var opts='<option value="">— Selecionar destino —</option>'+arr.map(function(x){return '<option value="'+esc(x.id)+'"'+(entrada.sugestao===x.id?' selected':'')+'>'+esc(x.nome)+(x.extra?' · '+esc(x.extra):'')+'</option>';}).join('');
+    var opts='<option value="">— Selecionar destino —</option>'+arr.map(function(x){return '<option value="'+esc(x.id)+'"'+((atual.alvoId||entrada.sugestao)===x.id?' selected':'')+'>'+esc(x.nome)+(x.extra?' · '+esc(x.extra):'')+'</option>';}).join('');
     var ajuda=alvo==='jutsu'?'Escolha o jutsu que recebeu a melhoria. O custo exibido é o valor atual, não será alterado.':
       alvo==='atributo'?'Escolha qual atributo foi aumentado. O número atual NÃO mudará.':
       alvo==='natureza'?'Escolha a natureza adquirida ou evoluída. O nível atual não mudará.':
       'Confirme o elemento beneficiado.';
-    var natureza=alvo==='natureza'?'<label>Tipo de aquisição<select data-mig186-tipo><option value="">— Não determinado —</option><option value="nova-elemental">Nova natureza elemental</option><option value="evolucao">Evolução de natureza conhecida</option><option value="nova-nao-elemental">Outra natureza</option></select></label>':'';
-    return '<label>'+esc(ajuda)+'<select data-mig186-alvo>'+opts+'</select></label>'+natureza;
+    var natureza=alvo==='natureza'?'<label>Tipo de aquisição<select data-mig186-tipo>'+[
+      ['', '— Não determinado —'],['nova-elemental','Nova natureza elemental'],['evolucao','Evolução de natureza conhecida'],['nova-nao-elemental','Outra natureza']
+    ].map(function(x){return '<option value="'+x[0]+'"'+(atual.tipoNatureza===x[0]?' selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>':'';
+    var listaEfeitos=entrada.habilidadeId==='ninjutsu_aprimorado'?[['aumentar-dado','Aumentar dado de dano'],['acao-bonus','Ação bônus'],['triplicar-alcance','Triplicar alcance']]:
+      entrada.habilidadeId==='ninjutsu_melhorado_2'?[['reduzir-custo','Reduzir EKO por uso'],['dobrar-alcance','Dobrar alcance por uso']]:[];
+    var efeito=listaEfeitos.length?'<label>Benefício escolhido<select data-mig186-efeito><option value="">— Selecione —</option>'+listaEfeitos.map(function(x){return '<option value="'+x[0]+'"'+(atual.efeito===x[0]?' selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>':'';
+    return '<label>'+esc(ajuda)+'<select data-mig186-alvo>'+opts+'</select></label>'+natureza+efeito;
   }
   function linha(e,f){
     var bloqueado=e.estado==='nao-catalogado',concluido=e.estado==='importado'||e.estado==='vinculado';
@@ -29,11 +34,14 @@
     else if(e.estado==='ja-registrado'){estado='Já registrado';classe='existente';}
     var observacao=e.observacao?'<p class="mig186Aviso">'+esc(e.observacao)+'</p>':'';
     var origem=e.estado==='ja-registrado'?'<p class="mig186Nota">Esta habilidade já consta no histórico. A confirmação apenas vincula sua escolha; não cria outra aquisição.</p>':'';
-    var campos=concluido||bloqueado?'':
-      '<div class="mig186Formulario">'+listaOpcao(e,f)+
-      '<label>O benefício na ficha atual está...<select data-mig186-aplicacao><option value="">— Escolha uma situação —</option><option value="ja-aplicado">Já aplicado manualmente</option><option value="nao-aplicado">Ainda não aplicado</option><option value="incerto">Não sei / preciso conferir</option></select></label>'+ 
-      '<label>Observação (opcional)<input type="text" maxlength="240" data-mig186-obs placeholder="Ex.: custo do jutsu já está em 7 EKO"></label>'+ 
-      '<label class="mig186Confirmar"><input type="checkbox" data-mig186-confirmar> Confirmo esta aquisição e suas informações</label></div>';
+    var atual=e.escolhasAtuais||{};
+    var campos=bloqueado?'':
+      '<div class="mig186Formulario">'+(concluido?'<p class="mig186Nota">Confirmação anterior preservada. Para corrigir, altere o destino e marque a confirmação. Nenhuma nova compra será criada.</p>':'')+listaOpcao(e,f)+
+      '<label>O benefício na ficha atual está...<select data-mig186-aplicacao>'+[
+        ['', '— Escolha uma situação —'],['ja-aplicado','Já aplicado manualmente'],['nao-aplicado','Ainda não aplicado'],['incerto','Não sei / preciso conferir']
+      ].map(function(x){return '<option value="'+x[0]+'"'+(atual.aplicacao===x[0]?' selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+ 
+      '<label>Observação (opcional)<input type="text" maxlength="240" data-mig186-obs value="'+esc(atual.observacao||'')+'" placeholder="Ex.: custo do jutsu já está em 7 EKO"></label>'+ 
+      '<label class="mig186Confirmar"><input type="checkbox" data-mig186-confirmar> '+(concluido?'Confirmo esta correção (não compra de novo)':'Confirmo esta aquisição e suas informações')+'</label></div>';
     return '<details class="mig186Linha '+classe+'" data-mig186-id="'+esc(e.sourceId)+'">'+
       '<summary class="mig186Cabeca"><div><strong>'+e.ordem+'. '+esc(e.rotulo)+'</strong><small>'+esc(e.habilidadeId?'Suplemento · p. '+f.__pagina:'Ainda não catalogada · suplemento p. '+f.__pagina)+'</small></div><span>'+estado+'</span></summary>'+observacao+origem+
       (bloqueado?'<p class="mig186Nota">Esta característica será mantida para futura revisão com o mestre. Não é importada como habilidade automática.</p>':'')+campos+'</details>';
@@ -79,7 +87,7 @@
       (Number(f.nivel||0)<8?'<p class="mig186Aviso">A ficha atual está abaixo do nível 8 do suplemento; a confirmação ficará bloqueada.</p>':'')+
       '<div class="mig186Lista">'+entradas.map(function(e){return linha(e,fView);}).join('')+'</div>'+ 
       '<label class="mig186Identidade"><input type="checkbox" id="mig186ConfirmarFicha"> Confirmo que a ficha aberta pertence a '+esc(modelo.nome)+' e conferi a lista do suplemento.</label>'+ 
-      '<button type="button" class="shinobiPontos184Principal" data-mig186-action="salvar"'+(Number(f.nivel||0)<8?' disabled':'')+'>Registrar habilidades selecionadas</button>'+ 
+      '<button type="button" class="shinobiPontos184Principal" data-mig186-action="salvar"'+(Number(f.nivel||0)<8?' disabled':'')+'>Salvar confirmações e revisões selecionadas</button>'+ 
       '<p class="mig186Nota">A origem e o destino ficam registrados no histórico da ficha. Ajustes de saldo antigo continuam sendo conferidos separadamente com o mestre.</p>';
   }
   function clicar(evt){
@@ -90,16 +98,28 @@
     if(!doc.getElementById('mig186ConfirmarFicha').checked)return root.alert('Confirme a identidade da ficha antes de continuar.');
     var decisao={},linhas=painel.querySelectorAll('[data-mig186-id]');
     linhas.forEach(function(el){var marcado=el.querySelector('[data-mig186-confirmar]');if(!marcado||!marcado.checked)return;
-      var tipo=el.querySelector('[data-mig186-tipo]'),alvo=el.querySelector('[data-mig186-alvo]'),aplicacao=el.querySelector('[data-mig186-aplicacao]'),obs=el.querySelector('[data-mig186-obs]');
+      var tipo=el.querySelector('[data-mig186-tipo]'),alvo=el.querySelector('[data-mig186-alvo]'),aplicacao=el.querySelector('[data-mig186-aplicacao]'),obs=el.querySelector('[data-mig186-obs]'),efeito=el.querySelector('[data-mig186-efeito]');
       decisao[el.getAttribute('data-mig186-id')]={confirmar:true,tipoNatureza:tipo?tipo.value:'',alvoId:alvo?alvo.value:'',
-        aplicacao:aplicacao?aplicacao.value:'',observacao:obs?obs.value:''};
+        aplicacao:aplicacao?aplicacao.value:'',observacao:obs?obs.value:'',efeito:efeito?efeito.value:''};
     });
     var total=Object.keys(decisao).length;
     if(total<1)return root.alert('Marque pelo menos uma habilidade e informe sua situação.');
-    var resultado;
-    try{resultado=M.conciliar(f,modelo.id,decisao,E);}catch(err){return root.alert(err.message||'Não foi possível conciliar as habilidades.');}
-    if(!resultado.confirmadas)return root.alert('Nenhuma aquisição nova para confirmar.');
-    if(!root.confirm('Vincular '+resultado.confirmadas+' habilidade(s) à ficha '+modelo.nome+'? Nada será descontado nem aplicado novamente.'))return;
+    var resultado,contagem=0;
+    try{
+      var entradas=M.entradasValidas(modelo,f,E),novas={},revisoes=[];
+      Object.keys(decisao).forEach(function(id){var e=entradas.find(function(x){return x.sourceId===id;});
+        if(!e)throw new Error('Aquisição não encontrada: '+id);
+        if(e.estado==='importado'||e.estado==='vinculado')revisoes.push(id);
+        else novas[id]=decisao[id];
+      });
+      resultado=M.conciliar(f,modelo.id,novas,E);
+      contagem=resultado.confirmadas;
+      revisoes.forEach(function(id){var r=M.revisar(Object.assign({},f,{pontosChaveV1:resultado.registro}),id,decisao[id],E);
+        resultado.registro=r.registro;contagem++;
+      });
+    }catch(err){return root.alert(err.message||'Não foi possível salvar as escolhas.');}
+    if(!contagem)return root.alert('Nenhuma alteração foi selecionada.');
+    if(!root.confirm('Salvar '+contagem+' confirmação(ões) ou revisão(ões) de '+modelo.nome+'? As aquisições e valores originais serão preservados; nenhum benefício será reaplicado.'))return;
     if(typeof root.persistirEstadoLocal!=='function')return root.alert('Salvamento indisponível.');
     salvando=true;
     var anterior=f.pontosChaveV1;
@@ -112,7 +132,7 @@
       assinatura='';atualizar(true);
       if(root.ShinobiPontosChaveUI&&root.ShinobiPontosChaveUI.atualizar)root.ShinobiPontosChaveUI.atualizar();
       try{root.dispatchEvent(new CustomEvent('shinobi:pontos-chave-atualizados',{detail:{motivo:'migracao-assistida-186'}}));}catch(_){}
-      root.alert(resultado.confirmadas+' habilidade(s) vinculada(s) ao histórico. Nenhuma estatística foi alterada.');
+      root.alert(contagem+' confirmação(ões)/revisão(ões) salva(s). Nenhuma estatística foi alterada.');
     }catch(err){if(anterior===undefined)delete f.pontosChaveV1;else f.pontosChaveV1=anterior;
       root.alert('Não foi possível concluir a migração: '+(err.message||'erro desconhecido'));}
     finally{salvando=false;}

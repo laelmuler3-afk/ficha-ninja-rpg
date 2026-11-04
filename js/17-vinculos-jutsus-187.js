@@ -73,7 +73,7 @@
           '<label>Observação (opcional)<input data-v187-obs type="text" maxlength="240" placeholder="Ex.: Grande Bola de Fogo já custa 7 EKO"></label>'+ 
           '<label class="v187Check"><input type="checkbox" data-v187-confirmar> Confirmo esta escolha</label></div>';
       }else{
-        corpo='<p class="v187Nota">Esta aquisição já foi associada a um registro da ficha. Nenhum desconto ou bônus foi reaplicado.</p>';
+        corpo='<p class="v187Nota">Esta aquisição já foi associada à ficha. Para corrigir a seleção, use <strong>Perfil → Pontos-Chave → Reconhecer habilidades antigas</strong>, abra a aquisição e marque a revisão. Nenhum bônus será reaplicado.</p><button type="button" class="v187Perfil" data-v187-acao="perfil">Revisar confirmação no Perfil</button>';
       }
       return '<details class="v187Linha" data-v187-id="'+safe(e.sourceId)+'"><summary><strong>'+safe(nome)+'</strong><span>'+safe(resumoAtual)+'</span></summary>'+corpo+'</details>';
     }

@@ -152,15 +152,31 @@
     const r=remoto&&typeof remoto==="object"&&!Array.isArray(remoto)?remoto:{};
     const l=local&&typeof local==="object"&&!Array.isArray(local)?local:{};
     const porId=new Map();
+    const colisoes=new Set([...(Array.isArray(l.conflitosSync)?l.conflitosSync:[]),
+      ...(Array.isArray(r.conflitosSync)?r.conflitosSync:[])]);
+    function canonico(v){
+      if(Array.isArray(v))return v.map(canonico);
+      if(v&&typeof v==='object')return Object.keys(v).sort().reduce((a,k)=>{a[k]=canonico(v[k]);return a;},{});
+      return v;
+    }
     [l,r].forEach(registro=>(Array.isArray(registro.eventos)?registro.eventos:[]).forEach(evento=>{
       if(!evento||typeof evento!=="object")return;
       const id=String(evento.id||"").trim();
       if(!id)return;
-      // Para o mesmo ID, o registro recebido do servidor tem precedência.
+      const anterior=porId.get(id);
+      if(anterior&&JSON.stringify(canonico(anterior))!==JSON.stringify(canonico(evento))){
+        // IDs são imutáveis: duas versões distintas do mesmo evento exigem
+        // conferência humana. Não inventar resolução financeira silenciosa.
+        colisoes.add(id);
+      }
+      // Para o mesmo ID, o registro recebido do servidor tem precedência,
+      // mas a colisão fica registrada para bloquear novos débitos.
       porId.set(id,clonar(evento));
     }));
-    return {versao:1,eventos:[...porId.values()].sort((a,b)=>
+    const combinado={versao:1,eventos:[...porId.values()].sort((a,b)=>
       String(a.criadoEm||"").localeCompare(String(b.criadoEm||""))||String(a.id).localeCompare(String(b.id)))};
+    if(colisoes.size)combinado.conflitosSync=[...colisoes].sort();
+    return combinado;
   }
 
   function mesclarValorRemoto(nome,remoto,local){
