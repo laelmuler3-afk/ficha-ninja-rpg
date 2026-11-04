@@ -41,3 +41,11 @@
 .pontos191Alerta ul,.pontos191Conferencia ul{margin:8px 0;padding-left:18px;max-height:260px;overflow:auto}
 .pontos191Conferencia summary{cursor:pointer;font-weight:700;touch-action:manipulation}
 .pontos191Conferencia .shinobiPontos184Secundario{margin-top:6px;width:100%;white-space:normal}
+
+/* 2.5.8.192 — marco simples para fichas existentes */
+#identidade .pontos192Inicio{margin:10px 0;padding:12px;border:1px solid rgba(113,164,168,.45);border-radius:10px;background:rgba(24,64,70,.25);font-size:12px;line-height:1.55}
+#identidade .pontos192Inicio p{margin:0 0 9px}
+#identidade .pontos192Inicio button{width:100%;margin:10px 0}
+
+/* Separar velocidade-base do bônus derivado, sem criar novos campos persistentes */
+[data-stat="vel"] .shinobiBonusDesloc192{display:block;margin:3px 0 0;font-size:9px;line-height:1.25;color:#c0ddca;white-space:normal}
