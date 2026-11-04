@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.192",
-  "name": "Controle futuro e motor de benefícios passivos",
-  "notes": "Fichas antigas não exigem reconstrução de gastos; marco por nível e primeiros bônus de deslocamento derivados sem duplicação.",
+  "version": "2.5.8.193",
+  "name": "Correção da exibição de melhorias nos cartões de jutsus",
+  "notes": "Mostra o resultado efetivo na capa e nos detalhes; preserva valores salvos e limitações de uso.",
   "date": "2026-11-04"
 }
