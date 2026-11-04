@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.193. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.194. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -829,18 +829,74 @@ var __read = (this && this.__read) || function (o, n) {
         }
         return toggleResistenciaBase === null || toggleResistenciaBase === void 0 ? void 0 : toggleResistenciaBase.apply(this, arguments);
     }
+    var emUso194 = new Set();
     function usarJutsuComRegras(indice) {
         return __awaiter(this, void 0, void 0, function () {
-            var jutsu, regra, custoTexto, custoNumero, chakra, chakraAtual, dadosElemento, nome, danoTotal, detalhe, confirmado, _a, mensagem, danoLog, custoLog;
+            var jutsu, regra, B194, livro194, uso194, atual194, custoOriginal194, nome194, sugestao194, erro_1, m, custo, custoTexto, custoNumero, chakra, chakraAtual, dadosElemento, nome, danoTotal, detalhe, confirmado, _a, mensagem, historicoAnterior194, historicoNovo194, erro_2, contextoPersistencia194, gravado194, danoLog, custoLog;
             var _b, _c, _d, _e, _f;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
+                        if (emUso194.has(indice))
+                            return [2 /*return*/];
+                        emUso194.add(indice);
+                        _g.label = 1;
+                    case 1:
+                        _g.trys.push([1, , 31, 32]);
                         aplicarNiveis5Pendentes({ persistir: true });
                         jutsu = (_b = estado === null || estado === void 0 ? void 0 : estado.jutsus) === null || _b === void 0 ? void 0 : _b[indice];
                         if (!jutsu)
                             return [2 /*return*/];
                         regra = calcularJutsuComNatureza(jutsu);
+                        B194 = window.ShinobiBeneficiosJutsus188;
+                        livro194 = window.ShinobiPontosChave;
+                        uso194 = null;
+                        if (!(B194 && livro194 && typeof B194.estadoMelhoradoII === 'function')) return [3 /*break*/, 11];
+                        atual194 = B194.estadoMelhoradoII(estado, jutsu, livro194);
+                        if (!atual194) return [3 /*break*/, 11];
+                        custoOriginal194 = void 0;
+                        if (atual194.precisaCustoOriginal) {
+                            nome194 = String(jutsu.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                            sugestao194 = nome194.includes('grande bola de fogo') ? '10' : String(jutsu.custo || '');
+                            custoOriginal194 = prompt('O custo de ' + (jutsu.nome || 'este jutsu') + ' já foi reduzido manualmente para ' + String(jutsu.custo) +
+                                ' EKO. Informe o custo ORIGINAL, sem Ninjutsu Melhorado II, para que o app possa restaurá-lo ao esgotar os usos:', sugestao194);
+                            if (custoOriginal194 === null)
+                                return [2 /*return*/];
+                        }
+                        _g.label = 2;
+                    case 2:
+                        _g.trys.push([2, 3, , 7]);
+                        uso194 = B194.prepararUsoMelhoradoII(estado, jutsu, livro194, custoOriginal194);
+                        return [3 /*break*/, 7];
+                    case 3:
+                        erro_1 = _g.sent();
+                        if (!(typeof avisoShinobi === 'function')) return [3 /*break*/, 5];
+                        return [4 /*yield*/, avisoShinobi('Conferir Ninjutsu Melhorado II', erro_1.message)];
+                    case 4:
+                        _g.sent();
+                        return [3 /*break*/, 6];
+                    case 5:
+                        alert(erro_1.message);
+                        _g.label = 6;
+                    case 6: return [2 /*return*/];
+                    case 7:
+                        m = uso194.info;
+                        if (m && m.modo === 'reduzir-custo') {
+                            custo = B194.custoEfetivoMelhoradoII(m, Number(regra.custoEfetivoTexto));
+                            if (Number.isFinite(custo))
+                                regra.custoEfetivoTexto = String(custo);
+                        }
+                        if (!(m && m.modo === 'dobrar-alcance' && m.restantes > 0 && !regra.alcanceEfetivo)) return [3 /*break*/, 11];
+                        if (!(typeof avisoShinobi === 'function')) return [3 /*break*/, 9];
+                        return [4 /*yield*/, avisoShinobi('Alcance não calculável', 'Este jutsu não possui um alcance numérico simples. Revise o alcance antes de usar a melhoria.')];
+                    case 8:
+                        _g.sent();
+                        return [3 /*break*/, 10];
+                    case 9:
+                        alert('O alcance do jutsu precisa ser numérico para aplicar Ninjutsu Melhorado II.');
+                        _g.label = 10;
+                    case 10: return [2 /*return*/];
+                    case 11:
                         custoTexto = regra.custoEfetivoTexto || "0";
                         custoNumero = valorNumericoEstrito(custoTexto);
                         chakra = document.getElementById("chakra");
@@ -862,51 +918,90 @@ var __read = (this && this.__read) || function (o, n) {
                             danoTotal && danoTotal !== "—" ? "Dano total: ".concat(danoTotal) : "",
                             ((_d = (_c = regra.beneficios188) === null || _c === void 0 ? void 0 : _c.aplicados) === null || _d === void 0 ? void 0 : _d.length) ? regra.beneficios188.aplicados.join("; ") : "",
                             ((_f = (_e = regra.beneficios188) === null || _e === void 0 ? void 0 : _e.pendentes) === null || _f === void 0 ? void 0 : _f.length) ? "Melhorias pendentes: " + regra.beneficios188.pendentes.join("; ") : "",
+                            (uso194 === null || uso194 === void 0 ? void 0 : uso194.info) ? "Ninjutsu Melhorado II: ".concat(uso194.info.usos, "/").concat(uso194.info.limite, " usos desde o descanso longo") +
+                                (uso194.info.restantes > 0 ? " (neste uso: ".concat(uso194.info.modo === 'reduzir-custo' ? 'redução de EKO' : 'alcance dobrado', ")") : ' (esgotado; custo/alcance normal)') : "",
                             regra.bonusNivel2 ? "N2: ".concat(comSinal(regra.bonusNivel2)) : "",
                             regra.bonusTalento190 ? "Ninjutsu Melhorado I: ".concat(comSinal(regra.bonusTalento190)) : "",
                             regra.bonusNivel6 ? "N6: ".concat(comSinal(regra.bonusNivel6), " (").concat(regra.quantidadeDados, " dados)") : ""
                         ].filter(Boolean).join("\n");
-                        if (!(typeof confirmarUsoAcao === "function")) return [3 /*break*/, 2];
+                        if (!(typeof confirmarUsoAcao === "function")) return [3 /*break*/, 13];
                         return [4 /*yield*/, confirmarUsoAcao("jutsu", nome, detalhe)];
-                    case 1:
+                    case 12:
                         _a = _g.sent();
-                        return [3 /*break*/, 3];
-                    case 2:
+                        return [3 /*break*/, 14];
+                    case 13:
                         _a = confirm("".concat(nome, "\n\n").concat(detalhe, "\n\nUsar este jutsu?"));
-                        _g.label = 3;
-                    case 3:
+                        _g.label = 14;
+                    case 14:
                         confirmado = _a;
                         if (!confirmado)
                             return [2 /*return*/];
-                        if (!(custoNumero !== null && custoNumero > chakraAtual)) return [3 /*break*/, 7];
+                        if (!(custoNumero !== null && custoNumero > chakraAtual)) return [3 /*break*/, 18];
                         mensagem = "Voc\u00EA tem ".concat(chakraAtual, " de chakra.\nEste jutsu precisa de ").concat(custoNumero, ".");
-                        if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 5];
+                        if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 16];
                         return [4 /*yield*/, avisoShinobi("Chakra insuficiente", mensagem)];
-                    case 4:
+                    case 15:
                         _g.sent();
-                        return [3 /*break*/, 6];
-                    case 5:
+                        return [3 /*break*/, 17];
+                    case 16:
                         alert(mensagem);
-                        _g.label = 6;
-                    case 6: return [2 /*return*/];
-                    case 7:
+                        _g.label = 17;
+                    case 17: return [2 /*return*/];
+                    case 18:
+                        historicoAnterior194 = estado.pontosChaveV1;
+                        historicoNovo194 = null;
+                        if (!(uso194 && uso194.info)) return [3 /*break*/, 24];
+                        _g.label = 19;
+                    case 19:
+                        _g.trys.push([19, 20, , 24]);
+                        historicoNovo194 = B194.registrarUsoMelhoradoII(estado, jutsu, livro194, uso194, custoNumero);
+                        return [3 /*break*/, 24];
+                    case 20:
+                        erro_2 = _g.sent();
+                        if (!(typeof avisoShinobi === 'function')) return [3 /*break*/, 22];
+                        return [4 /*yield*/, avisoShinobi('Ninjutsu Melhorado II', erro_2.message)];
+                    case 21:
+                        _g.sent();
+                        return [3 /*break*/, 23];
+                    case 22:
+                        alert(erro_2.message);
+                        _g.label = 23;
+                    case 23: return [2 /*return*/];
+                    case 24:
+                        if (historicoNovo194)
+                            estado.pontosChaveV1 = historicoNovo194;
                         if (chakra && custoNumero !== null) {
                             chakra.value = Math.max(0, chakraAtual - Math.max(0, custoNumero));
                         }
-                        if (typeof salvar === "function")
-                            salvar({ confirmada: true, origem: "jutsu", campo: "chakra", antes: chakraAtual, depois: chakra ? Number(chakra.value) : chakraAtual, motivo: "alteracao-confirmada" });
-                        else
-                            persistirEstadoSeguro({ confirmada: true, origem: "jutsu", campo: "chakra", motivo: "alteracao-confirmada" });
+                        contextoPersistencia194 = { confirmada: true, origem: 'uso-jutsu',
+                            campos: historicoNovo194 ? ['chakra', 'pontosChaveV1'] : ['chakra'], motivo: 'jutsu-usado-confirmado' };
+                        gravado194 = typeof salvar === 'function' ? salvar(contextoPersistencia194) :
+                            persistirEstadoSeguro(contextoPersistencia194);
+                        if (!(gravado194 === false)) return [3 /*break*/, 28];
+                        if (historicoNovo194)
+                            estado.pontosChaveV1 = historicoAnterior194;
+                        if (chakra)
+                            chakra.value = String(chakraAtual);
+                        if (!(typeof avisoShinobi === 'function')) return [3 /*break*/, 26];
+                        return [4 /*yield*/, avisoShinobi('Não foi possível salvar', 'O jutsu não foi registrado e o EKO foi restaurado.')];
+                    case 25:
+                        _g.sent();
+                        return [3 /*break*/, 27];
+                    case 26:
+                        alert('Não foi possível salvar a utilização do jutsu.');
+                        _g.label = 27;
+                    case 27: return [2 /*return*/];
+                    case 28:
                         danoLog = danoTotal && danoTotal !== "—" ? " | Dano: ".concat(danoTotal) : "";
                         custoLog = custoNumero !== null && custoNumero > 0 ? " | Chakra: -".concat(custoNumero) : "";
                         if (typeof log === "function")
                             log("".concat(dadosElemento.icone, " Usou ").concat(nome).concat(danoLog).concat(custoLog));
-                        if (!(typeof window.aplicarEfeitosJutsuBatalha === "function")) return [3 /*break*/, 9];
+                        if (!(typeof window.aplicarEfeitosJutsuBatalha === "function")) return [3 /*break*/, 30];
                         return [4 /*yield*/, window.aplicarEfeitosJutsuBatalha(jutsu, indice)];
-                    case 8:
+                    case 29:
                         _g.sent();
-                        _g.label = 9;
-                    case 9:
+                        _g.label = 30;
+                    case 30:
                         if (typeof atualizarHUD === "function")
                             atualizarHUD();
                         if (typeof window.atualizarDefesasTotaisBatalha === "function")
@@ -925,7 +1020,11 @@ var __read = (this && this.__read) || function (o, n) {
                             persistirEstadoSeguro();
                         if (typeof renderizarJutsus === "function")
                             renderizarJutsus();
-                        return [2 /*return*/];
+                        return [3 /*break*/, 32];
+                    case 31:
+                        emUso194.delete(indice);
+                        return [7 /*endfinally*/];
+                    case 32: return [2 /*return*/];
                 }
             });
         });
