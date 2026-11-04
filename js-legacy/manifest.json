@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.191",
+  "version": "2.5.8.192",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "16d8149da20ee0aa0f2c21268e660cf728f3fcdf9863133e2a43ceaf7e8b8e9a",
-      "outputSha256": "0de36a697eeb9039b294d5796406a9353b69244719630b95d96fa5c579b51ae5"
+      "sourceSha256": "0fc5f51236d01e8052e9be7b2492daafb48f7904c3f74f558ae4a3bb7759625b",
+      "outputSha256": "b5740b92b1ff207e4aaeb1558925273a10578b8f1cae195db3c9b193625e35fa"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -40,8 +40,8 @@
       "outputSha256": "bc2550e88676f1a81e4d294fd4fb3ddf12579e83c6022bd107546b1b52ce6eba"
     },
     "js/05-battle.js": {
-      "sourceSha256": "206020aacb4cad9efb16afa121ebf41decd844976d653648bc26f9ae1cb3819c",
-      "outputSha256": "15b4b2e7dfc4c489231bf96f93fb96f7afd213a1d0a10662c07ea865dca4bbc6"
+      "sourceSha256": "9450e869c56b82e77aca49cbef537934682b077bea5923b37855e0326409f6b1",
+      "outputSha256": "312bdcb1d87a32cd7da0f6fc1a2ef036119d23998471b327b4614e36a903cf48"
     },
     "js/05-kekkei-item-level.js": {
       "sourceSha256": "7d2d17d67371addbfee9fc4883e2112332194b10128a32d4fd6a867b61425659",
@@ -132,12 +132,12 @@
       "outputSha256": "67a47fe9e615ab29d3fd413c9789a65318238aa5018e7383636ea8788e4400c4"
     },
     "js/17-pontos-chave-engine.js": {
-      "sourceSha256": "7b18c6a2b5837442b4b2923a9c23b3037945b96e95a1d0a19abff3c9e6e6bb99",
-      "outputSha256": "7861fa233d5202fc46a5764c8d82c427c7e4ce424548f664bd91c06f71f83bc2"
+      "sourceSha256": "0ba89222f03bd239c1303d19e26e7453c902b7c6dca4f793c7ee7b0fa560c584",
+      "outputSha256": "a6e29a47ec25a423a3d2a3c59b8711acd3a255d9187ae0bdb45f2fe2c7459986"
     },
     "js/17-pontos-chave-ui.js": {
-      "sourceSha256": "17ec8d603cd4a47a522d7fe9c5005dd47b45e7e0428ca98c4adfe202517585ac",
-      "outputSha256": "e48872d8f0bf147889e167687b0bf8e2835c04413c604b676d817e01732dcad1"
+      "sourceSha256": "556676597cec27962d8d011e60d85402cbdcec27d3bf5a9edfc9638fbf0e871a",
+      "outputSha256": "c417327951b635a0aae3371398fefb38958f3cabf4ab06c2bce64b8f31a6fab2"
     },
     "js/17-preparacao-ataques.js": {
       "sourceSha256": "57ee13d8a15470f7e35d27782c58fe341b6b538af019d68c06fe6b52b9890811",
@@ -204,8 +204,12 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "75f59e0a60603550708dcf736fad8353b47e6b27430a6ede7fa56f278a1a4dfd",
-      "outputSha256": "b1cd9c5308cd040963bb96b867dc17b09e82943e7ecb52f780a92ff8dd55c212"
+      "sourceSha256": "e90b8845592a64a55c36870eaf50b05cd59e63e2f3dd8cf6166730f9b8152159",
+      "outputSha256": "9aadc1639195343c348142e08644b1b505813385897217802911a367ce8b58c2"
+    },
+    "js/17-motor-beneficios-192.js": {
+      "sourceSha256": "0abd089e805d1085bc1c233b06738d5cc29072d671b198c1d438931414158e1a",
+      "outputSha256": "5b2731f059e9782c5d53d32cee881aee618af692b0b388944bbd9a02403e9f41"
     }
   }
 }
