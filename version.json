@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.193",
-  "name": "Correção da exibição de melhorias nos cartões de jutsus",
-  "notes": "Mostra o resultado efetivo na capa e nos detalhes; preserva valores salvos e limitações de uso.",
+  "version": "2.5.8.194",
+  "name": "Ninjutsu Melhorado II — contador de usos por proficiência",
+  "notes": "Contagem por descanso longo, recuperação do custo original confirmado e integração com Usar Jutsu.",
   "date": "2026-11-04"
 }
