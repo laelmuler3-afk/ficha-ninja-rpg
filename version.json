@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.191",
-  "name": "Conciliação e integridade de Pontos-Chave",
-  "notes": "Prévia sem débito dos gastos antigos, alerta de conflitos sincronizados e revisão de vínculos sem compras duplicadas.",
+  "version": "2.5.8.192",
+  "name": "Controle futuro e motor de benefícios passivos",
+  "notes": "Fichas antigas não exigem reconstrução de gastos; marco por nível e primeiros bônus de deslocamento derivados sem duplicação.",
   "date": "2026-11-04"
 }

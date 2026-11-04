@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.191 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.192 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.191";
+const APP_VERSION = "2.5.8.192";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -84,7 +84,9 @@ const APP_SHELL = [
   `./js/17-vinculos-jutsus-187.js?v=${APP_VERSION}`,
   `./js/17-beneficios-jutsus-188.js?v=${APP_VERSION}`,
   `./js/17-beneficios-pontos-chave-190.js?v=${APP_VERSION}`,
+  `./js/17-motor-beneficios-192.js?v=${APP_VERSION}`,
   `./js-legacy/17-beneficios-pontos-chave-190.js?v=${APP_VERSION}`,
+  `./js-legacy/17-motor-beneficios-192.js?v=${APP_VERSION}`,
   `./js-legacy/17-integracao-ataques.js?v=${APP_VERSION}`,
   `./js-legacy/17-preparacao-ataques.js?v=${APP_VERSION}`,
   `./js-legacy/17-pontos-chave-engine.js?v=${APP_VERSION}`,
