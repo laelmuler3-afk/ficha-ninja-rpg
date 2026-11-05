@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.195. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.196. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -355,13 +355,42 @@ var __read = (this && this.__read) || function (o, n) {
         var _b = _a === void 0 ? {} : _a, _c = _b.persistir, persistir = _c === void 0 ? true : _c;
         return normalizarDanosNivel5Persistidos({ persistir: persistir });
     }
+    /* O catálogo usa, por exemplo, "4d6 de fogo (8d6 após upgrade)".
+     * A anotação explica a evolução, mas NÃO é uma segunda parcela do dano.
+     * Selecionar o dado correto pela natureza antes dos demais benefícios impede
+     * o cartão de mostrar as duas fórmulas e de contar 12 dados no nível 6.
+     * Somente upgrades de natureza com nível exigido verificável são automáticos.
+     */
+    function danoAtualDoUpgrade(jutsu, nivel, elemento) {
+        var _a, _b, _c, _d;
+        var original = String((_a = jutsu === null || jutsu === void 0 ? void 0 : jutsu.dano) !== null && _a !== void 0 ? _a : "").trim();
+        var par = original.match(/^\s*(\d+)\s*d\s*(4|6|8|10|12)(?:\s+de\s+[a-zÀ-ÿ]+)?\s*\(\s*(\d+)\s*d\s*(4|6|8|10|12)\s+ap[oó]s\s+(?:o\s+)?upgrade\s*\)\s*$/i);
+        if (!par)
+            return original;
+        var requisito = String((_c = (_b = jutsu === null || jutsu === void 0 ? void 0 : jutsu.upgrade) === null || _b === void 0 ? void 0 : _b.requisito) !== null && _c !== void 0 ? _c : "").trim();
+        var nivelRequerido = requisito.match(/\b(?:lv|n[ií]vel)\s*(\d+)\s+de\s+([a-zÀ-ÿ]+)/i);
+        var minimo = 0;
+        if (nivelRequerido && normalizarElemento(nivelRequerido[2]) === elemento) {
+            minimo = Number(nivelRequerido[1]);
+        }
+        else if (!requisito && elemento === "katon" &&
+            /^katon:\s*grande bola de fogo$/i.test(String((_d = jutsu === null || jutsu === void 0 ? void 0 : jutsu.nome) !== null && _d !== void 0 ? _d : "").trim())) {
+            // Compatibilidade com fichas antigas que copiaram o dano, mas não o
+            // campo upgrade do catálogo. Regra conhecida: Katon nível 3.
+            minimo = 3;
+        }
+        if (!Number.isInteger(minimo) || minimo < 1 || minimo > 7)
+            return original;
+        var formula = nivel >= minimo ? "".concat(par[3], "d").concat(par[4]) : "".concat(par[1], "d").concat(par[2]);
+        return formula;
+    }
     function calcularJutsuComNatureza(jutsu) {
-        var _a, _b, _c;
+        var _a, _b;
         var elemento = normalizarElemento(jutsu === null || jutsu === void 0 ? void 0 : jutsu.elemento);
         var natureza = NATUREZA_POR_ID.get(elemento) || null;
         var nivel = natureza ? nivelNatureza(elemento) : 0;
         var conjuracao = dadosConjuracao();
-        var danoBase = String((_a = jutsu === null || jutsu === void 0 ? void 0 : jutsu.dano) !== null && _a !== void 0 ? _a : "").trim();
+        var danoBase = danoAtualDoUpgrade(jutsu, nivel, elemento);
         var nivel5Ativo = Boolean(natureza &&
             nivel >= 5 &&
             possuiDadoAprimoravel(danoBase));
@@ -388,12 +417,12 @@ var __read = (this && this.__read) || function (o, n) {
             ? T.bonusNinjutsuMelhoradoI(estado, window.ShinobiPontosChave, { natureza: natureza, nivel: nivel, conjuracao: conjuracao, danoBase: danoBase })
             : 0;
         var bonusTotalAutomatico = bonusNatureza + (temDano ? bonusTalento190 : 0);
-        var bonusManualTexto = String((_b = jutsu === null || jutsu === void 0 ? void 0 : jutsu.bonusDano) !== null && _b !== void 0 ? _b : "").trim();
+        var bonusManualTexto = String((_a = jutsu === null || jutsu === void 0 ? void 0 : jutsu.bonusDano) !== null && _a !== void 0 ? _a : "").trim();
         var bonusManualNumero = valorNumericoEstrito(bonusManualTexto);
         var bonusTotalNumero = bonusManualNumero === null
             ? null
             : bonusManualNumero + bonusTotalAutomatico;
-        var custoBaseTexto = String((_c = jutsu === null || jutsu === void 0 ? void 0 : jutsu.custo) !== null && _c !== void 0 ? _c : "").trim();
+        var custoBaseTexto = String((_b = jutsu === null || jutsu === void 0 ? void 0 : jutsu.custo) !== null && _b !== void 0 ? _b : "").trim();
         var kaiSemCusto = Boolean(natureza && nivel >= 4 && ehTecnicaKai(jutsu));
         var metaNivel5 = nivel5Ativo
             ? {
@@ -601,36 +630,16 @@ var __read = (this && this.__read) || function (o, n) {
                     ? "Custo base: ".concat(regra.custoBaseTexto || "0", ". Zerado pelo n\u00EDvel 4.")
                     : "Editar custo de Chakra";
             }
-            var detalheDano = regra.metaNivel5
-                ? "N5 ativo: ".concat(regra.metaNivel5.entrada, " \u2192 ").concat(regra.metaNivel5.saida)
-                : regra.natureza && regra.nivel >= 5
-                    ? "N5 aguardando uma fórmula de dado no campo Dano"
-                    : "";
-            preencherBotaoResumo(botaoResumoPorRotulo(card, "Dano"), "Dano", regra.danoEfetivo || "—", detalheDano);
+            preencherBotaoResumo(botaoResumoPorRotulo(card, "Dano"), "Dano", regra.danoEfetivo || "—");
             // Ninjutsu Aprimorado pode alterar alcance sem alterar o campo salvo.
             // A carta expandida precisa mostrar a distância efetiva, não a base.
             if (regra.alcanceEfetivo) {
-                preencherBotaoResumo(botaoResumoPorRotulo(card, "Alcance"), "Alcance", regra.alcanceEfetivo, "Alcance original: ".concat(jutsu.alcance || "—"));
+                preencherBotaoResumo(botaoResumoPorRotulo(card, "Alcance"), "Alcance", regra.alcanceEfetivo);
             }
-            var partesBonus = [];
-            if (regra.bonusManualTexto)
-                partesBonus.push("Manual ".concat(regra.bonusManualTexto));
-            if (regra.bonusNivel2)
-                partesBonus.push("N2 ".concat(comSinal(regra.bonusNivel2)));
-            if (regra.bonusTalento190)
-                partesBonus.push("Ninjutsu Melhorado I ".concat(comSinal(regra.bonusTalento190)));
-            if (regra.bonusNivel6 || (regra.nivel >= 6 && regra.quantidadeDados > 0)) {
-                partesBonus.push("N6 ".concat(comSinal(regra.bonusNivel6), " (").concat(regra.quantidadeDados, " dados)"));
-            }
-            var detalheBonus = partesBonus.length
-                ? partesBonus.join(" · ")
-                : regra.conjuracao.atributoId
-                    ? "Sem bônus automático neste nível"
-                    : "Escolha o atributo de Conjuração nas Naturezas";
-            preencherBotaoResumo(botaoResumoPorRotulo(card, "Bônus dano"), "Bônus dano", formatarBonusTotal(regra), detalheBonus);
-            preencherBotaoResumo(botaoResumoPorRotulo(card, "Dano total"), "Dano total", formatarDanoTotal(regra), regra.natureza && regra.nivel >= 2
-                ? "".concat(regra.natureza.nome, " N").concat(regra.nivel, " \u00B7 benef\u00EDcios N1\u2013N").concat(regra.nivel, " ativos")
-                : "");
+            // Nas caixas: apenas o valor efetivo, como no contador de EKO.
+            // Memória de cálculo e origem das melhorias ficam no motor, não no card.
+            preencherBotaoResumo(botaoResumoPorRotulo(card, "Bônus dano"), "Bônus dano", formatarBonusTotal(regra));
+            preencherBotaoResumo(botaoResumoPorRotulo(card, "Dano total"), "Dano total", formatarDanoTotal(regra));
             var B = window.ShinobiBeneficiosJutsus188;
             if (B && typeof B.decorarCard === "function")
                 B.decorarCard(card, jutsu, regra);
@@ -1081,6 +1090,7 @@ var __read = (this && this.__read) || function (o, n) {
         elevarDadosDano: elevarDadosDano,
         contarDados: contarDados,
         calcularJutsu: calcularJutsuComNatureza,
+        danoAtualDoUpgrade: danoAtualDoUpgrade,
         formatarBonusTotal: formatarBonusTotal,
         formatarDanoTotal: formatarDanoTotal,
         aplicarNivel5NaNatureza: aplicarNivel5NaNatureza,
