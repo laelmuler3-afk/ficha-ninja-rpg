@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.200",
-  "name": "Sorte: três pontos por descanso longo",
-  "notes": "Consumo manual em Combate, histórico sincronizável e recuperação pelo descanso longo, sem rolagens automáticas.",
+  "version": "2.5.8.201",
+  "name": "Melhoria de Chakra e Duelista Defensivo",
+  "notes": "Melhoria de Chakra usa dado de Chakra do clã maximizado, com confirmação e sem duplicação. Duelista Defensivo calcula CA de reação para um ataque sem alterar a defesa permanente.",
   "date": "2026-11-05"
 }
