@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.198",
-  "name": "Melhoria de Vida com rolagem confirmada e PV maximo seguro",
-  "notes": "Um dado de Vida do cla por compra elegivel, com entrada manual da rolagem, registro idempotente e preservacao de PV atual e melhorias anteriores.",
+  "version": "2.5.8.199",
+  "name": "Perito: três proficiências em perícias ou ferramentas",
+  "notes": "Escolhas de Perito sincronizáveis, cálculo de perícias sem duplicação manual e preservação das habilidades antigas. Melhoria de Chakra pendente de regra inequívoca.",
   "date": "2026-11-05"
 }
