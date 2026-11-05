@@ -221,19 +221,33 @@
       if(pill){pill.textContent='AB';pill.title='Ação Bônus por Ninjutsu Aprimorado';}
       if(acaoCapa){acaoCapa.textContent='AB';acaoCapa.title='Ação Bônus por Ninjutsu Aprimorado';}
     }
-    var contador=card.querySelector('.ninjutsuII194Contador');
+    // O CSS TCG esconde todos os <small> da capa fechada. Um contador
+    // adicionado como <small> parecia desaparecer e ainda distorcia o título.
+    // Usa uma faixa própria, visível tanto na carta fechada quanto aberta.
+    var antigoContador=card.querySelector('.ninjutsuII194Contador');
+    if(antigoContador)antigoContador.remove();
+    var faixa=card.querySelector('.jutsuIndicadoresAtivos195');
+    var indicadores=[];
+    if(b.aplicados.length){
+      indicadores=Array.isArray(b.indicadores)&&b.indicadores.length?
+        b.indicadores.filter(function(t){return !/^Ninjutsu II /.test(t);}):b.aplicados.slice();
+    }
     if(regra.melhoradoII){
-      if(!contador){
-        var hostContador=card.querySelector('.jutsuLinhaTexto')||card.querySelector('.jutsuLinhaTexto small');
-        if(hostContador&&typeof hostContador.appendChild==='function'){
-          contador=card.ownerDocument.createElement('small');contador.className='ninjutsuII194Contador';
-          hostContador.appendChild(contador);
-        }
+      var contadorTexto='Ninjutsu II '+regra.melhoradoII.usos+'/'+regra.melhoradoII.limite;
+      if(regra.melhoradoII.restantes===0)contadorTexto+=' · esgotado';
+      indicadores.push(contadorTexto);
+    }
+    var host=card.querySelector('.jutsuLinhaTexto');
+    if(host&&indicadores.length){
+      if(!faixa){
+        faixa=card.ownerDocument.createElement('span');
+        faixa.className='jutsuIndicadoresAtivos195';
+        var barra=host.querySelector('.jutsuTcgBar');
+        if(barra)host.insertBefore(faixa,barra);else host.appendChild(faixa);
       }
-      contador.textContent='Melhorado II '+regra.melhoradoII.usos+'/'+regra.melhoradoII.limite+
-        (regra.melhoradoII.restantes===0?' · esgotado':'');
-      contador.title='Usos desde o último descanso longo';
-    }else if(contador)contador.remove();
+      faixa.textContent=indicadores.join(' · ');
+      faixa.title=indicadores.join(' · ');
+    }else if(faixa){faixa.remove();}
     var antigo=card.querySelector('.b188Detalhes');
     if(antigo)antigo.remove();
     var textos=b.aplicados.concat(b.preservados,b.pendentes);
@@ -264,8 +278,8 @@
       var tem=(livro.resumo(f).compras||[]).some(function(c){return c.habilidadeId==='ninjutsu_melhorado_2';});
       if(!tem){if(botao)botao.remove();return;}
       if(!botao){botao=root.document.createElement('button');botao.type='button';botao.id='ninjutsuII194Descanso';
-        botao.className='btn';botao.style.cssText='display:block;margin:9px 0;font-size:12px;max-width:100%;white-space:normal';
-        botao.textContent='Restaurar usos de Ninjutsu II (descanso longo)';hero.appendChild(botao);
+        botao.className='btn ninjutsuII194DescansoBtn';
+        botao.textContent='Restaurar usos de Ninjutsu II (descanso longo)';
         botao.addEventListener('click',function(){var folha=ficha(),E=root.ShinobiPontosChave;
           if(!folha||!E||!root.confirm('Confirmar descanso longo? Os usos de Ninjutsu Melhorado II serão restaurados. PV e EKO não serão modificados.'))return;
           var anterior=folha.pontosChaveV1;folha.pontosChaveV1=registrarDescansoLongo(folha,E);
@@ -273,6 +287,12 @@
           if(!ok){folha.pontosChaveV1=anterior;root.alert('O descanso não foi salvo.');return;}
           recarregar();root.alert('Usos de Ninjutsu Melhorado II restaurados.');
         });
+      }
+      // O cabeçalho é um grid de três colunas. Um quarto filho ali
+      // desalinhava o título e estourava a largura em telas pequenas.
+      // Move também o botão já criado por uma versão anterior.
+      if(botao.parentElement!==hero.parentElement||botao.previousElementSibling!==hero){
+        hero.insertAdjacentElement('afterend',botao);
       }
     }
     if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',montarDescanso);

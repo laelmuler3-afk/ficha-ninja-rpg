@@ -536,26 +536,43 @@
     }
   }
 
+  // Mantém a estrutura original do cartão: o CSS usa .jutsuCampoValor e
+  // o título tem ícone decorativo. Substituir todos os filhos quebrava ambos.
   function preencherBotaoResumo(botao, rotulo, principal, detalhe=""){
     if(!botao) return;
-    const titulo = document.createElement("b");
-    titulo.textContent = rotulo;
-    const valor = document.createElement("span");
-    valor.className = "jutsuValorRegraNatureza";
-    valor.textContent = principal || "—";
-    botao.replaceChildren(titulo, valor);
-
+    let valor = botao.querySelector(".jutsuCampoValor");
+    if(!valor){
+      valor = document.createElement("span");
+      valor.className = "jutsuCampoValor";
+      botao.appendChild(valor);
+    }
+    valor.textContent = String(principal ?? "").trim() || "—";
+    let observacao = botao.querySelector(".jutsuDetalheRegraNatureza");
     if(detalhe){
-      const observacao = document.createElement("small");
-      observacao.className = "jutsuDetalheRegraNatureza";
+      if(!observacao){
+        observacao = document.createElement("small");
+        observacao.className = "jutsuDetalheRegraNatureza";
+        botao.appendChild(observacao);
+      }
       observacao.textContent = detalhe;
-      botao.appendChild(observacao);
+    }else if(observacao){
+      observacao.remove();
     }
   }
 
   function botaoResumoPorRotulo(card, rotulo){
     return Array.from(card.querySelectorAll(".jutsuResumo button"))
-      .find(botao => botao.querySelector("b")?.textContent.trim() === rotulo);
+      .find(botao => {
+        const titulo = botao.querySelector("b");
+        if(!titulo) return false;
+        // Ex.: <b><span aria-hidden="true">⚔</span>Dano</b>.
+        // textContent completo seria "⚔Dano"; comparar só o texto do rótulo.
+        const rotuloLegivel = Array.from(titulo.childNodes)
+          .filter(no => no.nodeType === 3)
+          .map(no => no.textContent)
+          .join("").trim();
+        return rotuloLegivel === rotulo;
+      });
   }
 
   function aplicarRegrasNosCards(){
@@ -575,12 +592,12 @@
       const resumoLinha = card.querySelector(".jutsuLinhaTexto small");
       /* Atualiza custo/rank efetivos sem apagar o selo de ação da capa. */
       const resumoMetadados = resumoLinha?.querySelector(".jutsuMetadadosTexto");
-      if(resumoMetadados) resumoMetadados.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
-      else if(resumoLinha) resumoLinha.textContent = `${dadosElemento.nome} • ${rank} • ${custo} CH`;
+      if(resumoMetadados) resumoMetadados.textContent = `${dadosElemento.nome} • ${rank} • ${custo} EKO`;
+      else if(resumoLinha) resumoLinha.textContent = `${dadosElemento.nome} • ${rank} • ${custo} EKO`;
 
       const custoPill = card.querySelector(".jutsuCustoPill");
       if(custoPill){
-        custoPill.textContent = `${custo} CH`;
+        custoPill.textContent = `${custo} EKO`;
         custoPill.classList.toggle("jutsuCustoAutomatico", regra.kaiSemCusto);
         custoPill.title = regra.kaiSemCusto
           ? `Custo base: ${regra.custoBaseTexto || "0"}. Zerado pelo nível 4.`
