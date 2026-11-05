@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.195",
-  "name": "Correção estrutural e visual de Jutsus",
-  "notes": "Restaurar valores calculados nos cartões; contador visível; descanso fora do cabeçalho; preservar layout e dados.",
+  "version": "2.5.8.196",
+  "name": "Cartões de jutsu simplificados e dano efetivo",
+  "notes": "Exibir dano do upgrade conforme natureza e melhoria, sem descrições duplicadas; contador restante de Ninjutsu II; preservar dados e regras de descanso.",
   "date": "2026-11-04"
 }
