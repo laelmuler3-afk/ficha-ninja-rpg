@@ -59,6 +59,7 @@
     if(s==='incerto')return 'Aguardando conferência';
     if(s==='nao-aplicado'&&c.habilidadeId==='melhoria_atributo')return 'Pode aplicar +1 após confirmar';
     if((s==='nao-aplicado'||(s==='sem-conferencia'&&c.tipo==='compra'))&&c.habilidadeId==='melhoria_vida')return 'Informe o dado de Vida e confirme o aumento do PV máximo';
+    if((s==='nao-aplicado'||(s==='sem-conferencia'&&c.tipo==='compra'))&&c.habilidadeId==='melhoria_chakra')return 'Confirme o dado de Chakra maximizado para aumentar o EKO máximo';
     if(s==='nao-aplicado'&&['alerta','ninjutsu_melhorado_1','ninjutsu_aprimorado','duelista','pontaria','combate_com_duas_armas','especialista_em_shuriken'].indexOf(c.habilidadeId)>=0)return 'Benefício derivado (quando elegível)';
     if(s==='nao-aplicado')return 'Benefício ainda não integrado — mantido pendente';
     return 'Aquisição registrada — confirmar aplicação e destino';
@@ -120,6 +121,8 @@
           botao='<button class="beneficio190Aplicar" type="button" data-b190-ativar="'+esc(c.id)+'">Aplicar +1 em '+esc(ATRIBUTOS[op.alvoId])+'</button>';
         if(c.habilidadeId==='melhoria_vida'&&(c.aplicacao190==='nao-aplicado'||(c.aplicacao190==='sem-conferencia'&&c.tipo==='compra')))
           botao='<div class="beneficio198Rolagem"><label>Resultado do dado <input type="number" min="1" max="20" inputmode="numeric" data-b198-rolagem aria-label="Resultado do dado de Vida"></label><button type="button" class="beneficio190Aplicar" data-b198-vida="'+esc(c.id)+'">Aplicar aos PV máximos</button></div>';
+        if(c.habilidadeId==='melhoria_chakra'&&(c.aplicacao190==='nao-aplicado'||(c.aplicacao190==='sem-conferencia'&&c.tipo==='compra')))
+          botao='<button type="button" class="beneficio190Aplicar" data-b201-chakra="'+esc(c.id)+'">Aplicar dado máximo ao EKO máximo</button>';
         if(c.habilidadeId==='perito'&&perito){
           var selecionadas=perito.resumoCompra(f,c.id);
           if(selecionadas)situacao='Proficiências confirmadas: '+selecionadas;
@@ -131,7 +134,7 @@
         return '<div class="beneficio190Linha"><strong>'+esc(c.nome||c.habilidadeId)+'</strong><small>'+esc(situacao)+(op.alvoNome?' · '+esc(op.alvoNome):'')+'</small>'+botao+'</div>';
       }).join('');
       if(!lista.length)html+='<p>Não há compras confirmadas. Use “Reconhecer habilidades antigas” acima.</p>';
-      html+='<p class="beneficio190Aviso">Os usos de Ninjutsu Melhorado II são controlados na carta e no descanso longo. Melhoria de Vida aumenta somente PV máximo após rolagem confirmada; benefícios sem regra validada permanecem pendentes.</p>';
+      html+='<p class="beneficio190Aviso">Os usos de Ninjutsu Melhorado II são controlados na carta e no descanso longo. Melhoria de Vida aumenta PV máximo após rolagem; Melhoria de Chakra acrescenta o dado máximo ao EKO máximo após confirmação. Outros benefícios ainda pendentes permanecem sem aplicação.</p>';
       body.innerHTML=html;
     }
     root.ShinobiBeneficiosPontosUI190={atualizar:montar};
