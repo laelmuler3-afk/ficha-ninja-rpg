@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.197",
+  "version": "2.5.8.198",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "747c3c8a96102f3b1c8629a3b757e6deab47c399a19ec7508561e3576201d736",
-      "outputSha256": "e512699791f437d7d2bed70aea093cff15906a03d747ec5691d33c522d6a85a2"
+      "sourceSha256": "6cd397a9cbc81c538f9ee89f9164229e5bd67d1aa74f0f6c9578ffc20c0d1a62",
+      "outputSha256": "26d6de7b6b7c73db931fc94ffbd980954865e7ffa611612855c3f324e3946057"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -108,8 +108,8 @@
       "outputSha256": "d044251ee2844556686eaaf7f8ab8b21c1d04e4763aaca29c83a4068f2346f74"
     },
     "js/17-beneficios-pontos-chave-190.js": {
-      "sourceSha256": "726f95cf07de7a800f5a29d92d5891d160e9284d7cdfc60bc8f3d83a7d935ebb",
-      "outputSha256": "d2ab067c89fedfe51ae6ff7b52296cb53040189e38f4b1c65dd8a02dfaec8655"
+      "sourceSha256": "c6705240fe9e5105de2a70379f3e3aaf2c4ad4a962d9d9f8e0de4c991b863101",
+      "outputSha256": "9f11d315349df65056d973a9201984fe50d68de08640174bb0087bf72e3b3596"
     },
     "js/17-calculos-confirmados.js": {
       "sourceSha256": "5c4199b04a33753c7575f60a9e7f7826fa405a4c643bb3f5b2d162f05a4c3cc7",
@@ -204,8 +204,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "33e609358dea80b2cc2c90e45d2126156c99215c539be3e83b789de37695cfe0",
-      "outputSha256": "ea52a8222b9837223d4fe5656b368da994118332a2b25e486d4bccf7e3f14e88"
+      "sourceSha256": "c2690b1ee4e2db67a4b8b40a56bfa8096043a0b348fe5814e4f6250aa40c1b5e",
+      "outputSha256": "e5d24e1455a57b733aa354ffadffff0c0623189393fd35aeab0ba82e5b6bfd6b"
     },
     "js/17-motor-beneficios-192.js": {
       "sourceSha256": "0abd089e805d1085bc1c233b06738d5cc29072d671b198c1d438931414158e1a",
@@ -214,6 +214,10 @@
     "js/17-descansos-197.js": {
       "sourceSha256": "e4345c06fa0535fa5b12bbaa7419bf17e8271feff5e5885b38d24b1ef9aeb07f",
       "outputSha256": "775255d0e654c365bcd6ec898312371ebd572a49969487b69d14f2c9ae57c9fd"
+    },
+    "js/17-beneficios-vida-198.js": {
+      "sourceSha256": "e2f39a2015134919508068b184ef77617b040cfe9b876ee3ef8540296dbe9f14",
+      "outputSha256": "7c8f01bbd48bc162e9a0f97fcc5b1ee73e0b58d6f4a6c782772356dcddd0d94e"
     }
   }
 }
