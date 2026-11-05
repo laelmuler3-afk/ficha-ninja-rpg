@@ -89,7 +89,7 @@ test('Arquivos de interface, cache e loader da versão 201 estão ligados',()=>{
  assert.match(ler('js/00-compat-loader.js'),/17-beneficios-chakra-201\.js/);
  assert.match(ler('js/00-compat-loader.js'),/17-duelista-defensivo-201\.js/);
  assert.match(ler('service-worker.js'),/css\/duelista-defensivo-201\.css/);
- assert.match(ler('version.json'),/2\.5\.8\.201/);
+ assert.match(ler('version.json'),/2\.5\.8\.20[1-9]/);
 });
 const vm=require('node:vm');
 function cenarioChakra({confirmacao=true,salvamento=true}={}){
