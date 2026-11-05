@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.200",
+  "version": "2.5.8.201",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "71a6c5a5cbe601dc5575949d94d067575fc364ee131bb590b746847767202930",
-      "outputSha256": "a3ce1642cea7bd31f9925abe13409d3733e355a5f71d3f0ff34905925514f9d5"
+      "sourceSha256": "fc9f26e2d9b577f5d4d27b119e5d166d161915e806445eb95adcc527f20dc33c",
+      "outputSha256": "638ade04bdf04df05cb7d785b8215157e4de4908b75bcefb1b1985105dbcb49b"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -112,8 +112,8 @@
       "outputSha256": "72d2113f44966270b6c0aca3aeae818a5b5d471c4437130a75c2c166a3c4cfa1"
     },
     "js/17-beneficios-pontos-chave-190.js": {
-      "sourceSha256": "d57c12ffcc2065e1f48913363cfeb42a64832a208c7ba9e625960563c99a1154",
-      "outputSha256": "974d419139e636e33e6c202a13164e5410545a5f27821d3e8fd5fa8c40050834"
+      "sourceSha256": "fe007bd11d090d14f243c06fae227ce68977e3d8a7bf6d349d51661bf52e7b71",
+      "outputSha256": "a68ccd50f31db0b1393888da7ce4f1db6380e38841d8712efeddb16d315040c1"
     },
     "js/17-beneficios-vida-198.js": {
       "sourceSha256": "e2f39a2015134919508068b184ef77617b040cfe9b876ee3ef8540296dbe9f14",
@@ -224,8 +224,16 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "210733f71f80ad63e800b8781fa95ec88739bf96969a3b644ac6aa0ba604cfb0",
-      "outputSha256": "0a2a02482f4e7de62f30d4ad065dd0b15c35abd81b957f707ac38ff33d172075"
+      "sourceSha256": "924d6874367436f36f7fe041f8be539e1fab8bbff27af839ca1c42d400a24b11",
+      "outputSha256": "ba98e404602fa3a2900df73b4843704f89b6974affb4f41368949501df082d64"
+    },
+    "js/17-beneficios-chakra-201.js": {
+      "sourceSha256": "000a3f4c8cae280bcd997fef1b23d98e46fbd6f425540e41b18222919388b610",
+      "outputSha256": "2507302f2d57a352f8bc2e0b0810df8ce3c1ff11ef2478a17ebc7ecf406f4c34"
+    },
+    "js/17-duelista-defensivo-201.js": {
+      "sourceSha256": "bc522acf606557621ed775378c25a23db99f8919163b394ce3cf30ee06351716",
+      "outputSha256": "69d532453a30b2457a38ec81791e8d9b61a10e57dc1c9fd92d7d1650bcb1a0ad"
     }
   }
 }

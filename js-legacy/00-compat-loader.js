@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/00-compat-loader.js — app 2.5.8.200. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/00-compat-loader.js — app 2.5.8.201. Não editar. */
 (function () {
     "use strict";
     if (window.__shinobiCompatLoader)
@@ -24,7 +24,7 @@
         document.head.appendChild(l);
     }
     var files = [
-        "00-shinobi-ui.js", "00-item-identity.js", "01-core.js", "01-sheet-manager.js", "02-runtime.js", "03-images.js", "04-jutsus.js", "05-armados-item-level.js", "05-kekkei-item-level.js", "09-catalogo.js", "05-battle.js", "06-inventory.js", "06-wallet-item-level.js", "07-profile.js", "10-regras-natureza.js", "11-batalha-ui.js", "12-efeitos-jutsus.js", "13-motor-universal.js", "14-level-up.js", "15-testes-resistencia.js", "16-pericias.js", "17-dano-inteligente.js", "17-preparacao-ataques.js", "17-calculos-confirmados.js", "17-pontos-chave-engine.js", "17-ataques-automaticos.js", "17-integracao-ataques.js", "17-pontos-chave-ui.js", "17-migracao-habilidades-186.js", "17-migracao-habilidades-ui-186.js", "17-vinculos-jutsus-187.js", "17-beneficios-jutsus-188.js", "17-beneficios-pontos-chave-190.js", "17-motor-beneficios-192.js", "17-descansos-197.js", "17-beneficios-vida-198.js", "17-beneficios-perito-199.js", "17-sorte-200.js", "22-organizacao-retratil.js", "23-security-hardening.js", "24-terminologia-eko.js", "08-post-render-loader.js"
+        "00-shinobi-ui.js", "00-item-identity.js", "01-core.js", "01-sheet-manager.js", "02-runtime.js", "03-images.js", "04-jutsus.js", "05-armados-item-level.js", "05-kekkei-item-level.js", "09-catalogo.js", "05-battle.js", "06-inventory.js", "06-wallet-item-level.js", "07-profile.js", "10-regras-natureza.js", "11-batalha-ui.js", "12-efeitos-jutsus.js", "13-motor-universal.js", "14-level-up.js", "15-testes-resistencia.js", "16-pericias.js", "17-dano-inteligente.js", "17-preparacao-ataques.js", "17-calculos-confirmados.js", "17-pontos-chave-engine.js", "17-ataques-automaticos.js", "17-integracao-ataques.js", "17-pontos-chave-ui.js", "17-migracao-habilidades-186.js", "17-migracao-habilidades-ui-186.js", "17-vinculos-jutsus-187.js", "17-beneficios-jutsus-188.js", "17-beneficios-pontos-chave-190.js", "17-motor-beneficios-192.js", "17-descansos-197.js", "17-beneficios-vida-198.js", "17-beneficios-perito-199.js", "17-sorte-200.js", "17-beneficios-chakra-201.js", "17-duelista-defensivo-201.js", "22-organizacao-retratil.js", "23-security-hardening.js", "24-terminologia-eko.js", "08-post-render-loader.js"
     ];
     function load(i) {
         if (i >= files.length) {
