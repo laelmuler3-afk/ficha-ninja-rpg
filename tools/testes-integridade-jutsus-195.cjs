@@ -73,8 +73,11 @@ test('contador e melhoria aparecem em faixa própria, fora do <small> ocultado p
   assert.match(faixa.textContent,/Ninjutsu Melhorado II ativo · 3\/3/);
   assert.equal(faixa.className,'jutsuIndicadoresAtivos195');
 });
-test('descanso fica fora do grid de três colunas do cabeçalho',()=>{
+test('descanso sai do cabeçalho de Jutsus e permanece no menu de Combate',()=>{
   const src=fs.readFileSync(path.join(__dirname,'../js/17-beneficios-jutsus-188.js'),'utf8');
-  assert.match(src,/hero\.insertAdjacentElement\('afterend',botao\)/);
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   assert.doesNotMatch(src,/hero\.appendChild\(botao\)/);
+  assert.doesNotMatch(src,/hero\.insertAdjacentElement\('afterend',botao\)/);
+  assert.match(html,/onclick="resetarBatalha\(\)"[\s\S]*?Descanso longo/);
+  assert.match(html,/onclick="abrirDescansoCurto197\(\)"/);
 });
