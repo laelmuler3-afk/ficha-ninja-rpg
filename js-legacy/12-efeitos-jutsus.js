@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/12-efeitos-jutsus.js — app 2.5.8.176. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/12-efeitos-jutsus.js — app 2.5.8.197. Não editar. */
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -1489,64 +1489,113 @@ var __values = (this && this.__values) || function(o) {
         window.__resetEfeitosEstruturadosV196 = true;
         window.resetarBatalha = function () {
             return __awaiter(this, void 0, void 0, function () {
-                var ok, _a, pv, pvMax, chakra, chakraMax, dano, custo, logBox, efeitosAntesReset, contextoReset;
+                var descanso, livro, ninjutsu, pv, pvMax, chakra, chakraMax, pvAnterior, chakraAnterior, pvNumero, dados, ok, _a, anteriorLedger, efeitosAntesReset, novoLedger, contexto, salvo, dano, custo, logBox;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
-                            if (!(typeof confirmarUsoAcao === "function")) return [3 /*break*/, 2];
-                            return [4 /*yield*/, confirmarUsoAcao("reset", "Resetar batalha", "PV e Chakra voltam ao máximo. Efeitos, bônus temporários e histórico serão limpos.")];
+                            if (window.__descansoLongoEmCurso197)
+                                return [2 /*return*/, false];
+                            window.__descansoLongoEmCurso197 = true;
+                            _b.label = 1;
                         case 1:
-                            _a = _b.sent();
-                            return [3 /*break*/, 3];
+                            _b.trys.push([1, , 16, 17]);
+                            descanso = window.ShinobiDescansos197;
+                            livro = window.ShinobiPontosChave;
+                            ninjutsu = window.ShinobiBeneficiosJutsus188;
+                            if (!(!descanso || !livro || !ninjutsu)) return [3 /*break*/, 4];
+                            if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 3];
+                            return [4 /*yield*/, avisoShinobi("Descanso indisponível", "O motor de descansos não carregou. Atualize o aplicativo antes de tentar novamente.")];
                         case 2:
-                            _a = confirm("Resetar a batalha e limpar os efeitos ativos?");
+                            _b.sent();
                             _b.label = 3;
-                        case 3:
+                        case 3: return [2 /*return*/, false];
+                        case 4:
+                            pv = document.getElementById("pv"), pvMax = document.getElementById("pvMax");
+                            chakra = document.getElementById("chakra"), chakraMax = document.getElementById("chakraMax");
+                            pvAnterior = pv === null || pv === void 0 ? void 0 : pv.value, chakraAnterior = chakra === null || chakra === void 0 ? void 0 : chakra.value;
+                            pvNumero = Number(pvAnterior || 0);
+                            if (!(pvNumero < 1)) return [3 /*break*/, 7];
+                            if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 6];
+                            return [4 /*yield*/, avisoShinobi("Descanso longo", "Pelas regras de descanso de D&D 5e, o personagem precisa ter pelo menos 1 PV ao iniciar o descanso. Estabilize ou recupere PV primeiro.")];
+                        case 5:
+                            _b.sent();
+                            _b.label = 6;
+                        case 6: return [2 /*return*/, false];
+                        case 7:
+                            dados = descanso.recursos(estado, livro);
+                            if (!(typeof confirmarUsoAcao === "function")) return [3 /*break*/, 9];
+                            return [4 /*yield*/, confirmarUsoAcao("descanso", "Descanso longo", "PV e EKO voltam ao máximo. Até " + Math.max(1, Math.floor(dados.nivel / 2)) + " Dados de Vida gastos são recuperados. " +
+                                    "Usos de Ninjutsu Melhorado II são restaurados. Efeitos e bônus temporários da batalha são limpos. Confirme que passaram 8 horas de jogo e que não houve outro descanso longo nas últimas 24 horas de jogo.")];
+                        case 8:
+                            _a = _b.sent();
+                            return [3 /*break*/, 10];
+                        case 9:
+                            _a = confirm("Confirmar descanso longo? Recupera PV, EKO, usos limitados e limpa os efeitos temporários.");
+                            _b.label = 10;
+                        case 10:
                             ok = _a;
                             if (!ok)
                                 return [2 /*return*/, false];
-                            pv = document.getElementById("pv"), pvMax = document.getElementById("pvMax");
-                            chakra = document.getElementById("chakra"), chakraMax = document.getElementById("chakraMax");
-                            dano = document.getElementById("danoBatalha"), custo = document.getElementById("custoBatalha"), logBox = document.getElementById("log");
+                            if (window.__shinobiSheetTransition === true)
+                                return [2 /*return*/, false];
+                            anteriorLedger = estado.pontosChaveV1;
+                            efeitosAntesReset = Array.isArray(estado[CHAVE_ESTADO]) ? estado[CHAVE_ESTADO].map(clonar) : [];
+                            novoLedger = descanso.registrarLongo(estado, livro, ninjutsu);
+                            estado.pontosChaveV1 = novoLedger;
+                            estado[CHAVE_ESTADO] = [];
                             if (pv)
                                 pv.value = (pvMax === null || pvMax === void 0 ? void 0 : pvMax.value) || 0;
                             if (chakra)
                                 chakra.value = (chakraMax === null || chakraMax === void 0 ? void 0 : chakraMax.value) || 0;
+                            contexto = { confirmada: true, origem: "descanso-longo", campos: ["pv", "chakra", CHAVE_ESTADO, "pontosChaveV1"], motivo: "descanso-longo" };
+                            salvo = typeof salvar === "function" ? salvar(contexto) : false;
+                            if (!!salvo) return [3 /*break*/, 13];
+                            estado.pontosChaveV1 = anteriorLedger;
+                            estado[CHAVE_ESTADO] = efeitosAntesReset;
+                            if (pv)
+                                pv.value = pvAnterior;
+                            if (chakra)
+                                chakra.value = chakraAnterior;
+                            if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 12];
+                            return [4 /*yield*/, avisoShinobi("Descanso não salvo", "A ficha foi preservada; tente novamente.")];
+                        case 11:
+                            _b.sent();
+                            _b.label = 12;
+                        case 12: return [2 /*return*/, false];
+                        case 13:
+                            dano = document.getElementById("danoBatalha"), custo = document.getElementById("custoBatalha"), logBox = document.getElementById("log");
                             if (dano)
                                 dano.value = 1;
                             if (custo)
                                 custo.value = 1;
                             if (logBox)
-                                logBox.innerHTML = "Nada aconteceu ainda.";
+                                logBox.textContent = "Nada aconteceu ainda.";
                             if (typeof window.shinobiZerarBonusBatalhaPersistidos === "function")
                                 window.shinobiZerarBonusBatalhaPersistidos("todos");
                             else
                                 document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(function (input) { input.value = 0; });
                             if (typeof bonusBatalhaAtributos !== "undefined")
                                 Object.keys(bonusBatalhaAtributos).forEach(function (chave) { bonusBatalhaAtributos[chave] = 0; });
-                            efeitosAntesReset = Array.isArray(estado[CHAVE_ESTADO]) ? estado[CHAVE_ESTADO].map(clonar) : [];
-                            estado[CHAVE_ESTADO] = [];
-                            contextoReset = { confirmada: true, origem: "batalha", campos: ["pv", "chakra", CHAVE_ESTADO], motivo: "alteracao-confirmada" };
-                            if (typeof salvar === "function")
-                                salvar(contextoReset);
-                            else
-                                salvarEstado(contextoReset);
-                            efeitosAntesReset.forEach(function (item) { return emitirEfeitoItemConfirmado(item, { deleted: true, reason: "reset-batalha" }); });
+                            efeitosAntesReset.forEach(function (item) { return emitirEfeitoItemConfirmado(item, { deleted: true, reason: "descanso-longo" }); });
                             if (typeof atualizarModsBatalhaComBonus === "function")
                                 atualizarModsBatalhaComBonus();
                             if (typeof atualizarPainelBatalhaVivo === "function")
                                 atualizarPainelBatalhaVivo();
                             atualizarTudo();
-                            /* Fecha o menu de opções como confirmação visual do reset concluído. */
-                            document.querySelectorAll("details.batalhaMenuOpcoes[open]").forEach(function (menu) {
-                                menu.removeAttribute("open");
-                            });
-                            if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 5];
-                            return [4 /*yield*/, avisoShinobi("Batalha resetada", "A Área de Batalha e os efeitos ativos foram restaurados.")];
-                        case 4:
+                            if (typeof renderizarJutsus === "function")
+                                renderizarJutsus();
+                            document.querySelectorAll("details.batalhaMenuOpcoes[open]").forEach(function (menu) { return menu.removeAttribute("open"); });
+                            window.dispatchEvent(new CustomEvent("shinobi:descanso-longo-confirmado", { detail: { dadosRecuperaveis: Math.max(1, Math.floor(dados.nivel / 2)) } }));
+                            if (!(typeof avisoShinobi === "function")) return [3 /*break*/, 15];
+                            return [4 /*yield*/, avisoShinobi("Descanso longo realizado", "PV, EKO, Dados de Vida e usos de Ninjutsu Melhorado II atualizados.")];
+                        case 14:
                             _b.sent();
-                            _b.label = 5;
-                        case 5: return [2 /*return*/, true];
+                            _b.label = 15;
+                        case 15: return [2 /*return*/, true];
+                        case 16:
+                            window.__descansoLongoEmCurso197 = false;
+                            return [7 /*endfinally*/];
+                        case 17: return [2 /*return*/];
                     }
                 });
             });

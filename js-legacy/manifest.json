@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.196",
+  "version": "2.5.8.197",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "0fc5f51236d01e8052e9be7b2492daafb48f7904c3f74f558ae4a3bb7759625b",
-      "outputSha256": "b5740b92b1ff207e4aaeb1558925273a10578b8f1cae195db3c9b193625e35fa"
+      "sourceSha256": "747c3c8a96102f3b1c8629a3b757e6deab47c399a19ec7508561e3576201d736",
+      "outputSha256": "e512699791f437d7d2bed70aea093cff15906a03d747ec5691d33c522d6a85a2"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -80,8 +80,8 @@
       "outputSha256": "08e57d70fcbca968c6a520eb01f3e532bd998f47690b19b9d4d899129d4ceb0b"
     },
     "js/12-efeitos-jutsus.js": {
-      "sourceSha256": "f70980767f49306fa98ea9e82554507e214c0bf17578b68dfeb7216ed89e2a23",
-      "outputSha256": "2f291262d2aad6d26d585ab81689f44faee35f0e57ab9327f1fc4572eb5c7e11"
+      "sourceSha256": "28806f36e05fa09bae5577f022230741b19961f38f478ca983f68e7d72b2aa4a",
+      "outputSha256": "2c7e0cb9dc7e963f1696e19a40809af7d7f85272fc76d9f307b3400d396c94c2"
     },
     "js/13-motor-universal.js": {
       "sourceSha256": "d28d9af05648272e390dd88c0adff4522027fa5a2bd3b816648eebaaede0cfde",
@@ -104,8 +104,8 @@
       "outputSha256": "c1f77911cc5e0d7babcba3af830b15266e86346c98b1e2766fe51c51642057cc"
     },
     "js/17-beneficios-jutsus-188.js": {
-      "sourceSha256": "4f07fc2c90f92b596979c919b4b33b6b9df6901779e4cea4f568e6e25f844635",
-      "outputSha256": "eda9dcd987e314730be333d4c6e57fd10a1ad41e9929536a14c79d57ee177821"
+      "sourceSha256": "f64bc905e02b6a628ebff18d8a3fc12b4ac8356abe1b94045316b40354ae58a1",
+      "outputSha256": "d044251ee2844556686eaaf7f8ab8b21c1d04e4763aaca29c83a4068f2346f74"
     },
     "js/17-beneficios-pontos-chave-190.js": {
       "sourceSha256": "726f95cf07de7a800f5a29d92d5891d160e9284d7cdfc60bc8f3d83a7d935ebb",
@@ -204,12 +204,16 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "378c4884b82b6cff575a63dfb6685abcd75d9ba7d586c337b476a9309dea3f95",
-      "outputSha256": "2c2729f659c290730120b9b9c04c4f668729404677ec19791c59b42e1d2e5b73"
+      "sourceSha256": "33e609358dea80b2cc2c90e45d2126156c99215c539be3e83b789de37695cfe0",
+      "outputSha256": "ea52a8222b9837223d4fe5656b368da994118332a2b25e486d4bccf7e3f14e88"
     },
     "js/17-motor-beneficios-192.js": {
       "sourceSha256": "0abd089e805d1085bc1c233b06738d5cc29072d671b198c1d438931414158e1a",
       "outputSha256": "5b2731f059e9782c5d53d32cee881aee618af692b0b388944bbd9a02403e9f41"
+    },
+    "js/17-descansos-197.js": {
+      "sourceSha256": "e4345c06fa0535fa5b12bbaa7419bf17e8271feff5e5885b38d24b1ef9aeb07f",
+      "outputSha256": "775255d0e654c365bcd6ec898312371ebd572a49969487b69d14f2c9ae57c9fd"
     }
   }
 }
