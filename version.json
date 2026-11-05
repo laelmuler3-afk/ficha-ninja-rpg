@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.197",
-  "name": "Descansos curto e longo centralizados em Combate",
-  "notes": "Descanso longo restaura PV, EKO, Dados de Vida e usos de Ninjutsu II; curto registra dados rolados pelo jogador e recupera até 1/4 do EKO uma vez por ciclo. Registro sincronizável e sem rolagens automáticas.",
+  "version": "2.5.8.198",
+  "name": "Melhoria de Vida com rolagem confirmada e PV maximo seguro",
+  "notes": "Um dado de Vida do cla por compra elegivel, com entrada manual da rolagem, registro idempotente e preservacao de PV atual e melhorias anteriores.",
   "date": "2026-11-05"
 }
