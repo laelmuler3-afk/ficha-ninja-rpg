@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.196",
-  "name": "Cartões de jutsu simplificados e dano efetivo",
-  "notes": "Exibir dano do upgrade conforme natureza e melhoria, sem descrições duplicadas; contador restante de Ninjutsu II; preservar dados e regras de descanso.",
-  "date": "2026-11-04"
+  "version": "2.5.8.197",
+  "name": "Descansos curto e longo centralizados em Combate",
+  "notes": "Descanso longo restaura PV, EKO, Dados de Vida e usos de Ninjutsu II; curto registra dados rolados pelo jogador e recupera até 1/4 do EKO uma vez por ciclo. Registro sincronizável e sem rolagens automáticas.",
+  "date": "2026-11-05"
 }

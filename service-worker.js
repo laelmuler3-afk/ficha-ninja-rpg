@@ -1,7 +1,7 @@
-/* Ficha Ninja RPG 2.5.8.196 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.197 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-const APP_VERSION = "2.5.8.196";
+const APP_VERSION = "2.5.8.197";
 const CACHE_PREFIX = "shinobi";
 const SHELL_CACHE = `${CACHE_PREFIX}-shell-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -85,6 +85,7 @@ const APP_SHELL = [
   `./js/17-beneficios-jutsus-188.js?v=${APP_VERSION}`,
   `./js/17-beneficios-pontos-chave-190.js?v=${APP_VERSION}`,
   `./js/17-motor-beneficios-192.js?v=${APP_VERSION}`,
+  `./js/17-descansos-197.js?v=${APP_VERSION}`,
   `./js-legacy/17-beneficios-pontos-chave-190.js?v=${APP_VERSION}`,
   `./js-legacy/17-motor-beneficios-192.js?v=${APP_VERSION}`,
   `./js-legacy/17-integracao-ataques.js?v=${APP_VERSION}`,
@@ -96,6 +97,7 @@ const APP_SHELL = [
   `./js-legacy/17-migracao-habilidades-ui-186.js?v=${APP_VERSION}`,
   `./js-legacy/17-vinculos-jutsus-187.js?v=${APP_VERSION}`,
   `./js-legacy/17-beneficios-jutsus-188.js?v=${APP_VERSION}`,
+  `./js-legacy/17-descansos-197.js?v=${APP_VERSION}`,
   `./js-legacy/17-calculos-confirmados.js?v=${APP_VERSION}`,
   `./js/18-online-config.js?v=${APP_VERSION}`,
   `./js/19-character-identity.js?v=${APP_VERSION}`,
