@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.201. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: service-worker.js — app 2.5.8.202. Não editar. */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -71,10 +71,10 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
-/* Ficha Ninja RPG 2.5.8.201 — atualizações movidas para Sobre o app.
+/* Ficha Ninja RPG 2.5.8.202 — atualizações movidas para Sobre o app.
  * Mantém cache versionado e estratégia de atualização multi-dispositivo.
  */
-var APP_VERSION = "2.5.8.201";
+var APP_VERSION = "2.5.8.202";
 var CACHE_PREFIX = "shinobi";
 var SHELL_CACHE = "".concat(CACHE_PREFIX, "-shell-").concat(APP_VERSION);
 var RUNTIME_CACHE = "".concat(CACHE_PREFIX, "-runtime-").concat(APP_VERSION);
@@ -114,6 +114,7 @@ var APP_SHELL = [
     "./css/beneficios-pontos-190.css?v=".concat(APP_VERSION),
     "./css/sorte-200.css?v=".concat(APP_VERSION),
     "./css/duelista-defensivo-201.css?v=".concat(APP_VERSION),
+    "./css/talentos-condicionais-202.css?v=".concat(APP_VERSION),
     "./css/tcg-jutsus.css?v=".concat(APP_VERSION),
     "./assets/tcg/filigrana.svg?v=".concat(APP_VERSION),
     "./assets/tcg/placa-nome.svg?v=".concat(APP_VERSION),
@@ -165,9 +166,11 @@ var APP_SHELL = [
     "./js/17-sorte-200.js?v=".concat(APP_VERSION),
     "./js/17-beneficios-chakra-201.js?v=".concat(APP_VERSION),
     "./js/17-duelista-defensivo-201.js?v=".concat(APP_VERSION),
+    "./js/17-talentos-condicionais-202.js?v=".concat(APP_VERSION),
     "./js-legacy/17-sorte-200.js?v=".concat(APP_VERSION),
     "./js-legacy/17-beneficios-chakra-201.js?v=".concat(APP_VERSION),
     "./js-legacy/17-duelista-defensivo-201.js?v=".concat(APP_VERSION),
+    "./js-legacy/17-talentos-condicionais-202.js?v=".concat(APP_VERSION),
     "./js-legacy/17-beneficios-perito-199.js?v=".concat(APP_VERSION),
     "./js-legacy/17-beneficios-vida-198.js?v=".concat(APP_VERSION),
     "./js-legacy/17-beneficios-pontos-chave-190.js?v=".concat(APP_VERSION),

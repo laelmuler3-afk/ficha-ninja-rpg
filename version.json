@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.201",
-  "name": "Melhoria de Chakra e Duelista Defensivo",
-  "notes": "Melhoria de Chakra usa dado de Chakra do clã maximizado, com confirmação e sem duplicação. Duelista Defensivo calcula CA de reação para um ataque sem alterar a defesa permanente.",
+  "version": "2.5.8.202",
+  "name": "Talentos de combate: Armas Grandes, Sentinela e Especialista em Briga",
+  "notes": "Painel condicional para rolagens manuais e gatilhos de reação, sem modificar o estado de inimigos ou consumir reações sem confirmação.",
   "date": "2026-11-05"
 }
