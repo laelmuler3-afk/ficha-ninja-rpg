@@ -69,8 +69,8 @@ test('contador e melhoria aparecem em faixa própria, fora do <small> ocultado p
   const card={ownerDocument:{createElement:()=>elemento()},querySelector:s=>s==='.jutsuIndicadoresAtivos195'?faixa:mapa[s]||null};
   const calculo=B.aplicar(ficha,ficha.jutsus[0],{danoEfetivo:'8d6',custoEfetivoTexto:'7'},Livro);
   B.decorarCard(card,ficha.jutsus[0],calculo);
-  assert.match(faixa.textContent,/Dano 8d8/);
-  assert.match(faixa.textContent,/Ninjutsu II 0\/3/);
+  assert.match(faixa.textContent,/Ninjutsu Aprimorado ativo/);
+  assert.match(faixa.textContent,/Ninjutsu Melhorado II ativo · 3\/3/);
   assert.equal(faixa.className,'jutsuIndicadoresAtivos195');
 });
 test('descanso fica fora do grid de três colunas do cabeçalho',()=>{
