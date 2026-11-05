@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.199",
-  "name": "Perito: três proficiências em perícias ou ferramentas",
-  "notes": "Escolhas de Perito sincronizáveis, cálculo de perícias sem duplicação manual e preservação das habilidades antigas. Melhoria de Chakra pendente de regra inequívoca.",
+  "version": "2.5.8.200",
+  "name": "Sorte: três pontos por descanso longo",
+  "notes": "Consumo manual em Combate, histórico sincronizável e recuperação pelo descanso longo, sem rolagens automáticas.",
   "date": "2026-11-05"
 }
