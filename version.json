@@ -1,6 +1,6 @@
 {
-  "version": "2.5.8.194",
-  "name": "Ninjutsu Melhorado II — contador de usos por proficiência",
-  "notes": "Contagem por descanso longo, recuperação do custo original confirmado e integração com Usar Jutsu.",
+  "version": "2.5.8.195",
+  "name": "Correção estrutural e visual de Jutsus",
+  "notes": "Restaurar valores calculados nos cartões; contador visível; descanso fora do cabeçalho; preservar layout e dados.",
   "date": "2026-11-04"
 }
