@@ -16,3 +16,13 @@
 .beneficio198Rolagem label{display:flex;align-items:center;gap:7px;color:#c5d7dc;font-size:.82rem}
 .beneficio198Rolagem input{width:66px;min-height:38px;padding:6px;border:1px solid #52656b;border-radius:7px;background:#082029;color:#e9f3f4;font:inherit;text-align:center}
 .beneficio198Rolagem .beneficio190Aplicar{margin:0}
+
+/* 199 — três escolhas de Perito, compactas para celulares. */
+.beneficio199Form{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.beneficio199Form p{font-size:.77rem;margin:0 0 2px!important;color:#a8bec3}
+.beneficio199Linha{display:flex;flex-wrap:wrap;gap:6px;align-items:end}
+.beneficio199Linha label{min-width:0;flex:1 1 170px;display:flex;flex-direction:column;gap:4px;font-size:.77rem}
+.beneficio199Linha select,.beneficio199Linha input{min-height:39px;min-width:0;width:100%;border:1px solid #52656b;border-radius:7px;background:#082029;color:#e9f3f4;padding:5px 8px;font:inherit}
+.beneficio199Linha input{flex:1 1 140px;max-width:100%}
+.beneficio199Linha input[hidden]{display:none}
+.periciaItem.proficientePerito199 .periciaNome::after{content:' · Perito';color:#d5aa75;font-size:.69rem;font-weight:600}
