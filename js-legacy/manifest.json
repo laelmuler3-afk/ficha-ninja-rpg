@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.201",
+  "version": "2.5.8.202",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "fc9f26e2d9b577f5d4d27b119e5d166d161915e806445eb95adcc527f20dc33c",
-      "outputSha256": "638ade04bdf04df05cb7d785b8215157e4de4908b75bcefb1b1985105dbcb49b"
+      "sourceSha256": "9e112706b0aed424cc33016f3bcef7f8c036323c70249a85c4ad901d95c676df",
+      "outputSha256": "e4aa0efa92cd91bdbb148ff178f5709c25be475d31df2e4f3e877d799bde4de9"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -224,8 +224,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "924d6874367436f36f7fe041f8be539e1fab8bbff27af839ca1c42d400a24b11",
-      "outputSha256": "ba98e404602fa3a2900df73b4843704f89b6974affb4f41368949501df082d64"
+      "sourceSha256": "893d1dffd3c27ab3af359915490b941be553e91979809dbe33d810db7b982a58",
+      "outputSha256": "58f5d47a05f7682a2c4e9a50290bd65902feaa00607489c2a2b2ddc3d7599ff2"
     },
     "js/17-beneficios-chakra-201.js": {
       "sourceSha256": "000a3f4c8cae280bcd997fef1b23d98e46fbd6f425540e41b18222919388b610",
@@ -234,6 +234,10 @@
     "js/17-duelista-defensivo-201.js": {
       "sourceSha256": "bc522acf606557621ed775378c25a23db99f8919163b394ce3cf30ee06351716",
       "outputSha256": "69d532453a30b2457a38ec81791e8d9b61a10e57dc1c9fd92d7d1650bcb1a0ad"
+    },
+    "js/17-talentos-condicionais-202.js": {
+      "sourceSha256": "0cd960b4341845342a18a1a8dbff5809696c14cb6424d36584a974250b7105de",
+      "outputSha256": "89b599db195d02ddbe57cbe536fa27c0eaac561fb9449f01c721d668943b5d1b"
     }
   }
 }
