@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-beneficios-jutsus-188.js — app 2.5.8.194. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-beneficios-jutsus-188.js — app 2.5.8.195. Não editar. */
 /* Projetinho Shinobi 2.5.8.188 — benefícios confirmados nos jutsus.
  * Nunca modifica a ficha nem faz nova compra. Ativa apenas melhorias marcadas
  * "Ainda não apliquei", com jutsu e escolha exatos e aquisição existente.
@@ -290,22 +290,41 @@
                 acaoCapa.title = 'Ação Bônus por Ninjutsu Aprimorado';
             }
         }
-        var contador = card.querySelector('.ninjutsuII194Contador');
-        if (regra.melhoradoII) {
-            if (!contador) {
-                var hostContador = card.querySelector('.jutsuLinhaTexto') || card.querySelector('.jutsuLinhaTexto small');
-                if (hostContador && typeof hostContador.appendChild === 'function') {
-                    contador = card.ownerDocument.createElement('small');
-                    contador.className = 'ninjutsuII194Contador';
-                    hostContador.appendChild(contador);
-                }
-            }
-            contador.textContent = 'Melhorado II ' + regra.melhoradoII.usos + '/' + regra.melhoradoII.limite +
-                (regra.melhoradoII.restantes === 0 ? ' · esgotado' : '');
-            contador.title = 'Usos desde o último descanso longo';
+        // O CSS TCG esconde todos os <small> da capa fechada. Um contador
+        // adicionado como <small> parecia desaparecer e ainda distorcia o título.
+        // Usa uma faixa própria, visível tanto na carta fechada quanto aberta.
+        var antigoContador = card.querySelector('.ninjutsuII194Contador');
+        if (antigoContador)
+            antigoContador.remove();
+        var faixa = card.querySelector('.jutsuIndicadoresAtivos195');
+        var indicadores = [];
+        if (b.aplicados.length) {
+            indicadores = Array.isArray(b.indicadores) && b.indicadores.length ?
+                b.indicadores.filter(function (t) { return !/^Ninjutsu II /.test(t); }) : b.aplicados.slice();
         }
-        else if (contador)
-            contador.remove();
+        if (regra.melhoradoII) {
+            var contadorTexto = 'Ninjutsu II ' + regra.melhoradoII.usos + '/' + regra.melhoradoII.limite;
+            if (regra.melhoradoII.restantes === 0)
+                contadorTexto += ' · esgotado';
+            indicadores.push(contadorTexto);
+        }
+        var host = card.querySelector('.jutsuLinhaTexto');
+        if (host && indicadores.length) {
+            if (!faixa) {
+                faixa = card.ownerDocument.createElement('span');
+                faixa.className = 'jutsuIndicadoresAtivos195';
+                var barra = host.querySelector('.jutsuTcgBar');
+                if (barra)
+                    host.insertBefore(faixa, barra);
+                else
+                    host.appendChild(faixa);
+            }
+            faixa.textContent = indicadores.join(' · ');
+            faixa.title = indicadores.join(' · ');
+        }
+        else if (faixa) {
+            faixa.remove();
+        }
         var antigo = card.querySelector('.b188Detalhes');
         if (antigo)
             antigo.remove();
@@ -357,10 +376,8 @@
                 botao = root.document.createElement('button');
                 botao.type = 'button';
                 botao.id = 'ninjutsuII194Descanso';
-                botao.className = 'btn';
-                botao.style.cssText = 'display:block;margin:9px 0;font-size:12px;max-width:100%;white-space:normal';
+                botao.className = 'btn ninjutsuII194DescansoBtn';
                 botao.textContent = 'Restaurar usos de Ninjutsu II (descanso longo)';
-                hero.appendChild(botao);
                 botao.addEventListener('click', function () {
                     var folha = ficha(), E = root.ShinobiPontosChave;
                     if (!folha || !E || !root.confirm('Confirmar descanso longo? Os usos de Ninjutsu Melhorado II serão restaurados. PV e EKO não serão modificados.'))
@@ -376,6 +393,12 @@
                     recarregar();
                     root.alert('Usos de Ninjutsu Melhorado II restaurados.');
                 });
+            }
+            // O cabeçalho é um grid de três colunas. Um quarto filho ali
+            // desalinhava o título e estourava a largura em telas pequenas.
+            // Move também o botão já criado por uma versão anterior.
+            if (botao.parentElement !== hero.parentElement || botao.previousElementSibling !== hero) {
+                hero.insertAdjacentElement('afterend', botao);
             }
         }
         if (root.document.readyState === 'loading')

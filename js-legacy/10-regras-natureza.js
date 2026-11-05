@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.194. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/10-regras-natureza.js — app 2.5.8.195. Não editar. */
 var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
     if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
     return cooked;
@@ -532,26 +532,46 @@ var __read = (this && this.__read) || function (o, n) {
             renderizandoNaturezas = false;
         }
     }
+    // Mantém a estrutura original do cartão: o CSS usa .jutsuCampoValor e
+    // o título tem ícone decorativo. Substituir todos os filhos quebrava ambos.
     function preencherBotaoResumo(botao, rotulo, principal, detalhe) {
         if (detalhe === void 0) { detalhe = ""; }
         if (!botao)
             return;
-        var titulo = document.createElement("b");
-        titulo.textContent = rotulo;
-        var valor = document.createElement("span");
-        valor.className = "jutsuValorRegraNatureza";
-        valor.textContent = principal || "—";
-        botao.replaceChildren(titulo, valor);
+        var valor = botao.querySelector(".jutsuCampoValor");
+        if (!valor) {
+            valor = document.createElement("span");
+            valor.className = "jutsuCampoValor";
+            botao.appendChild(valor);
+        }
+        valor.textContent = String(principal !== null && principal !== void 0 ? principal : "").trim() || "—";
+        var observacao = botao.querySelector(".jutsuDetalheRegraNatureza");
         if (detalhe) {
-            var observacao = document.createElement("small");
-            observacao.className = "jutsuDetalheRegraNatureza";
+            if (!observacao) {
+                observacao = document.createElement("small");
+                observacao.className = "jutsuDetalheRegraNatureza";
+                botao.appendChild(observacao);
+            }
             observacao.textContent = detalhe;
-            botao.appendChild(observacao);
+        }
+        else if (observacao) {
+            observacao.remove();
         }
     }
     function botaoResumoPorRotulo(card, rotulo) {
         return Array.from(card.querySelectorAll(".jutsuResumo button"))
-            .find(function (botao) { var _a; return ((_a = botao.querySelector("b")) === null || _a === void 0 ? void 0 : _a.textContent.trim()) === rotulo; });
+            .find(function (botao) {
+            var titulo = botao.querySelector("b");
+            if (!titulo)
+                return false;
+            // Ex.: <b><span aria-hidden="true">⚔</span>Dano</b>.
+            // textContent completo seria "⚔Dano"; comparar só o texto do rótulo.
+            var rotuloLegivel = Array.from(titulo.childNodes)
+                .filter(function (no) { return no.nodeType === 3; })
+                .map(function (no) { return no.textContent; })
+                .join("").trim();
+            return rotuloLegivel === rotulo;
+        });
     }
     function aplicarRegrasNosCards() {
         var cards = Array.from(document.querySelectorAll("#listaJutsus .jutsuCard"));
@@ -570,12 +590,12 @@ var __read = (this && this.__read) || function (o, n) {
             /* Atualiza custo/rank efetivos sem apagar o selo de ação da capa. */
             var resumoMetadados = resumoLinha === null || resumoLinha === void 0 ? void 0 : resumoLinha.querySelector(".jutsuMetadadosTexto");
             if (resumoMetadados)
-                resumoMetadados.textContent = "".concat(dadosElemento.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " CH");
+                resumoMetadados.textContent = "".concat(dadosElemento.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " EKO");
             else if (resumoLinha)
-                resumoLinha.textContent = "".concat(dadosElemento.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " CH");
+                resumoLinha.textContent = "".concat(dadosElemento.nome, " \u2022 ").concat(rank, " \u2022 ").concat(custo, " EKO");
             var custoPill = card.querySelector(".jutsuCustoPill");
             if (custoPill) {
-                custoPill.textContent = "".concat(custo, " CH");
+                custoPill.textContent = "".concat(custo, " EKO");
                 custoPill.classList.toggle("jutsuCustoAutomatico", regra.kaiSemCusto);
                 custoPill.title = regra.kaiSemCusto
                     ? "Custo base: ".concat(regra.custoBaseTexto || "0", ". Zerado pelo n\u00EDvel 4.")
