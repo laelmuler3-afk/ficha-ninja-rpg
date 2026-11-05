@@ -322,12 +322,38 @@
     return normalizarDanosNivel5Persistidos({persistir});
   }
 
+  /* O catálogo usa, por exemplo, "4d6 de fogo (8d6 após upgrade)".
+   * A anotação explica a evolução, mas NÃO é uma segunda parcela do dano.
+   * Selecionar o dado correto pela natureza antes dos demais benefícios impede
+   * o cartão de mostrar as duas fórmulas e de contar 12 dados no nível 6.
+   * Somente upgrades de natureza com nível exigido verificável são automáticos.
+   */
+  function danoAtualDoUpgrade(jutsu, nivel, elemento){
+    const original = String(jutsu?.dano ?? "").trim();
+    const par = original.match(/^\s*(\d+)\s*d\s*(4|6|8|10|12)(?:\s+de\s+[a-zÀ-ÿ]+)?\s*\(\s*(\d+)\s*d\s*(4|6|8|10|12)\s+ap[oó]s\s+(?:o\s+)?upgrade\s*\)\s*$/i);
+    if(!par) return original;
+    const requisito = String(jutsu?.upgrade?.requisito ?? "").trim();
+    const nivelRequerido = requisito.match(/\b(?:lv|n[ií]vel)\s*(\d+)\s+de\s+([a-zÀ-ÿ]+)/i);
+    let minimo = 0;
+    if(nivelRequerido && normalizarElemento(nivelRequerido[2]) === elemento){
+      minimo = Number(nivelRequerido[1]);
+    }else if(!requisito && elemento === "katon" &&
+             /^katon:\s*grande bola de fogo$/i.test(String(jutsu?.nome ?? "").trim())){
+      // Compatibilidade com fichas antigas que copiaram o dano, mas não o
+      // campo upgrade do catálogo. Regra conhecida: Katon nível 3.
+      minimo = 3;
+    }
+    if(!Number.isInteger(minimo) || minimo < 1 || minimo > 7) return original;
+    const formula = nivel >= minimo ? `${par[3]}d${par[4]}` : `${par[1]}d${par[2]}`;
+    return formula;
+  }
+
   function calcularJutsuComNatureza(jutsu){
     const elemento = normalizarElemento(jutsu?.elemento);
     const natureza = NATUREZA_POR_ID.get(elemento) || null;
     const nivel = natureza ? nivelNatureza(elemento) : 0;
     const conjuracao = dadosConjuracao();
-    const danoBase = String(jutsu?.dano ?? "").trim();
+    const danoBase = danoAtualDoUpgrade(jutsu, nivel, elemento);
     const nivel5Ativo = Boolean(
       natureza &&
       nivel >= 5 &&
@@ -604,17 +630,11 @@
           : "Editar custo de Chakra";
       }
 
-      const detalheDano = regra.metaNivel5
-        ? `N5 ativo: ${regra.metaNivel5.entrada} → ${regra.metaNivel5.saida}`
-        : regra.natureza && regra.nivel >= 5
-          ? "N5 aguardando uma fórmula de dado no campo Dano"
-          : "";
 
       preencherBotaoResumo(
         botaoResumoPorRotulo(card, "Dano"),
         "Dano",
-        regra.danoEfetivo || "—",
-        detalheDano
+        regra.danoEfetivo || "—"
       );
 
       // Ninjutsu Aprimorado pode alterar alcance sem alterar o campo salvo.
@@ -623,39 +643,22 @@
         preencherBotaoResumo(
           botaoResumoPorRotulo(card, "Alcance"),
           "Alcance",
-          regra.alcanceEfetivo,
-          `Alcance original: ${jutsu.alcance || "—"}`
+          regra.alcanceEfetivo
         );
       }
 
-      const partesBonus = [];
-      if(regra.bonusManualTexto) partesBonus.push(`Manual ${regra.bonusManualTexto}`);
-      if(regra.bonusNivel2) partesBonus.push(`N2 ${comSinal(regra.bonusNivel2)}`);
-      if(regra.bonusTalento190) partesBonus.push(`Ninjutsu Melhorado I ${comSinal(regra.bonusTalento190)}`);
-      if(regra.bonusNivel6 || (regra.nivel >= 6 && regra.quantidadeDados > 0)){
-        partesBonus.push(`N6 ${comSinal(regra.bonusNivel6)} (${regra.quantidadeDados} dados)`);
-      }
-
-      const detalheBonus = partesBonus.length
-        ? partesBonus.join(" · ")
-        : regra.conjuracao.atributoId
-          ? "Sem bônus automático neste nível"
-          : "Escolha o atributo de Conjuração nas Naturezas";
-
+      // Nas caixas: apenas o valor efetivo, como no contador de EKO.
+      // Memória de cálculo e origem das melhorias ficam no motor, não no card.
       preencherBotaoResumo(
         botaoResumoPorRotulo(card, "Bônus dano"),
         "Bônus dano",
-        formatarBonusTotal(regra),
-        detalheBonus
+        formatarBonusTotal(regra)
       );
 
       preencherBotaoResumo(
         botaoResumoPorRotulo(card, "Dano total"),
         "Dano total",
-        formatarDanoTotal(regra),
-        regra.natureza && regra.nivel >= 2
-          ? `${regra.natureza.nome} N${regra.nivel} · benefícios N1–N${regra.nivel} ativos`
-          : ""
+        formatarDanoTotal(regra)
       );
 
       const B = window.ShinobiBeneficiosJutsus188;
@@ -992,6 +995,7 @@
     elevarDadosDano,
     contarDados,
     calcularJutsu:calcularJutsuComNatureza,
+    danoAtualDoUpgrade,
     formatarBonusTotal,
     formatarDanoTotal,
     aplicarNivel5NaNatureza,

@@ -136,10 +136,14 @@
   function aplicar(ficha,jutsu,regra,livro){
     var saida=Object.assign({},regra||{}),aplicados=[],preservados=[],pendentes=[],indicadores=[];
     var encontrados=vinculos(ficha,jutsu,livro);
+    var aprimoradoAtivo=false;
     var usados=new Set();
     encontrados.forEach(function(c){
       var op=c.escolhas||{},efeito=texto(op.efeito),tag=texto(c.nome||c.habilidadeId);
       if(op.aplicacao==='ja-aplicado'){
+        if(c.habilidadeId==='ninjutsu_aprimorado'&&
+           ['aumentar-dado','acao-bonus','triplicar-alcance'].indexOf(efeito)>=0)
+          aprimoradoAtivo=true;
         preservados.push(tag+': valor já ajustado manualmente; não reaplicar');return;
       }
       if(op.aplicacao==='incerto'){
@@ -173,6 +177,7 @@
         pendentes.push(tag+': efeito não reconhecido; não aplicado');return;
       }
       usados.add(efeito);
+      aprimoradoAtivo=true;
     });
     var m2=estadoMelhoradoII(ficha,jutsu,livro);
     if(m2){
@@ -188,7 +193,8 @@
       }
       indicadores.push('Ninjutsu II '+m2.usos+'/'+m2.limite);
     }
-    saida.beneficios188={aplicados:aplicados,preservados:preservados,pendentes:pendentes,indicadores:indicadores};
+    saida.beneficios188={aplicados:aplicados,preservados:preservados,pendentes:pendentes,
+      indicadores:indicadores,aprimoradoAtivo:aprimoradoAtivo};
     return saida;
   }
   /* Apenas projeta o resultado calculado na interface. Nenhuma edição no objeto
@@ -196,67 +202,55 @@
    * A capa TCG usa elementos diferentes da versão expandida; atualizar só a
    * linha superior deixava o preço/ação antigos e um selo enganoso.
    */
+  /* A carta de jutsu já tem caixas para dano, alcance e custo. A faixa mostra
+   * somente os TALENTOS ATIVOS e cargas disponíveis; descrições de cálculo
+   * não devem aparecer três vezes nem estourar a capa no celular.
+   */
   function decorarCard(card,jutsu,regra){
     if(!card||!regra||!regra.beneficios188)return;
-    var b=regra.beneficios188,linha=card.querySelector('.jutsuLinhaTexto small');
+    var b=regra.beneficios188;
     var selo=card.querySelector('.b188Selo');
-    if(linha&&b.aplicados.length){
-      if(!selo){selo=card.ownerDocument.createElement('span');selo.className='b188Selo';linha.appendChild(selo);}
-      var etiquetas=Array.isArray(b.indicadores)&&b.indicadores.length?b.indicadores:b.aplicados;
-      selo.textContent=etiquetas.length===1?etiquetas[0]:'Melhorias: '+etiquetas.join(' · ');
-      selo.title=b.aplicados.join(' · ');
-    }else if(selo){selo.remove();}
+    if(selo)selo.remove();
+    var detalhe=card.querySelector('.b188Detalhes');
+    if(detalhe)detalhe.remove();
+    var contadorAntigo=card.querySelector('.ninjutsuII194Contador');
+    if(contadorAntigo)contadorAntigo.remove();
 
-    // A capa compacta tem chips próprios: não herda o valor atualizado do
-    // cabeçalho expandido. Mostrar o custo efetivo (ex.: Kai grátis), MAS
-    // nunca presumir desconto permanente do Ninjutsu Melhorado II.
+    // A capa e o cartão expandido têm resumos de custo/ação independentes.
     var custoEfetivo=texto(regra.custoEfetivoTexto);
     var custoCapa=card.querySelector('.jutsuTcgChipCusto strong');
     if(custoCapa&&custoEfetivo)custoCapa.textContent=custoEfetivo+' EKO';
     if(regra.acaoEfetiva){
-      var a=card.querySelector('.jutsuAcaoRapida');
+      var acao=card.querySelector('.jutsuAcaoRapida');
       var pill=card.querySelector('.jutsuAcaoPill');
       var acaoCapa=card.querySelector('.jutsuTcgChipAcao strong');
-      if(a){a.textContent='AB';a.setAttribute('data-acao','AB');a.title='Ação Bônus por Ninjutsu Aprimorado';a.setAttribute('aria-label',a.title);}
+      if(acao){acao.textContent='AB';acao.setAttribute('data-acao','AB');acao.title='Ação Bônus por Ninjutsu Aprimorado';acao.setAttribute('aria-label',acao.title);}
       if(pill){pill.textContent='AB';pill.title='Ação Bônus por Ninjutsu Aprimorado';}
       if(acaoCapa){acaoCapa.textContent='AB';acaoCapa.title='Ação Bônus por Ninjutsu Aprimorado';}
     }
-    // O CSS TCG esconde todos os <small> da capa fechada. Um contador
-    // adicionado como <small> parecia desaparecer e ainda distorcia o título.
-    // Usa uma faixa própria, visível tanto na carta fechada quanto aberta.
-    var antigoContador=card.querySelector('.ninjutsuII194Contador');
-    if(antigoContador)antigoContador.remove();
-    var faixa=card.querySelector('.jutsuIndicadoresAtivos195');
-    var indicadores=[];
-    if(b.aplicados.length){
-      indicadores=Array.isArray(b.indicadores)&&b.indicadores.length?
-        b.indicadores.filter(function(t){return !/^Ninjutsu II /.test(t);}):b.aplicados.slice();
-    }
+
+    var ativos=[];
+    var aprimorado=b.aprimoradoAtivo===true;
+    if(aprimorado)ativos.push('Ninjutsu Aprimorado ativo');
     if(regra.melhoradoII){
-      var contadorTexto='Ninjutsu II '+regra.melhoradoII.usos+'/'+regra.melhoradoII.limite;
-      if(regra.melhoradoII.restantes===0)contadorTexto+=' · esgotado';
-      indicadores.push(contadorTexto);
+      var m2=regra.melhoradoII;
+      // Exibir RESTANTES, como a barra de chakra: 3/3 -> 2/3 -> 1/3 -> 0/3.
+      // O custo e alcance já são calculados por m2.restantes.
+      ativos.push('Ninjutsu Melhorado II '+(m2.restantes>0?'ativo':'esgotado')+
+        ' · '+m2.restantes+'/'+m2.limite);
     }
+    var faixa=card.querySelector('.jutsuIndicadoresAtivos195');
     var host=card.querySelector('.jutsuLinhaTexto');
-    if(host&&indicadores.length){
+    if(ativos.length&&host){
       if(!faixa){
         faixa=card.ownerDocument.createElement('span');
         faixa.className='jutsuIndicadoresAtivos195';
         var barra=host.querySelector('.jutsuTcgBar');
         if(barra)host.insertBefore(faixa,barra);else host.appendChild(faixa);
       }
-      faixa.textContent=indicadores.join(' · ');
-      faixa.title=indicadores.join(' · ');
+      faixa.textContent=ativos.join(' · ');
+      faixa.title=faixa.textContent;
     }else if(faixa){faixa.remove();}
-    var antigo=card.querySelector('.b188Detalhes');
-    if(antigo)antigo.remove();
-    var textos=b.aplicados.concat(b.preservados,b.pendentes);
-    if(textos.length){
-      var destino=card.querySelector('.jutsuResumo')||card;
-      var aviso=card.ownerDocument.createElement('small');aviso.className='b188Detalhes';
-      aviso.textContent=textos.join(' · ');
-      destino.insertAdjacentElement('afterend',aviso);
-    }
   }
   function instalar(root){
     if(root.__shinobi188Instalado)return;
