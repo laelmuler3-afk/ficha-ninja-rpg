@@ -1,11 +1,11 @@
 {
-  "version": "2.5.8.198",
+  "version": "2.5.8.199",
   "target": "ES5",
   "typescript": "5.8.3",
   "sources": {
     "js/00-compat-loader.js": {
-      "sourceSha256": "6cd397a9cbc81c538f9ee89f9164229e5bd67d1aa74f0f6c9578ffc20c0d1a62",
-      "outputSha256": "26d6de7b6b7c73db931fc94ffbd980954865e7ffa611612855c3f324e3946057"
+      "sourceSha256": "6dd4df9ae1e82dbc09fedad16757b8af34ba5ce149f9e7ddd93689401600f6fd",
+      "outputSha256": "47aa95c16454f25ef5fe4da9904011a44f726d014e6b367a632aaad8d226a6af"
     },
     "js/00-item-identity.js": {
       "sourceSha256": "b72f9b35b9d35808638b29cf8624e00cd50157beff91598f4def0fb6b1869b80",
@@ -96,8 +96,8 @@
       "outputSha256": "ea48b4b3e911e6bb100f2e96ba10937ec7d3503af672487a9534c85e32e08c88"
     },
     "js/16-pericias.js": {
-      "sourceSha256": "845083e5b4ae18ca7b658ea46d43b9e5d876fd58e3019dc41ed1e87b333aed6c",
-      "outputSha256": "7dedccb29afbb6dd0e048fa20f64427ffe7c4dc2089c39016927db286dcaea47"
+      "sourceSha256": "8daf96f23e55af77ef4a0dcfcc1a4438fe7048d4c05abc71d767edd7abd8a511",
+      "outputSha256": "7b4b9d50dbd8ffe4ac9ede684eacce1ec67e21657af1482be9d2b1d84b4d3af9"
     },
     "js/17-ataques-automaticos.js": {
       "sourceSha256": "570effe5b0ea51ef3ebb8612329250db09ada79e273c8a4f96a6a94d8da85c57",
@@ -108,8 +108,8 @@
       "outputSha256": "d044251ee2844556686eaaf7f8ab8b21c1d04e4763aaca29c83a4068f2346f74"
     },
     "js/17-beneficios-pontos-chave-190.js": {
-      "sourceSha256": "c6705240fe9e5105de2a70379f3e3aaf2c4ad4a962d9d9f8e0de4c991b863101",
-      "outputSha256": "9f11d315349df65056d973a9201984fe50d68de08640174bb0087bf72e3b3596"
+      "sourceSha256": "d57c12ffcc2065e1f48913363cfeb42a64832a208c7ba9e625960563c99a1154",
+      "outputSha256": "974d419139e636e33e6c202a13164e5410545a5f27821d3e8fd5fa8c40050834"
     },
     "js/17-calculos-confirmados.js": {
       "sourceSha256": "5c4199b04a33753c7575f60a9e7f7826fa405a4c643bb3f5b2d162f05a4c3cc7",
@@ -204,8 +204,8 @@
       "outputSha256": "af447e5c79f6995111424495e5ce5f00ecc318836fdb9ed26324c9f5e4a1806e"
     },
     "service-worker.js": {
-      "sourceSha256": "c2690b1ee4e2db67a4b8b40a56bfa8096043a0b348fe5814e4f6250aa40c1b5e",
-      "outputSha256": "e5d24e1455a57b733aa354ffadffff0c0623189393fd35aeab0ba82e5b6bfd6b"
+      "sourceSha256": "1b5f6b4fceaca2f768c166a237e77259d1c3b5d1297fac3077146c127e07a815",
+      "outputSha256": "d2fd49d041ad33f48f3218042f52203086377a6d73183a3a0f354f51cb53686e"
     },
     "js/17-motor-beneficios-192.js": {
       "sourceSha256": "0abd089e805d1085bc1c233b06738d5cc29072d671b198c1d438931414158e1a",
@@ -218,6 +218,10 @@
     "js/17-beneficios-vida-198.js": {
       "sourceSha256": "e2f39a2015134919508068b184ef77617b040cfe9b876ee3ef8540296dbe9f14",
       "outputSha256": "7c8f01bbd48bc162e9a0f97fcc5b1ee73e0b58d6f4a6c782772356dcddd0d94e"
+    },
+    "js/17-beneficios-perito-199.js": {
+      "sourceSha256": "2134a337767015a4113bab3a29eac8218ad521d03d13ef4eb9204a7c689a866c",
+      "outputSha256": "72d2113f44966270b6c0aca3aeae818a5b5d471c4437130a75c2c166a3c4cfa1"
     }
   }
 }

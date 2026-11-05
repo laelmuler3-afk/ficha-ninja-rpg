@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/17-beneficios-pontos-chave-190.js — app 2.5.8.198. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/17-beneficios-pontos-chave-190.js — app 2.5.8.199. Não editar. */
 /* Shinobi 2.5.8.190 — efetivação segura de benefícios confirmados.
  * Lê as aquisições existentes; não reimporta nem debita pontos.
  * Somente "não aplicado" é elegível para benefício adicional.
@@ -195,7 +195,8 @@
             if (id === assinatura)
                 return;
             assinatura = id;
-            var pendentes = lista.filter(function (c) { return c.aplicacao190 === 'nao-aplicado' || c.aplicacao190 === 'incerto' || c.aplicacao190 === 'sem-conferencia'; }).length;
+            var perito = root.ShinobiPerito199;
+            var pendentes = lista.filter(function (c) { return !(c.habilidadeId === 'perito' && perito && perito.evento(f, c.id)) && (c.aplicacao190 === 'nao-aplicado' || c.aplicacao190 === 'incerto' || c.aplicacao190 === 'sem-conferencia'); }).length;
             var badge = painel.querySelector('.beneficio190Contador');
             if (badge)
                 badge.textContent = pendentes ? pendentes + ' a revisar' : 'Em dia';
@@ -210,6 +211,15 @@
                     botao = '<button class="beneficio190Aplicar" type="button" data-b190-ativar="' + esc(c.id) + '">Aplicar +1 em ' + esc(ATRIBUTOS[op.alvoId]) + '</button>';
                 if (c.habilidadeId === 'melhoria_vida' && (c.aplicacao190 === 'nao-aplicado' || (c.aplicacao190 === 'sem-conferencia' && c.tipo === 'compra')))
                     botao = '<div class="beneficio198Rolagem"><label>Resultado do dado <input type="number" min="1" max="20" inputmode="numeric" data-b198-rolagem aria-label="Resultado do dado de Vida"></label><button type="button" class="beneficio190Aplicar" data-b198-vida="' + esc(c.id) + '">Aplicar aos PV máximos</button></div>';
+                if (c.habilidadeId === 'perito' && perito) {
+                    var selecionadas = perito.resumoCompra(f, c.id);
+                    if (selecionadas)
+                        situacao = 'Proficiências confirmadas: ' + selecionadas;
+                    else if (perito.podeConfigurar(f, livro, c.id)) {
+                        situacao = 'Escolha três perícias ou ferramentas';
+                        botao += perito.formulario(c.id);
+                    }
+                }
                 return '<div class="beneficio190Linha"><strong>' + esc(c.nome || c.habilidadeId) + '</strong><small>' + esc(situacao) + (op.alvoNome ? ' · ' + esc(op.alvoNome) : '') + '</small>' + botao + '</div>';
             }).join('');
             if (!lista.length)

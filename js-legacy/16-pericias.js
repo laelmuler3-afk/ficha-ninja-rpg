@@ -1,4 +1,4 @@
-/* GERADO AUTOMATICAMENTE — fonte: js/16-pericias.js — app 2.5.8.177. Não editar. */
+/* GERADO AUTOMATICAMENTE — fonte: js/16-pericias.js — app 2.5.8.199. Não editar. */
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -107,13 +107,24 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     function calcular(item) {
         var _a;
         var input = campo(item.chave);
-        var proficiente = Boolean(input === null || input === void 0 ? void 0 : input.checked);
+        var extra = false;
+        try {
+            var ficha = typeof estado !== "undefined" ? estado : null;
+            var perito = window.ShinobiPerito199;
+            if (ficha && perito && window.ShinobiPontosChave)
+                extra = perito.temPericia(ficha, window.ShinobiPontosChave, item.chave);
+        }
+        catch (_erro) {
+            extra = false;
+        }
+        var proficiente = Boolean(input === null || input === void 0 ? void 0 : input.checked) || extra;
         var modificador = modificadorAtributo(item.atributo);
         var proficiencia = proficiente ? numero((_a = campo("proficiencia")) === null || _a === void 0 ? void 0 : _a.value, 0) : 0;
         return {
             modificador: modificador,
             proficiente: proficiente,
             proficiencia: proficiencia,
+            perito: extra,
             total: modificador + proficiencia
         };
     }
@@ -124,11 +135,12 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
         var dados = calcular(item);
         estrutura.bonus.textContent = comSinal(dados.total);
         estrutura.label.classList.toggle("proficiente", dados.proficiente);
+        estrutura.label.classList.toggle("proficientePerito199", dados.perito);
         estrutura.bonus.classList.toggle("proficiente", dados.proficiente);
         var detalhe = dados.proficiente
             ? "Modificador ".concat(comSinal(dados.modificador), " + profici\u00EAncia ").concat(comSinal(dados.proficiencia))
             : "Modificador ".concat(comSinal(dados.modificador));
-        estrutura.label.title = "".concat(item.nome, " (").concat(item.sigla, "): ").concat(comSinal(dados.total), " \u2014 ").concat(detalhe);
+        estrutura.label.title = "".concat(item.nome, " (").concat(item.sigla, "): ").concat(comSinal(dados.total), " \u2014 ").concat(detalhe).concat(dados.perito ? " · Perito" : "");
         estrutura.label.setAttribute("aria-label", "".concat(item.nome, ", b\u00F4nus ").concat(comSinal(dados.total)).concat(dados.proficiente ? ", proficiente" : ""));
     }
     function atualizar() {
@@ -181,6 +193,9 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
             agendar();
     });
     window.addEventListener("pageshow", function () { return agendar(80); });
+    window.addEventListener("shinobi:pontos-chave-atualizados", function () { return agendar(); });
+    window.addEventListener("shinobi:realtime-aplicado", function () { return agendar(50); });
+    window.addEventListener("shinobi:realtime-colecao-aplicada", function () { return agendar(50); });
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", iniciar, { once: true });
     }
