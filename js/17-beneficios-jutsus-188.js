@@ -265,35 +265,15 @@
     root.addEventListener('shinobi:pontos-chave-atualizados',recarregar);
     root.addEventListener('shinobi:realtime-aplicado',recarregar);
     function ficha(){try{return typeof estado!=='undefined'&&estado?estado:null;}catch(_){return null;}}
-    function montarDescanso(){
-      var hero=root.document.querySelector('#jutsus .jutsusHero'),f=ficha(),livro=root.ShinobiPontosChave;
-      if(!hero||!f||!livro)return;
+    /* O descanso longo está unificado em Combate desde a versão .197.
+       Não criar segundo gatilho em Jutsus. Limpar qualquer botão legado
+       caso a interface tenha sido reaproveitada por hot reload. */
+    function limparBotaoAntigo(){
       var botao=root.document.getElementById('ninjutsuII194Descanso');
-      var tem=(livro.resumo(f).compras||[]).some(function(c){return c.habilidadeId==='ninjutsu_melhorado_2';});
-      if(!tem){if(botao)botao.remove();return;}
-      if(!botao){botao=root.document.createElement('button');botao.type='button';botao.id='ninjutsuII194Descanso';
-        botao.className='btn ninjutsuII194DescansoBtn';
-        botao.textContent='Restaurar usos de Ninjutsu II (descanso longo)';
-        botao.addEventListener('click',function(){var folha=ficha(),E=root.ShinobiPontosChave;
-          if(!folha||!E||!root.confirm('Confirmar descanso longo? Os usos de Ninjutsu Melhorado II serão restaurados. PV e EKO não serão modificados.'))return;
-          var anterior=folha.pontosChaveV1;folha.pontosChaveV1=registrarDescansoLongo(folha,E);
-          var ok=typeof root.persistirEstadoLocal==='function'&&root.persistirEstadoLocal({confirmada:true,origem:'ninjutsu-melhorado-ii',campo:'pontosChaveV1',motivo:'descanso-longo'});
-          if(!ok){folha.pontosChaveV1=anterior;root.alert('O descanso não foi salvo.');return;}
-          recarregar();root.alert('Usos de Ninjutsu Melhorado II restaurados.');
-        });
-      }
-      // O cabeçalho é um grid de três colunas. Um quarto filho ali
-      // desalinhava o título e estourava a largura em telas pequenas.
-      // Move também o botão já criado por uma versão anterior.
-      if(botao.parentElement!==hero.parentElement||botao.previousElementSibling!==hero){
-        hero.insertAdjacentElement('afterend',botao);
-      }
+      if(botao)botao.remove();
     }
-    if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',montarDescanso);
-    else montarDescanso();
-    root.addEventListener('shinobi:pontos-chave-atualizados',montarDescanso);
-    root.addEventListener('shinobi:realtime-aplicado',montarDescanso);
-    root.addEventListener('shinobi:ficha-persistida',function(e){if(e.detail&&e.detail.campo==='pontosChaveV1')montarDescanso();});
+    if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',limparBotaoAntigo);
+    else limparBotaoAntigo();
 
   }
   return Object.freeze({versao:'2.5.8.188',vinculos:vinculos,aumentarDado:aumentarDado,

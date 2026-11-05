@@ -1317,37 +1317,66 @@
     if(window.__resetEfeitosEstruturadosV196) return;
     window.__resetEfeitosEstruturadosV196=true;
     window.resetarBatalha=async function(){
-      const ok=typeof confirmarUsoAcao==="function"
-        ? await confirmarUsoAcao("reset","Resetar batalha","PV e Chakra voltam ao máximo. Efeitos, bônus temporários e histórico serão limpos.")
-        : confirm("Resetar a batalha e limpar os efeitos ativos?");
-      if(!ok) return false;
+      if(window.__descansoLongoEmCurso197)return false;
+      window.__descansoLongoEmCurso197=true;
+      try{
+      const descanso=window.ShinobiDescansos197;
+      const livro=window.ShinobiPontosChave;
+      const ninjutsu=window.ShinobiBeneficiosJutsus188;
+      if(!descanso||!livro||!ninjutsu){
+        if(typeof avisoShinobi==="function")await avisoShinobi("Descanso indisponível","O motor de descansos não carregou. Atualize o aplicativo antes de tentar novamente.");
+        return false;
+      }
       const pv=document.getElementById("pv"),pvMax=document.getElementById("pvMax");
       const chakra=document.getElementById("chakra"),chakraMax=document.getElementById("chakraMax");
-      const dano=document.getElementById("danoBatalha"),custo=document.getElementById("custoBatalha"),logBox=document.getElementById("log");
-      if(pv) pv.value=pvMax?.value||0;
-      if(chakra) chakra.value=chakraMax?.value||0;
-      if(dano) dano.value=1;
-      if(custo) custo.value=1;
-      if(logBox) logBox.innerHTML="Nada aconteceu ainda.";
-      if(typeof window.shinobiZerarBonusBatalhaPersistidos==="function") window.shinobiZerarBonusBatalhaPersistidos("todos");
-      else document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(input=>{input.value=0;});
-      if(typeof bonusBatalhaAtributos!=="undefined") Object.keys(bonusBatalhaAtributos).forEach(chave=>{bonusBatalhaAtributos[chave]=0;});
+      const pvAnterior=pv?.value,chakraAnterior=chakra?.value;
+      const pvNumero=Number(pvAnterior||0);
+      if(pvNumero<1){
+        if(typeof avisoShinobi==="function")await avisoShinobi("Descanso longo","Pelas regras de descanso de D&D 5e, o personagem precisa ter pelo menos 1 PV ao iniciar o descanso. Estabilize ou recupere PV primeiro.");
+        return false;
+      }
+      const dados=descanso.recursos(estado,livro);
+      const ok=typeof confirmarUsoAcao==="function"
+        ?await confirmarUsoAcao("descanso","Descanso longo",
+          "PV e EKO voltam ao máximo. Até "+Math.max(1,Math.floor(dados.nivel/2))+" Dados de Vida gastos são recuperados. "+
+          "Usos de Ninjutsu Melhorado II são restaurados. Efeitos e bônus temporários da batalha são limpos. Confirme que passaram 8 horas de jogo e que não houve outro descanso longo nas últimas 24 horas de jogo.")
+        :confirm("Confirmar descanso longo? Recupera PV, EKO, usos limitados e limpa os efeitos temporários.");
+      if(!ok)return false;
+      if(window.__shinobiSheetTransition===true)return false;
+      const anteriorLedger=estado.pontosChaveV1;
       const efeitosAntesReset=Array.isArray(estado[CHAVE_ESTADO])?estado[CHAVE_ESTADO].map(clonar):[];
+      const novoLedger=descanso.registrarLongo(estado,livro,ninjutsu);
+      estado.pontosChaveV1=novoLedger;
       estado[CHAVE_ESTADO]=[];
-      const contextoReset={confirmada:true,origem:"batalha",campos:["pv","chakra",CHAVE_ESTADO],motivo:"alteracao-confirmada"};
-      if(typeof salvar==="function") salvar(contextoReset); else salvarEstado(contextoReset);
-      efeitosAntesReset.forEach(item=>emitirEfeitoItemConfirmado(item,{deleted:true,reason:"reset-batalha"}));
-      if(typeof atualizarModsBatalhaComBonus==="function") atualizarModsBatalhaComBonus();
-      if(typeof atualizarPainelBatalhaVivo==="function") atualizarPainelBatalhaVivo();
+      if(pv)pv.value=pvMax?.value||0;
+      if(chakra)chakra.value=chakraMax?.value||0;
+      const contexto={confirmada:true,origem:"descanso-longo",campos:["pv","chakra",CHAVE_ESTADO,"pontosChaveV1"],motivo:"descanso-longo"};
+      const salvo=typeof salvar==="function"?salvar(contexto):false;
+      if(!salvo){
+        estado.pontosChaveV1=anteriorLedger;
+        estado[CHAVE_ESTADO]=efeitosAntesReset;
+        if(pv)pv.value=pvAnterior;
+        if(chakra)chakra.value=chakraAnterior;
+        if(typeof avisoShinobi==="function")await avisoShinobi("Descanso não salvo","A ficha foi preservada; tente novamente.");
+        return false;
+      }
+      const dano=document.getElementById("danoBatalha"),custo=document.getElementById("custoBatalha"),logBox=document.getElementById("log");
+      if(dano)dano.value=1;
+      if(custo)custo.value=1;
+      if(logBox)logBox.textContent="Nada aconteceu ainda.";
+      if(typeof window.shinobiZerarBonusBatalhaPersistidos==="function")window.shinobiZerarBonusBatalhaPersistidos("todos");
+      else document.querySelectorAll("[data-bonus-batalha],[data-bonus-defesa-batalha]").forEach(input=>{input.value=0;});
+      if(typeof bonusBatalhaAtributos!=="undefined")Object.keys(bonusBatalhaAtributos).forEach(chave=>{bonusBatalhaAtributos[chave]=0;});
+      efeitosAntesReset.forEach(item=>emitirEfeitoItemConfirmado(item,{deleted:true,reason:"descanso-longo"}));
+      if(typeof atualizarModsBatalhaComBonus==="function")atualizarModsBatalhaComBonus();
+      if(typeof atualizarPainelBatalhaVivo==="function")atualizarPainelBatalhaVivo();
       atualizarTudo();
-
-      /* Fecha o menu de opções como confirmação visual do reset concluído. */
-      document.querySelectorAll("details.batalhaMenuOpcoes[open]").forEach(menu=>{
-        menu.removeAttribute("open");
-      });
-
-      if(typeof avisoShinobi==="function") await avisoShinobi("Batalha resetada","A Área de Batalha e os efeitos ativos foram restaurados.");
+      if(typeof renderizarJutsus==="function")renderizarJutsus();
+      document.querySelectorAll("details.batalhaMenuOpcoes[open]").forEach(menu=>menu.removeAttribute("open"));
+      window.dispatchEvent(new CustomEvent("shinobi:descanso-longo-confirmado",{detail:{dadosRecuperaveis:Math.max(1,Math.floor(dados.nivel/2))}}));
+      if(typeof avisoShinobi==="function")await avisoShinobi("Descanso longo realizado","PV, EKO, Dados de Vida e usos de Ninjutsu Melhorado II atualizados.");
       return true;
+      }finally{window.__descansoLongoEmCurso197=false;}
     };
   }
 
