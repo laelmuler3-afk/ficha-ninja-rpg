@@ -1,0 +1,16 @@
+/* 2.5.8.202 — talentos condicionais em área recolhível de Combate */
+.talentosCondicionais202{margin:10px 0;border:1px solid var(--border,#58677866);border-radius:12px;padding:0 13px 10px;background:var(--surface,#172331);color:inherit}
+.talentosCondicionais202[hidden],.talentosCondicionais202 section[hidden]{display:none!important}
+.talentosCondicionais202>summary{padding:13px 2px;cursor:pointer;font-weight:700;list-style-position:inside}
+.talentosCondicionais202>summary small{font-size:.78rem;font-weight:400;opacity:.72;margin-left:7px}
+.talentosCondicionais202 section{padding:9px 0 13px;border-top:1px solid var(--border,#58677866);display:grid;gap:8px}
+.talentosCondicionais202 h4{margin:2px 0 0;font-size:1rem}
+.talentosCondicionais202 p{font-size:.84rem;line-height:1.4;margin:0;opacity:.85}
+.talentosCondicionais202 label{display:grid;gap:4px;font-size:.82rem}
+.talentosCondicionais202 label:has(input[type=checkbox]){display:flex;align-items:center;gap:8px}
+.talentosCondicionais202 input:not([type=checkbox]),.talentosCondicionais202 select{box-sizing:border-box;width:100%;min-width:0;padding:9px 10px;border-radius:9px;border:1px solid var(--border,#58677866);background:var(--surface-secondary,#283747);color:inherit;font:inherit}
+.talentosCondicionais202 input[type=checkbox]{width:17px;height:17px;flex-shrink:0}
+.talentosCondicionais202 .tc202Campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.talentosCondicionais202 .btn{justify-self:start}
+.talentosCondicionais202 output{display:block;min-height:1em;font-size:.86rem;line-height:1.45}
+.talentosCondicionais202 .tc202Nota{opacity:.65;font-size:.74rem;line-height:1.4}
