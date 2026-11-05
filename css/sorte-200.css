@@ -1,0 +1,13 @@
+/* Sorte: recurso discreto em Combate, sem interferir nos cartões de PV/EKO. */
+#shinobiSorte200[hidden]{display:none!important}
+#shinobiSorte200{display:grid;gap:10px;padding:14px 15px;margin:12px 0;border:1px solid var(--borda,#52607766);border-radius:14px;background:var(--card-bg,rgba(24,32,46,.55));}
+#shinobiSorte200 .sorte200Topo{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#shinobiSorte200 .sorte200Topo strong{font-size:1rem}
+#shinobiSorte200 .sorte200Contador{font-variant-numeric:tabular-nums;font-weight:750;font-size:1.2rem}
+#shinobiSorte200 .sorte200Controles{display:grid;grid-template-columns:minmax(0,1fr) minmax(95px,125px) auto;gap:8px;align-items:end}
+#shinobiSorte200 label{display:grid;gap:5px;font-size:.8rem}
+#shinobiSorte200 select,#shinobiSorte200 input{width:100%;min-width:0;min-height:38px;border-radius:9px;padding:7px 9px;background:var(--input-bg,rgba(0,0,0,.13));color:inherit;border:1px solid var(--borda,#7775)}
+#shinobiSorte200 [data-sorte200-gastar]{min-height:38px;white-space:nowrap}
+#shinobiSorte200 [data-sorte200-aviso]{font-size:.8rem;opacity:.8;margin:0;line-height:1.4}
+#shinobiSorte200.sorte200Esgotada .sorte200Contador{opacity:.65}
+@media(max-width:520px){#shinobiSorte200 .sorte200Controles{grid-template-columns:minmax(0,1fr) 90px}#shinobiSorte200 [data-sorte200-gastar]{grid-column:1/-1}}
