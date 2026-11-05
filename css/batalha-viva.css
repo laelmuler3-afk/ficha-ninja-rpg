@@ -1219,3 +1219,27 @@
 @media (max-width:360px){
   #batalha .danoInteligentePreviaTopo{align-items:flex-start;flex-direction:column}
 }
+
+/* v2.5.8.197 — descansos no menu de Combate, sem ocupar os cartões. */
+#batalha .batalhaMenuOpcoesConteudo .descansoCurto197MenuBtn{
+  width:100%;margin:2px 0 7px!important;text-align:center;
+  color:#fff2d9;background:linear-gradient(135deg,#275c58,#103b3e);
+  border:1px solid rgba(120,225,205,.45);
+}
+#batalha .batalhaMenuOpcoesConteudo{z-index:14;min-width:235px;}
+#batalha .descansoCurto197Painel{
+  padding:14px;margin:8px 0 16px;border:1px solid rgba(120,225,205,.32);
+  border-radius:12px;background:linear-gradient(180deg,#102729,#071419);
+  box-shadow:0 10px 24px rgba(0,0,0,.34);
+}
+#batalha .descansoCurto197Painel[hidden]{display:none!important}
+#batalha .descansoCurto197Cabecalho{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#batalha .descansoCurto197Cabecalho h3{margin:0;font-size:17px;color:#e4f7ee}
+#batalha .descanso197Fechar{font-size:23px;min-height:34px;min-width:34px;color:#fff;border:1px solid #ffffff30;background:#0005}
+#batalha .descanso197Aviso{font-size:12px;color:#a7e0d1;line-height:1.4}
+#batalha .descanso197Ajuda{font-size:12px;color:#c2d8d3;line-height:1.4;margin:6px 0}
+#batalha .descansoCurto197Painel label{margin-top:11px;color:#f4eedc}
+#batalha .descanso197Opcao{display:flex;align-items:flex-start;gap:9px;font-size:13px;line-height:1.45;font-weight:600}
+#batalha .descanso197Opcao input{width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:#3ac4a2}
+#batalha .descanso197Opcao input:disabled{opacity:.45}
+#batalha .descanso197Confirmar{width:100%;margin-top:14px;border:1px solid #76d5b27a;background:linear-gradient(135deg,#217e6c,#0e4b56)}
