@@ -85,13 +85,20 @@
 
   function calcular(item){
     const input = campo(item.chave);
-    const proficiente = Boolean(input?.checked);
+    let extra = false;
+    try {
+      const ficha = typeof estado !== "undefined" ? estado : null;
+      const perito = window.ShinobiPerito199;
+      if(ficha && perito && window.ShinobiPontosChave) extra = perito.temPericia(ficha,window.ShinobiPontosChave,item.chave);
+    } catch (_erro) { extra = false; }
+    const proficiente = Boolean(input?.checked) || extra;
     const modificador = modificadorAtributo(item.atributo);
     const proficiencia = proficiente ? numero(campo("proficiencia")?.value,0) : 0;
     return {
       modificador,
       proficiente,
       proficiencia,
+      perito:extra,
       total:modificador + proficiencia
     };
   }
@@ -103,13 +110,14 @@
     const dados = calcular(item);
     estrutura.bonus.textContent = comSinal(dados.total);
     estrutura.label.classList.toggle("proficiente",dados.proficiente);
+    estrutura.label.classList.toggle("proficientePerito199",dados.perito);
     estrutura.bonus.classList.toggle("proficiente",dados.proficiente);
 
     const detalhe = dados.proficiente
       ? `Modificador ${comSinal(dados.modificador)} + proficiência ${comSinal(dados.proficiencia)}`
       : `Modificador ${comSinal(dados.modificador)}`;
 
-    estrutura.label.title = `${item.nome} (${item.sigla}): ${comSinal(dados.total)} — ${detalhe}`;
+    estrutura.label.title = `${item.nome} (${item.sigla}): ${comSinal(dados.total)} — ${detalhe}${dados.perito ? " · Perito" : ""}`;
     estrutura.label.setAttribute(
       "aria-label",
       `${item.nome}, bônus ${comSinal(dados.total)}${dados.proficiente ? ", proficiente" : ""}`
@@ -166,6 +174,9 @@
   });
 
   window.addEventListener("pageshow",()=>agendar(80));
+  window.addEventListener("shinobi:pontos-chave-atualizados",()=>agendar());
+  window.addEventListener("shinobi:realtime-aplicado",()=>agendar(50));
+  window.addEventListener("shinobi:realtime-colecao-aplicada",()=>agendar(50));
 
   if(document.readyState === "loading"){
     document.addEventListener("DOMContentLoaded",iniciar,{once:true});
